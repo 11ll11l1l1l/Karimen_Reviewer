@@ -1,121 +1,72 @@
-# Karimen Reviewer — Build 4.0 Journey Edition
+# Karimen Reviewer v4.1 Stable
 
-A phone-first, game-style Streamlit reviewer for the Japanese provisional-license (karimen) written test.
+A mobile-first Streamlit driving-test reviewer built from the v3.2 question package.
 
-## Included question banks
+## What is included
 
-- A1: 150 questions, Sets 14–16
-- B1: 500 questions, Sets 1–10
-- Total: 650 questions
-- Image questions: 133
-- Existing question text, answers, explanations, images, verification data, and official-source links are preserved from Build 3.2.
+- 650 questions total: A1 150 + B1 500
+- 133 image questions and all existing question images preserved
+- Review Mode with explanations and spaced/adaptive prioritization
+- 50-question / 30-minute default Exam Mode with 90% practice target
+- Daily Challenge with deterministic daily questions and 3 image questions
+- Survival Mode with three lives
+- Boss Exam based on weak questions
+- Mistake Book containing only questions the learner actually missed
+- XP, levels, achievements, world progression, weak-topic statistics and pass-readiness study estimate
+- Optional Supabase shared rankings
+- Progress JSON backup/restore
 
-## What is new in Build 4.0
+## Mascot system
 
-### Game progression
+The same gray-and-white cat is retained throughout the app. The default identity is the blue traffic-officer uniform.
 
-- XP and driver levels
-- driver titles
-- world/journey progression
-- Daily Challenge
-- Survival Mode with 3 lives
-- Boss Exam using the user's hardest questions
-- Smart Review using spaced-repetition due dates, weak-question history, unseen questions, and weak-category weighting
-- Mistake Book
-- achievement collection expanded for daily, survival, boss, mock-exam, streak, image, and coverage goals
-- pass-readiness estimate on the Progress page
+Category uniforms are genuinely different images, not recolors:
 
-### Dynamic cat mascot
+- Signals/signs: blue traffic officer with baton
+- Parking: green parking/safety vest
+- Pedestrians: yellow crossing-safety outfit
+- Railroad: railway staff uniform
+- Speed/highway: motorcycle/highway outfit
+- Hazards/vehicle operation: night-road safety outfit
+- Legal/general rules: instructor/legal outfit
+- Exam scene: exam-study outfit
 
-The blue traffic-officer cat is the default mascot.
-
-The app includes 56 mascot variants under `assets/mascots/`.
-
-Category changes alter the outfit automatically:
-
-- traffic signals / signs → signal officer
-- parking / stopping → yellow parking-safety uniform
-- pedestrians / crossings → green crossing-guard uniform
-- railroad crossings → orange rail-safety uniform
-- speed / braking / lanes → red road-marshal uniform
-- hazards / vehicle operation → purple night-patrol uniform
-- legal / licensing topics → teal road-rules uniform
-- fallback/default → blue traffic-officer uniform
-
-Reaction images change automatically:
+Reaction images are also different poses:
 
 - idle
 - correct
 - streak
 - wrong
-- pleading after repeated misses
-- comeback after breaking a losing streak
+- repeated-wrong / losing streak
+- pleading
+- comeback
 - victory
 
-### Sound + spoken words
+`MASCOT_STATES_PREVIEW.png` shows the bundled assets.
 
-Build 3.2 WAV effects are retained.
+## Spoken mascot phrases
 
-Build 4.0 adds optional browser speech synthesis for mascot lines such as:
-
-- “Correct! Nice one.”
-- “Five in a row! Keep it going!”
-- “Please get the next one right! Read every word for me.”
-- “Yes! That's the comeback I wanted.”
-- “Mission cleared! You did it!”
-
-Speech can be turned off independently from sound effects.
-
-## Run locally
-
-```bash
-pip install -r requirements.txt
-streamlit run app.py
-```
+`assets/voice/` contains real WAV speech clips for ready, correct, streak, wrong, pleading, comeback, victory and focus. They are bundled locally, so the feature does not depend on browser text-to-speech support.
 
 ## Deploy to Streamlit Community Cloud
 
-Replace the contents of the repository currently used by the deployed app with this package, then commit and push.
+1. Replace the contents of your existing GitHub app with the contents of this folder.
+2. Keep `app.py`, `karimen_core.py`, `data/`, `assets/`, `.streamlit/`, and `requirements.txt` in the repository.
+3. Set the Streamlit main file to `app.py`.
+4. Optional: restore your existing Supabase secrets if you want shared rankings.
 
-The entry file remains:
+The reviewer works without Supabase.
 
-```text
-app.py
-```
+## Validation performed
 
-No new Python dependency was added compared with Build 3.2.
+- Python syntax compile: passed
+- Question validator: 650 questions, 133 image references, 0 errors
+- Pure core smoke tests: passed
+- Stubbed Streamlit page smoke test: Home, Play, Mistakes, Progress, Rankings, Bank, Review and Exam paths passed
+- Review state machine: correct, repeated wrong, comeback passed
+- Survival 3-life termination: passed
+- Daily replay bonus protection: passed
+- Exam scoring/submission: passed
+- Duplicate top-level function scan: none
 
-## Supabase ranking
-
-The existing optional Supabase ranking backend is retained.
-
-If the previous deployed version already has these Streamlit secrets, no change is required:
-
-```toml
-SUPABASE_URL = "https://YOUR-PROJECT.supabase.co"
-SUPABASE_SECRET_KEY = "YOUR-SUPABASE-SECRET-KEY"
-```
-
-For a new project, run `supabase_setup.sql` in Supabase SQL Editor and then add the secrets above.
-
-## Validation
-
-```bash
-python validate.py
-```
-
-Expected result:
-
-```text
-Questions: 650
-A1: 150
-B1: 500
-Image refs: 133
-Errors: 0
-```
-
-## Notes
-
-- The 90% pass-readiness indicator is an app-local estimate, not an official probability.
-- The reviewer is a study aid and is not an official Japanese driving-test system.
-- Browser speech depends on the browser/device speech-synthesis implementation. WAV feedback remains available independently.
+A real browser/Streamlit runtime could not be launched in the build container because Streamlit is not installed there and external package download is blocked. The package therefore includes `smoke_test.py` so the pure logic can be retested after changes.
