@@ -219,22 +219,80 @@ def add_session(mode: str, question_ids: list[str], correct: int, seconds: float
     st.session_state.progress["updated_at"] = utc_now_iso()
 
 
-def bank_label(q: dict) -> str:
+BANK_OPTIONS = ["All", "A1", "B1"]
+A1_INTERNAL_BANKS = {"KM14", "KM15", "KM16"}
+
+
+def bank_group(q: dict) -> str:
+    """User-facing bank name while preserving stable internal IDs/data."""
+    if q["bank"] in A1_INTERNAL_BANKS:
+        return "A1"
     if q["bank"] == "menkyoblog":
-        return f"Menkyoblog Set {q['set']}"
+        return "B1"
     return q["bank"]
+
+
+def bank_set(q: dict) -> str:
+    if q["bank"] in A1_INTERNAL_BANKS:
+        return q["bank"].replace("KM", "")
+    if q["bank"] == "menkyoblog":
+        return str(q.get("set", ""))
+    return ""
+
+
+def bank_label(q: dict) -> str:
+    group = bank_group(q)
+    subset = bank_set(q)
+    return f"{group} · Set {subset}" if subset else group
+
+
+def display_question_id(q: dict) -> str:
+    """Friendly public ID; the original ID remains unchanged internally for progress/images."""
+    number = int(q.get("number", 0) or 0)
+    if q["bank"] in A1_INTERNAL_BANKS:
+        return f"A1-{bank_set(q)}-Q{number:03d}"
+    if q["bank"] == "menkyoblog":
+        return f"B1-{int(q.get('set', 0) or 0):02d}-Q{number:02d}"
+    return q["id"]
+
+
+def set_options_for_bank(bank: str) -> list[str]:
+    if bank == "A1":
+        return ["All", "14", "15", "16"]
+    if bank == "B1":
+        return ["All"] + [str(i) for i in range(1, 11)]
+    return ["All"]
+
+
+def display_saved_bank(value: str) -> str:
+    """Translate older saved session labels without invalidating existing progress backups."""
+    if value in A1_INTERNAL_BANKS or value == "A1":
+        return "A1"
+    if value in {"menkyoblog", "B1"}:
+        return "B1"
+    return value
 
 
 def filter_questions(bank: str = "All", set_filter: str = "All", category: str = "All") -> list[dict]:
     qs = QUESTIONS
-    if bank != "All":
+    if bank == "A1":
+        qs = [q for q in qs if q["bank"] in A1_INTERNAL_BANKS]
+    elif bank == "B1":
+        qs = [q for q in qs if q["bank"] == "menkyoblog"]
+    elif bank != "All":
+        # Backward compatibility for old saved state / direct internal bank names.
         qs = [q for q in qs if q["bank"] == bank]
+
     if set_filter != "All":
-        try:
-            set_no = int(set_filter)
-            qs = [q for q in qs if q.get("set") == set_no]
-        except Exception:
-            pass
+        if bank == "A1":
+            qs = [q for q in qs if q["bank"] == f"KM{set_filter}"]
+        elif bank == "B1":
+            try:
+                set_no = int(set_filter)
+                qs = [q for q in qs if q.get("set") == set_no]
+            except Exception:
+                pass
+
     if category != "All":
         qs = [q for q in qs if q["category"] == category]
     return list(qs)
@@ -273,7 +331,7 @@ def select_review_questions(pool: list[dict], mode: str, count: int) -> list[str
 def render_question(q: dict, position: int, total: int, reveal: bool = False, selected=None):
     safe_bank = html.escape(bank_label(q))
     safe_cat = html.escape(q["category"])
-    safe_id = html.escape(q["id"])
+    safe_id = html.escape(display_question_id(q))
     safe_question = html.escape(q["question_en"]).replace("\n", "<br>")
     safe_ja = html.escape(q.get("question_ja", "")).replace("\n", "<br>")
     tags = f'<span class="km-pill">{safe_bank}</span><span class="km-pill">{safe_cat}</span>'
@@ -308,7 +366,7 @@ def render_sources(q: dict):
         return
     with st.expander("Source / verification details"):
         if q.get("verification_status") == "verified":
-            st.caption("KM14–KM16 item: answer cross-checked in the verified reviewer package.")
+            st.caption("A1 item: answer cross-checked in the verified reviewer package.")
         for src in sources:
             title = src.get("title") or src.get("key") or "Reference"
             org = src.get("organization", "")
@@ -320,8 +378,8 @@ def render_sources(q: dict):
             else:
                 st.markdown(f"- {text}")
         if page:
-            st.markdown(f"- [Original Menkyoblog question page]({page})")
-            st.caption("Menkyoblog items preserve the source answer and the English explanation supplied in the extracted bank.")
+            st.markdown(f"- [Original source question page]({page})")
+            st.caption("B1 items preserve the source answer and the English explanation supplied in the extracted bank.")
 
 
 def progress_json() -> str:
@@ -352,8 +410,8 @@ def page_home():
 
     st.markdown("### Included banks")
     st.markdown(
-        "<div class='km-card'><strong>KM14</strong> · 50 &nbsp;&nbsp; <strong>KM15</strong> · 50 &nbsp;&nbsp; <strong>KM16</strong> · 50<br>"
-        "<strong>Menkyoblog</strong> · 500 questions across 10 sets<br><span class='km-small'>No demo/sample bank is included.</span></div>",
+        "<div class='km-card'><strong>A1</strong> · 150 questions across 3 sets (14, 15, 16)<br>"
+        "<strong>B1</strong> · 500 questions across 10 sets<br><span class='km-small'>No demo/sample bank is included.</span></div>",
         unsafe_allow_html=True,
     )
 
@@ -416,9 +474,9 @@ def page_review():
     if not review or review.get("finished"):
         st.markdown("### Configure review")
         c1, c2 = st.columns(2)
-        bank = c1.selectbox("Bank", ["All", "KM14", "KM15", "KM16", "menkyoblog"], key="review_bank")
-        set_opts = ["All"] + [str(i) for i in range(1, 11)] if bank in {"All", "menkyoblog"} else ["All"]
-        set_filter = c2.selectbox("Menkyoblog set", set_opts, key="review_set")
+        bank = c1.selectbox("Bank", BANK_OPTIONS, key="review_bank")
+        set_opts = set_options_for_bank(bank)
+        set_filter = c2.selectbox("Set", set_opts, key="review_set")
         categories = ["All"] + sorted({q["category"] for q in filter_questions(bank, set_filter)})
         category = st.selectbox("Category", categories, key="review_category")
         c1, c2 = st.columns(2)
@@ -555,9 +613,9 @@ def page_exam():
     if not exam:
         st.markdown("### Configure exam")
         c1, c2 = st.columns(2)
-        bank = c1.selectbox("Question pool", ["All", "KM14", "KM15", "KM16", "menkyoblog"], key="exam_bank")
-        set_opts = ["All"] + [str(i) for i in range(1, 11)] if bank in {"All", "menkyoblog"} else ["All"]
-        set_filter = c2.selectbox("Menkyoblog set", set_opts, key="exam_set")
+        bank = c1.selectbox("Question pool", BANK_OPTIONS, key="exam_bank")
+        set_opts = set_options_for_bank(bank)
+        set_filter = c2.selectbox("Set", set_opts, key="exam_set")
         c1, c2 = st.columns(2)
         count = c1.selectbox("Questions", [20, 30, 50, 100], index=2)
         minutes = c2.selectbox("Time limit", [15, 20, 30, 45, 60], index=2)
@@ -725,7 +783,7 @@ def page_statistics():
         if s["attempts"] <= 0:
             continue
         weak_rows.append({
-            "ID": q["id"], "Bank": bank_label(q), "Category": q["category"],
+            "ID": display_question_id(q), "Bank": bank_label(q), "Category": q["category"],
             "Attempts": s["attempts"], "Wrong": s["wrong"],
             "Accuracy %": round(100*s["correct"]/s["attempts"], 1),
             "Mastery %": round(mastery(s), 1),
@@ -742,6 +800,8 @@ def page_statistics():
     if sessions:
         st.markdown("### Session history")
         sess_df = pd.DataFrame(sessions[-50:])
+        if "bank" in sess_df.columns:
+            sess_df["bank"] = sess_df["bank"].map(display_saved_bank)
         show_cols = [c for c in ["timestamp", "mode", "bank", "questions", "correct", "percent", "seconds"] if c in sess_df.columns]
         st.dataframe(sess_df[show_cols].iloc[::-1], use_container_width=True, hide_index=True)
         exams = sess_df[sess_df["mode"] == "exam"] if "mode" in sess_df else pd.DataFrame()
@@ -771,24 +831,24 @@ def page_statistics():
 def page_bank():
     st.markdown("### Question bank")
     c1, c2 = st.columns(2)
-    bank = c1.selectbox("Bank", ["All", "KM14", "KM15", "KM16", "menkyoblog"], key="browse_bank")
-    set_opts = ["All"] + [str(i) for i in range(1, 11)] if bank in {"All", "menkyoblog"} else ["All"]
-    set_filter = c2.selectbox("Menkyoblog set", set_opts, key="browse_set")
+    bank = c1.selectbox("Bank", BANK_OPTIONS, key="browse_bank")
+    set_opts = set_options_for_bank(bank)
+    set_filter = c2.selectbox("Set", set_opts, key="browse_set")
     pool0 = filter_questions(bank, set_filter)
     categories = ["All"] + sorted({q["category"] for q in pool0})
     category = st.selectbox("Category", categories, key="browse_cat")
-    search = st.text_input("Search", placeholder="e.g. crosswalk, parking, signal, KM16-Q048")
+    search = st.text_input("Search", placeholder="e.g. crosswalk, parking, signal, A1-16-Q048")
     only_images = st.checkbox("Image questions only")
     pool = filter_questions(bank, set_filter, category)
     if search.strip():
         s = search.lower().strip()
-        pool = [q for q in pool if s in q["id"].lower() or s in q["question_en"].lower() or s in q.get("question_ja", "").lower() or s in q["explanation"].lower()]
+        pool = [q for q in pool if s in q["id"].lower() or s in display_question_id(q).lower() or s in q["question_en"].lower() or s in q.get("question_ja", "").lower() or s in q["explanation"].lower()]
     if only_images:
         pool = [q for q in pool if q.get("images")]
     st.caption(f"{len(pool)} questions")
     if not pool:
         return
-    labels = [f"{q['id']} · {bank_label(q)} · {q['question_en'][:70]}" for q in pool]
+    labels = [f"{display_question_id(q)} · {bank_label(q)} · {q['question_en'][:70]}" for q in pool]
     selected_label = st.selectbox("Select question", labels)
     q = pool[labels.index(selected_label)]
     render_question(q, 1, 1, reveal=True, selected=q["answer"])
