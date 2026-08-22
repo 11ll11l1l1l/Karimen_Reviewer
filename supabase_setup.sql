@@ -1,5 +1,6 @@
--- A1 B1 Karimen Reviewer shared ranking tables
--- Run this once in Supabase > SQL Editor > New query > Run.
+-- Karimen Reviewer v4.4 Polished - ranking schema + migration
+-- Run this entire file in Supabase > SQL Editor.
+-- It is intentionally safe to run again on an older Karimen ranking project.
 
 create table if not exists public.live_exams (
   session_id text primary key,
@@ -22,19 +23,104 @@ create table if not exists public.exam_results (
   avatar text not null default '🚙',
   bank text not null default 'All',
   set_label text not null default 'All',
-  score integer not null,
-  total_questions integer not null,
-  percent numeric(5,1) not null,
-  elapsed_seconds numeric(10,1) not null,
+  score integer not null default 0,
+  total_questions integer not null default 50,
+  percent numeric(5,1) not null default 0,
+  elapsed_seconds numeric(10,1) not null default 0,
   passed boolean not null default false,
   completed_at timestamptz not null default now()
 );
 
+-- Real migration for installations created by an older app version.
+-- CREATE TABLE IF NOT EXISTS alone does not add missing columns.
+alter table public.live_exams add column if not exists session_id text;
+alter table public.live_exams add column if not exists display_name text;
+alter table public.live_exams add column if not exists avatar text default '🚙';
+alter table public.live_exams add column if not exists bank text default 'All';
+alter table public.live_exams add column if not exists set_label text default 'All';
+alter table public.live_exams add column if not exists total_questions integer default 50;
+alter table public.live_exams add column if not exists answered integer default 0;
+alter table public.live_exams add column if not exists correct integer default 0;
+alter table public.live_exams add column if not exists started_at timestamptz default now();
+alter table public.live_exams add column if not exists last_seen timestamptz default now();
+alter table public.live_exams add column if not exists status text default 'active';
+
+alter table public.exam_results add column if not exists session_id text;
+alter table public.exam_results add column if not exists display_name text;
+alter table public.exam_results add column if not exists avatar text default '🚙';
+alter table public.exam_results add column if not exists bank text default 'All';
+alter table public.exam_results add column if not exists set_label text default 'All';
+alter table public.exam_results add column if not exists score integer default 0;
+alter table public.exam_results add column if not exists total_questions integer default 50;
+alter table public.exam_results add column if not exists percent numeric(5,1) default 0;
+alter table public.exam_results add column if not exists elapsed_seconds numeric(10,1) default 0;
+alter table public.exam_results add column if not exists passed boolean default false;
+alter table public.exam_results add column if not exists completed_at timestamptz default now();
+
+-- Backfill nullable legacy rows so current queries and constraints are stable.
+update public.live_exams set session_id = coalesce(session_id, 'legacy-live-' || md5(random()::text || clock_timestamp()::text));
+update public.live_exams set display_name = coalesce(display_name, 'Driver');
+update public.live_exams set avatar = coalesce(avatar, '🚙');
+update public.live_exams set bank = coalesce(bank, 'All');
+update public.live_exams set set_label = coalesce(set_label, 'All');
+update public.live_exams set total_questions = coalesce(total_questions, 50);
+update public.live_exams set answered = coalesce(answered, 0);
+update public.live_exams set correct = coalesce(correct, 0);
+update public.live_exams set started_at = coalesce(started_at, now());
+update public.live_exams set last_seen = coalesce(last_seen, now());
+update public.live_exams set status = coalesce(status, 'active');
+
+update public.exam_results set session_id = coalesce(session_id, 'legacy-' || md5(random()::text || clock_timestamp()::text));
+update public.exam_results set display_name = coalesce(display_name, 'Driver');
+update public.exam_results set avatar = coalesce(avatar, '🚙');
+update public.exam_results set bank = coalesce(bank, 'All');
+update public.exam_results set set_label = coalesce(set_label, 'All');
+update public.exam_results set score = coalesce(score, 0);
+update public.exam_results set total_questions = coalesce(total_questions, 50);
+update public.exam_results set percent = coalesce(percent, 0);
+update public.exam_results set elapsed_seconds = coalesce(elapsed_seconds, 0);
+update public.exam_results set passed = coalesce(passed, false);
+update public.exam_results set completed_at = coalesce(completed_at, now());
+
+-- Remove duplicate rows before creating the idempotency keys.
+delete from public.live_exams a
+using public.live_exams b
+where a.session_id = b.session_id and a.ctid > b.ctid;
+
+delete from public.exam_results a
+using public.exam_results b
+where a.session_id = b.session_id and a.ctid > b.ctid;
+
+alter table public.live_exams alter column session_id set not null;
+alter table public.exam_results alter column session_id set not null;
+
+create unique index if not exists live_exams_session_id_uidx on public.live_exams(session_id);
+create unique index if not exists exam_results_session_id_uidx on public.exam_results(session_id);
 create index if not exists live_exams_last_seen_idx on public.live_exams(last_seen desc);
 create index if not exists exam_results_completed_idx on public.exam_results(completed_at desc);
 create index if not exists exam_results_name_idx on public.exam_results(display_name);
+create index if not exists exam_results_bank_idx on public.exam_results(bank);
 
--- The Streamlit server uses the Supabase secret key stored in Streamlit Secrets.
--- Keep RLS enabled and do not create public anonymous policies.
+-- Server-side Streamlit uses a Supabase SECRET/SERVICE-ROLE key.
+-- RLS remains enabled; do not expose anonymous write policies for a public leaderboard.
 alter table public.live_exams enable row level security;
 alter table public.exam_results enable row level security;
+
+-- Supabase changed new-project defaults in 2026 so public tables may not be
+-- automatically exposed to the Data API. Grant only the trusted server role;
+-- do NOT grant ranking writes to anon/authenticated users.
+grant usage on schema public to service_role;
+grant select, insert, update, delete on table public.live_exams to service_role;
+grant select, insert, update, delete on table public.exam_results to service_role;
+
+-- Identity/serial-backed result IDs can require sequence permission through
+-- PostgREST. Resolve the actual sequence name rather than assuming it.
+do $$
+declare
+  seq_name text;
+begin
+  seq_name := pg_get_serial_sequence('public.exam_results', 'id');
+  if seq_name is not null then
+    execute format('grant usage, select on sequence %s to service_role', seq_name);
+  end if;
+end $$;

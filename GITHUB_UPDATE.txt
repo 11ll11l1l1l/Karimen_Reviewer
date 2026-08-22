@@ -1,0 +1,31 @@
+KARIMEN REVIEWER v4.4 POLISHED — GITHUB UPDATE
+
+You said you will deploy later. When you are ready:
+
+1. Extract Karimen_Streamlit_Reviewer_v4_4_Polished.zip.
+2. Copy the CONTENTS of the extracted folder into your existing local GitHub repository folder.
+3. Do not delete your Streamlit Cloud Secrets. They are not stored in this package.
+4. From a terminal opened in the repository folder, check the branch:
+
+   git branch --show-current
+   git status
+
+5. Stage, commit, and push:
+
+   git add .
+   git commit -m "Update Karimen Reviewer to v4.4 Polished"
+   git push origin main
+
+If step 4 says your branch is master instead of main, use:
+
+   git push origin master
+
+6. On GitHub, open Actions > Karimen app checks.
+7. Wait for the workflow to turn green before relying on the deployment.
+8. In the deployed app, open Rankings and use Re-test connection.
+9. In Settings, press Test selected voice. If the neural backend is active it will report the chosen Neural voice ID.
+
+SUPABASE
+- If the v4.3 supabase_setup.sql migration was already run successfully, v4.4 requires no new database schema change.
+- If it was never run, run this package's supabase_setup.sql once in Supabase SQL Editor.
+- Keep SUPABASE_URL and SUPABASE_SECRET_KEY (or legacy SUPABASE_SERVICE_ROLE_KEY) in Streamlit Cloud Secrets, never in GitHub source files.

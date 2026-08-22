@@ -1,14 +1,30 @@
-KARIMEN REVIEWER v4.1 STABLE
+KARIMEN REVIEWER v4.4 POLISHED — QUICK START
 
-DEPLOY
-1. Extract this zip.
-2. Copy the contents of Karimen_Streamlit_Reviewer_v4_1_Stable into your GitHub repository.
-3. Commit and push.
-4. Streamlit Community Cloud should use app.py as the main file.
+1. Keep this whole folder structure intact.
+2. If using Supabase rankings, keep your existing Streamlit Cloud Secrets.
+3. If you never ran the v4.3 Supabase migration, run supabase_setup.sql once in Supabase SQL Editor.
+4. Install requirements:
 
-LOCAL TEST
-python smoke_test.py
-python validate.py
-streamlit run app.py
+   pip install -r requirements.txt
 
-Supabase is optional. The app works without it; shared rankings simply remain local/offline.
+5. Run locally:
+
+   streamlit run app.py
+
+6. First screen:
+   - enter ranking nickname
+   - choose player character
+   - choose A1+B1, A1 only, or B1 only
+   - choose mascot voice/theme
+
+Recommended voice: Natural neural voice (online).
+If neural speech cannot be produced, v4.4 stays silent rather than secretly using a robotic device voice. Use Settings > Test selected voice to confirm the backend on your deployment.
+
+Useful checks before deployment:
+
+   python validate.py
+   python release_audit.py
+   python smoke_test.py
+   python runtime_stub_test.py
+   python strict_runtime_test.py
+   python supabase_stub_test.py

@@ -1,72 +1,127 @@
-# Karimen Reviewer v4.1 Stable
+# Karimen Reviewer v4.4 Polished
 
-A mobile-first Streamlit driving-test reviewer built from the v3.2 question package.
+Gamified mobile-first Streamlit reviewer for the Japanese driving knowledge test practice bank.
 
-## What is included
+## Included content
 
-- 650 questions total: A1 150 + B1 500
-- 133 image questions and all existing question images preserved
-- Review Mode with explanations and spaced/adaptive prioritization
-- 50-question / 30-minute default Exam Mode with 90% practice target
-- Daily Challenge with deterministic daily questions and 3 image questions
-- Survival Mode with three lives
-- Boss Exam based on weak questions
-- Mistake Book containing only questions the learner actually missed
-- XP, levels, achievements, world progression, weak-topic statistics and pass-readiness study estimate
-- Optional Supabase shared rankings
-- Progress JSON backup/restore
+- 650 questions
+  - A1: 150 questions (Sets 14, 15, 16)
+  - B1: 500 questions (Sets 1–10)
+- 133 image-linked questions
+- English explanations, optional Japanese text, and source/reference data
+- Global A1+B1 / A1-only / B1-only scope
 
-## Mascot system
+## Existing game modes retained
 
-The same gray-and-white cat is retained throughout the app. The default identity is the blue traffic-officer uniform.
+- Smart Review
+- 50-question Exam Mode
+- Daily Challenge
+- Survival Mode
+- Boss Exam
+- Mistake Hunt / Mistake Book
+- custom review missions
+- Question Bank browser
+- shared Supabase live/completed rankings
 
-Category uniforms are genuinely different images, not recolors:
+## Added study modes / tools
 
-- Signals/signs: blue traffic officer with baton
-- Parking: green parking/safety vest
-- Pedestrians: yellow crossing-safety outfit
-- Railroad: railway staff uniform
-- Speed/highway: motorcycle/highway outfit
-- Hazards/vehicle operation: night-road safety outfit
-- Legal/general rules: instructor/legal outfit
-- Exam scene: exam-study outfit
+- Saved Rules bookmarks
+- Image Drill
+- Guess Check
+- confidence tracking (`I knew it` / `I guessed`)
+- skip-for-later
+- immediate one-time retry of a missed rule during ordinary review
+- retry only the misses from the current run
+- resume unfinished review/exam after browsing other pages
 
-Reaction images are also different poses:
+## Voice v4.4
 
-- idle
-- correct
-- streak
-- wrong
-- repeated-wrong / losing streak
-- pleading
-- comeback
-- victory
+The default voice is **Natural neural voice (online)** using `en-US-AriaNeural` through `edge-tts`.
 
-`MASCOT_STATES_PREVIEW.png` shows the bundled assets.
+Other options:
 
-## Spoken mascot phrases
+- Cute neural voice (`en-US-AnaNeural`)
+- Friendly neural voice (`en-US-JennyNeural`)
+- Device voice (offline; quality depends on phone/browser)
+- Cute bloops
+- Off
 
-`assets/voice/` contains real WAV speech clips for ready, correct, streak, wrong, pleading, comeback, victory and focus. They are bundled locally, so the feature does not depend on browser text-to-speech support.
+v4.4 intentionally does **not** secretly fall back from neural speech to device speech. If neural speech fails, the app stays silent and reports the backend status. This prevents selecting a neural voice but unexpectedly hearing a robotic system TTS voice.
 
-## Deploy to Streamlit Community Cloud
+Sound effects and mascot speech are sequenced rather than layered. Separate voice/effect volume controls are available. The mascot panel also has **Hear mascot** for manual replay.
 
-1. Replace the contents of your existing GitHub app with the contents of this folder.
-2. Keep `app.py`, `karimen_core.py`, `data/`, `assets/`, `.streamlit/`, and `requirements.txt` in the repository.
-3. Set the Streamlit main file to `app.py`.
-4. Optional: restore your existing Supabase secrets if you want shared rankings.
+## Mascot v4.4
 
-The reviewer works without Supabase.
+- same gray-and-white cat throughout
+- blue traffic-officer uniform remains default
+- category outfits retained
+- correct/streak/wrong/pleading/double-wrong/comeback/victory reactions retained
+- sprites have more breathing room and smaller contained display limits so they do not appear excessively zoomed on mobile
+- original v4.3 mascot sprites retained under `assets/mascots/original_v43/`
 
-## Validation performed
+## Progress and learning
 
-- Python syntax compile: passed
-- Question validator: 650 questions, 133 image references, 0 errors
-- Pure core smoke tests: passed
-- Stubbed Streamlit page smoke test: Home, Play, Mistakes, Progress, Rankings, Bank, Review and Exam paths passed
-- Review state machine: correct, repeated wrong, comeback passed
-- Survival 3-life termination: passed
-- Daily replay bonus protection: passed
-- Exam scoring/submission: passed
-- Duplicate top-level function scan: none
+- XP / levels / titles
+- achievements
+- daily streak
+- world progression
+- category mastery
+- pass-readiness study estimate
+- bookmarked rules
+- guessed answers and correct guesses
+- confident mistakes
+- category mastery chart
+- recent accuracy trend chart
+- personalized “Mochi recommends” next-step card
+- JSON progress backup/restore
 
-A real browser/Streamlit runtime could not be launched in the build container because Streamlit is not installed there and external package download is blocked. The package therefore includes `smoke_test.py` so the pure logic can be retested after changes.
+Confidence is now part of Smart Review priority. A correct guess is not treated as equal to a confident mastered answer, and a confident wrong answer receives additional review priority.
+
+## Supabase rankings
+
+The robust v4.3 ranking path is preserved:
+
+- `SUPABASE_SECRET_KEY` preferred
+- `SUPABASE_SERVICE_ROLE_KEY` supported for legacy projects
+- real temporary write/delete connection test
+- live exam heartbeat
+- abandoned exam handling
+- idempotent final result submission
+- A1/B1 leaderboard filtering
+- visible diagnostic errors
+
+Run `supabase_setup.sql` if you have not already applied the v4.3 migration. v4.4 does not require an additional schema change.
+
+## Streamlit Secrets
+
+```toml
+SUPABASE_URL = "https://YOUR-PROJECT.supabase.co"
+SUPABASE_SECRET_KEY = "YOUR-SUPABASE-SECRET-KEY"
+```
+
+Do not commit the real key to GitHub.
+
+## Local verification
+
+```bash
+python validate.py
+python release_audit.py
+python smoke_test.py
+python runtime_stub_test.py
+python strict_runtime_test.py
+python supabase_stub_test.py
+```
+
+## GitHub / real Streamlit verification
+
+`.github/workflows/ci.yml` runs on push and pull request. It:
+
+1. installs the real requirements
+2. compiles the app
+3. validates all questions/images
+4. checks v4.3-function preservation
+5. runs smoke/session/Supabase tests
+6. runs Streamlit `AppTest`
+7. launches a real headless Streamlit server and checks its health endpoint
+
+See `GITHUB_UPDATE.txt` for the update commands.

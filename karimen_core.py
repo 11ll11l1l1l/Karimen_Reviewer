@@ -8,7 +8,7 @@ from collections import defaultdict
 from datetime import date, datetime, timedelta, timezone
 from typing import Iterable
 
-PROGRESS_VERSION = 6
+PROGRESS_VERSION = 7
 
 
 def utc_now_iso() -> str:
@@ -24,6 +24,10 @@ def new_stat() -> dict:
         "last_seen": None,
         "last_correct": None,
         "total_seconds": 0.0,
+        "confidence_known": 0,
+        "confidence_guessed": 0,
+        "confidence_guess_correct": 0,
+        "confidence_sure_wrong": 0,
     }
 
 
@@ -34,6 +38,7 @@ def default_progress() -> dict:
         "updated_at": utc_now_iso(),
         "question_stats": {},
         "sessions": [],
+        "bookmarks": [],
     }
 
 
@@ -74,10 +79,17 @@ def normalize_progress(raw: dict, valid_ids: set[str]) -> dict:
             s["last_seen"] = value.get("last_seen")
             s["last_correct"] = value.get("last_correct")
             s["total_seconds"] = max(0.0, float(value.get("total_seconds", 0.0) or 0.0))
+            s["confidence_known"] = max(0, int(value.get("confidence_known", 0) or 0))
+            s["confidence_guessed"] = max(0, int(value.get("confidence_guessed", 0) or 0))
+            s["confidence_guess_correct"] = max(0, int(value.get("confidence_guess_correct", 0) or 0))
+            s["confidence_sure_wrong"] = max(0, int(value.get("confidence_sure_wrong", 0) or 0))
             out["question_stats"][qid] = s
     sessions = raw.get("sessions", [])
     if isinstance(sessions, list):
         out["sessions"] = [x for x in sessions[-250:] if isinstance(x, dict)]
+    bookmarks = raw.get("bookmarks", [])
+    if isinstance(bookmarks, list):
+        out["bookmarks"] = [qid for qid in dict.fromkeys(str(x) for x in bookmarks) if qid in valid_ids]
     out["created_at"] = raw.get("created_at") or out["created_at"]
     out["updated_at"] = utc_now_iso()
     return out
@@ -143,6 +155,36 @@ def record_answer(progress: dict, qid: str, was_correct: bool, seconds: float, n
     return s
 
 
+
+def record_confidence(progress: dict, qid: str, guessed: bool, was_correct: bool | None = None) -> dict:
+    """Record self-reported confidence after an attempt without changing score."""
+    s = stat_for(progress, qid)
+    key = "confidence_guessed" if guessed else "confidence_known"
+    s[key] = int(s.get(key, 0) or 0) + 1
+    if guessed and was_correct is True:
+        s["confidence_guess_correct"] = int(s.get("confidence_guess_correct", 0) or 0) + 1
+    if (not guessed) and was_correct is False:
+        s["confidence_sure_wrong"] = int(s.get("confidence_sure_wrong", 0) or 0) + 1
+    progress["updated_at"] = utc_now_iso()
+    return s
+
+
+def is_bookmarked(progress: dict, qid: str) -> bool:
+    return qid in set(progress.get("bookmarks", []) or [])
+
+
+def toggle_bookmark(progress: dict, qid: str) -> bool:
+    items = list(dict.fromkeys(str(x) for x in (progress.get("bookmarks", []) or [])))
+    if qid in items:
+        items.remove(qid)
+        active = False
+    else:
+        items.append(qid)
+        active = True
+    progress["bookmarks"] = items
+    progress["updated_at"] = utc_now_iso()
+    return active
+
 def add_session(progress: dict, mode: str, question_ids: list[str], correct: int, seconds: float, bank: str = "", **extra) -> dict:
     row = {
         "timestamp": utc_now_iso(),
@@ -193,7 +235,13 @@ def _priority(q: dict, progress: dict, cat_accuracy: dict[str, float], rng: rand
         base = 3.0 * wrong_rate + 2.0 * (1.0 - mastery(s) / 100.0) + (2.0 if due_now(s) else 0.0)
     cat_acc = cat_accuracy.get(q["category"])
     cat_bonus = 0.0 if cat_acc is None else 1.5 * (1.0 - cat_acc / 100.0)
-    return base + cat_bonus + rng.random() * 0.2
+    # Confidence is a learning signal: a lucky correct guess and, especially,
+    # a confident misconception should come back sooner in Smart Review.
+    guessed = int(s.get("confidence_guessed", 0) or 0)
+    known = int(s.get("confidence_known", 0) or 0)
+    guess_ratio = guessed / max(1, guessed + known)
+    confidence_bonus = 1.15 * guess_ratio + min(2.0, 0.75 * int(s.get("confidence_sure_wrong", 0) or 0))
+    return base + cat_bonus + confidence_bonus + rng.random() * 0.2
 
 
 def select_question_ids(questions: list[dict], progress: dict, mode: str, count: int, seed: int | None = None) -> list[str]:
@@ -219,6 +267,12 @@ def select_question_ids(questions: list[dict], progress: dict, mode: str, count:
         if not wrong:
             return []
         chosen = wrong[:count]
+    elif mode == "Guessed":
+        guessed = [q for q in questions if int(progress.get("question_stats", {}).get(q["id"], {}).get("confidence_guessed", 0) or 0) > 0]
+        guessed.sort(key=score, reverse=True)
+        if not guessed:
+            return []
+        chosen = guessed[:count]
     elif mode == "Due / adaptive":
         due = [q for q in questions if due_now(progress.get("question_stats", {}).get(q["id"], new_stat()))]
         due.sort(key=score, reverse=True)

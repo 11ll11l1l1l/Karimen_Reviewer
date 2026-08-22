@@ -1,0 +1,46 @@
+name: Karimen app checks
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+      - name: Install dependencies
+        run: python -m pip install --upgrade pip && pip install -r requirements.txt
+      - name: Compile
+        run: python -m compileall -q app.py karimen_core.py
+      - name: Validate question bank
+        run: python validate.py
+      - name: Release compatibility audit
+        run: python release_audit.py
+      - name: Core smoke tests
+        run: |
+          python smoke_test.py
+          python runtime_stub_test.py
+          python strict_runtime_test.py
+          python supabase_stub_test.py
+      - name: Streamlit AppTest
+        run: python streamlit_apptest.py
+      - name: Start real Streamlit server
+        shell: bash
+        run: |
+          streamlit run app.py --server.headless=true --server.port=8501 > /tmp/karimen-streamlit.log 2>&1 &
+          PID=$!
+          trap 'kill $PID || true' EXIT
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:8501/_stcore/health | grep -qi ok; then
+              echo 'Streamlit health check passed.'
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/karimen-streamlit.log
+          exit 1
