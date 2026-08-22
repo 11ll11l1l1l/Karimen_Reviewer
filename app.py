@@ -1,11 +1,14 @@
 from __future__ import annotations
 
-import json
+import base64
 import html
+import json
 import math
 import random
+import re
 import time
-from collections import Counter, defaultdict
+import uuid
+from collections import defaultdict
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
@@ -13,48 +16,22 @@ import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
 
+try:
+    from supabase import create_client
+except Exception:  # Online ranking stays optional if the package is unavailable.
+    create_client = None
+
 ROOT = Path(__file__).resolve().parent
 DATA_FILE = ROOT / "data" / "questions.json"
-PROGRESS_VERSION = 2
+MASCOT_FILE = ROOT / "assets" / "mascot.png"
+SOUND_DIR = ROOT / "assets" / "sounds"
+PROGRESS_VERSION = 3
 
 st.set_page_config(
-    page_title="Karimen Reviewer",
+    page_title="A1 B1 Karimen Reviewer",
     page_icon="🚗",
     layout="centered",
     initial_sidebar_state="collapsed",
-)
-
-# ---------- Styling ----------
-st.markdown(
-    """
-<style>
-:root { --card-radius: 18px; }
-.block-container { max-width: 860px; padding-top: 1rem; padding-bottom: 4rem; }
-[data-testid="stHeader"] { background: rgba(255,255,255,0); }
-.km-hero { padding: 0.25rem 0 0.65rem 0; }
-.km-title { font-size: clamp(1.65rem, 7vw, 2.55rem); font-weight: 800; line-height: 1.05; margin: 0; }
-.km-subtitle { opacity: .72; margin-top: .4rem; }
-.km-card { border: 1px solid rgba(128,128,128,.24); border-radius: var(--card-radius); padding: 1rem 1.05rem; margin: .55rem 0; }
-.km-qno { font-size: .83rem; opacity: .68; font-weight: 650; letter-spacing: .02em; }
-.km-question { font-size: clamp(1.16rem, 4.3vw, 1.48rem); line-height: 1.55; font-weight: 650; margin-top: .55rem; }
-.km-japanese { font-size: 1rem; line-height: 1.55; opacity: .78; margin-top: .75rem; }
-.km-good { border-left: 5px solid #2e9d63; }
-.km-bad { border-left: 5px solid #cf4b4b; }
-.km-neutral { border-left: 5px solid #6b7280; }
-.km-pill { display:inline-block; border:1px solid rgba(128,128,128,.25); border-radius:999px; padding:.2rem .55rem; margin:.1rem .15rem .1rem 0; font-size:.8rem; opacity:.82; }
-.km-small { font-size: .88rem; opacity:.72; }
-.km-divider { height:1px; background:rgba(128,128,128,.18); margin:1rem 0; }
-div.stButton > button { min-height: 3.15rem; border-radius: 13px; font-weight: 750; font-size: 1.02rem; }
-[data-testid="stMetric"] { border:1px solid rgba(128,128,128,.20); border-radius:15px; padding:.65rem .7rem; }
-[data-testid="stImage"] img { border-radius: 14px; }
-@media (max-width: 640px) {
-  .block-container { padding-left: .85rem; padding-right: .85rem; padding-top: .65rem; }
-  .km-card { padding: .9rem; border-radius: 15px; }
-  div.stButton > button { min-height: 3.35rem; }
-}
-</style>
-""",
-    unsafe_allow_html=True,
 )
 
 
@@ -68,6 +45,8 @@ def load_data():
 
 
 META, QUESTIONS, BY_ID = load_data()
+BANK_OPTIONS = ["All", "A1", "B1"]
+AVATARS = ["🚙", "🐶", "🐱", "🦊", "🐼", "🌸", "⭐", "🚦"]
 
 
 def utc_now_iso() -> str:
@@ -84,27 +63,50 @@ def default_progress() -> dict:
     }
 
 
+def legacy_id_to_current(qid: str) -> str | None:
+    """Best-effort migration for progress files from older builds without retaining source-site labels."""
+    if qid in BY_ID:
+        return qid
+    text = str(qid)
+    # Older A1 IDs ended in 14/15/16-Qxxx.
+    m = re.search(r"(?:^|[^0-9])(14|15|16)-?Q(\d{1,3})$", text, re.I)
+    if m:
+        candidate = f"A1-S{int(m.group(1)):02d}-Q{int(m.group(2)):03d}"
+        if candidate in BY_ID:
+            return candidate
+    # Older B1 IDs ended in sNN_qNN, irrespective of their former prefix.
+    m = re.search(r"s(\d{1,2})[_-]q(\d{1,3})$", text, re.I)
+    if m and 1 <= int(m.group(1)) <= 10:
+        candidate = f"B1-S{int(m.group(1)):02d}-Q{int(m.group(2)):03d}"
+        if candidate in BY_ID:
+            return candidate
+    return None
+
+
 def normalize_progress(raw: dict) -> dict:
     if not isinstance(raw, dict):
         raise ValueError("Progress file is not a JSON object.")
     out = default_progress()
     stats = raw.get("question_stats", {})
     if isinstance(stats, dict):
-        for qid, s in stats.items():
-            if qid not in BY_ID or not isinstance(s, dict):
+        for old_qid, s in stats.items():
+            qid = legacy_id_to_current(old_qid)
+            if not qid or not isinstance(s, dict):
                 continue
             attempts = max(0, int(s.get("attempts", 0) or 0))
             correct = max(0, min(attempts, int(s.get("correct", 0) or 0)))
             total_seconds = max(0.0, float(s.get("total_seconds", 0.0) or 0.0))
-            out["question_stats"][qid] = {
-                "attempts": attempts,
-                "correct": correct,
-                "wrong": attempts - correct,
-                "streak": max(0, int(s.get("streak", 0) or 0)),
-                "last_seen": s.get("last_seen"),
-                "last_correct": s.get("last_correct"),
-                "total_seconds": total_seconds,
-            }
+            existing = out["question_stats"].setdefault(
+                qid,
+                {"attempts": 0, "correct": 0, "wrong": 0, "streak": 0, "last_seen": None, "last_correct": None, "total_seconds": 0.0},
+            )
+            existing["attempts"] += attempts
+            existing["correct"] += correct
+            existing["wrong"] = existing["attempts"] - existing["correct"]
+            existing["streak"] = max(existing["streak"], max(0, int(s.get("streak", 0) or 0)))
+            existing["last_seen"] = s.get("last_seen") or existing["last_seen"]
+            existing["last_correct"] = s.get("last_correct") or existing["last_correct"]
+            existing["total_seconds"] += total_seconds
     sessions = raw.get("sessions", [])
     if isinstance(sessions, list):
         out["sessions"] = [x for x in sessions[-250:] if isinstance(x, dict)]
@@ -122,7 +124,15 @@ def init_state():
         "review_feedback": None,
         "review_started_at": time.time(),
         "show_japanese": False,
+        "sound_on": True,
+        "haptics_on": True,
+        "player_name": "",
+        "avatar": "🚙",
+        "guest_code": uuid.uuid4().hex[:4].upper(),
         "last_import_hash": None,
+        "online_error": None,
+        "feedback_nonce": 0,
+        "pending_fx": None,
     }
     for key, value in defaults.items():
         if key not in st.session_state:
@@ -132,6 +142,64 @@ def init_state():
 init_state()
 
 
+# ---------- Soft mobile-first styling ----------
+def inject_style():
+    st.markdown(
+        """
+<style>
+:root {
+  --ink:#25324a; --muted:#718096; --line:#e6edf5; --card:#ffffff;
+  --blue:#4f8ef7; --blue2:#76b5ff; --mint:#e9f8f1; --mint-ink:#2d7a55;
+  --rose:#fff0f1; --rose-ink:#a44d55; --cream:#fffaf0; --gold:#f5b83b;
+  --shadow:0 8px 28px rgba(70,95,125,.08); --radius:20px;
+}
+html, body, [class*="css"] { color:var(--ink); }
+.stApp { background:linear-gradient(180deg,#f7fbff 0%,#fbfcff 52%,#fffaf7 100%); }
+.block-container { max-width:900px; padding-top:.7rem; padding-bottom:5rem; }
+[data-testid="stHeader"] { background:rgba(247,251,255,.86); backdrop-filter:blur(8px); }
+.km-hero { background:linear-gradient(135deg,#eef6ff,#fff8f1); border:1px solid #e6edf5; border-radius:24px; padding:1rem 1.05rem; margin:.2rem 0 .8rem; box-shadow:var(--shadow); }
+.km-title { font-size:clamp(1.6rem,7vw,2.45rem); font-weight:850; line-height:1.05; letter-spacing:-.03em; }
+.km-subtitle { color:var(--muted); margin-top:.35rem; line-height:1.45; }
+.km-card { background:rgba(255,255,255,.92); border:1px solid var(--line); border-radius:var(--radius); padding:1rem 1.05rem; margin:.6rem 0; box-shadow:var(--shadow); }
+.km-soft { background:linear-gradient(135deg,#f1f7ff,#fff); }
+.km-good { background:linear-gradient(135deg,#ecfbf3,#fff); border-color:#cdeedd; }
+.km-bad { background:linear-gradient(135deg,#fff2f3,#fff); border-color:#f4d4d8; }
+.km-qno { font-size:.78rem; color:var(--muted); font-weight:750; letter-spacing:.045em; }
+.km-question { font-size:clamp(1.12rem,4.2vw,1.43rem); line-height:1.58; font-weight:680; margin-top:.6rem; }
+.km-japanese { font-size:.98rem; line-height:1.6; color:#667085; margin-top:.75rem; padding-top:.65rem; border-top:1px dashed #e6edf5; }
+.km-pill { display:inline-block; background:#f4f7fb; border:1px solid #e5ebf2; border-radius:999px; padding:.21rem .58rem; margin:.22rem .12rem .1rem 0; font-size:.78rem; color:#607089; font-weight:650; }
+.km-small { font-size:.86rem; color:var(--muted); }
+.km-divider { height:1px; background:var(--line); margin:.9rem 0; }
+.km-mascot-line { display:flex; align-items:center; gap:.7rem; background:#fff; border:1px solid var(--line); border-radius:18px; padding:.75rem .85rem; margin:.55rem 0; box-shadow:var(--shadow); }
+.km-mascot-bubble { font-weight:700; line-height:1.42; }
+.km-live-dot { display:inline-block;width:8px;height:8px;border-radius:50%;background:#38b26f;margin-right:6px;box-shadow:0 0 0 4px rgba(56,178,111,.12); }
+.km-rank { font-size:1.3rem;font-weight:850; }
+.km-callout { padding:.8rem 1rem;border-radius:16px;background:#fff8dc;border:1px solid #f6e4a6;color:#66521a; }
+[data-testid="stMetric"] { background:rgba(255,255,255,.88); border:1px solid var(--line); border-radius:17px; padding:.65rem .7rem; box-shadow:0 5px 18px rgba(70,95,125,.05); }
+[data-testid="stImage"] img { border-radius:17px; }
+div.stButton > button { min-height:3.25rem; border-radius:15px; font-weight:780; font-size:1rem; border:1px solid #dfe7f0; box-shadow:0 4px 12px rgba(65,90,120,.05); }
+div.stButton > button:hover { transform:translateY(-1px); border-color:#bcd3f4; }
+[data-testid="stRadio"] > div { gap:.25rem; flex-wrap:wrap; }
+[data-testid="stRadio"] label { background:rgba(255,255,255,.72); border:1px solid #e4ebf3; border-radius:999px; padding:.15rem .45rem; }
+.stProgress > div > div > div { border-radius:999px; }
+[data-testid="stFileUploader"] { border-radius:16px; }
+@media(max-width:640px){
+ .block-container{padding-left:.72rem;padding-right:.72rem;padding-top:.45rem;}
+ .km-hero{padding:.85rem;border-radius:19px;}
+ .km-card{padding:.86rem;border-radius:17px;}
+ div.stButton > button{min-height:3.5rem;font-size:1.03rem;}
+ [data-testid="column"]{min-width:0!important;}
+}
+</style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+inject_style()
+
+
+# ---------- Local learning model ----------
 def qstat(qid: str) -> dict:
     return st.session_state.progress["question_stats"].get(
         qid,
@@ -140,7 +208,6 @@ def qstat(qid: str) -> dict:
 
 
 def mastery(stat: dict) -> float:
-    """A transparent app-local mastery estimate: accuracy × exposure confidence + streak bonus."""
     n = int(stat.get("attempts", 0) or 0)
     if n <= 0:
         return 0.0
@@ -219,40 +286,12 @@ def add_session(mode: str, question_ids: list[str], correct: int, seconds: float
     st.session_state.progress["updated_at"] = utc_now_iso()
 
 
-BANK_OPTIONS = ["All", "A1", "B1"]
-A1_INTERNAL_BANKS = {"KM14", "KM15", "KM16"}
-
-
-def bank_group(q: dict) -> str:
-    """User-facing bank name while preserving stable internal IDs/data."""
-    if q["bank"] in A1_INTERNAL_BANKS:
-        return "A1"
-    if q["bank"] == "menkyoblog":
-        return "B1"
-    return q["bank"]
-
-
-def bank_set(q: dict) -> str:
-    if q["bank"] in A1_INTERNAL_BANKS:
-        return q["bank"].replace("KM", "")
-    if q["bank"] == "menkyoblog":
-        return str(q.get("set", ""))
-    return ""
-
-
+# ---------- Bank helpers ----------
 def bank_label(q: dict) -> str:
-    group = bank_group(q)
-    subset = bank_set(q)
-    return f"{group} · Set {subset}" if subset else group
+    return f"{q['bank']} · Set {int(q.get('set') or 0)}"
 
 
 def display_question_id(q: dict) -> str:
-    """Friendly public ID; the original ID remains unchanged internally for progress/images."""
-    number = int(q.get("number", 0) or 0)
-    if q["bank"] in A1_INTERNAL_BANKS:
-        return f"A1-{bank_set(q)}-Q{number:03d}"
-    if q["bank"] == "menkyoblog":
-        return f"B1-{int(q.get('set', 0) or 0):02d}-Q{number:02d}"
     return q["id"]
 
 
@@ -264,35 +303,16 @@ def set_options_for_bank(bank: str) -> list[str]:
     return ["All"]
 
 
-def display_saved_bank(value: str) -> str:
-    """Translate older saved session labels without invalidating existing progress backups."""
-    if value in A1_INTERNAL_BANKS or value == "A1":
-        return "A1"
-    if value in {"menkyoblog", "B1"}:
-        return "B1"
-    return value
-
-
 def filter_questions(bank: str = "All", set_filter: str = "All", category: str = "All") -> list[dict]:
     qs = QUESTIONS
-    if bank == "A1":
-        qs = [q for q in qs if q["bank"] in A1_INTERNAL_BANKS]
-    elif bank == "B1":
-        qs = [q for q in qs if q["bank"] == "menkyoblog"]
-    elif bank != "All":
-        # Backward compatibility for old saved state / direct internal bank names.
+    if bank != "All":
         qs = [q for q in qs if q["bank"] == bank]
-
     if set_filter != "All":
-        if bank == "A1":
-            qs = [q for q in qs if q["bank"] == f"KM{set_filter}"]
-        elif bank == "B1":
-            try:
-                set_no = int(set_filter)
-                qs = [q for q in qs if q.get("set") == set_no]
-            except Exception:
-                pass
-
+        try:
+            set_no = int(set_filter)
+            qs = [q for q in qs if int(q.get("set") or 0) == set_no]
+        except Exception:
+            pass
     if category != "All":
         qs = [q for q in qs if q["category"] == category]
     return list(qs)
@@ -323,11 +343,202 @@ def select_review_questions(pool: list[dict], mode: str, count: int) -> list[str
         rest.sort(key=priority_score, reverse=True)
         chosen = (due + rest)[:count]
     else:
-        ranked = sorted(pool, key=priority_score, reverse=True)
-        chosen = ranked[:count]
+        chosen = sorted(pool, key=priority_score, reverse=True)[:count]
     return [q["id"] for q in chosen]
 
 
+# ---------- Sound, haptics and mascot feedback ----------
+@st.cache_data(show_spinner=False)
+def audio_data_uri(name: str) -> str | None:
+    path = SOUND_DIR / f"{name}.wav"
+    if not path.exists():
+        return None
+    return "data:audio/wav;base64," + base64.b64encode(path.read_bytes()).decode("ascii")
+
+
+def feedback_fx(kind: str):
+    st.session_state.feedback_nonce += 1
+    uri = audio_data_uri(kind) if st.session_state.sound_on else None
+    vibrate = "navigator.vibrate && navigator.vibrate(28);" if st.session_state.haptics_on else ""
+    audio = f'<audio autoplay><source src="{uri}" type="audio/wav"></audio>' if uri else ""
+    components.html(
+        f"<div style='height:0'>{audio}<script>{vibrate}</script></div>",
+        height=0,
+        width=0,
+    )
+
+
+def mascot_feedback(kind: str):
+    messages = {
+        "correct": ["Nice one! That rule is sticking.", "Clean answer. Keep the rhythm going.", "Great recall — one less weak spot."],
+        "wrong": ["Almost. Read the explanation once, then move on.", "Good question to catch now. This one goes into your weak-area review.", "Tricky one. The next recall will be easier."],
+        "complete": ["Session complete. Small repeats build strong recall.", "Good study block. Your weak spots just got smaller."],
+        "pass": ["Passed the practice threshold. Great control!", "Strong run — you cleared the practice target."],
+        "retry": ["Close. Review the misses, then take another run.", "You found exactly what to review next."],
+    }
+    text = random.choice(messages.get(kind, messages["complete"]))
+    cols = st.columns([1, 5])
+    if MASCOT_FILE.exists():
+        cols[0].image(str(MASCOT_FILE), width=76)
+    else:
+        cols[0].markdown("### 🐶")
+    cols[1].markdown(f"<div class='km-mascot-line'><div class='km-mascot-bubble'>{html.escape(text)}</div></div>", unsafe_allow_html=True)
+
+
+# ---------- Optional shared ranking backend ----------
+@st.cache_resource(show_spinner=False)
+def supabase_client():
+    if create_client is None:
+        return None
+    try:
+        url = st.secrets["SUPABASE_URL"]
+        try:
+            key = st.secrets["SUPABASE_SECRET_KEY"]
+        except Exception:
+            key = st.secrets["SUPABASE_SERVICE_ROLE_KEY"]
+    except Exception:
+        return None
+    if not url or not key:
+        return None
+    try:
+        return create_client(url, key)
+    except Exception:
+        return None
+
+
+def online_enabled() -> bool:
+    return supabase_client() is not None
+
+
+def safe_player_name() -> str:
+    raw = (st.session_state.player_name or "").strip()
+    raw = re.sub(r"[^\w .\-]", "", raw, flags=re.UNICODE)[:24].strip()
+    return raw or f"Driver-{st.session_state.guest_code}"
+
+
+def sync_live_exam(exam: dict):
+    db = supabase_client()
+    if db is None or not exam or exam.get("submitted"):
+        return
+    try:
+        answered = len(exam.get("answers", {}))
+        correct = sum(
+            1
+            for qid, answer in exam.get("answers", {}).items()
+            if qid in BY_ID and bool(answer) == bool(BY_ID[qid]["answer"])
+        )
+        payload = {
+            "session_id": exam["session_id"],
+            "display_name": safe_player_name(),
+            "avatar": st.session_state.avatar,
+            "bank": exam.get("bank", "All"),
+            "set_label": str(exam.get("set", "All")),
+            "total_questions": len(exam.get("ids", [])),
+            "answered": answered,
+            "correct": correct,
+            "started_at": exam.get("started_iso"),
+            "last_seen": utc_now_iso(),
+            "status": "active",
+        }
+        db.table("live_exams").upsert(payload, on_conflict="session_id").execute()
+        st.session_state.online_error = None
+    except Exception as exc:
+        st.session_state.online_error = str(exc)
+
+
+def finish_live_exam(exam: dict, correct: int, elapsed: float):
+    db = supabase_client()
+    if db is None or exam.get("online_saved"):
+        return
+    try:
+        total = len(exam["ids"])
+        pct = round(100 * correct / max(1, total), 1)
+        db.table("live_exams").upsert(
+            {
+                "session_id": exam["session_id"],
+                "display_name": safe_player_name(),
+                "avatar": st.session_state.avatar,
+                "bank": exam.get("bank", "All"),
+                "set_label": str(exam.get("set", "All")),
+                "total_questions": total,
+                "answered": total,
+                "correct": correct,
+                "started_at": exam.get("started_iso"),
+                "last_seen": utc_now_iso(),
+                "status": "finished",
+            },
+            on_conflict="session_id",
+        ).execute()
+        db.table("exam_results").insert(
+            {
+                "session_id": exam["session_id"],
+                "display_name": safe_player_name(),
+                "avatar": st.session_state.avatar,
+                "bank": exam.get("bank", "All"),
+                "set_label": str(exam.get("set", "All")),
+                "score": correct,
+                "total_questions": total,
+                "percent": pct,
+                "elapsed_seconds": round(elapsed, 1),
+                "passed": pct >= META["exam_standard"]["pass_percent"],
+                "completed_at": utc_now_iso(),
+            }
+        ).execute()
+        exam["online_saved"] = True
+        st.session_state.online_error = None
+    except Exception as exc:
+        st.session_state.online_error = str(exc)
+
+
+def fetch_live_exams() -> list[dict]:
+    db = supabase_client()
+    if db is None:
+        return []
+    cutoff = (datetime.now(timezone.utc) - timedelta(minutes=5)).isoformat(timespec="seconds")
+    try:
+        res = (
+            db.table("live_exams")
+            .select("display_name,avatar,bank,set_label,total_questions,answered,correct,started_at,last_seen")
+            .eq("status", "active")
+            .gte("last_seen", cutoff)
+            .order("correct", desc=True)
+            .order("answered", desc=True)
+            .execute()
+        )
+        return list(res.data or [])
+    except Exception as exc:
+        st.session_state.online_error = str(exc)
+        return []
+
+
+def fetch_exam_results(limit: int = 300) -> list[dict]:
+    db = supabase_client()
+    if db is None:
+        return []
+    try:
+        res = (
+            db.table("exam_results")
+            .select("display_name,avatar,bank,set_label,score,total_questions,percent,elapsed_seconds,passed,completed_at")
+            .order("completed_at", desc=True)
+            .limit(limit)
+            .execute()
+        )
+        return list(res.data or [])
+    except Exception as exc:
+        st.session_state.online_error = str(exc)
+        return []
+
+
+@st.fragment(run_every="15s")
+def exam_heartbeat():
+    exam = st.session_state.get("exam")
+    if exam and not exam.get("submitted"):
+        sync_live_exam(exam)
+        if online_enabled():
+            st.caption("🟢 Live room connected · ranking updates automatically")
+
+
+# ---------- Reusable rendering ----------
 def render_question(q: dict, position: int, total: int, reveal: bool = False, selected=None):
     safe_bank = html.escape(bank_label(q))
     safe_cat = html.escape(q["category"])
@@ -336,10 +547,10 @@ def render_question(q: dict, position: int, total: int, reveal: bool = False, se
     safe_ja = html.escape(q.get("question_ja", "")).replace("\n", "<br>")
     tags = f'<span class="km-pill">{safe_bank}</span><span class="km-pill">{safe_cat}</span>'
     st.markdown(
-        f'<div class="km-card"><div class="km-qno">QUESTION {position} OF {total} · {safe_id}</div>'
+        f'<div class="km-card km-soft"><div class="km-qno">QUESTION {position} OF {total} · {safe_id}</div>'
         f'<div>{tags}</div><div class="km-question">{safe_question}</div>'
         + (f'<div class="km-japanese">{safe_ja}</div>' if st.session_state.show_japanese and q.get("question_ja") else "")
-        + '</div>',
+        + "</div>",
         unsafe_allow_html=True,
     )
     for img in q.get("images", []):
@@ -349,24 +560,23 @@ def render_question(q: dict, position: int, total: int, reveal: bool = False, se
     if reveal:
         is_correct = selected is not None and bool(selected) == bool(q["answer"])
         css = "km-good" if is_correct else "km-bad"
-        label = "Correct" if is_correct else "Incorrect"
+        label = "Correct" if is_correct else "Not quite"
         answer_text = "TRUE" if q["answer"] else "FALSE"
         safe_explanation = html.escape(q["explanation"]).replace("\n", "<br>")
         st.markdown(
-            f'<div class="km-card {css}"><strong>{label}</strong><br>Correct answer: <strong>{answer_text}</strong><div class="km-divider"></div>{safe_explanation}</div>',
+            f'<div class="km-card {css}"><strong>{label}</strong><br>Correct answer: <strong>{answer_text}</strong>'
+            f'<div class="km-divider"></div>{safe_explanation}</div>',
             unsafe_allow_html=True,
         )
+        mascot_feedback("correct" if is_correct else "wrong")
         render_sources(q)
 
 
 def render_sources(q: dict):
     sources = q.get("sources") or []
-    page = q.get("source_page")
-    if not sources and not page:
+    if not sources:
         return
-    with st.expander("Source / verification details"):
-        if q.get("verification_status") == "verified":
-            st.caption("A1 item: answer cross-checked in the verified reviewer package.")
+    with st.expander("Official verification details"):
         for src in sources:
             title = src.get("title") or src.get("key") or "Reference"
             org = src.get("organization", "")
@@ -377,96 +587,116 @@ def render_sources(q: dict):
                 st.markdown(f"- [{text}]({url})")
             else:
                 st.markdown(f"- {text}")
-        if page:
-            st.markdown(f"- [Original source question page]({page})")
-            st.caption("B1 items preserve the source answer and the English explanation supplied in the extracted bank.")
 
 
 def progress_json() -> str:
     return json.dumps(st.session_state.progress, ensure_ascii=False, indent=2)
 
 
+def player_controls(compact: bool = False):
+    if compact:
+        c1, c2 = st.columns([3, 1])
+        st.session_state.player_name = c1.text_input("Nickname", value=st.session_state.player_name, placeholder=f"Driver-{st.session_state.guest_code}", max_chars=24, key="player_compact")
+        st.session_state.avatar = c2.selectbox("Avatar", AVATARS, index=AVATARS.index(st.session_state.avatar), key="avatar_compact")
+        return
+    st.markdown("### Your study profile")
+    st.caption("Use a nickname for the public ranking. No account or email is required.")
+    c1, c2 = st.columns([3, 1])
+    st.session_state.player_name = c1.text_input("Nickname", value=st.session_state.player_name, placeholder=f"Driver-{st.session_state.guest_code}", max_chars=24, key="player_home")
+    st.session_state.avatar = c2.selectbox("Avatar", AVATARS, index=AVATARS.index(st.session_state.avatar), key="avatar_home")
+    st.markdown(f"<div class='km-card'><strong>{st.session_state.avatar} {html.escape(safe_player_name())}</strong><br><span class='km-small'>This is the name shown in live rankings.</span></div>", unsafe_allow_html=True)
+
+
 def header():
-    st.markdown(
-        '<div class="km-hero"><div class="km-title">Karimen Reviewer</div>'
-        '<div class="km-subtitle">650-question mobile reviewer · review, exam simulation, adaptive practice and analytics</div></div>',
+    c1, c2 = st.columns([4.5, 1])
+    c1.markdown(
+        '<div class="km-hero"><div class="km-title">A1 B1 Karimen Reviewer</div>'
+        '<div class="km-subtitle">650 real practice questions · smart review · exam simulation · live rankings</div></div>',
         unsafe_allow_html=True,
     )
-    nav_options = ["Home", "Review", "Exam", "Statistics", "Question Bank"]
+    if MASCOT_FILE.exists():
+        c2.image(str(MASCOT_FILE), width=92)
+    nav_options = ["Home", "Review", "Exam", "Rankings", "Progress", "Bank"]
     current = st.session_state.nav if st.session_state.nav in nav_options else "Home"
     nav = st.radio("Navigation", nav_options, index=nav_options.index(current), horizontal=True, label_visibility="collapsed")
     st.session_state.nav = nav
-    st.session_state.show_japanese = st.toggle("Show original Japanese where available", value=st.session_state.show_japanese)
+    with st.expander("Quick settings", expanded=False):
+        c1, c2, c3 = st.columns(3)
+        st.session_state.show_japanese = c1.toggle("Japanese", value=st.session_state.show_japanese)
+        st.session_state.sound_on = c2.toggle("Sound", value=st.session_state.sound_on)
+        st.session_state.haptics_on = c3.toggle("Haptics", value=st.session_state.haptics_on)
+        st.caption(f"Ranking name: {st.session_state.avatar} {safe_player_name()}")
     return nav
 
 
 # ---------- Pages ----------
 def page_home():
+    player_controls()
+
     c1, c2, c3 = st.columns(3)
     c1.metric("Questions", META["question_count"])
-    c2.metric("Image questions", META["image_question_count"])
+    c2.metric("Image items", META["image_question_count"])
     attempted = sum(1 for qid in st.session_state.progress["question_stats"] if qstat(qid)["attempts"] > 0)
     c3.metric("Attempted", attempted)
 
-    st.markdown("### Included banks")
     st.markdown(
-        "<div class='km-card'><strong>A1</strong> · 150 questions across 3 sets (14, 15, 16)<br>"
-        "<strong>B1</strong> · 500 questions across 10 sets<br><span class='km-small'>No demo/sample bank is included.</span></div>",
+        "<div class='km-card'><strong>A1</strong> · 150 questions · Sets 14, 15, 16<br>"
+        "<strong>B1</strong> · 500 questions · Sets 1–10<br><span class='km-small'>No demo/sample bank is included.</span></div>",
         unsafe_allow_html=True,
     )
 
-    st.markdown("### Recommended today")
     stats = st.session_state.progress["question_stats"]
     due = sum(1 for q in QUESTIONS if qstat(q["id"])["attempts"] > 0 and due_now(qstat(q["id"])))
     unseen = sum(1 for q in QUESTIONS if qstat(q["id"])["attempts"] == 0)
     weak = sum(1 for q in QUESTIONS if qstat(q["id"])["attempts"] > 0 and mastery(qstat(q["id"])) < 60)
+    st.markdown("### Recommended today")
     c1, c2, c3 = st.columns(3)
     c1.metric("Due", due)
     c2.metric("Weak", weak)
     c3.metric("Unseen", unseen)
 
     c1, c2 = st.columns(2)
-    if c1.button("Start adaptive review", use_container_width=True, type="primary"):
-        pool = QUESTIONS
-        ids = select_review_questions(pool, "Due / adaptive", 20)
+    if c1.button("🧠 Start smart review", use_container_width=True, type="primary"):
+        ids = select_review_questions(QUESTIONS, "Due / adaptive", 20)
         st.session_state.review = {"ids": ids, "index": 0, "correct": 0, "answered": 0, "started": time.time(), "mode": "Due / adaptive", "bank": "All"}
         st.session_state.review_feedback = None
         st.session_state.review_started_at = time.time()
+        st.session_state.pending_fx = "start"
         st.session_state.nav = "Review"
         st.rerun()
-    if c2.button("Take 50-question exam", use_container_width=True):
+    if c2.button("📝 Take 50-question exam", use_container_width=True):
         start_exam("All", "All", 50, 30)
+        st.session_state.pending_fx = "start"
         st.session_state.nav = "Exam"
         st.rerun()
 
+    if online_enabled():
+        live = fetch_live_exams()
+        st.markdown(f"<div class='km-callout'><span class='km-live-dot'></span><strong>{len(live)} examiner(s) active now</strong> · Open Rankings to see the live room.</div>", unsafe_allow_html=True)
+    else:
+        st.info("Live rankings are ready in the app but need the free Supabase connection once. The reviewer works normally without it.")
+
     st.markdown("### Progress backup")
-    st.caption("Streamlit Community Cloud should not be treated as permanent per-user storage. Download this small progress file and re-import it when you change devices or after a deployment reset.")
+    st.caption("Your local learning history lives in this browser session. Download a small backup when you want to keep or move it.")
     c1, c2 = st.columns(2)
-    c1.download_button(
-        "Download progress",
-        data=progress_json(),
-        file_name="karimen_progress.json",
-        mime="application/json",
-        use_container_width=True,
-    )
+    c1.download_button("⬇️ Download progress", data=progress_json(), file_name="karimen_progress.json", mime="application/json", use_container_width=True)
     uploaded = c2.file_uploader("Import progress", type=["json"], label_visibility="collapsed")
     if uploaded is not None:
         raw_bytes = uploaded.getvalue()
         marker = hash(raw_bytes)
         if st.session_state.last_import_hash != marker:
             try:
-                raw = json.loads(raw_bytes.decode("utf-8"))
-                st.session_state.progress = normalize_progress(raw)
+                st.session_state.progress = normalize_progress(json.loads(raw_bytes.decode("utf-8")))
                 st.session_state.last_import_hash = marker
                 st.success("Progress imported.")
                 st.rerun()
             except Exception as exc:
                 st.error(f"Could not import progress: {exc}")
 
-    with st.expander("About the exam simulation"):
-        st.write("The default simulation uses 50 true/false questions, 30 minutes, and a 90% pass threshold (45/50).")
-        st.markdown(f"[Official reference: Osaka Prefectural Police]({META['exam_standard']['url']})")
-        st.caption("The app is a study reviewer, not an official examination system. Question wording comes from the included study banks.")
+    with st.expander("About the practice exam"):
+        st.write("The default simulation uses 50 true/false questions, 30 minutes, and a 90% practice pass threshold (45/50).")
+        st.markdown(f"[Official format reference: Osaka Prefectural Police]({META['exam_standard']['url']})")
+        st.caption("This is a study reviewer, not an official examination system.")
 
 
 def page_review():
@@ -475,12 +705,11 @@ def page_review():
         st.markdown("### Configure review")
         c1, c2 = st.columns(2)
         bank = c1.selectbox("Bank", BANK_OPTIONS, key="review_bank")
-        set_opts = set_options_for_bank(bank)
-        set_filter = c2.selectbox("Set", set_opts, key="review_set")
+        set_filter = c2.selectbox("Set", set_options_for_bank(bank), key="review_set")
         categories = ["All"] + sorted({q["category"] for q in filter_questions(bank, set_filter)})
         category = st.selectbox("Category", categories, key="review_category")
         c1, c2 = st.columns(2)
-        mode = c1.selectbox("Review strategy", ["Due / adaptive", "Wrong answers", "Unseen", "Weakest", "Random"], key="review_mode")
+        mode = c1.selectbox("Study strategy", ["Due / adaptive", "Wrong answers", "Unseen", "Weakest", "Random"], key="review_mode")
         count = c2.slider("Questions", min_value=5, max_value=100, value=20, step=5)
         pool = filter_questions(bank, set_filter, category)
         st.caption(f"{len(pool)} questions match these filters.")
@@ -489,6 +718,7 @@ def page_review():
             st.session_state.review = {"ids": ids, "index": 0, "correct": 0, "answered": 0, "started": time.time(), "mode": mode, "bank": bank, "set": set_filter, "category": category}
             st.session_state.review_feedback = None
             st.session_state.review_started_at = time.time()
+            st.session_state.pending_fx = "start"
             st.rerun()
         if review and review.get("finished"):
             render_review_summary(review)
@@ -497,30 +727,33 @@ def page_review():
     ids = review["ids"]
     idx = review["index"]
     q = BY_ID[ids[idx]]
-    st.progress(idx / max(1, len(ids)), text=f"{idx + 1} / {len(ids)}")
+    st.progress((idx + 1) / max(1, len(ids)), text=f"{idx + 1} / {len(ids)}")
     feedback = st.session_state.review_feedback
     render_question(q, idx + 1, len(ids), reveal=feedback is not None, selected=feedback)
 
     if feedback is None:
         c1, c2 = st.columns(2)
-        if c1.button("○  TRUE", use_container_width=True, type="primary"):
+        if c1.button("○  TRUE", use_container_width=True):
             answer_review(q, True)
+            st.session_state.pending_fx = "correct" if bool(q["answer"]) is True else "wrong"
             st.rerun()
         if c2.button("×  FALSE", use_container_width=True):
             answer_review(q, False)
+            st.session_state.pending_fx = "correct" if bool(q["answer"]) is False else "wrong"
             st.rerun()
     else:
-        if st.button("Next question", use_container_width=True, type="primary"):
+        if st.button("Next question  →", use_container_width=True, type="primary"):
             if idx + 1 >= len(ids):
                 review["finished"] = True
                 add_session("review", ids, review["correct"], time.time() - review["started"], review.get("bank", "All"))
+                st.session_state.pending_fx = "complete"
             else:
                 review["index"] += 1
                 st.session_state.review_started_at = time.time()
             st.session_state.review_feedback = None
             st.rerun()
 
-    with st.expander("Current learning status"):
+    with st.expander("Learning status for this question"):
         s = qstat(q["id"])
         c1, c2, c3 = st.columns(3)
         c1.metric("Attempts", s["attempts"])
@@ -547,6 +780,7 @@ def render_review_summary(review):
     c1.metric("Score", f"{correct}/{total}")
     c2.metric("Accuracy", f"{pct:.0f}%")
     c3.metric("Mode", review.get("mode", "Review"))
+    mascot_feedback("complete")
     if st.button("New review", use_container_width=True, type="primary"):
         st.session_state.review = None
         st.session_state.review_feedback = None
@@ -557,18 +791,24 @@ def start_exam(bank: str, set_filter: str, count: int, minutes: int):
     pool = filter_questions(bank, set_filter)
     count = min(count, len(pool))
     ids = [q["id"] for q in random.sample(pool, count)]
+    now = time.time()
     st.session_state.exam = {
         "ids": ids,
         "index": 0,
         "answers": {},
         "flagged": [],
-        "started": time.time(),
-        "deadline": time.time() + minutes * 60,
+        "started": now,
+        "started_iso": utc_now_iso(),
+        "deadline": now + minutes * 60,
         "minutes": minutes,
         "bank": bank,
         "set": set_filter,
         "submitted": False,
+        "session_id": uuid.uuid4().hex,
+        "online_saved": False,
+        "celebrated": False,
     }
+    sync_live_exam(st.session_state.exam)
 
 
 def submit_exam():
@@ -576,36 +816,39 @@ def submit_exam():
     if not exam or exam.get("submitted"):
         return
     correct = 0
-    elapsed = time.time() - exam["started"]
-    per_q = elapsed / max(1, len(exam["ids"]))
     for qid in exam["ids"]:
-        selected = exam["answers"].get(qid, None)
-        ok = selected is not None and bool(selected) == bool(BY_ID[qid]["answer"])
+        ans = exam["answers"].get(qid, None)
+        q = BY_ID[qid]
+        ok = ans is not None and bool(ans) == bool(q["answer"])
         correct += int(ok)
-        record_answer(qid, ok, per_q)
+        record_answer(qid, ok, exam.get("minutes", 30) * 60 / max(1, len(exam["ids"])))
+    elapsed = max(0.0, time.time() - exam["started"])
     exam["correct"] = correct
+    exam["elapsed"] = elapsed
     exam["submitted"] = True
-    exam["submitted_at"] = time.time()
     add_session("exam", exam["ids"], correct, elapsed, exam.get("bank", "All"))
+    finish_live_exam(exam, correct, elapsed)
+    st.session_state.pending_fx = "complete"
 
 
 def timer_widget(deadline: float):
-    remaining = max(0, int(deadline - time.time()))
-    html = f"""
-    <div style='font-family:system-ui;text-align:center;font-weight:800;font-size:21px;padding:7px 4px'>
-      Time remaining: <span id='timer'></span>
-    </div>
-    <script>
-      let remaining={remaining};
-      function draw() {{
-        let m=Math.floor(remaining/60), s=remaining%60;
-        document.getElementById('timer').textContent=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
-        if (remaining>0) remaining--;
-      }}
-      draw(); setInterval(draw,1000);
-    </script>
-    """
-    components.html(html, height=48)
+    # Browser-side display keeps counting smoothly without rerunning the full app.
+    deadline_ms = int(deadline * 1000)
+    components.html(
+        f"""
+<div id="timer" style="font-family:system-ui;font-weight:800;font-size:18px;color:#41546f;text-align:right;padding:2px 4px"></div>
+<script>
+const end={deadline_ms};
+function tick(){{
+  const s=Math.max(0,Math.floor((end-Date.now())/1000));
+  const m=Math.floor(s/60), r=s%60;
+  document.getElementById('timer').innerText='⏱ '+String(m).padStart(2,'0')+':'+String(r).padStart(2,'0');
+}}
+tick(); setInterval(tick,500);
+</script>
+        """,
+        height=34,
+    )
 
 
 def page_exam():
@@ -613,16 +856,18 @@ def page_exam():
     if not exam:
         st.markdown("### Configure exam")
         c1, c2 = st.columns(2)
-        bank = c1.selectbox("Question pool", BANK_OPTIONS, key="exam_bank")
-        set_opts = set_options_for_bank(bank)
-        set_filter = c2.selectbox("Set", set_opts, key="exam_set")
-        c1, c2 = st.columns(2)
-        count = c1.selectbox("Questions", [20, 30, 50, 100], index=2)
-        minutes = c2.selectbox("Time limit", [15, 20, 30, 45, 60], index=2)
+        bank = c1.selectbox("Bank", BANK_OPTIONS, key="exam_bank")
+        set_filter = c2.selectbox("Set", set_options_for_bank(bank), key="exam_set")
         pool = filter_questions(bank, set_filter)
-        st.caption(f"Pool: {len(pool)} questions. Official-style default: 50 questions / 30 minutes / 90% pass.")
-        if st.button("Start exam", type="primary", use_container_width=True, disabled=len(pool) < count):
-            start_exam(bank, set_filter, count, minutes)
+        c1, c2 = st.columns(2)
+        max_count = min(100, len(pool))
+        default_count = min(50, max_count)
+        count = c1.number_input("Questions", min_value=5, max_value=max_count, value=default_count, step=5)
+        minutes = c2.number_input("Minutes", min_value=5, max_value=120, value=30, step=5)
+        st.markdown("<div class='km-callout'>🏆 For shared rankings, the main board compares completed <strong>50-question exams</strong>. Use a nickname in Home or Quick settings.</div>", unsafe_allow_html=True)
+        if st.button("Start exam", use_container_width=True, type="primary", disabled=not pool):
+            start_exam(bank, set_filter, int(count), int(minutes))
+            st.session_state.pending_fx = "start"
             st.rerun()
         return
 
@@ -630,32 +875,37 @@ def page_exam():
         render_exam_results(exam)
         return
 
-    # Any interaction after time expiry submits the exam. The visible timer itself continues client-side.
     if time.time() >= exam["deadline"]:
         submit_exam()
+        st.warning("Time expired. The exam was submitted automatically.")
         st.rerun()
 
+    sync_live_exam(exam)
+    exam_heartbeat()
     ids = exam["ids"]
     idx = exam["index"]
     q = BY_ID[ids[idx]]
-    timer_widget(exam["deadline"])
-    answered = len(exam["answers"])
-    st.progress(answered / max(1, len(ids)), text=f"Answered {answered}/{len(ids)}")
-    render_question(q, idx + 1, len(ids), reveal=False)
+    top1, top2 = st.columns([4, 1.4])
+    top1.progress((idx + 1) / max(1, len(ids)), text=f"Question {idx + 1} of {len(ids)}")
+    with top2:
+        timer_widget(exam["deadline"])
 
-    current = exam["answers"].get(q["id"], None)
-    if current is not None:
-        st.info(f"Selected answer: {'TRUE' if current else 'FALSE'}")
+    render_question(q, idx + 1, len(ids), reveal=False)
+    current = exam["answers"].get(q["id"])
     c1, c2 = st.columns(2)
-    if c1.button("○  TRUE", use_container_width=True, type="primary" if current is True else "secondary"):
+    true_clicked = c1.button("○  TRUE" + ("  ✓" if current is True else ""), use_container_width=True, key=f"exam_true_{q['id']}")
+    false_clicked = c2.button("×  FALSE" + ("  ✓" if current is False else ""), use_container_width=True, key=f"exam_false_{q['id']}")
+    if true_clicked:
         exam["answers"][q["id"]] = True
+        sync_live_exam(exam)
         st.rerun()
-    if c2.button("×  FALSE", use_container_width=True, type="primary" if current is False else "secondary"):
+    if false_clicked:
         exam["answers"][q["id"]] = False
+        sync_live_exam(exam)
         st.rerun()
 
     flagged = q["id"] in exam["flagged"]
-    flag = st.checkbox("Flag for review", value=flagged, key=f"flag_{q['id']}")
+    flag = st.checkbox("🚩 Flag for review", value=flagged, key=f"flag_{q['id']}")
     if flag and not flagged:
         exam["flagged"].append(q["id"])
     elif not flag and flagged:
@@ -677,6 +927,7 @@ def page_exam():
     with st.expander("Exam status"):
         unanswered = [i + 1 for i, qid in enumerate(ids) if qid not in exam["answers"]]
         flagged_n = [i + 1 for i, qid in enumerate(ids) if qid in exam["flagged"]]
+        st.write(f"Answered: {len(exam['answers'])}/{len(ids)}")
         st.write(f"Unanswered: {', '.join(map(str, unanswered)) if unanswered else 'None'}")
         st.write(f"Flagged: {', '.join(map(str, flagged_n)) if flagged_n else 'None'}")
 
@@ -684,7 +935,7 @@ def page_exam():
     confirm_unanswered = True
     if unanswered_count:
         confirm_unanswered = st.checkbox(f"Submit with {unanswered_count} unanswered question(s)", value=False)
-    if st.button("Submit exam", use_container_width=True, disabled=bool(unanswered_count and not confirm_unanswered)):
+    if st.button("Submit exam", use_container_width=True, type="primary", disabled=bool(unanswered_count and not confirm_unanswered)):
         submit_exam()
         st.rerun()
 
@@ -695,15 +946,25 @@ def render_exam_results(exam):
     pct = 100 * correct / max(1, total)
     pass_pct = META["exam_standard"]["pass_percent"]
     passed = pct >= pass_pct
+    if online_enabled() and not exam.get("online_saved"):
+        finish_live_exam(exam, correct, exam.get("elapsed", 0.0))
     st.markdown("### Exam result")
     c1, c2, c3 = st.columns(3)
     c1.metric("Score", f"{correct}/{total}")
     c2.metric("Accuracy", f"{pct:.1f}%")
     c3.metric("Result", "PASS" if passed else "REVIEW")
+    mascot_feedback("pass" if passed else "retry")
+    if passed and total == 50 and not exam.get("celebrated"):
+        st.balloons()
+        exam["celebrated"] = True
+
     if total == 50:
         st.success("Passed the 90% practice threshold.") if passed else st.error("Below the 90% practice threshold. Review the missed items below.")
     else:
-        st.info("Pass/review uses the same 90% threshold; only a 50-question run mirrors the standard provisional-license written-test question count.")
+        st.info("The same 90% practice threshold is shown, but only a 50-question run is included on the main shared ranking board.")
+
+    if online_enabled() and total == 50:
+        st.success("🏆 This result was submitted to the shared ranking board.")
 
     rows = []
     for pos, qid in enumerate(exam["ids"], 1):
@@ -725,20 +986,124 @@ def render_exam_results(exam):
             st.write(q["explanation"])
             render_sources(q)
 
-    c1, c2 = st.columns(2)
+    c1, c2, c3 = st.columns(3)
     if c1.button("New exam", use_container_width=True, type="primary"):
         st.session_state.exam = None
         st.rerun()
-    if c2.button("Review missed questions", use_container_width=True, disabled=not rows):
+    if c2.button("Review misses", use_container_width=True, disabled=not rows):
         ids = [q["id"] for _, q, _ in rows]
         st.session_state.review = {"ids": ids, "index": 0, "correct": 0, "answered": 0, "started": time.time(), "mode": "Exam mistakes", "bank": exam.get("bank", "All")}
         st.session_state.review_feedback = None
         st.session_state.review_started_at = time.time()
         st.session_state.nav = "Review"
         st.rerun()
+    if c3.button("View ranking", use_container_width=True):
+        st.session_state.nav = "Rankings"
+        st.rerun()
 
 
-def page_statistics():
+@st.fragment(run_every="15s")
+def live_rankings_fragment():
+    live = fetch_live_exams()
+    if not live:
+        st.caption("No active examiners in the last 5 minutes.")
+        return
+    rows = []
+    for i, r in enumerate(live, 1):
+        total = int(r.get("total_questions") or 0)
+        answered = int(r.get("answered") or 0)
+        correct = int(r.get("correct") or 0)
+        started = parse_iso(r.get("started_at"))
+        elapsed = "—"
+        if started:
+            sec = max(0, int((datetime.now(timezone.utc) - started).total_seconds()))
+            elapsed = f"{sec//60}:{sec%60:02d}"
+        rows.append({
+            "#": i,
+            "Examiner": f"{r.get('avatar') or '🚙'} {r.get('display_name') or 'Driver'}",
+            "Live score": f"{correct}/{total}",
+            "Progress": f"{answered}/{total}",
+            "Elapsed": elapsed,
+            "Bank": r.get("bank") or "All",
+        })
+    st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+    st.caption("Live score is the number currently correct. The table refreshes every 15 seconds.")
+
+
+def build_best_leaderboard(results: list[dict]) -> pd.DataFrame:
+    # Fair comparison: only completed 50-question runs.
+    valid = [r for r in results if int(r.get("total_questions") or 0) == 50]
+    best = {}
+    for r in valid:
+        name = str(r.get("display_name") or "Driver")
+        avatar = r.get("avatar") or "🚙"
+        key = (name, avatar)
+        score = int(r.get("score") or 0)
+        elapsed = float(r.get("elapsed_seconds") or 999999)
+        prev = best.get(key)
+        if prev is None or score > int(prev.get("score") or 0) or (score == int(prev.get("score") or 0) and elapsed < float(prev.get("elapsed_seconds") or 999999)):
+            best[key] = r
+    ordered = sorted(best.values(), key=lambda r: (-int(r.get("score") or 0), float(r.get("elapsed_seconds") or 999999), str(r.get("display_name") or "")))
+    rows = []
+    for i, r in enumerate(ordered[:30], 1):
+        elapsed = int(float(r.get("elapsed_seconds") or 0))
+        rows.append({
+            "Rank": i,
+            "Examiner": f"{r.get('avatar') or '🚙'} {r.get('display_name') or 'Driver'}",
+            "Best": f"{int(r.get('score') or 0)}/50",
+            "Accuracy": f"{float(r.get('percent') or 0):.1f}%",
+            "Time": f"{elapsed//60}:{elapsed%60:02d}",
+            "Result": "PASS" if r.get("passed") else "REVIEW",
+        })
+    return pd.DataFrame(rows)
+
+
+def page_rankings():
+    st.markdown("### 🏆 Live exam room")
+    st.caption("Use a nickname only. Active examiners are considered online when their exam has checked in within the last 5 minutes.")
+    if not online_enabled():
+        st.warning("Shared rankings are not connected yet. The rest of the reviewer is fully usable.")
+        st.markdown(
+            "<div class='km-card'><strong>One-time setup</strong><br>1. Create a free Supabase project.<br>2. Run <code>supabase_setup.sql</code> from this package in Supabase SQL Editor.<br>3. Add <code>SUPABASE_URL</code> and <code>SUPABASE_SECRET_KEY</code> to your Streamlit app Secrets.<br>4. Reboot the app.</div>",
+            unsafe_allow_html=True,
+        )
+        return
+
+    live_rankings_fragment()
+
+    st.markdown("### All-time best 50-question exams")
+    results = fetch_exam_results(500)
+    board = build_best_leaderboard(results)
+    if board.empty:
+        st.caption("No completed 50-question exams yet.")
+    else:
+        st.dataframe(board, use_container_width=True, hide_index=True)
+        my_name = safe_player_name()
+        match = board[board["Examiner"].str.endswith(my_name, na=False)]
+        if not match.empty:
+            row = match.iloc[0]
+            st.markdown(f"<div class='km-callout'>Your current best rank: <span class='km-rank'>#{int(row['Rank'])}</span> · {row['Best']} · {row['Time']}</div>", unsafe_allow_html=True)
+
+    if results:
+        st.markdown("### Recent finishes")
+        recent_rows = []
+        for r in results[:20]:
+            elapsed = int(float(r.get("elapsed_seconds") or 0))
+            recent_rows.append({
+                "Examiner": f"{r.get('avatar') or '🚙'} {r.get('display_name') or 'Driver'}",
+                "Score": f"{int(r.get('score') or 0)}/{int(r.get('total_questions') or 0)}",
+                "Accuracy": f"{float(r.get('percent') or 0):.1f}%",
+                "Time": f"{elapsed//60}:{elapsed%60:02d}",
+                "Bank": r.get("bank") or "All",
+            })
+        st.dataframe(pd.DataFrame(recent_rows), use_container_width=True, hide_index=True)
+
+    if st.session_state.online_error:
+        with st.expander("Connection details"):
+            st.code(st.session_state.online_error)
+
+
+def page_progress():
     stats = st.session_state.progress["question_stats"]
     sessions = st.session_state.progress["sessions"]
     attempts = sum(s.get("attempts", 0) for s in stats.values())
@@ -747,16 +1112,16 @@ def page_statistics():
     coverage = 100 * attempted_q / len(QUESTIONS)
     accuracy = 100 * correct / max(1, attempts) if attempts else 0
 
-    st.markdown("### Learning dashboard")
+    st.markdown("### 📈 Your progress")
     c1, c2, c3 = st.columns(3)
     c1.metric("Accuracy", f"{accuracy:.1f}%" if attempts else "—")
     c2.metric("Coverage", f"{coverage:.1f}%")
     c3.metric("Attempts", attempts)
 
-    rows = []
     grouped = defaultdict(list)
     for q in QUESTIONS:
         grouped[q["category"]].append(q)
+    rows = []
     for cat, qs in grouped.items():
         cat_stats = [qstat(q["id"]) for q in qs]
         cat_attempts = sum(s["attempts"] for s in cat_stats)
@@ -774,8 +1139,7 @@ def page_statistics():
     df = pd.DataFrame(rows).sort_values(["Mastery %", "Category"])
     st.markdown("### Category performance")
     st.dataframe(df, use_container_width=True, hide_index=True)
-    chart_df = df.set_index("Category")[["Mastery %"]]
-    st.bar_chart(chart_df, height=360)
+    st.bar_chart(df.set_index("Category")[["Mastery %"]], height=340)
 
     weak_rows = []
     for q in QUESTIONS:
@@ -783,7 +1147,7 @@ def page_statistics():
         if s["attempts"] <= 0:
             continue
         weak_rows.append({
-            "ID": display_question_id(q), "Bank": bank_label(q), "Category": q["category"],
+            "ID": q["id"], "Bank": bank_label(q), "Category": q["category"],
             "Attempts": s["attempts"], "Wrong": s["wrong"],
             "Accuracy %": round(100*s["correct"]/s["attempts"], 1),
             "Mastery %": round(mastery(s), 1),
@@ -800,55 +1164,38 @@ def page_statistics():
     if sessions:
         st.markdown("### Session history")
         sess_df = pd.DataFrame(sessions[-50:])
-        if "bank" in sess_df.columns:
-            sess_df["bank"] = sess_df["bank"].map(display_saved_bank)
         show_cols = [c for c in ["timestamp", "mode", "bank", "questions", "correct", "percent", "seconds"] if c in sess_df.columns]
         st.dataframe(sess_df[show_cols].iloc[::-1], use_container_width=True, hide_index=True)
         exams = sess_df[sess_df["mode"] == "exam"] if "mode" in sess_df else pd.DataFrame()
         if not exams.empty:
-            st.line_chart(exams[["percent"]].reset_index(drop=True), height=260)
-
-    st.markdown("### Answer pattern")
-    true_correct = false_correct = true_attempts = false_attempts = 0
-    for q in QUESTIONS:
-        s = qstat(q["id"])
-        if q["answer"]:
-            true_attempts += s["attempts"]; true_correct += s["correct"]
-        else:
-            false_attempts += s["attempts"]; false_correct += s["correct"]
-    patt = pd.DataFrame([
-        {"Correct answer": "TRUE", "Attempts": true_attempts, "Accuracy %": round(100*true_correct/true_attempts, 1) if true_attempts else None},
-        {"Correct answer": "FALSE", "Attempts": false_attempts, "Accuracy %": round(100*false_correct/false_attempts, 1) if false_attempts else None},
-    ])
-    st.dataframe(patt, use_container_width=True, hide_index=True)
+            st.line_chart(exams[["percent"]].reset_index(drop=True), height=250)
 
     with st.expander("How Mastery is calculated"):
-        st.write("Mastery is an app-local study score, not an official test metric. It combines your accuracy, number of exposures, and current correct-answer streak. New questions therefore start near 0% even if answered correctly once, then rise with repeated correct recall.")
+        st.write("Mastery is an app-local study score, not an official test metric. It combines accuracy, number of exposures, and the current correct-answer streak.")
 
     st.download_button("Download progress backup", progress_json(), "karimen_progress.json", "application/json", use_container_width=True)
 
 
 def page_bank():
-    st.markdown("### Question bank")
+    st.markdown("### 🔎 Question bank")
     c1, c2 = st.columns(2)
     bank = c1.selectbox("Bank", BANK_OPTIONS, key="browse_bank")
-    set_opts = set_options_for_bank(bank)
-    set_filter = c2.selectbox("Set", set_opts, key="browse_set")
+    set_filter = c2.selectbox("Set", set_options_for_bank(bank), key="browse_set")
     pool0 = filter_questions(bank, set_filter)
     categories = ["All"] + sorted({q["category"] for q in pool0})
     category = st.selectbox("Category", categories, key="browse_cat")
-    search = st.text_input("Search", placeholder="e.g. crosswalk, parking, signal, A1-16-Q048")
+    search = st.text_input("Search", placeholder="e.g. crosswalk, parking, signal, B1-S03-Q012")
     only_images = st.checkbox("Image questions only")
     pool = filter_questions(bank, set_filter, category)
     if search.strip():
         s = search.lower().strip()
-        pool = [q for q in pool if s in q["id"].lower() or s in display_question_id(q).lower() or s in q["question_en"].lower() or s in q.get("question_ja", "").lower() or s in q["explanation"].lower()]
+        pool = [q for q in pool if s in q["id"].lower() or s in q["question_en"].lower() or s in q.get("question_ja", "").lower() or s in q["explanation"].lower()]
     if only_images:
         pool = [q for q in pool if q.get("images")]
     st.caption(f"{len(pool)} questions")
     if not pool:
         return
-    labels = [f"{display_question_id(q)} · {bank_label(q)} · {q['question_en'][:70]}" for q in pool]
+    labels = [f"{q['id']} · {bank_label(q)} · {q['question_en'][:68]}" for q in pool]
     selected_label = st.selectbox("Select question", labels)
     q = pool[labels.index(selected_label)]
     render_question(q, 1, 1, reveal=True, selected=q["answer"])
@@ -859,19 +1206,30 @@ def page_bank():
     c3.metric("Mastery", f"{mastery(s):.0f}%")
 
 
+
+def play_pending_fx():
+    kind = st.session_state.get("pending_fx")
+    if kind:
+        st.session_state.pending_fx = None
+        feedback_fx(kind)
+
+
 def footer():
-    st.markdown("<div class='km-divider'></div><div class='km-small'>Karimen Professional Reviewer · Streamlit build 2.0 · Study aid only</div>", unsafe_allow_html=True)
+    st.markdown("<div class='km-divider'></div><div class='km-small'>A1 B1 Karimen Reviewer · Build 3.0 · Study aid only · Shared ranking uses nicknames only</div>", unsafe_allow_html=True)
 
 
 nav = header()
+play_pending_fx()
 if nav == "Home":
     page_home()
 elif nav == "Review":
     page_review()
 elif nav == "Exam":
     page_exam()
-elif nav == "Statistics":
-    page_statistics()
-elif nav == "Question Bank":
+elif nav == "Rankings":
+    page_rankings()
+elif nav == "Progress":
+    page_progress()
+elif nav == "Bank":
     page_bank()
 footer()
