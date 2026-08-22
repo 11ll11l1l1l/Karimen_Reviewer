@@ -1,27 +1,23 @@
-A1 B1 KARIMEN REVIEWER — QUICK START
+KARIMEN REVIEWER — BUILD 4.0 JOURNEY
 
-LOCAL TEST
+LOCAL
 1. Open a terminal in this folder.
 2. pip install -r requirements.txt
 3. streamlit run app.py
 
-GITHUB / STREAMLIT UPDATE
-1. Copy all changed files into your local GitHub repository.
-2. GitHub Desktop -> Summary: Upgrade reviewer to Build 3.2 Game+
-3. Commit to main.
-4. Push origin.
-5. Streamlit redeploys automatically.
-
-LIVE RANKINGS (ONE-TIME OPTIONAL SETUP)
-1. Create a free Supabase project.
-2. Supabase -> SQL Editor -> run supabase_setup.sql.
-3. Copy Project URL and Secret key.
-4. Streamlit app -> Settings -> Secrets.
-5. Add:
-   SUPABASE_URL = "..."
-   SUPABASE_SECRET_KEY = "..."
-6. Save and reboot the app.
+STREAMLIT CLOUD UPDATE
+1. Copy all files/folders in this package into the GitHub repository used by the current Streamlit app.
+2. Commit the changes.
+3. Push to main.
+4. Streamlit Community Cloud should redeploy automatically.
 
 IMPORTANT
-Never put the real secret key inside GitHub files.
-Use nicknames on the public ranking board.
+- Keep data/questions.json and the entire assets folder.
+- assets/mascots contains the new dynamic cat states/outfits.
+- Your existing Supabase secrets can remain unchanged.
+- Mascot spoken words can be toggled separately from WAV sound effects.
+
+VALIDATE
+python validate.py
+
+Expected: 650 questions, 133 image references, 0 errors.

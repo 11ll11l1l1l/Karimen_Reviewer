@@ -1,30 +1,70 @@
-# A1 B1 Karimen Reviewer — Streamlit Build 3.2 Game+
+# Karimen Reviewer — Build 4.0 Journey Edition
 
-Phone-first Streamlit reviewer containing 650 questions and 133 image questions.
+A phone-first, game-style Streamlit reviewer for the Japanese provisional-license (karimen) written test.
 
-## Game+ features
-
-- Arcade / Cute / Night theme switcher
-- redesigned game-style home, review missions, and exam challenge flow
-- upgraded stereo WAV sound pack with start/correct/wrong/combo/achievement/pass/retry jingles
-- cute mascot bloops layered after feedback sounds
-- answer combo streaks and best-combo tracking
-- achievement badges derived from study progress
-- animated correct/wrong/combo/result feedback
-- mascot speech bubbles after each reviewed answer
-- animated exam result hero and pass celebration
-
-## Included
+## Included question banks
 
 - A1: 150 questions, Sets 14–16
 - B1: 500 questions, Sets 1–10
-- Smart/adaptive review
-- Wrong-answer and weak-area review
-- 50-question timed exam simulation
-- Progress dashboard and question search
-- Cute mascot feedback, soft sound cues, optional haptics
-- Optional shared live exam room and all-time ranking
-- Progress export/import
+- Total: 650 questions
+- Image questions: 133
+- Existing question text, answers, explanations, images, verification data, and official-source links are preserved from Build 3.2.
+
+## What is new in Build 4.0
+
+### Game progression
+
+- XP and driver levels
+- driver titles
+- world/journey progression
+- Daily Challenge
+- Survival Mode with 3 lives
+- Boss Exam using the user's hardest questions
+- Smart Review using spaced-repetition due dates, weak-question history, unseen questions, and weak-category weighting
+- Mistake Book
+- achievement collection expanded for daily, survival, boss, mock-exam, streak, image, and coverage goals
+- pass-readiness estimate on the Progress page
+
+### Dynamic cat mascot
+
+The blue traffic-officer cat is the default mascot.
+
+The app includes 56 mascot variants under `assets/mascots/`.
+
+Category changes alter the outfit automatically:
+
+- traffic signals / signs → signal officer
+- parking / stopping → yellow parking-safety uniform
+- pedestrians / crossings → green crossing-guard uniform
+- railroad crossings → orange rail-safety uniform
+- speed / braking / lanes → red road-marshal uniform
+- hazards / vehicle operation → purple night-patrol uniform
+- legal / licensing topics → teal road-rules uniform
+- fallback/default → blue traffic-officer uniform
+
+Reaction images change automatically:
+
+- idle
+- correct
+- streak
+- wrong
+- pleading after repeated misses
+- comeback after breaking a losing streak
+- victory
+
+### Sound + spoken words
+
+Build 3.2 WAV effects are retained.
+
+Build 4.0 adds optional browser speech synthesis for mascot lines such as:
+
+- “Correct! Nice one.”
+- “Five in a row! Keep it going!”
+- “Please get the next one right! Read every word for me.”
+- “Yes! That's the comeback I wanted.”
+- “Mission cleared! You did it!”
+
+Speech can be turned off independently from sound effects.
 
 ## Run locally
 
@@ -33,48 +73,30 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-## Deploy on Streamlit Community Cloud
+## Deploy to Streamlit Community Cloud
 
-Push the folder contents to the GitHub repository used by your Streamlit app. The main file is `app.py`.
+Replace the contents of the repository currently used by the deployed app with this package, then commit and push.
 
-## Shared ranking setup
+The entry file remains:
 
-The app works without an external database. Shared rankings need one free Supabase project because Streamlit Community Cloud local files are not guaranteed to persist.
+```text
+app.py
+```
 
-1. Create a project at Supabase.
-2. Open **SQL Editor** and run the full contents of `supabase_setup.sql`.
-3. In Supabase project settings, copy:
-   - Project URL
-   - Secret key
-4. In Streamlit Community Cloud open your app > **Settings** > **Secrets**.
-5. Add:
+No new Python dependency was added compared with Build 3.2.
+
+## Supabase ranking
+
+The existing optional Supabase ranking backend is retained.
+
+If the previous deployed version already has these Streamlit secrets, no change is required:
 
 ```toml
 SUPABASE_URL = "https://YOUR-PROJECT.supabase.co"
 SUPABASE_SECRET_KEY = "YOUR-SUPABASE-SECRET-KEY"
 ```
 
-6. Save and reboot the Streamlit app.
-
-The secret key must stay in Streamlit Secrets. Never commit the real key to GitHub.
-
-### Ranking rules
-
-- Live room: active exams checked in during the last 5 minutes.
-- Live score: number currently correct, plus progress and elapsed time.
-- All-time main ranking: each nickname's best completed 50-question exam.
-- Tie-breaker: faster completion time.
-- Other exam sizes can appear in Recent Finishes but not the main all-time board.
-
-Use nicknames rather than full legal names. No email or Streamlit login is required for examinees when the deployed app is public.
-
-## Updating the hosted app
-
-Replace changed files in your local GitHub repository, then in GitHub Desktop:
-
-1. Commit to `main`
-2. Push origin
-3. Streamlit redeploys automatically
+For a new project, run `supabase_setup.sql` in Supabase SQL Editor and then add the secrets above.
 
 ## Validation
 
@@ -82,4 +104,18 @@ Replace changed files in your local GitHub repository, then in GitHub Desktop:
 python validate.py
 ```
 
-The validator checks question counts, unique IDs, image links, bank names, and the provenance scrub.
+Expected result:
+
+```text
+Questions: 650
+A1: 150
+B1: 500
+Image refs: 133
+Errors: 0
+```
+
+## Notes
+
+- The 90% pass-readiness indicator is an app-local estimate, not an official probability.
+- The reviewer is a study aid and is not an official Japanese driving-test system.
+- Browser speech depends on the browser/device speech-synthesis implementation. WAV feedback remains available independently.

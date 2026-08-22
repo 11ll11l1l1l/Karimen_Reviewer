@@ -25,7 +25,7 @@ ROOT = Path(__file__).resolve().parent
 DATA_FILE = ROOT / "data" / "questions.json"
 MASCOT_FILE = ROOT / "assets" / "mascot.png"
 SOUND_DIR = ROOT / "assets" / "sounds"
-PROGRESS_VERSION = 4
+PROGRESS_VERSION = 5
 
 st.set_page_config(
     page_title="A1 B1 Karimen Reviewer",
@@ -1572,6 +1572,648 @@ def page_bank():
 
 
 
+# ============================================================================
+# Build 4.0 — Journey Edition
+# Game loop, dynamic cat mascot, daily/survival/boss modes, mistake book,
+# category outfits, XP/levels and browser voice cues.
+# ============================================================================
+
+# Keep references to the mature v3.2 pages that remain useful.
+_v32_page_exam = page_exam
+_v32_page_rankings = page_rankings
+_v32_page_progress = page_progress
+_v32_page_bank = page_bank
+_v32_render_exam_results = render_exam_results
+
+MASCOT_VARIANT_DIR = ROOT / "assets" / "mascots"
+JST = timezone(timedelta(hours=9))
+
+for _key, _value in {
+    "voice_on": True,
+    "pending_voice": None,
+    "mascot_state": "idle",
+    "mascot_category": "Default",
+    "active_game": None,
+}.items():
+    if _key not in st.session_state:
+        st.session_state[_key] = _value
+
+# A final style layer deliberately pushes the UI toward a bright mobile game.
+st.markdown(
+    """
+<style>
+.block-container{max-width:1180px!important;padding-top:.35rem!important;padding-bottom:6rem!important;}
+.km-v4-top{background:linear-gradient(135deg,#056fee,#16a7ff 52%,#65d8ff);border:2px solid rgba(255,255,255,.48);border-radius:26px;padding:.85rem 1rem;box-shadow:0 15px 34px rgba(18,83,175,.24);color:#fff;overflow:hidden;position:relative;}
+.km-v4-top:after{content:"";position:absolute;right:-45px;top:-65px;width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,.12)}
+.km-v4-logo{font-size:clamp(1.65rem,6vw,2.45rem);font-weight:950;line-height:1;letter-spacing:-.045em;text-shadow:0 3px 0 rgba(0,46,115,.20)}
+.km-v4-tag{font-size:.9rem;font-weight:760;opacity:.94;margin-top:.27rem}
+.km-v4-hud{display:flex;gap:.48rem;flex-wrap:wrap;margin-top:.58rem}
+.km-v4-hud span{background:rgba(7,48,119,.24);border:1px solid rgba(255,255,255,.28);border-radius:999px;padding:.3rem .62rem;font-size:.77rem;font-weight:850}
+.km-v4-nav [data-testid="stRadio"]>div{background:#073779;border-radius:20px;padding:.34rem;gap:.28rem!important;box-shadow:0 10px 24px rgba(4,41,101,.22)}
+.km-v4-nav [data-testid="stRadio"] label{background:transparent!important;border:0!important;color:white!important;border-radius:15px!important;padding:.55rem .72rem!important;box-shadow:none!important;font-weight:900!important}
+.km-v4-nav [data-testid="stRadio"] label:has(input:checked){background:linear-gradient(135deg,#148fff,#36c5ff)!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.28),0 5px 12px rgba(0,24,77,.20)!important}
+.km-section{font-size:1.16rem;font-weight:950;margin:1rem 0 .55rem;color:var(--ink)}
+.km-quest-shell{background:#fff;border:2px solid #d3e8ff;border-radius:26px;padding:1rem 1.05rem;box-shadow:0 14px 32px rgba(38,87,153,.12);}
+.km-quest-head{display:flex;align-items:center;justify-content:space-between;gap:.6rem;flex-wrap:wrap;margin-bottom:.7rem}
+.km-cat-tag{display:inline-flex;align-items:center;gap:.35rem;border-radius:999px;padding:.36rem .72rem;color:white;font-weight:900;background:linear-gradient(135deg,#8055ff,#aa76ff)}
+.km-diff{font-weight:850;color:#9c6b00;background:#fff3c8;border:1px solid #f3d37c;border-radius:999px;padding:.3rem .62rem}
+.km-qcounter{font-weight:900;color:#4c6386}.km-qtext{font-size:clamp(1.15rem,4.7vw,1.55rem);font-weight:850;line-height:1.48;color:#152b4d;margin:.45rem 0 .7rem}
+.km-game-hud{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.55rem;margin:.55rem 0 .75rem}.km-game-hud>div{background:linear-gradient(180deg,#0b4b99,#073875);color:#fff;border-radius:17px;padding:.56rem .65rem;text-align:center;border:1px solid rgba(255,255,255,.18);box-shadow:0 7px 15px rgba(6,50,112,.16)}.km-game-hud b{display:block;font-size:1.08rem}.km-game-hud span{font-size:.72rem;opacity:.87;font-weight:750}
+.km-mascot-card{background:linear-gradient(180deg,#eef8ff,#fff);border:2px solid #bfe0ff;border-radius:24px;padding:.7rem;text-align:center;box-shadow:0 12px 27px rgba(42,96,162,.12)}
+.km-speech{position:relative;background:white;border:2px solid #ffcc51;border-radius:20px;padding:.66rem .75rem;font-weight:850;line-height:1.35;color:#17335b;margin-top:.42rem}.km-speech:before{content:"";position:absolute;top:-10px;left:44%;width:16px;height:16px;background:white;border-left:2px solid #ffcc51;border-top:2px solid #ffcc51;transform:rotate(45deg)}
+.km-state-pill{display:inline-block;background:#0b3e82;color:white;border-radius:999px;padding:.25rem .55rem;font-size:.72rem;font-weight:900;letter-spacing:.02em}
+.km-world{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:.48rem;background:linear-gradient(180deg,#dff4ff,#f6fbff);border:1px solid #c6e3fb;border-radius:23px;padding:.75rem}.km-stage{background:white;border:1px solid #d7e9f8;border-radius:17px;padding:.7rem .45rem;text-align:center;min-height:112px;box-shadow:0 5px 13px rgba(64,101,145,.08)}.km-stage.locked{filter:grayscale(.8);opacity:.58}.km-stage-icon{font-size:1.5rem}.km-stage-name{font-size:.78rem;font-weight:900;margin-top:.25rem}.km-stage-stars{font-size:.78rem;color:#ffb000;margin-top:.24rem}.km-stage-req{font-size:.66rem;color:#7083a0;margin-top:.2rem}
+.km-weak-row{display:grid;grid-template-columns:minmax(110px,1.2fr) 2fr 58px;gap:.55rem;align-items:center;margin:.52rem 0}.km-weak-name{font-size:.83rem;font-weight:850}.km-bar{height:10px;background:#e7eef8;border-radius:999px;overflow:hidden}.km-bar>i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#ff8b3d,#ffd239,#37cf88)}.km-weak-pct{text-align:right;font-weight:900;font-size:.8rem}
+.km-daily{background:linear-gradient(135deg,#6e4cff,#9c64ff 48%,#ff79ae);color:white;border-radius:23px;padding:.9rem 1rem;box-shadow:0 14px 28px rgba(91,65,190,.2)}
+.km-mode-lock{font-size:.75rem;background:rgba(0,0,0,.15);border-radius:999px;padding:.2rem .48rem;display:inline-block;margin-top:.45rem}
+.km-dotline{display:flex;gap:.3rem;flex-wrap:wrap;justify-content:center;background:#083d7e;border-radius:18px;padding:.54rem}.km-dot{width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:#21558e;color:white;font-size:.74rem;font-weight:900;border:1px solid rgba(255,255,255,.22)}.km-dot.done{background:#1fc77d}.km-dot.now{background:#168dff;box-shadow:0 0 0 3px rgba(96,202,255,.42)}.km-dot.bad{background:#ff4f72}
+.km-mistake{background:#fff;border:1px solid #dce9f6;border-radius:18px;padding:.78rem .85rem;margin:.5rem 0;box-shadow:0 5px 16px rgba(64,91,132,.07)}
+.km-result-v4{background:linear-gradient(135deg,#006fee,#624dff 55%,#ffad36);color:white;border-radius:27px;text-align:center;padding:1.1rem;box-shadow:0 17px 35px rgba(53,71,171,.23)}
+@media(max-width:850px){.km-world{grid-template-columns:repeat(3,minmax(0,1fr))}.km-game-hud{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.km-world{grid-template-columns:repeat(2,minmax(0,1fr))}.km-v4-nav [data-testid="stRadio"]>div{overflow-x:auto;flex-wrap:nowrap!important}.km-v4-nav [data-testid="stRadio"] label{white-space:nowrap}.km-quest-shell{padding:.85rem;border-radius:20px}}
+</style>
+""",
+    unsafe_allow_html=True,
+)
+
+
+def total_xp() -> int:
+    stats = st.session_state.progress["question_stats"]
+    correct = sum(int(s.get("correct", 0) or 0) for s in stats.values())
+    wrong = sum(int(s.get("wrong", 0) or 0) for s in stats.values())
+    sessions = st.session_state.progress.get("sessions", [])
+    exam_bonus = sum(60 for s in sessions if s.get("mode") == "exam" and float(s.get("percent") or 0) >= 90)
+    daily_bonus = sum(30 for s in sessions if s.get("mode") == "daily")
+    boss_bonus = sum(90 for s in sessions if s.get("mode") == "boss" and float(s.get("percent") or 0) >= 90)
+    badge_bonus = 20 * sum(1 for a in achievement_catalog() if a["earned"])
+    return correct * 10 + wrong * 2 + exam_bonus + daily_bonus + boss_bonus + badge_bonus
+
+
+def study_level_info():
+    xp_total = total_xp()
+    goal = 250
+    return 1 + xp_total // goal, xp_total % goal, goal
+
+
+def driver_title(level: int) -> str:
+    titles = [(1,"Learner Driver"),(3,"Road Rookie"),(6,"City Driver"),(10,"Road Expert"),(15,"Karimen Ace"),(22,"Road Master")]
+    title = titles[0][1]
+    for req, name in titles:
+        if level >= req:
+            title = name
+    return title
+
+
+def daily_challenge_date() -> str:
+    return datetime.now(JST).date().isoformat()
+
+
+def daily_ids(count: int = 10) -> list[str]:
+    import hashlib
+    token = f"karimen-v4-{daily_challenge_date()}-{len(QUESTIONS)}"
+    seed = int(hashlib.sha256(token.encode()).hexdigest()[:16], 16)
+    rng = random.Random(seed)
+    image_q = [q for q in QUESTIONS if q.get("images")]
+    plain_q = [q for q in QUESTIONS if not q.get("images")]
+    chosen = []
+    if image_q:
+        chosen += rng.sample(image_q, min(3, len(image_q)))
+    remaining = [q for q in plain_q if q["id"] not in {x["id"] for x in chosen}]
+    chosen += rng.sample(remaining, min(count-len(chosen), len(remaining)))
+    rng.shuffle(chosen)
+    return [q["id"] for q in chosen[:count]]
+
+
+def daily_completed_today() -> bool:
+    today = datetime.now(JST).date()
+    for s in st.session_state.progress.get("sessions", []):
+        if s.get("mode") != "daily":
+            continue
+        ts = parse_iso(s.get("timestamp"))
+        if ts and ts.astimezone(JST).date() == today:
+            return True
+    return False
+
+
+def daily_challenge_streak() -> int:
+    dates = set()
+    for s in st.session_state.progress.get("sessions", []):
+        if s.get("mode") == "daily":
+            ts = parse_iso(s.get("timestamp"))
+            if ts:
+                dates.add(ts.astimezone(JST).date())
+    day = datetime.now(JST).date()
+    if day not in dates:
+        day -= timedelta(days=1)
+    n = 0
+    while day in dates:
+        n += 1
+        day -= timedelta(days=1)
+    return n
+
+
+def unique_seen_count() -> int:
+    return sum(1 for q in QUESTIONS if qstat(q["id"])["attempts"] > 0)
+
+
+def category_stats_rows() -> list[dict]:
+    grouped = defaultdict(list)
+    for q in QUESTIONS:
+        grouped[q["category"]].append(q)
+    rows=[]
+    for cat, qs in grouped.items():
+        ss=[qstat(q["id"]) for q in qs]
+        attempts=sum(int(s.get("attempts",0)) for s in ss)
+        correct=sum(int(s.get("correct",0)) for s in ss)
+        seen=sum(1 for s in ss if int(s.get("attempts",0))>0)
+        acc=(100*correct/attempts) if attempts else 0.0
+        mast=sum(mastery(s) for s in ss)/max(1,len(ss))
+        rows.append({"category":cat,"attempts":attempts,"correct":correct,"seen":seen,"accuracy":acc,"mastery":mast,"count":len(qs)})
+    return rows
+
+
+def weak_categories(limit: int = 4) -> list[dict]:
+    rows=[r for r in category_stats_rows() if r["attempts"]>0]
+    rows.sort(key=lambda r:(r["mastery"], r["accuracy"], -r["attempts"]))
+    return rows[:limit]
+
+
+def priority_score(q: dict) -> float:
+    # v4 adds a category weakness term to the original per-question adaptive score.
+    s=qstat(q["id"]); n=int(s.get("attempts",0) or 0)
+    base=5.0+random.random() if n==0 else (3.0*int(s.get("wrong",0))/max(1,n)+2.0*(1.0-mastery(s)/100.0)+(2.0 if due_now(s) else 0.0))
+    cat_row=next((r for r in category_stats_rows() if r["category"]==q["category"]),None)
+    cat_bonus=0.0
+    if cat_row and cat_row["attempts"]:
+        cat_bonus=1.5*(1.0-cat_row["accuracy"]/100.0)
+    return base+cat_bonus+random.random()*.2
+
+
+def category_outfit(category: str) -> str:
+    c=(category or "").lower()
+    if "signal" in c or "sign" in c: return "signals"
+    if "parking" in c or "stopping" in c: return "parking"
+    if "pedestrian" in c or "crossing" in c: return "pedestrian"
+    if "railroad" in c: return "railroad"
+    if "speed" in c or "overtaking" in c or "hills" in c or "lane" in c: return "speed"
+    if "hazard" in c or "operation" in c or "starting" in c: return "night"
+    if "legal" in c or "licens" in c or "general" in c: return "legal"
+    return "police"
+
+
+def mascot_asset(category: str | None = None, state: str | None = None) -> Path:
+    category=category or st.session_state.get("mascot_category") or "Default"
+    state=state or st.session_state.get("mascot_state") or "idle"
+    if state not in {"idle","correct","streak","wrong","pleading","comeback","victory"}: state="idle"
+    path=MASCOT_VARIANT_DIR/f"{category_outfit(category)}_{state}.png"
+    return path if path.exists() else MASCOT_FILE
+
+
+def mascot_message(state: str, category: str, combo: int = 0, wrong_chain: int = 0) -> str:
+    focus={
+        "Traffic signals":"Watch the signal wording carefully.",
+        "Signs & road markings":"Read the sign shape and road marking together.",
+        "Pedestrians & crossings":"Pedestrian protection comes first.",
+        "Parking & stopping":"Check the place, distance and exception words.",
+        "Intersections & turns":"Picture who has priority before answering.",
+        "Speed & braking":"Separate safe technique from legal limits.",
+        "Railroad crossings":"Think stop, look and confirm the crossing is safe.",
+    }.get(category,"Read every word and picture the road situation.")
+    if state=="correct": return random.choice(["Correct! Nice one.","Yes! You read that rule well.","Great answer. Keep moving!"])
+    if state=="streak": return f"{combo} in a row! Keep it going!"
+    if state=="wrong": return "Almost. Slow down and lock in the exact rule."
+    if state=="pleading": return random.choice(["Please get the next one right! Read every word for me.","Please, one careful answer! We can break this losing streak.","Come on, driver! Slow down and help me get the next one right!"])
+    if state=="comeback": return "Yes! That's the comeback I wanted. Keep going!"
+    if state=="victory": return "Mission cleared! You did it!"
+    return focus
+
+
+def speak_text(text: str):
+    if not st.session_state.get("voice_on", True) or not text:
+        return
+    js_text=json.dumps(str(text))
+    components.html(f"""
+<script>
+try {{
+  window.speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance({js_text});
+  u.lang='en-US'; u.rate=1.03; u.pitch=1.18; u.volume=.82;
+  window.speechSynthesis.speak(u);
+}} catch(e) {{}}
+</script>
+""",height=0,width=0)
+
+
+def play_pending_voice():
+    text=st.session_state.get("pending_voice")
+    if text:
+        st.session_state.pending_voice=None
+        speak_text(text)
+
+
+def set_mascot_state(state: str, category: str, combo: int = 0, wrong_chain: int = 0, speak: bool = True):
+    st.session_state.mascot_state=state
+    st.session_state.mascot_category=category
+    msg=mascot_message(state,category,combo,wrong_chain)
+    if speak:
+        st.session_state.pending_voice=msg
+    return msg
+
+
+def render_mascot_panel(category: str | None = None, state: str | None = None, message: str | None = None, compact: bool = False):
+    category=category or st.session_state.get("mascot_category") or "Default"
+    state=state or st.session_state.get("mascot_state") or "idle"
+    message=message or mascot_message(state,category)
+    st.markdown("<div class='km-mascot-card'>",unsafe_allow_html=True)
+    st.image(str(mascot_asset(category,state)),use_container_width=True)
+    state_label={"idle":"Ready","correct":"Correct","streak":"On Fire","wrong":"Almost","pleading":"Please!","comeback":"Comeback","victory":"Victory"}.get(state,"Ready")
+    st.markdown(f"<span class='km-state-pill'>🐾 {html.escape(state_label)}</span><div class='km-speech'>{html.escape(message)}</div>",unsafe_allow_html=True)
+    if not compact and st.button("🔊 Hear mascot",use_container_width=True,key=f"speak_{category}_{state}_{st.session_state.feedback_nonce}"):
+        st.session_state.pending_voice=message
+        st.rerun()
+    st.markdown("</div>",unsafe_allow_html=True)
+
+
+def mascot_feedback(kind: str, combo: int = 0):
+    category=st.session_state.get("mascot_category") or "Default"
+    mapping={"correct":"correct","wrong":"wrong","combo":"streak","pass":"victory","complete":"victory","retry":"pleading","badge":"correct"}
+    state=mapping.get(kind,"idle")
+    msg=mascot_message(state,category,combo,int((st.session_state.review or {}).get("wrong_chain",0)))
+    render_mascot_panel(category,state,msg,compact=True)
+
+
+def render_question(q: dict, position: int, total: int, reveal: bool = False, selected=None):
+    st.session_state.mascot_category=q["category"]
+    stars="★"*max(1,min(3,int(q.get("difficulty") or 1)))+"☆"*(3-max(1,min(3,int(q.get("difficulty") or 1))))
+    qtext=html.escape(q["question_en"]).replace("\n","<br>")
+    st.markdown(
+        f"<div class='km-quest-shell'><div class='km-quest-head'><span class='km-cat-tag'>🚦 {html.escape(q['category'])}</span><span class='km-diff'>{stars}</span><span class='km-qcounter'>Q{position} / {total}</span></div><div class='km-qno'>{html.escape(q['id'])} · {html.escape(bank_label(q))}</div><div class='km-qtext'>{qtext}</div>"+
+        (f"<div class='km-japanese'>{html.escape(q.get('question_ja',''))}</div>" if st.session_state.show_japanese and q.get("question_ja") else "")+"</div>",unsafe_allow_html=True)
+    for img in q.get("images",[]):
+        path=ROOT/img
+        if path.exists(): st.image(str(path),use_container_width=True)
+    if reveal:
+        ok=selected is not None and bool(selected)==bool(q["answer"])
+        answer_text="TRUE" if q["answer"] else "FALSE"
+        st.markdown(f"<div class='km-card {'km-good' if ok else 'km-bad'}'><strong>{'✅ Correct' if ok else '❌ Incorrect'}</strong> · Correct answer: <strong>{answer_text}</strong><div class='km-divider'></div>{html.escape(q['explanation'])}</div>",unsafe_allow_html=True)
+        render_sources(q)
+
+
+def game_hud(review: dict, idx: int, total: int):
+    combo=int(review.get("combo",0)); correct=int(review.get("correct",0)); answered=int(review.get("answered",0)); lives=review.get("lives")
+    accuracy=round(100*correct/max(1,answered)) if answered else 0
+    life_text=("❤"*max(0,int(lives))) if lives is not None else "∞"
+    st.markdown(f"<div class='km-game-hud'><div><b>🔥 {combo}</b><span>STREAK</span></div><div><b>⭐ {correct*10}</b><span>RUN XP</span></div><div><b>{accuracy}%</b><span>ACCURACY</span></div><div><b>{life_text}</b><span>{'LIVES' if lives is not None else 'PRACTICE'}</span></div></div>",unsafe_allow_html=True)
+    dots=[]
+    for i in range(min(total,20)):
+        cls="done" if i<idx else "now" if i==idx else ""
+        dots.append(f"<span class='km-dot {cls}'>{i+1}</span>")
+    if total<=20:
+        st.markdown("<div class='km-dotline'>"+"".join(dots)+"</div>",unsafe_allow_html=True)
+
+
+def start_review_mission(ids: list[str], mode: str, kind: str = "review", bank: str = "All", lives=None, target: int = 0):
+    st.session_state.review={"ids":list(ids),"index":0,"correct":0,"answered":0,"started":time.time(),"mode":mode,"kind":kind,"bank":bank,"combo":0,"max_combo":0,"wrong_chain":0,"lives":lives,"target":target,"finished":False,"session_saved":False}
+    st.session_state.review_feedback=None
+    st.session_state.review_started_at=time.time()
+    st.session_state.active_game="review"
+    st.session_state.mascot_state="idle"
+    st.session_state.pending_fx="start"
+    st.session_state.nav="Play"
+
+
+def finish_review_session(review: dict):
+    if review.get("session_saved"):
+        return
+    kind=review.get("kind","review")
+    mode_name={"daily":"daily","survival":"survival","boss":"boss"}.get(kind,"review")
+    add_session(mode_name,review["ids"][:max(1,int(review.get("answered",0)))],review["correct"],time.time()-review["started"],review.get("bank","All"))
+    if st.session_state.progress.get("sessions"):
+        st.session_state.progress["sessions"][-1]["max_combo"] = int(review.get("max_combo", 0))
+        if review.get("lives") is not None:
+            st.session_state.progress["sessions"][-1]["lives_left"] = int(review.get("lives", 0))
+    review["session_saved"]=True
+    st.session_state.pending_fx="complete"
+    set_mascot_state("victory" if (kind not in {"boss"} or (100*review["correct"]/max(1,review["answered"])>=90)) else "pleading",st.session_state.mascot_category,speak=True)
+    check_new_achievements()
+
+
+def answer_review(q: dict, choice: bool):
+    review=st.session_state.review
+    elapsed=time.time()-st.session_state.review_started_at
+    ok=bool(choice)==bool(q["answer"])
+    record_answer(q["id"],ok,elapsed)
+    review["answered"]+=1; review["correct"]+=int(ok)
+    previous_wrong=int(review.get("wrong_chain",0))
+    if ok:
+        review["combo"]=int(review.get("combo",0))+1
+        review["max_combo"]=max(int(review.get("max_combo",0)),review["combo"])
+        review["wrong_chain"]=0
+        state="comeback" if previous_wrong>=2 else "streak" if review["combo"]>=3 else "correct"
+        fx="combo" if review["combo"] in {3,5,10,15,20} else "correct"
+    else:
+        review["combo"]=0
+        review["wrong_chain"]=previous_wrong+1
+        if review.get("lives") is not None:
+            review["lives"]=max(0,int(review["lives"])-1)
+        state="pleading" if review["wrong_chain"]>=2 else "wrong"
+        fx="wrong"
+    set_mascot_state(state,q["category"],int(review.get("combo",0)),int(review.get("wrong_chain",0)),speak=True)
+    st.session_state.pending_fx=fx
+    st.session_state.review_feedback=choice
+    if review.get("kind")=="survival" and int(review.get("lives",1))<=0:
+        review["finished"]=True
+        finish_review_session(review)
+    check_new_achievements()
+
+
+def render_review_summary(review):
+    total=max(1,int(review.get("answered",0)))
+    correct=int(review.get("correct",0)); pct=100*correct/total; kind=review.get("kind","review")
+    if kind=="survival":
+        title="SURVIVAL RUN OVER"; subtitle=f"You survived {total} questions with {correct} correct."
+    elif kind=="daily":
+        title="DAILY CHALLENGE CLEAR"; subtitle=f"{correct}/{total} correct · daily streak {daily_challenge_streak()} day(s)."
+    elif kind=="boss":
+        passed=pct>=90; title="BOSS DEFEATED!" if passed else "BOSS ESCAPED"; subtitle="90% target cleared." if passed else "Train the weak spots and challenge it again."
+    else:
+        title="STAGE CLEAR"; subtitle="Good practice run. Your adaptive queue has been updated."
+    st.markdown(f"<div class='km-result-v4'><div style='font-size:2rem'>{'🏆' if pct>=90 else '⭐'}</div><div style='font-size:2.7rem;font-weight:950'>{pct:.0f}%</div><div style='font-size:1.25rem;font-weight:950'>{title}</div><div style='font-weight:700;opacity:.92'>{html.escape(subtitle)}</div></div>",unsafe_allow_html=True)
+    c1,c2,c3,c4=st.columns(4); c1.metric("Correct",f"{correct}/{total}"); c2.metric("Best streak",f"{int(review.get('max_combo',0))}x"); c3.metric("XP earned",correct*10+(total-correct)*2); c4.metric("Mode",kind.title())
+    render_mascot_panel(st.session_state.mascot_category,"victory" if pct>=70 else "pleading",mascot_message("victory" if pct>=70 else "pleading",st.session_state.mascot_category))
+    c1,c2=st.columns(2)
+    if c1.button("🎮 Play another mode",use_container_width=True,type="primary"):
+        st.session_state.review=None; st.session_state.review_feedback=None; st.session_state.active_game=None; st.session_state.nav="Play"; st.rerun()
+    if c2.button("🎯 Train weak spots",use_container_width=True):
+        ids=select_review_questions(QUESTIONS,"Wrong answers",20); start_review_mission(ids,"Wrong answers","review"); st.rerun()
+
+
+def page_review():
+    review=st.session_state.review
+    if not review:
+        st.session_state.active_game=None
+        page_play()
+        return
+    if review.get("finished"):
+        finish_review_session(review); render_review_summary(review); return
+    ids=review["ids"]; idx=int(review["index"])
+    if idx>=len(ids):
+        review["finished"]=True; finish_review_session(review); render_review_summary(review); return
+    q=BY_ID[ids[idx]]
+    game_hud(review,idx,len(ids))
+    feedback=st.session_state.review_feedback
+    main,side=st.columns([3.4,1.25],gap="medium")
+    with main:
+        st.progress((idx+1)/max(1,len(ids)),text=f"{review.get('mode','Review')} · Question {idx+1}/{len(ids)}")
+        render_question(q,idx+1,len(ids),reveal=feedback is not None,selected=feedback)
+        if feedback is None:
+            c1,c2=st.columns(2)
+            if c1.button("⭕  TRUE",use_container_width=True,type="primary",key=f"v4_true_{q['id']}"):
+                answer_review(q,True); st.rerun()
+            if c2.button("❌  FALSE",use_container_width=True,key=f"v4_false_{q['id']}"):
+                answer_review(q,False); st.rerun()
+        else:
+            if st.button("Next question  ➜",use_container_width=True,type="primary",key=f"v4_next_{q['id']}"):
+                if idx+1>=len(ids):
+                    review["finished"]=True; finish_review_session(review)
+                else:
+                    review["index"]+=1; st.session_state.review_started_at=time.time(); st.session_state.mascot_state="idle"
+                st.session_state.review_feedback=None; st.rerun()
+    with side:
+        state=st.session_state.get("mascot_state","idle")
+        msg=mascot_message(state,q["category"],int(review.get("combo",0)),int(review.get("wrong_chain",0)))
+        render_mascot_panel(q["category"],state,msg)
+        st.markdown(f"<div class='km-card'><strong>Category outfit</strong><br><span class='km-small'>{category_outfit(q['category']).replace('_',' ').title()} attire<br>Changes automatically with each topic.</span></div>",unsafe_allow_html=True)
+    if st.button("← Leave this run",use_container_width=True,key="leave_review_v4"):
+        st.session_state.review=None; st.session_state.review_feedback=None; st.session_state.active_game=None; st.rerun()
+
+
+def world_stage_data():
+    seen=unique_seen_count()
+    stages=[("🏫","Driving School",0),("🏙️","City Roads",40),("🚦","Intersections",100),("🛣️","Highway",180),("🌙","Night Driving",300),("🏁","Final Exam",450)]
+    htmls=[]
+    for icon,name,req in stages:
+        unlocked=seen>=req
+        next_req=next((r for _,_,r in stages if r>req),len(QUESTIONS))
+        if unlocked:
+            frac=max(0,min(1,(seen-req)/max(1,next_req-req)))
+            stars="★"*max(1,min(3,1+int(frac*3)))+"☆"*(3-max(1,min(3,1+int(frac*3))))
+        else: stars="🔒"
+        htmls.append(f"<div class='km-stage {'locked' if not unlocked else ''}'><div class='km-stage-icon'>{icon}</div><div class='km-stage-name'>{name}</div><div class='km-stage-stars'>{stars}</div><div class='km-stage-req'>{'Unlocked' if unlocked else f'{req} questions to unlock'}</div></div>")
+    return "".join(htmls)
+
+
+def launch_daily():
+    start_review_mission(daily_ids(10),"Today's 10 Questions","daily",target=90)
+
+
+def launch_survival():
+    ids=select_review_questions(QUESTIONS,"Due / adaptive",50)
+    start_review_mission(ids,"Survival Mode","survival",lives=3)
+
+
+def launch_boss():
+    ids=select_review_questions(QUESTIONS,"Weakest",20)
+    start_review_mission(ids,"Boss Exam","boss",target=90)
+
+
+def page_home():
+    level,xp,xp_goal=study_level_info(); title=driver_title(level); seen=unique_seen_count(); best=best_exam_percent(); daily_done=daily_completed_today(); daily_streak=daily_challenge_streak()
+    st.markdown(f"<div class='km-profile'><div class='km-profile-name'>🐱 {html.escape(safe_player_name())}</div><div class='km-profile-sub'>Level {level} · {title}</div><div class='km-xp'><div class='km-xp-fill' style='width:{100*xp/xp_goal:.1f}%'></div></div><div class='km-small' style='color:white;margin-top:.35rem'>{xp}/{xp_goal} XP to next level · Total XP {total_xp():,}</div><div class='km-chip-row'><div class='km-chip'>🔥 Daily {daily_streak}</div><div class='km-chip'>🏆 Best {best:.0f}%</div><div class='km-chip'>📘 {seen}/650 seen</div></div></div>",unsafe_allow_html=True)
+    st.markdown("<div class='km-section'>Today's mission</div>",unsafe_allow_html=True)
+    c1,c2=st.columns([2.2,1])
+    with c1:
+        st.markdown(f"<div class='km-daily'><div style='font-size:1.2rem;font-weight:950'>📅 Daily Challenge</div><div style='font-weight:720;margin-top:.25rem'>10 questions · same challenge all day · 3 image questions mixed in</div><div style='margin-top:.55rem;font-weight:900'>{'✅ Completed today' if daily_done else '🎁 +30 completion XP bonus'} · 🔥 {daily_streak} day streak</div></div>",unsafe_allow_html=True)
+        if st.button("Replay today's challenge" if daily_done else "Start today's challenge",use_container_width=True,type="primary",key="home_daily_v4"):
+            launch_daily(); st.rerun()
+    with c2:
+        render_mascot_panel("Default","correct" if daily_done else "idle","Great work today!" if daily_done else "Ten questions today. Let's do this!",compact=True)
+    st.markdown("<div class='km-section'>Your journey</div>",unsafe_allow_html=True)
+    st.markdown("<div class='km-world'>"+world_stage_data()+"</div>",unsafe_allow_html=True)
+    st.markdown("<div class='km-section'>Quick play</div>",unsafe_allow_html=True)
+    c1,c2,c3=st.columns(3)
+    with c1:
+        render_mode_card("Smart Review","Adaptive queue prioritizes due, weak and unseen rules.","🧠","km-mode-blue")
+        if st.button("Start Smart Review",use_container_width=True,type="primary",key="h_smart4"):
+            start_review_mission(select_review_questions(QUESTIONS,"Due / adaptive",20),"Smart Review"); st.rerun()
+    with c2:
+        render_mode_card("Exam Mode","50 questions · 30 minutes · 90% practice target.","🏁","km-mode-green")
+        if st.button("Start 50Q Exam",use_container_width=True,key="h_exam4"):
+            start_exam("All","All",50,30); st.session_state.active_game="exam"; st.session_state.nav="Play"; st.session_state.pending_fx="start"; st.rerun()
+    with c3:
+        render_mode_card("Survival","Three lives. How far can your streak survive?","⚡","km-mode-orange")
+        if st.button("Start Survival",use_container_width=True,key="h_surv4"):
+            launch_survival(); st.rerun()
+    weak=weak_categories(4)
+    st.markdown("<div class='km-section'>Weak topics</div>",unsafe_allow_html=True)
+    if weak:
+        parts=[]
+        for r in weak:
+            score=max(0,min(100,r["mastery"])); parts.append(f"<div class='km-weak-row'><div class='km-weak-name'>{html.escape(r['category'])}</div><div class='km-bar'><i style='width:{score:.1f}%'></i></div><div class='km-weak-pct'>{score:.0f}%</div></div>")
+        st.markdown("<div class='km-card'>"+"".join(parts)+"</div>",unsafe_allow_html=True)
+        if st.button("🎯 Review weak topics",use_container_width=True,key="h_weak4"):
+            start_review_mission(select_review_questions(QUESTIONS,"Wrong answers",20),"Weak Topic Training"); st.rerun()
+    else:
+        st.info("Your weak-topic panel will appear after you answer some questions.")
+    with st.expander("👤 Profile, sound and backup"):
+        player_controls(compact=True)
+        c1,c2,c3=st.columns(3)
+        st.session_state.sound_on=c1.toggle("Sound effects",value=st.session_state.sound_on,key="v4_sound_home")
+        st.session_state.voice_on=c2.toggle("Mascot voice",value=st.session_state.voice_on,key="v4_voice_home")
+        st.session_state.haptics_on=c3.toggle("Phone vibration",value=st.session_state.haptics_on,key="v4_haptic_home")
+        st.download_button("Download progress backup",progress_json(),"karimen_progress.json","application/json",use_container_width=True)
+
+
+def page_play():
+    # If a v3.2 button changed nav to Review/Exam, the header normalizes it to Play.
+    if st.session_state.active_game=="review" and st.session_state.review:
+        page_review(); return
+    if st.session_state.active_game=="exam" and st.session_state.exam:
+        _v32_page_exam(); return
+    st.session_state.active_game=None
+    st.markdown("<div class='km-section'>Choose game mode</div>",unsafe_allow_html=True)
+    level,_,_=study_level_info(); boss_unlocked=level>=5 or unique_seen_count()>=100
+    modes=[
+        ("📘","Review Mode","Learn with explanations and adaptive repetition.","review","km-mode-blue"),
+        ("📝","Exam Mode","Full simulation with timer, flags and results.","exam","km-mode-green"),
+        ("📅","Daily Challenge","Ten fixed questions per day. Build a streak.","daily","km-mode-violet"),
+        ("⚡","Survival Mode","Three lives. One miss costs a heart.","survival","km-mode-orange"),
+        ("👑","Boss Exam","Twenty of your hardest questions. Target 90%.","boss","km-mode-pink"),
+        ("🎯","Mistake Hunt","Attack your saved wrong-answer queue.","mistakes","km-mode-cyan"),
+    ]
+    cols=st.columns(2)
+    for i,(icon,title,sub,key,cls) in enumerate(modes):
+        with cols[i%2]:
+            render_mode_card(title,sub,icon,cls)
+            disabled=(key=="boss" and not boss_unlocked)
+            label="🔒 Unlock at Level 5" if disabled else f"Play {title}"
+            if st.button(label,use_container_width=True,disabled=disabled,key=f"play_{key}_v4",type="primary" if key in {"review","daily"} else "secondary"):
+                if key=="review": start_review_mission(select_review_questions(QUESTIONS,"Due / adaptive",20),"Smart Review")
+                elif key=="exam": start_exam("All","All",50,30); st.session_state.active_game="exam"; st.session_state.pending_fx="start"
+                elif key=="daily": launch_daily()
+                elif key=="survival": launch_survival()
+                elif key=="boss": launch_boss()
+                elif key=="mistakes": start_review_mission(select_review_questions(QUESTIONS,"Wrong answers",20),"Mistake Hunt")
+                st.session_state.nav="Play"; st.rerun()
+    with st.expander("🛠️ Custom review mission"):
+        c1,c2=st.columns(2); bank=c1.selectbox("Bank",BANK_OPTIONS,key="v4_custom_bank"); set_filter=c2.selectbox("Set",set_options_for_bank(bank),key="v4_custom_set")
+        pool0=filter_questions(bank,set_filter); cats=["All"]+sorted({q["category"] for q in pool0}); category=st.selectbox("Category",cats,key="v4_custom_cat")
+        c1,c2=st.columns(2); strategy=c1.selectbox("Strategy",["Due / adaptive","Wrong answers","Unseen","Weakest","Random"],key="v4_custom_strategy"); count=c2.slider("Questions",5,100,20,5,key="v4_custom_count")
+        pool=filter_questions(bank,set_filter,category)
+        if st.button("Launch custom mission",use_container_width=True,type="primary",disabled=not pool,key="v4_custom_launch"):
+            start_review_mission(select_review_questions(pool,strategy,count),f"{strategy} · {category}","review",bank=bank); st.rerun()
+
+
+def page_mistakes():
+    wrong=[]
+    for q in QUESTIONS:
+        s=qstat(q["id"])
+        if int(s.get("wrong",0))>0:
+            wrong.append((q,s))
+    wrong.sort(key=lambda x:(mastery(x[1]),-int(x[1].get("wrong",0))))
+    st.markdown("<div class='km-section'>📕 My Mistake Book</div>",unsafe_allow_html=True)
+    st.markdown(f"<div class='km-card'><strong>{len(wrong)} questions</strong> have been missed at least once.<br><span class='km-small'>The adaptive system keeps these in rotation until mastery improves.</span></div>",unsafe_allow_html=True)
+    if not wrong:
+        render_mascot_panel("Default","correct","No mistakes saved yet. Start a review or exam first.")
+        return
+    cats=["All"]+sorted({q["category"] for q,_ in wrong}); cat=st.selectbox("Filter category",cats,key="mistake_cat_v4")
+    shown=[x for x in wrong if cat=="All" or x[0]["category"]==cat]
+    c1,c2=st.columns(2)
+    if c1.button("🎯 Train top 20 mistakes",use_container_width=True,type="primary"):
+        ids=[q["id"] for q,_ in shown[:20]]; start_review_mission(ids,"Mistake Book Training"); st.rerun()
+    c2.metric("Current filter",len(shown))
+    for q,s in shown[:40]:
+        acc=100*int(s.get("correct",0))/max(1,int(s.get("attempts",0)))
+        with st.expander(f"{q['id']} · {q['category']} · {int(s.get('wrong',0))} miss(es) · {acc:.0f}%"):
+            st.write(q["question_en"])
+            for img in q.get("images",[]):
+                p=ROOT/img
+                if p.exists(): st.image(str(p),use_container_width=True)
+            st.success(f"Correct answer: {'TRUE' if q['answer'] else 'FALSE'}")
+            st.write(q["explanation"]); render_sources(q)
+
+
+def pass_readiness() -> float:
+    sessions = st.session_state.progress.get("sessions", [])
+    exams = [float(s.get("percent") or 0) for s in sessions if s.get("mode") == "exam"][-3:]
+    exam_signal = sum(exams) / len(exams) if exams else 0.0
+    rows = category_stats_rows()
+    practiced = [r["mastery"] for r in rows if r["attempts"] > 0]
+    mastery_signal = sum(practiced) / len(practiced) if practiced else 0.0
+    coverage_signal = 100 * unique_seen_count() / max(1, len(QUESTIONS))
+    if exams:
+        return max(0.0, min(100.0, .58*exam_signal + .27*mastery_signal + .15*coverage_signal))
+    return max(0.0, min(100.0, .65*mastery_signal + .35*coverage_signal))
+
+
+def page_progress():
+    level,xp,goal=study_level_info(); seen=unique_seen_count(); d_streak=daily_challenge_streak(); readiness=pass_readiness()
+    c1,c2,c3,c4=st.columns(4); c1.metric("Level",level); c2.metric("Total XP",f"{total_xp():,}"); c3.metric("Questions seen",f"{seen}/650"); c4.metric("Pass readiness",f"{readiness:.0f}%")
+    st.caption("Pass readiness is an in-app estimate based on recent mock exams, category mastery and question coverage; it is not an official probability.")
+    st.markdown("<div class='km-section'>World progress</div>",unsafe_allow_html=True); st.markdown("<div class='km-world'>"+world_stage_data()+"</div>",unsafe_allow_html=True)
+    _v32_page_progress()
+
+
+def render_exam_results(exam):
+    # Keep the detailed v3.2 exam review, while letting the new cat system react.
+    pct=100*int(exam.get("correct",0))/max(1,len(exam.get("ids",[])))
+    set_mascot_state("victory" if pct>=META["exam_standard"]["pass_percent"] else "pleading",st.session_state.get("mascot_category","Default"),speak=not exam.get("v4_spoken",False))
+    exam["v4_spoken"]=True
+    _v32_render_exam_results(exam)
+
+
+def achievement_catalog() -> list[dict]:
+    stats=st.session_state.progress["question_stats"]
+    attempts=sum(int(x.get("attempts",0) or 0) for x in stats.values())
+    unique_seen=sum(1 for x in stats.values() if int(x.get("attempts",0) or 0)>0)
+    image_seen=sum(1 for q in QUESTIONS if q.get("images") and qstat(q["id"])["attempts"]>0)
+    sessions=st.session_state.progress.get("sessions",[])
+    exams=[s for s in sessions if s.get("mode")=="exam"]
+    daily_streak=daily_challenge_streak()
+    survival_best=max([int(s.get("questions",0) or 0) for s in sessions if s.get("mode")=="survival"] or [0])
+    max_combo=max([int(s.get("max_combo",0) or 0) for s in sessions] + [int((st.session_state.get("review") or {}).get("max_combo",0) or 0),0])
+    return [
+        {"id":"first","icon":"🚗","name":"First Drive","desc":"Answer your first question","earned":attempts>=1},
+        {"id":"warm","icon":"⚡","name":"Engine Warm","desc":"Answer 10 questions","earned":attempts>=10},
+        {"id":"rookie","icon":"🗺️","name":"Road Rookie","desc":"See 50 unique questions","earned":unique_seen>=50},
+        {"id":"combo","icon":"🔥","name":"Hot Streak","desc":"Get 5 correct in a row","earned":max_combo>=5},
+        {"id":"image","icon":"👀","name":"Sharp Eye","desc":"Practice 20 image questions","earned":image_seen>=20},
+        {"id":"daily3","icon":"📅","name":"Daily Driver","desc":"Complete a 3-day daily challenge streak","earned":daily_streak>=3},
+        {"id":"survivor","icon":"❤️","name":"Survivor","desc":"Reach 15 questions in Survival Mode","earned":survival_best>=15},
+        {"id":"pass","icon":"🏆","name":"Mock Pass","desc":"Pass a 90% practice exam","earned":any(float(s.get("percent") or 0)>=90 for s in exams)},
+        {"id":"boss","icon":"👑","name":"Boss Breaker","desc":"Defeat a Boss Exam with 90%+","earned":any(s.get("mode")=="boss" and float(s.get("percent") or 0)>=90 for s in sessions)},
+        {"id":"perfect","icon":"💯","name":"Perfect Drive","desc":"Score 50/50 on a mock exam","earned":any(int(s.get("questions") or 0)==50 and int(s.get("correct") or 0)==50 for s in exams)},
+        {"id":"veteran","icon":"🎖️","name":"Road Veteran","desc":"Answer 250 questions","earned":attempts>=250},
+    ]
+
+
+def header():
+    # Normalize internal v3.2 navigation into the single Play destination.
+    if st.session_state.nav=="Review":
+        st.session_state.active_game="review"; st.session_state.nav="Play"
+    elif st.session_state.nav=="Exam":
+        st.session_state.active_game="exam"; st.session_state.nav="Play"
+    level,xp,goal=study_level_info()
+    top,catcol=st.columns([5.2,1])
+    with top:
+        st.markdown(f"<div class='km-v4-top'><div class='km-v4-logo'>🐾 KARIMEN REVIEWER</div><div class='km-v4-tag'>Practice • Learn • Master • Pass</div><div class='km-v4-hud'><span>⭐ Level {level}</span><span>🪙 {total_xp():,} XP</span><span>🔥 Daily {daily_challenge_streak()}</span><span>📘 {unique_seen_count()}/650</span></div></div>",unsafe_allow_html=True)
+    with catcol:
+        st.image(str(mascot_asset()),use_container_width=True)
+    nav_options=["Home","Play","Mistakes","Progress","Rankings","Bank"]
+    current=st.session_state.nav if st.session_state.nav in nav_options else "Home"
+    st.markdown("<div class='km-v4-nav'>",unsafe_allow_html=True)
+    st.session_state.nav=current
+    nav=st.radio("Navigation",nav_options,horizontal=True,label_visibility="collapsed",key="nav")
+    st.markdown("</div>",unsafe_allow_html=True)
+    with st.expander("⚙️ Settings",expanded=False):
+        c1,c2,c3=st.columns(3)
+        st.session_state.theme=c1.selectbox("Theme",["Arcade","Cute","Night"],index=["Arcade","Cute","Night"].index(st.session_state.get("theme","Arcade")),key="v4_theme")
+        st.session_state.show_japanese=c2.toggle("Show Japanese",value=st.session_state.show_japanese,key="v4_jp")
+        st.session_state.voice_on=c3.toggle("Mascot voice",value=st.session_state.voice_on,key="v4_voice")
+        c1,c2=st.columns(2); st.session_state.sound_on=c1.toggle("Sound effects",value=st.session_state.sound_on,key="v4_sound"); st.session_state.haptics_on=c2.toggle("Phone vibration",value=st.session_state.haptics_on,key="v4_haptic")
+    return nav
+
+
 def play_pending_fx():
     kind = st.session_state.get("pending_fx")
     if kind:
@@ -1580,23 +2222,24 @@ def play_pending_fx():
 
 
 def footer():
-    st.markdown("<div class='km-divider'></div><div class='km-small'>A1 B1 Karimen Reviewer · Build 3.2 Game+ · Study aid only · Shared ranking uses nicknames only</div>", unsafe_allow_html=True)
+    st.markdown("<div class='km-divider'></div><div class='km-small'>A1 B1 Karimen Reviewer · Build 4.0 Journey · Study aid only · Shared ranking uses nicknames only</div>", unsafe_allow_html=True)
 
 
 prime_achievement_snapshot()
 nav = header()
 play_pending_fx()
+play_pending_voice()
 render_achievement_toast()
 if nav == "Home":
     page_home()
-elif nav == "Review":
-    page_review()
-elif nav == "Exam":
-    page_exam()
+elif nav == "Play":
+    page_play()
+elif nav == "Mistakes":
+    page_mistakes()
 elif nav == "Rankings":
-    page_rankings()
+    _v32_page_rankings()
 elif nav == "Progress":
     page_progress()
 elif nav == "Bank":
-    page_bank()
+    _v32_page_bank()
 footer()
