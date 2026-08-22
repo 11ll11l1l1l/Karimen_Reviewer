@@ -148,46 +148,107 @@ def inject_style():
         """
 <style>
 :root {
-  --ink:#25324a; --muted:#718096; --line:#e6edf5; --card:#ffffff;
-  --blue:#4f8ef7; --blue2:#76b5ff; --mint:#e9f8f1; --mint-ink:#2d7a55;
-  --rose:#fff0f1; --rose-ink:#a44d55; --cream:#fffaf0; --gold:#f5b83b;
-  --shadow:0 8px 28px rgba(70,95,125,.08); --radius:20px;
+  --bg1:#e8f3ff; --bg2:#eef9ff; --bg3:#fff6e7;
+  --ink:#20314d; --muted:#6780a6; --line:#d9e7fb; --card:#ffffff;
+  --blue:#2b8cff; --sky:#64c4ff; --mint:#19d39a; --violet:#8a5bff; --orange:#ffab2d; --pink:#ff6fa8;
+  --shadow:0 12px 30px rgba(54,82,130,.11); --shadow-soft:0 6px 18px rgba(54,82,130,.08);
+  --radius:22px;
 }
 html, body, [class*="css"] { color:var(--ink); }
-.stApp { background:linear-gradient(180deg,#f7fbff 0%,#fbfcff 52%,#fffaf7 100%); }
-.block-container { max-width:900px; padding-top:.7rem; padding-bottom:5rem; }
-[data-testid="stHeader"] { background:rgba(247,251,255,.86); backdrop-filter:blur(8px); }
-.km-hero { background:linear-gradient(135deg,#eef6ff,#fff8f1); border:1px solid #e6edf5; border-radius:24px; padding:1rem 1.05rem; margin:.2rem 0 .8rem; box-shadow:var(--shadow); }
-.km-title { font-size:clamp(1.6rem,7vw,2.45rem); font-weight:850; line-height:1.05; letter-spacing:-.03em; }
-.km-subtitle { color:var(--muted); margin-top:.35rem; line-height:1.45; }
-.km-card { background:rgba(255,255,255,.92); border:1px solid var(--line); border-radius:var(--radius); padding:1rem 1.05rem; margin:.6rem 0; box-shadow:var(--shadow); }
-.km-soft { background:linear-gradient(135deg,#f1f7ff,#fff); }
-.km-good { background:linear-gradient(135deg,#ecfbf3,#fff); border-color:#cdeedd; }
-.km-bad { background:linear-gradient(135deg,#fff2f3,#fff); border-color:#f4d4d8; }
-.km-qno { font-size:.78rem; color:var(--muted); font-weight:750; letter-spacing:.045em; }
-.km-question { font-size:clamp(1.12rem,4.2vw,1.43rem); line-height:1.58; font-weight:680; margin-top:.6rem; }
-.km-japanese { font-size:.98rem; line-height:1.6; color:#667085; margin-top:.75rem; padding-top:.65rem; border-top:1px dashed #e6edf5; }
-.km-pill { display:inline-block; background:#f4f7fb; border:1px solid #e5ebf2; border-radius:999px; padding:.21rem .58rem; margin:.22rem .12rem .1rem 0; font-size:.78rem; color:#607089; font-weight:650; }
+body { background: radial-gradient(circle at top left, #ffffff 0%, #f4fbff 35%, #fff6ea 100%); }
+.stApp {
+  background:
+    radial-gradient(circle at 12% 12%, rgba(100,196,255,.18), transparent 22%),
+    radial-gradient(circle at 88% 16%, rgba(255,171,45,.14), transparent 20%),
+    radial-gradient(circle at 24% 88%, rgba(138,91,255,.11), transparent 19%),
+    linear-gradient(180deg,var(--bg1) 0%,var(--bg2) 52%,var(--bg3) 100%);
+}
+.block-container { max-width:940px; padding-top:.75rem; padding-bottom:5rem; }
+[data-testid="stHeader"] { background:rgba(245,250,255,.78); backdrop-filter:blur(10px); }
+[data-testid="stToolbar"] { right: .6rem; }
+.km-hero {
+  position:relative; overflow:hidden;
+  background: linear-gradient(135deg, #1f74ff 0%, #58a8ff 32%, #7fd9ff 60%, #ffd067 100%);
+  border:1px solid rgba(255,255,255,.35); border-radius:28px; padding:1.05rem 1.05rem 1.1rem; margin:.15rem 0 .8rem;
+  box-shadow:0 16px 36px rgba(36,90,181,.18);
+}
+.km-hero::before, .km-hero::after{content:"";position:absolute;border-radius:50%;background:rgba(255,255,255,.14);}
+.km-hero::before{width:140px;height:140px;right:-15px;top:-25px;}
+.km-hero::after{width:110px;height:110px;left:-20px;bottom:-28px;}
+.km-title { font-size:clamp(1.75rem,8vw,2.75rem); font-weight:900; line-height:1.02; letter-spacing:-.04em; color:white; text-shadow:0 4px 16px rgba(11,47,117,.23); }
+.km-subtitle { color:rgba(255,255,255,.93); margin-top:.42rem; line-height:1.45; font-weight:600; }
+.km-badges{display:flex;gap:.42rem;flex-wrap:wrap;margin-top:.7rem;}
+.km-badge{display:inline-flex;align-items:center;gap:.35rem;background:rgba(255,255,255,.2);color:white;border:1px solid rgba(255,255,255,.34);padding:.34rem .7rem;border-radius:999px;font-size:.78rem;font-weight:800;backdrop-filter: blur(6px);}
+.km-card { background:rgba(255,255,255,.96); border:1px solid var(--line); border-radius:var(--radius); padding:1rem 1.05rem; margin:.55rem 0; box-shadow:var(--shadow-soft); }
+.km-soft { background:linear-gradient(180deg,#ffffff,#f9fcff); }
+.km-good { background:linear-gradient(180deg,#effff7,#ffffff); border-color:#b9efd6; }
+.km-bad { background:linear-gradient(180deg,#fff3f4,#ffffff); border-color:#f2c6d1; }
+.km-qno { font-size:.78rem; color:var(--muted); font-weight:850; letter-spacing:.05em; }
+.km-question { font-size:clamp(1.14rem,4.3vw,1.48rem); line-height:1.58; font-weight:760; margin-top:.62rem; }
+.km-japanese { font-size:.98rem; line-height:1.62; color:#60708b; margin-top:.78rem; padding-top:.68rem; border-top:1px dashed #dfeaf7; }
+.km-pill { display:inline-block; background:#f6faff; border:1px solid #dce8f8; border-radius:999px; padding:.24rem .62rem; margin:.22rem .12rem .1rem 0; font-size:.78rem; color:#607089; font-weight:760; }
 .km-small { font-size:.86rem; color:var(--muted); }
-.km-divider { height:1px; background:var(--line); margin:.9rem 0; }
-.km-mascot-line { display:flex; align-items:center; gap:.7rem; background:#fff; border:1px solid var(--line); border-radius:18px; padding:.75rem .85rem; margin:.55rem 0; box-shadow:var(--shadow); }
-.km-mascot-bubble { font-weight:700; line-height:1.42; }
-.km-live-dot { display:inline-block;width:8px;height:8px;border-radius:50%;background:#38b26f;margin-right:6px;box-shadow:0 0 0 4px rgba(56,178,111,.12); }
-.km-rank { font-size:1.3rem;font-weight:850; }
-.km-callout { padding:.8rem 1rem;border-radius:16px;background:#fff8dc;border:1px solid #f6e4a6;color:#66521a; }
-[data-testid="stMetric"] { background:rgba(255,255,255,.88); border:1px solid var(--line); border-radius:17px; padding:.65rem .7rem; box-shadow:0 5px 18px rgba(70,95,125,.05); }
-[data-testid="stImage"] img { border-radius:17px; }
-div.stButton > button { min-height:3.25rem; border-radius:15px; font-weight:780; font-size:1rem; border:1px solid #dfe7f0; box-shadow:0 4px 12px rgba(65,90,120,.05); }
+.km-divider { height:1px; background:var(--line); margin:.95rem 0; }
+.km-mascot-line { display:flex; align-items:center; gap:.72rem; background:linear-gradient(180deg,#ffffff,#fbfdff); border:1px solid var(--line); border-radius:18px; padding:.78rem .9rem; margin:.55rem 0; box-shadow:var(--shadow-soft); }
+.km-mascot-bubble { font-weight:760; line-height:1.42; }
+.km-live-dot { display:inline-block;width:9px;height:9px;border-radius:50%;background:#2dcb79;margin-right:6px;box-shadow:0 0 0 4px rgba(45,203,121,.12); }
+.km-rank { font-size:1.34rem;font-weight:900; }
+.km-callout { padding:.85rem 1rem;border-radius:18px;background:linear-gradient(135deg,#fff7d8,#fff0ba);border:1px solid #f3dc84;color:#6d5311; box-shadow:var(--shadow-soft); }
+.km-profile { background:linear-gradient(135deg,#253c91,#2d79ff 52%,#62c7ff 100%); border-radius:24px; padding:1rem; color:white; box-shadow:0 18px 36px rgba(34,78,170,.18); position:relative; overflow:hidden; }
+.km-profile::after{content:"";position:absolute;right:-18px;top:-24px;width:120px;height:120px;background:rgba(255,255,255,.16);border-radius:50%;}
+.km-profile-name{font-size:1.32rem;font-weight:900;line-height:1.08;}
+.km-profile-sub{opacity:.92;font-weight:650;}
+.km-xp{height:10px;background:rgba(255,255,255,.22);border-radius:999px;overflow:hidden;margin-top:.38rem;}
+.km-xp-fill{height:100%;background:linear-gradient(90deg,#ffd25f,#fff7a8);border-radius:999px;}
+.km-chip-row{display:flex;gap:.55rem;flex-wrap:wrap;margin-top:.75rem;}
+.km-chip{background:rgba(255,255,255,.17);border:1px solid rgba(255,255,255,.28);padding:.45rem .7rem;border-radius:16px;font-size:.8rem;font-weight:760;min-width:85px;text-align:center;}
+.km-grid4{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.78rem;}
+.km-mode-card{position:relative;overflow:hidden;padding:1rem;border-radius:22px;color:white;min-height:148px;box-shadow:0 16px 28px rgba(66,92,140,.15);border:1px solid rgba(255,255,255,.18);}
+.km-mode-card::before{content:"";position:absolute;right:-18px;bottom:-22px;width:96px;height:96px;border-radius:50%;background:rgba(255,255,255,.14);}
+.km-mode-icon{font-size:1.7rem;margin-bottom:.28rem;}
+.km-mode-title{font-size:1.22rem;font-weight:900;line-height:1.1;}
+.km-mode-sub{font-size:.91rem;line-height:1.4;margin-top:.35rem;opacity:.96;font-weight:600;max-width:95%;}
+.km-mode-blue{background:linear-gradient(135deg,#2c7df8,#5db6ff);}
+.km-mode-green{background:linear-gradient(135deg,#0dc278,#57e38e);}
+.km-mode-orange{background:linear-gradient(135deg,#ff9b19,#ffc043);}
+.km-mode-violet{background:linear-gradient(135deg,#7151ff,#ab74ff);}
+.km-mode-pink{background:linear-gradient(135deg,#ff5f94,#ff8dbc);}
+.km-mode-cyan{background:linear-gradient(135deg,#12b6d8,#66dfff);}
+.km-stat-band{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.72rem;margin-top:.5rem;}
+.km-stat-card{background:rgba(255,255,255,.95);border:1px solid var(--line);border-radius:19px;padding:.85rem .85rem;box-shadow:var(--shadow-soft);text-align:center;}
+.km-stat-label{font-size:.8rem;color:var(--muted);font-weight:760;}
+.km-stat-value{font-size:1.4rem;font-weight:900;line-height:1.05;margin-top:.18rem;}
+.km-panel-title{font-size:1.08rem;font-weight:900;margin:.2rem 0 .65rem;}
+.km-top3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.72rem;}
+.km-podium{background:linear-gradient(180deg,#ffffff,#f7fbff);border:1px solid var(--line);border-radius:20px;padding:.9rem;text-align:center;box-shadow:var(--shadow-soft);}
+.km-podium-rank{font-size:1.55rem;font-weight:900;line-height:1;}
+.km-podium-name{font-weight:800;margin-top:.2rem;}
+.km-podium-score{color:var(--blue);font-weight:900;margin-top:.25rem;}
+.km-settings-box{background:linear-gradient(180deg,#ffffff,#f8fbff);border:1px solid var(--line);border-radius:18px;padding:.85rem 1rem;}
+[data-testid="stMetric"] { background:rgba(255,255,255,.96); border:1px solid var(--line); border-radius:18px; padding:.7rem .75rem; box-shadow:var(--shadow-soft); }
+[data-testid="stImage"] img { border-radius:18px; }
+[data-testid="stRadio"] > div { gap:.35rem; flex-wrap:wrap; }
+[data-testid="stRadio"] label { background:#f8fbff; border:1px solid #dce8f8; border-radius:999px; padding:.26rem .7rem; box-shadow:0 3px 10px rgba(67,94,141,.04); }
+[data-baseweb="select"] > div, .stTextInput input, .stNumberInput input {
+  border-radius:16px !important; border:1px solid #dce8f8 !important; background:#ffffff !important;
+}
+.stTextInput input, .stNumberInput input { min-height: 3rem; }
+button[kind="primary"]{
+  background:linear-gradient(135deg,#2b8cff,#66b7ff)!important; border:0!important; color:white!important;
+}
+div.stButton > button { min-height:3.2rem; border-radius:16px; font-weight:850; font-size:1rem; border:1px solid #dfe7f0; box-shadow:0 6px 14px rgba(65,90,120,.06); }
 div.stButton > button:hover { transform:translateY(-1px); border-color:#bcd3f4; }
-[data-testid="stRadio"] > div { gap:.25rem; flex-wrap:wrap; }
-[data-testid="stRadio"] label { background:rgba(255,255,255,.72); border:1px solid #e4ebf3; border-radius:999px; padding:.15rem .45rem; }
 .stProgress > div > div > div { border-radius:999px; }
 [data-testid="stFileUploader"] { border-radius:16px; }
-@media(max-width:640px){
- .block-container{padding-left:.72rem;padding-right:.72rem;padding-top:.45rem;}
- .km-hero{padding:.85rem;border-radius:19px;}
- .km-card{padding:.86rem;border-radius:17px;}
- div.stButton > button{min-height:3.5rem;font-size:1.03rem;}
+label[data-testid="stWidgetLabel"] p{font-weight:760;color:#3b5173;}
+@media(max-width:760px){
+ .km-grid4{grid-template-columns:1fr;}
+ .km-stat-band,.km-top3{grid-template-columns:1fr;}
+ .block-container{padding-left:.72rem;padding-right:.72rem;padding-top:.48rem;}
+ .km-hero{padding:.9rem;border-radius:22px;}
+ .km-card{padding:.88rem;border-radius:18px;}
+ .km-profile{padding:.9rem;border-radius:22px;}
+ div.stButton > button{min-height:3.45rem;font-size:1.03rem;}
  [data-testid="column"]{min-width:0!important;}
 }
 </style>
@@ -593,6 +654,54 @@ def progress_json() -> str:
     return json.dumps(st.session_state.progress, ensure_ascii=False, indent=2)
 
 
+
+
+def study_level_info():
+    stats = st.session_state.progress["question_stats"]
+    attempts = sum(int(s.get("attempts", 0) or 0) for s in stats.values())
+    level = 1 + attempts // 25
+    xp = attempts % 25
+    xp_goal = 25
+    return level, xp, xp_goal
+
+
+def study_day_streak() -> int:
+    sessions = st.session_state.progress.get("sessions", [])
+    if not sessions:
+        return 0
+    dates = set()
+    for sess in sessions:
+        ts = parse_iso(sess.get("timestamp"))
+        if ts:
+            dates.add(ts.astimezone(timezone.utc).date())
+    if not dates:
+        return 0
+    day = datetime.now(timezone.utc).date()
+    streak = 0
+    while day in dates:
+        streak += 1
+        day -= timedelta(days=1)
+    return streak
+
+
+def best_exam_percent() -> float:
+    best = 0.0
+    for sess in st.session_state.progress.get("sessions", []):
+        if sess.get("mode") == "exam":
+            try:
+                best = max(best, float(sess.get("percent") or 0.0))
+            except Exception:
+                pass
+    return best
+
+
+def render_mode_card(title: str, subtitle: str, icon: str, css_class: str):
+    st.markdown(
+        f"<div class='km-mode-card {css_class}'><div class='km-mode-icon'>{icon}</div><div class='km-mode-title'>{html.escape(title)}</div><div class='km-mode-sub'>{html.escape(subtitle)}</div></div>",
+        unsafe_allow_html=True,
+    )
+
+
 def player_controls(compact: bool = False):
     if compact:
         c1, c2 = st.columns([3, 1])
@@ -608,92 +717,124 @@ def player_controls(compact: bool = False):
 
 
 def header():
-    c1, c2 = st.columns([4.5, 1])
+    c1, c2 = st.columns([5, 1.15])
     c1.markdown(
         '<div class="km-hero"><div class="km-title">A1 B1 Karimen Reviewer</div>'
-        '<div class="km-subtitle">650 real practice questions · smart review · exam simulation · live rankings</div></div>',
+        '<div class="km-subtitle">Game-style study flow · 650 real practice questions · smart review · exam simulation · live rankings</div>'
+        '<div class="km-badges"><span class="km-badge">🎮 Playful UI</span><span class="km-badge">🧠 Smart Review</span><span class="km-badge">🏆 Live Rankings</span><span class="km-badge">📱 Mobile First</span></div></div>',
         unsafe_allow_html=True,
     )
     if MASCOT_FILE.exists():
-        c2.image(str(MASCOT_FILE), width=92)
+        c2.image(str(MASCOT_FILE), width=98)
     nav_options = ["Home", "Review", "Exam", "Rankings", "Progress", "Bank"]
     current = st.session_state.nav if st.session_state.nav in nav_options else "Home"
     nav = st.radio("Navigation", nav_options, index=nav_options.index(current), horizontal=True, label_visibility="collapsed")
     st.session_state.nav = nav
-    with st.expander("Quick settings", expanded=False):
+    with st.expander("🎛️ Game settings", expanded=False):
+        st.markdown("<div class='km-settings-box'>", unsafe_allow_html=True)
         c1, c2, c3 = st.columns(3)
-        st.session_state.show_japanese = c1.toggle("Japanese", value=st.session_state.show_japanese)
-        st.session_state.sound_on = c2.toggle("Sound", value=st.session_state.sound_on)
-        st.session_state.haptics_on = c3.toggle("Haptics", value=st.session_state.haptics_on)
+        st.session_state.show_japanese = c1.toggle("Show Japanese", value=st.session_state.show_japanese)
+        st.session_state.sound_on = c2.toggle("Sound effects", value=st.session_state.sound_on)
+        st.session_state.haptics_on = c3.toggle("Phone vibration", value=st.session_state.haptics_on)
         st.caption(f"Ranking name: {st.session_state.avatar} {safe_player_name()}")
+        st.markdown("</div>", unsafe_allow_html=True)
     return nav
 
 
 # ---------- Pages ----------
 def page_home():
-    player_controls()
-
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Questions", META["question_count"])
-    c2.metric("Image items", META["image_question_count"])
+    level, xp, xp_goal = study_level_info()
+    streak = study_day_streak()
+    best_exam = best_exam_percent()
     attempted = sum(1 for qid in st.session_state.progress["question_stats"] if qstat(qid)["attempts"] > 0)
-    c3.metric("Attempted", attempted)
-
-    st.markdown(
-        "<div class='km-card'><strong>A1</strong> · 150 questions · Sets 14, 15, 16<br>"
-        "<strong>B1</strong> · 500 questions · Sets 1–10<br><span class='km-small'>No demo/sample bank is included.</span></div>",
-        unsafe_allow_html=True,
-    )
-
-    stats = st.session_state.progress["question_stats"]
     due = sum(1 for q in QUESTIONS if qstat(q["id"])["attempts"] > 0 and due_now(qstat(q["id"])))
     unseen = sum(1 for q in QUESTIONS if qstat(q["id"])["attempts"] == 0)
     weak = sum(1 for q in QUESTIONS if qstat(q["id"])["attempts"] > 0 and mastery(qstat(q["id"])) < 60)
-    st.markdown("### Recommended today")
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Due", due)
-    c2.metric("Weak", weak)
-    c3.metric("Unseen", unseen)
 
+    st.markdown(
+        f"<div class='km-profile'><div class='km-profile-name'>{st.session_state.avatar} {html.escape(safe_player_name())}</div>"
+        f"<div class='km-profile-sub'>Level {level} Road Rookie · Bright game mode active</div>"
+        f"<div class='km-xp'><div class='km-xp-fill' style='width:{(xp/max(1,xp_goal))*100:.1f}%'></div></div>"
+        f"<div class='km-small' style='color:rgba(255,255,255,.9);margin-top:.38rem'>XP {xp}/{xp_goal} to next level</div>"
+        f"<div class='km-chip-row'><div class='km-chip'>🔥 {streak} day streak</div><div class='km-chip'>🏆 Best exam {best_exam:.0f}%</div><div class='km-chip'>📘 {attempted}/{len(QUESTIONS)} seen</div></div></div>",
+        unsafe_allow_html=True,
+    )
+
+    with st.expander("👤 Edit nickname and avatar", expanded=False):
+        player_controls(compact=True)
+
+    st.markdown("<div class='km-panel-title'>Choose your next mission</div>", unsafe_allow_html=True)
     c1, c2 = st.columns(2)
-    if c1.button("🧠 Start smart review", use_container_width=True, type="primary"):
-        ids = select_review_questions(QUESTIONS, "Due / adaptive", 20)
-        st.session_state.review = {"ids": ids, "index": 0, "correct": 0, "answered": 0, "started": time.time(), "mode": "Due / adaptive", "bank": "All"}
-        st.session_state.review_feedback = None
-        st.session_state.review_started_at = time.time()
-        st.session_state.pending_fx = "start"
-        st.session_state.nav = "Review"
-        st.rerun()
-    if c2.button("📝 Take 50-question exam", use_container_width=True):
-        start_exam("All", "All", 50, 30)
-        st.session_state.pending_fx = "start"
-        st.session_state.nav = "Exam"
-        st.rerun()
+    with c1:
+        render_mode_card("Smart Review", "Adaptive practice that pushes due, weak, and unseen questions first.", "🧠", "km-mode-blue")
+        if st.button("Start smart review", use_container_width=True, type="primary", key="home_smart_review"):
+            ids = select_review_questions(QUESTIONS, "Due / adaptive", 20)
+            st.session_state.review = {"ids": ids, "index": 0, "correct": 0, "answered": 0, "started": time.time(), "mode": "Due / adaptive", "bank": "All"}
+            st.session_state.review_feedback = None
+            st.session_state.review_started_at = time.time()
+            st.session_state.pending_fx = "start"
+            st.session_state.nav = "Review"
+            st.rerun()
+    with c2:
+        render_mode_card("Exam Mode", "A focused test run with timer, flags, and a real score finish.", "🏁", "km-mode-green")
+        if st.button("Take 50-question exam", use_container_width=True, type="primary", key="home_exam_start"):
+            start_exam("All", "All", 50, 30)
+            st.session_state.pending_fx = "start"
+            st.session_state.nav = "Exam"
+            st.rerun()
+
+    c3, c4 = st.columns(2)
+    with c3:
+        render_mode_card("Live Rankings", "See who is studying now and compare best completed 50-question runs.", "🏆", "km-mode-orange")
+        if st.button("Open rankings", use_container_width=True, key="home_rankings_open"):
+            st.session_state.nav = "Rankings"
+            st.rerun()
+    with c4:
+        render_mode_card("Question Bank", "Browse the whole database by bank, set, category, and keyword.", "🔎", "km-mode-violet")
+        if st.button("Browse question bank", use_container_width=True, key="home_bank_open"):
+            st.session_state.nav = "Bank"
+            st.rerun()
+
+    st.markdown("<div class='km-panel-title'>Your dashboard</div>", unsafe_allow_html=True)
+    st.markdown(
+        f"<div class='km-stat-band'>"
+        f"<div class='km-stat-card'><div class='km-stat-label'>Questions</div><div class='km-stat-value'>{META['question_count']}</div><div class='km-small'>A1 + B1 total</div></div>"
+        f"<div class='km-stat-card'><div class='km-stat-label'>Due Today</div><div class='km-stat-value'>{due}</div><div class='km-small'>ready to review</div></div>"
+        f"<div class='km-stat-card'><div class='km-stat-label'>Weak Spots</div><div class='km-stat-value'>{weak}</div><div class='km-small'>mastery under 60%</div></div>"
+        f"</div>",
+        unsafe_allow_html=True,
+    )
+
+    st.markdown(
+        f"<div class='km-card km-soft'><strong>A1</strong> · 150 questions · Sets 14, 15, 16 &nbsp; • &nbsp; <strong>B1</strong> · 500 questions · Sets 1–10"
+        f"<div class='km-divider'></div><span class='km-small'>Image questions: {META['image_question_count']} · Unseen questions left: {unseen} · No demo/sample bank included.</span></div>",
+        unsafe_allow_html=True,
+    )
 
     if online_enabled():
         live = fetch_live_exams()
-        st.markdown(f"<div class='km-callout'><span class='km-live-dot'></span><strong>{len(live)} examiner(s) active now</strong> · Open Rankings to see the live room.</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='km-callout'><span class='km-live-dot'></span><strong>{len(live)} examiner(s) active now</strong> · Open Rankings to watch the live room.</div>", unsafe_allow_html=True)
     else:
-        st.info("Live rankings are ready in the app but need the free Supabase connection once. The reviewer works normally without it.")
+        st.info("Live rankings are ready in the app but need the free Supabase connection once. The reviewer still works normally without it.")
 
-    st.markdown("### Progress backup")
-    st.caption("Your local learning history lives in this browser session. Download a small backup when you want to keep or move it.")
-    c1, c2 = st.columns(2)
-    c1.download_button("⬇️ Download progress", data=progress_json(), file_name="karimen_progress.json", mime="application/json", use_container_width=True)
-    uploaded = c2.file_uploader("Import progress", type=["json"], label_visibility="collapsed")
-    if uploaded is not None:
-        raw_bytes = uploaded.getvalue()
-        marker = hash(raw_bytes)
-        if st.session_state.last_import_hash != marker:
-            try:
-                st.session_state.progress = normalize_progress(json.loads(raw_bytes.decode("utf-8")))
-                st.session_state.last_import_hash = marker
-                st.success("Progress imported.")
-                st.rerun()
-            except Exception as exc:
-                st.error(f"Could not import progress: {exc}")
+    with st.expander("💾 Progress backup and restore", expanded=False):
+        st.caption("Your learning history lives in this browser session. Download a small backup when you want to keep or move it.")
+        c1, c2 = st.columns(2)
+        c1.download_button("Download progress", data=progress_json(), file_name="karimen_progress.json", mime="application/json", use_container_width=True)
+        uploaded = c2.file_uploader("Import progress", type=["json"], label_visibility="collapsed")
+        if uploaded is not None:
+            raw_bytes = uploaded.getvalue()
+            marker = hash(raw_bytes)
+            if st.session_state.last_import_hash != marker:
+                try:
+                    st.session_state.progress = normalize_progress(json.loads(raw_bytes.decode("utf-8")))
+                    st.session_state.last_import_hash = marker
+                    st.success("Progress imported.")
+                    st.rerun()
+                except Exception as exc:
+                    st.error(f"Could not import progress: {exc}")
 
-    with st.expander("About the practice exam"):
+    with st.expander("ℹ️ About the practice exam", expanded=False):
         st.write("The default simulation uses 50 true/false questions, 30 minutes, and a 90% practice pass threshold (45/50).")
         st.markdown(f"[Official format reference: Osaka Prefectural Police]({META['exam_standard']['url']})")
         st.caption("This is a study reviewer, not an official examination system.")
@@ -702,7 +843,8 @@ def page_home():
 def page_review():
     review = st.session_state.review
     if not review or review.get("finished"):
-        st.markdown("### Configure review")
+        st.markdown("### 🎯 Build a review run")
+        st.markdown("<div class='km-card km-soft'><strong>Make it feel like a game level.</strong><br><span class='km-small'>Choose your bank, focus, and length — then start a short, sharp practice run.</span></div>", unsafe_allow_html=True)
         c1, c2 = st.columns(2)
         bank = c1.selectbox("Bank", BANK_OPTIONS, key="review_bank")
         set_filter = c2.selectbox("Set", set_options_for_bank(bank), key="review_set")
@@ -713,7 +855,7 @@ def page_review():
         count = c2.slider("Questions", min_value=5, max_value=100, value=20, step=5)
         pool = filter_questions(bank, set_filter, category)
         st.caption(f"{len(pool)} questions match these filters.")
-        if st.button("Start review", type="primary", use_container_width=True, disabled=not pool):
+        if st.button("Start review run", type="primary", use_container_width=True, disabled=not pool):
             ids = select_review_questions(pool, mode, count)
             st.session_state.review = {"ids": ids, "index": 0, "correct": 0, "answered": 0, "started": time.time(), "mode": mode, "bank": bank, "set": set_filter, "category": category}
             st.session_state.review_feedback = None
@@ -727,22 +869,22 @@ def page_review():
     ids = review["ids"]
     idx = review["index"]
     q = BY_ID[ids[idx]]
-    st.progress((idx + 1) / max(1, len(ids)), text=f"{idx + 1} / {len(ids)}")
+    st.progress((idx + 1) / max(1, len(ids)), text=f"Level {idx + 1} / {len(ids)}")
     feedback = st.session_state.review_feedback
     render_question(q, idx + 1, len(ids), reveal=feedback is not None, selected=feedback)
 
     if feedback is None:
         c1, c2 = st.columns(2)
-        if c1.button("○  TRUE", use_container_width=True):
+        if c1.button("✅ TRUE", use_container_width=True, type="primary"):
             answer_review(q, True)
             st.session_state.pending_fx = "correct" if bool(q["answer"]) is True else "wrong"
             st.rerun()
-        if c2.button("×  FALSE", use_container_width=True):
+        if c2.button("❌ FALSE", use_container_width=True):
             answer_review(q, False)
             st.session_state.pending_fx = "correct" if bool(q["answer"]) is False else "wrong"
             st.rerun()
     else:
-        if st.button("Next question  →", use_container_width=True, type="primary"):
+        if st.button("Next level →", use_container_width=True, type="primary"):
             if idx + 1 >= len(ids):
                 review["finished"] = True
                 add_session("review", ids, review["correct"], time.time() - review["started"], review.get("bank", "All"))
@@ -753,7 +895,7 @@ def page_review():
             st.session_state.review_feedback = None
             st.rerun()
 
-    with st.expander("Learning status for this question"):
+    with st.expander("📊 Learning status for this question"):
         s = qstat(q["id"])
         c1, c2, c3 = st.columns(3)
         c1.metric("Attempts", s["attempts"])
@@ -854,7 +996,8 @@ tick(); setInterval(tick,500);
 def page_exam():
     exam = st.session_state.exam
     if not exam:
-        st.markdown("### Configure exam")
+        st.markdown("### 🏁 Launch an exam run")
+        st.markdown("<div class='km-card km-soft'><strong>Practice like a challenge mode.</strong><br><span class='km-small'>A 50-question run is what goes onto the main shared leaderboard.</span></div>", unsafe_allow_html=True)
         c1, c2 = st.columns(2)
         bank = c1.selectbox("Bank", BANK_OPTIONS, key="exam_bank")
         set_filter = c2.selectbox("Set", set_options_for_bank(bank), key="exam_set")
@@ -864,8 +1007,8 @@ def page_exam():
         default_count = min(50, max_count)
         count = c1.number_input("Questions", min_value=5, max_value=max_count, value=default_count, step=5)
         minutes = c2.number_input("Minutes", min_value=5, max_value=120, value=30, step=5)
-        st.markdown("<div class='km-callout'>🏆 For shared rankings, the main board compares completed <strong>50-question exams</strong>. Use a nickname in Home or Quick settings.</div>", unsafe_allow_html=True)
-        if st.button("Start exam", use_container_width=True, type="primary", disabled=not pool):
+        st.markdown("<div class='km-callout'>🏆 Shared leaderboard note: the main board compares completed <strong>50-question exams</strong>. Use a nickname from Home or Game settings.</div>", unsafe_allow_html=True)
+        if st.button("Start exam run", use_container_width=True, type="primary", disabled=not pool):
             start_exam(bank, set_filter, int(count), int(minutes))
             st.session_state.pending_fx = "start"
             st.rerun()
@@ -885,16 +1028,16 @@ def page_exam():
     ids = exam["ids"]
     idx = exam["index"]
     q = BY_ID[ids[idx]]
-    top1, top2 = st.columns([4, 1.4])
-    top1.progress((idx + 1) / max(1, len(ids)), text=f"Question {idx + 1} of {len(ids)}")
+    top1, top2 = st.columns([4, 1.35])
+    top1.progress((idx + 1) / max(1, len(ids)), text=f"Stage {idx + 1} of {len(ids)}")
     with top2:
         timer_widget(exam["deadline"])
 
     render_question(q, idx + 1, len(ids), reveal=False)
     current = exam["answers"].get(q["id"])
     c1, c2 = st.columns(2)
-    true_clicked = c1.button("○  TRUE" + ("  ✓" if current is True else ""), use_container_width=True, key=f"exam_true_{q['id']}")
-    false_clicked = c2.button("×  FALSE" + ("  ✓" if current is False else ""), use_container_width=True, key=f"exam_false_{q['id']}")
+    true_clicked = c1.button("✅ TRUE" + ("  ✓" if current is True else ""), use_container_width=True, type="primary", key=f"exam_true_{q['id']}")
+    false_clicked = c2.button("❌ FALSE" + ("  ✓" if current is False else ""), use_container_width=True, key=f"exam_false_{q['id']}")
     if true_clicked:
         exam["answers"][q["id"]] = True
         sync_live_exam(exam)
@@ -905,7 +1048,7 @@ def page_exam():
         st.rerun()
 
     flagged = q["id"] in exam["flagged"]
-    flag = st.checkbox("🚩 Flag for review", value=flagged, key=f"flag_{q['id']}")
+    flag = st.checkbox("🚩 Flag for later review", value=flagged, key=f"flag_{q['id']}")
     if flag and not flagged:
         exam["flagged"].append(q["id"])
     elif not flag and flagged:
@@ -924,7 +1067,7 @@ def page_exam():
         exam["index"] = jump - 1
         st.rerun()
 
-    with st.expander("Exam status"):
+    with st.expander("🧭 Exam status"):
         unanswered = [i + 1 for i, qid in enumerate(ids) if qid not in exam["answers"]]
         flagged_n = [i + 1 for i, qid in enumerate(ids) if qid in exam["flagged"]]
         st.write(f"Answered: {len(exam['answers'])}/{len(ids)}")
@@ -948,7 +1091,7 @@ def render_exam_results(exam):
     passed = pct >= pass_pct
     if online_enabled() and not exam.get("online_saved"):
         finish_live_exam(exam, correct, exam.get("elapsed", 0.0))
-    st.markdown("### Exam result")
+    st.markdown("### 🏆 Exam result")
     c1, c2, c3 = st.columns(3)
     c1.metric("Score", f"{correct}/{total}")
     c2.metric("Accuracy", f"{pct:.1f}%")
@@ -1077,6 +1220,17 @@ def page_rankings():
     if board.empty:
         st.caption("No completed 50-question exams yet.")
     else:
+        top3 = board.head(3).to_dict("records")
+        if top3:
+            st.markdown("<div class='km-top3'>", unsafe_allow_html=True)
+            cols = st.columns(len(top3))
+            medals = ["🥇", "🥈", "🥉"]
+            for i, (col, row) in enumerate(zip(cols, top3)):
+                with col:
+                    st.markdown(
+                        f"<div class='km-podium'><div class='km-podium-rank'>{medals[i]}</div><div class='km-podium-name'>{html.escape(str(row['Examiner']))}</div><div class='km-podium-score'>{html.escape(str(row['Best']))}</div><div class='km-small'>{html.escape(str(row['Time']))} · {html.escape(str(row['Accuracy']))}</div></div>",
+                        unsafe_allow_html=True,
+                    )
         st.dataframe(board, use_container_width=True, hide_index=True)
         my_name = safe_player_name()
         match = board[board["Examiner"].str.endswith(my_name, na=False)]
@@ -1184,7 +1338,7 @@ def page_bank():
     pool0 = filter_questions(bank, set_filter)
     categories = ["All"] + sorted({q["category"] for q in pool0})
     category = st.selectbox("Category", categories, key="browse_cat")
-    search = st.text_input("Search", placeholder="e.g. crosswalk, parking, signal, B1-S03-Q012")
+    search = st.text_input("Search", placeholder="e.g. crosswalk, parking, signal, A1-S16-Q048")
     only_images = st.checkbox("Image questions only")
     pool = filter_questions(bank, set_filter, category)
     if search.strip():
@@ -1215,7 +1369,7 @@ def play_pending_fx():
 
 
 def footer():
-    st.markdown("<div class='km-divider'></div><div class='km-small'>A1 B1 Karimen Reviewer · Build 3.0 · Study aid only · Shared ranking uses nicknames only</div>", unsafe_allow_html=True)
+    st.markdown("<div class='km-divider'></div><div class='km-small'>A1 B1 Karimen Reviewer · Build 3.1 · Study aid only · Shared ranking uses nicknames only</div>", unsafe_allow_html=True)
 
 
 nav = header()
