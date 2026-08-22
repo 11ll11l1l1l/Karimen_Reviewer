@@ -7,7 +7,7 @@ LOCAL TEST
 
 GITHUB / STREAMLIT UPDATE
 1. Copy all changed files into your local GitHub repository.
-2. GitHub Desktop -> Summary: Upgrade reviewer to Build 3.0
+2. GitHub Desktop -> Summary: Upgrade reviewer to Build 3.2 Game+
 3. Commit to main.
 4. Push origin.
 5. Streamlit redeploys automatically.

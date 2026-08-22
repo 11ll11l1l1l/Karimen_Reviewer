@@ -25,7 +25,7 @@ ROOT = Path(__file__).resolve().parent
 DATA_FILE = ROOT / "data" / "questions.json"
 MASCOT_FILE = ROOT / "assets" / "mascot.png"
 SOUND_DIR = ROOT / "assets" / "sounds"
-PROGRESS_VERSION = 3
+PROGRESS_VERSION = 4
 
 st.set_page_config(
     page_title="A1 B1 Karimen Reviewer",
@@ -133,6 +133,10 @@ def init_state():
         "online_error": None,
         "feedback_nonce": 0,
         "pending_fx": None,
+        "theme": "Arcade",
+        "seen_achievement_ids": set(),
+        "achievements_ready": False,
+        "achievement_toast": None,
     }
     for key, value in defaults.items():
         if key not in st.session_state:
@@ -251,6 +255,26 @@ label[data-testid="stWidgetLabel"] p{font-weight:760;color:#3b5173;}
  div.stButton > button{min-height:3.45rem;font-size:1.03rem;}
  [data-testid="column"]{min-width:0!important;}
 }
+
+.km-fx{position:relative;overflow:hidden;text-align:center;border-radius:24px;padding:1rem;margin:.65rem 0;box-shadow:0 14px 28px rgba(52,82,132,.12);animation:kmPop .36s cubic-bezier(.2,.9,.3,1.2);}
+.km-fx-good{background:linear-gradient(135deg,#eafff4,#f8fffb);border:1px solid #aee9cd;}
+.km-fx-bad{background:linear-gradient(135deg,#fff0f4,#fff8fa);border:1px solid #f0bdce;}
+.km-fx-icon{font-size:2.15rem;animation:kmBounce .55s ease both;}
+.km-fx-title{font-size:1.32rem;font-weight:900;margin-top:.15rem;}
+.km-fx-sub{font-size:.9rem;color:var(--muted);font-weight:650;margin-top:.12rem;}
+.km-fx-particles i{position:absolute;font-style:normal;font-size:.8rem;opacity:.72;left:calc(8% + (var(--i) * 14%));top:10%;animation:kmFloat calc(.8s + (var(--i)*.05s)) ease-out both;}
+.km-mascot-pop{animation:kmBubble .35s cubic-bezier(.2,.9,.3,1.2);}
+.km-badge-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.65rem;}
+.km-badge-card{background:linear-gradient(180deg,#fff,#f8fbff);border:1px solid var(--line);border-radius:18px;padding:.75rem;text-align:center;box-shadow:var(--shadow-soft);min-height:112px;}
+.km-badge-card.locked{filter:grayscale(.75);opacity:.48;box-shadow:none;}
+.km-badge-icon{font-size:1.65rem}.km-badge-name{font-size:.88rem;font-weight:900;margin-top:.15rem}.km-badge-desc{font-size:.74rem;color:var(--muted);line-height:1.3;margin-top:.18rem;}
+.km-result-hero{text-align:center;border-radius:28px;padding:1.15rem;margin:.5rem 0 1rem;background:linear-gradient(135deg,#2e87ff,#795dff 55%,#ffb53b);color:white;box-shadow:0 18px 36px rgba(58,82,177,.2);animation:kmPop .45s cubic-bezier(.2,.9,.3,1.2);}
+.km-result-score{font-size:2.9rem;font-weight:950;line-height:1}.km-result-title{font-size:1.35rem;font-weight:900;margin-top:.25rem}.km-result-sub{opacity:.92;font-weight:650;margin-top:.18rem}
+@keyframes kmPop{0%{transform:scale(.92);opacity:0}100%{transform:scale(1);opacity:1}}
+@keyframes kmBounce{0%{transform:translateY(8px) scale(.75)}55%{transform:translateY(-4px) scale(1.12)}100%{transform:translateY(0) scale(1)}}
+@keyframes kmBubble{0%{transform:translateX(-10px) scale(.96);opacity:0}100%{transform:none;opacity:1}}
+@keyframes kmFloat{0%{transform:translateY(8px) rotate(0);opacity:0}35%{opacity:.9}100%{transform:translateY(-28px) rotate(45deg);opacity:0}}
+@media(max-width:760px){.km-badge-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
 </style>
         """,
         unsafe_allow_html=True,
@@ -258,6 +282,42 @@ label[data-testid="stWidgetLabel"] p{font-weight:760;color:#3b5173;}
 
 
 inject_style()
+
+
+def inject_theme_override():
+    theme = st.session_state.get("theme", "Arcade")
+    if theme == "Cute":
+        css = """
+        <style>
+        :root{--bg1:#fff0f7;--bg2:#fff8fc;--bg3:#fff4df;--blue:#ff72ab;--sky:#ffb6d2;--mint:#72d9b2;--violet:#a987ff;--orange:#ffb95d;--ink:#4d3552;--muted:#8d6d8e;--line:#f3dbe8;}
+        .stApp{background:radial-gradient(circle at 15% 10%,rgba(255,172,207,.22),transparent 23%),radial-gradient(circle at 85% 18%,rgba(255,216,130,.20),transparent 20%),linear-gradient(180deg,#fff0f7 0%,#fff9fc 55%,#fff6e7 100%);}
+        .km-hero{background:linear-gradient(135deg,#ff73ad 0%,#ff9cc5 38%,#a98aff 72%,#ffd36a 100%);}
+        button[kind="primary"]{background:linear-gradient(135deg,#ff6da7,#a781ff)!important;}
+        </style>
+        """
+    elif theme == "Night":
+        css = """
+        <style>
+        :root{--bg1:#11182f;--bg2:#17213b;--bg3:#10172d;--card:#202b48;--ink:#edf5ff;--muted:#a9bbd8;--line:#324366;--blue:#55a7ff;--sky:#7bd8ff;--mint:#3ee1aa;--violet:#a67dff;--orange:#ffc14d;}
+        html,body,[class*=css]{color:#edf5ff;}
+        .stApp{background:radial-gradient(circle at 16% 12%,rgba(65,113,220,.25),transparent 24%),radial-gradient(circle at 86% 18%,rgba(128,81,218,.20),transparent 20%),linear-gradient(180deg,#11182f 0%,#17213b 58%,#10172d 100%);}
+        [data-testid="stHeader"]{background:rgba(15,22,43,.76);}
+        .km-card,.km-stat-card,.km-podium,.km-settings-box,[data-testid="stMetric"]{background:linear-gradient(180deg,#202b48,#1a253f);border-color:#324366;color:#edf5ff;}
+        .km-soft{background:linear-gradient(180deg,#202b48,#19243d);}
+        .km-good{background:linear-gradient(180deg,#193e38,#1b2f3d);border-color:#2d725e;}
+        .km-bad{background:linear-gradient(180deg,#4a2938,#27283e);border-color:#714056;}
+        .km-question,.km-profile-name,.km-panel-title{color:#f5f9ff;}
+        .km-small,.km-qno,.km-japanese,.km-stat-label{color:#a9bbd8;}
+        [data-testid="stRadio"] label{background:#202b48;border-color:#324366;color:#edf5ff;}
+        [data-baseweb="select"]>div,.stTextInput input,.stNumberInput input{background:#202b48!important;color:#edf5ff!important;border-color:#324366!important;}
+        </style>
+        """
+    else:
+        css = """<style></style>"""
+    st.markdown(css, unsafe_allow_html=True)
+
+
+inject_theme_override()
 
 
 # ---------- Local learning model ----------
@@ -420,30 +480,102 @@ def audio_data_uri(name: str) -> str | None:
 def feedback_fx(kind: str):
     st.session_state.feedback_nonce += 1
     uri = audio_data_uri(kind) if st.session_state.sound_on else None
-    vibrate = "navigator.vibrate && navigator.vibrate(28);" if st.session_state.haptics_on else ""
-    audio = f'<audio autoplay><source src="{uri}" type="audio/wav"></audio>' if uri else ""
-    components.html(
-        f"<div style='height:0'>{audio}<script>{vibrate}</script></div>",
-        height=0,
-        width=0,
+    vibrate_map = {"correct":"24", "wrong":"36,24,36", "combo":"20,20,35", "badge":"18,20,18,20,45", "pass":"25,20,25,20,60", "retry":"40"}
+    pattern = vibrate_map.get(kind, "24")
+    vibrate = f"navigator.vibrate && navigator.vibrate([{pattern}]);" if st.session_state.haptics_on else ""
+    audio = f'<audio id="mainfx" autoplay preload="auto"><source src="{uri}" type="audio/wav"></audio>' if uri else ""
+    bloop_uri = audio_data_uri("bloop") if st.session_state.sound_on and kind in {"correct", "wrong", "combo", "complete", "pass", "retry", "badge"} else None
+    bloop = f'<audio id="bloopfx" preload="auto"><source src="{bloop_uri}" type="audio/wav"></audio>' if bloop_uri else ""
+    delayed = "setTimeout(()=>{const b=document.getElementById('bloopfx'); if(b){b.volume=.42; b.play().catch(()=>{});}},260);" if bloop_uri else ""
+    components.html(f"<div style='height:0'>{audio}{bloop}<script>{vibrate}{delayed}</script></div>", height=0, width=0)
+
+
+def feedback_animation(kind: str, combo: int = 0):
+    data = {
+        "correct": ("✨", "Correct!", "Nice read."),
+        "wrong": ("💡", "Almost!", "Lock in the rule and keep moving."),
+        "combo": ("🔥", f"{combo}x Combo!", "You are on a roll."),
+        "pass": ("🏆", "Mission Cleared!", "You passed the practice threshold."),
+        "retry": ("🛠️", "Training Complete", "Review the misses and run it again."),
+        "badge": ("🏅", "Achievement Unlocked!", "New badge earned."),
+        "complete": ("⭐", "Stage Clear!", "Good study block."),
+    }
+    icon, title, sub = data.get(kind, data["complete"])
+    cls = "good" if kind in {"correct","combo","pass","badge","complete"} else "bad"
+    particles = "".join(f"<i style='--i:{i}'>{x}</i>" for i,x in enumerate(["✦","•","★","✧","•","✦","★"]))
+    st.markdown(
+        f"<div class='km-fx km-fx-{cls}'><div class='km-fx-particles'>{particles}</div><div class='km-fx-icon'>{icon}</div><div class='km-fx-title'>{html.escape(title)}</div><div class='km-fx-sub'>{html.escape(sub)}</div></div>",
+        unsafe_allow_html=True,
     )
 
 
-def mascot_feedback(kind: str):
+def mascot_feedback(kind: str, combo: int = 0):
     messages = {
-        "correct": ["Nice one! That rule is sticking.", "Clean answer. Keep the rhythm going.", "Great recall — one less weak spot."],
-        "wrong": ["Almost. Read the explanation once, then move on.", "Good question to catch now. This one goes into your weak-area review.", "Tricky one. The next recall will be easier."],
-        "complete": ["Session complete. Small repeats build strong recall.", "Good study block. Your weak spots just got smaller."],
-        "pass": ["Passed the practice threshold. Great control!", "Strong run — you cleared the practice target."],
-        "retry": ["Close. Review the misses, then take another run.", "You found exactly what to review next."],
+        "correct": ["Nice! That rule is locked in.", "Clean answer. Keep driving!", "Great read — onto the next one!"],
+        "wrong": ["Almost! This is exactly the kind of trap worth catching here.", "Good miss to find now. Read the rule once and try again later.", "Tricky one. I saved it as a weak spot for you."],
+        "complete": ["Stage clear! Small repeats build strong recall.", "Good run. Your weak spots just got smaller."],
+        "pass": ["You cleared the mission! That was a strong exam run.", "Practice threshold passed. Great control!"],
+        "retry": ["Training run complete. Review the misses and come back stronger.", "You found exactly what to work on next."],
+        "combo": [f"{combo} in a row! Keep the combo alive!", f"Combo x{combo}! Your recall is heating up!"],
+        "badge": ["New badge unlocked! Nice progress.", "Achievement earned! Keep collecting them."],
     }
     text = random.choice(messages.get(kind, messages["complete"]))
     cols = st.columns([1, 5])
     if MASCOT_FILE.exists():
-        cols[0].image(str(MASCOT_FILE), width=76)
+        cols[0].image(str(MASCOT_FILE), width=82)
     else:
         cols[0].markdown("### 🐶")
-    cols[1].markdown(f"<div class='km-mascot-line'><div class='km-mascot-bubble'>{html.escape(text)}</div></div>", unsafe_allow_html=True)
+    cols[1].markdown(f"<div class='km-mascot-line km-mascot-pop'><div class='km-mascot-bubble'>💬 {html.escape(text)}</div></div>", unsafe_allow_html=True)
+
+
+def achievement_catalog() -> list[dict]:
+    stats = st.session_state.progress["question_stats"]
+    attempts = sum(int(s.get("attempts", 0) or 0) for s in stats.values())
+    unique_seen = sum(1 for s in stats.values() if int(s.get("attempts", 0) or 0) > 0)
+    max_streak = max([int(s.get("streak", 0) or 0) for s in stats.values()] or [0])
+    image_seen = sum(1 for q in QUESTIONS if q.get("images") and qstat(q["id"])["attempts"] > 0)
+    a1_seen = any(qstat(q["id"])["attempts"] > 0 for q in QUESTIONS if q.get("bank") == "A1")
+    b1_seen = any(qstat(q["id"])["attempts"] > 0 for q in QUESTIONS if q.get("bank") == "B1")
+    exams = [s for s in st.session_state.progress.get("sessions", []) if s.get("mode") == "exam"]
+    passed = any(float(s.get("percent") or 0) >= 90 for s in exams)
+    perfect = any(int(s.get("questions") or 0) == 50 and int(s.get("correct") or 0) == 50 for s in exams)
+    return [
+        {"id":"first","icon":"🚗","name":"First Drive","desc":"Answer your first question","earned":attempts >= 1},
+        {"id":"warm","icon":"⚡","name":"Engine Warm","desc":"Answer 10 questions","earned":attempts >= 10},
+        {"id":"rookie","icon":"🛣️","name":"Road Rookie","desc":"See 50 unique questions","earned":unique_seen >= 50},
+        {"id":"combo","icon":"🔥","name":"Hot Streak","desc":"Reach a 5-answer correct streak","earned":max_streak >= 5},
+        {"id":"image","icon":"👀","name":"Sharp Eye","desc":"Practice 20 image questions","earned":image_seen >= 20},
+        {"id":"explorer","icon":"🗺️","name":"Bank Explorer","desc":"Practice both A1 and B1","earned":a1_seen and b1_seen},
+        {"id":"pass","icon":"🏆","name":"Mission Clear","desc":"Pass a practice exam","earned":passed},
+        {"id":"perfect","icon":"👑","name":"Perfect Drive","desc":"Score 50/50 on an exam","earned":perfect},
+        {"id":"veteran","icon":"🎖️","name":"Road Veteran","desc":"Answer 250 questions","earned":attempts >= 250},
+    ]
+
+
+def check_new_achievements():
+    current = {a["id"] for a in achievement_catalog() if a["earned"]}
+    seen = st.session_state.get("seen_achievement_ids", set())
+    new_ids = list(current - set(seen))
+    if new_ids:
+        ach = next((a for a in achievement_catalog() if a["id"] == new_ids[0]), None)
+        st.session_state.seen_achievement_ids = set(current)
+        st.session_state.achievement_toast = ach
+        st.session_state.pending_fx = "badge"
+
+
+def prime_achievement_snapshot():
+    if not st.session_state.get("achievements_ready", False):
+        st.session_state.seen_achievement_ids = {a["id"] for a in achievement_catalog() if a["earned"]}
+        st.session_state.achievements_ready = True
+
+
+def render_achievement_toast():
+    ach = st.session_state.get("achievement_toast")
+    if ach:
+        st.session_state.achievement_toast = None
+        feedback_animation("badge")
+        st.markdown(f"<div class='km-callout'><strong>{ach['icon']} {html.escape(ach['name'])}</strong><br>{html.escape(ach['desc'])}</div>", unsafe_allow_html=True)
+        mascot_feedback("badge")
 
 
 # ---------- Optional shared ranking backend ----------
@@ -629,7 +761,13 @@ def render_question(q: dict, position: int, total: int, reveal: bool = False, se
             f'<div class="km-divider"></div>{safe_explanation}</div>',
             unsafe_allow_html=True,
         )
-        mascot_feedback("correct" if is_correct else "wrong")
+        combo = int((st.session_state.review or {}).get("combo", 0)) if st.session_state.get("review") else 0
+        if is_correct and combo >= 3:
+            feedback_animation("combo", combo)
+            mascot_feedback("combo", combo)
+        else:
+            feedback_animation("correct" if is_correct else "wrong", combo)
+            mascot_feedback("correct" if is_correct else "wrong", combo)
         render_sources(q)
 
 
@@ -732,11 +870,13 @@ def header():
     st.session_state.nav = nav
     with st.expander("🎛️ Game settings", expanded=False):
         st.markdown("<div class='km-settings-box'>", unsafe_allow_html=True)
-        c1, c2, c3 = st.columns(3)
-        st.session_state.show_japanese = c1.toggle("Show Japanese", value=st.session_state.show_japanese)
-        st.session_state.sound_on = c2.toggle("Sound effects", value=st.session_state.sound_on)
-        st.session_state.haptics_on = c3.toggle("Phone vibration", value=st.session_state.haptics_on)
-        st.caption(f"Ranking name: {st.session_state.avatar} {safe_player_name()}")
+        c1, c2 = st.columns([1.25, 1])
+        st.session_state.theme = c1.selectbox("Theme", ["Arcade", "Cute", "Night"], index=["Arcade", "Cute", "Night"].index(st.session_state.get("theme", "Arcade")))
+        st.session_state.show_japanese = c2.toggle("Show Japanese", value=st.session_state.show_japanese)
+        c3, c4 = st.columns(2)
+        st.session_state.sound_on = c3.toggle("Sound effects", value=st.session_state.sound_on)
+        st.session_state.haptics_on = c4.toggle("Phone vibration", value=st.session_state.haptics_on)
+        st.caption(f"Ranking name: {st.session_state.avatar} {safe_player_name()} · Theme: {st.session_state.theme}")
         st.markdown("</div>", unsafe_allow_html=True)
     return nav
 
@@ -769,7 +909,7 @@ def page_home():
         render_mode_card("Smart Review", "Adaptive practice that pushes due, weak, and unseen questions first.", "🧠", "km-mode-blue")
         if st.button("Start smart review", use_container_width=True, type="primary", key="home_smart_review"):
             ids = select_review_questions(QUESTIONS, "Due / adaptive", 20)
-            st.session_state.review = {"ids": ids, "index": 0, "correct": 0, "answered": 0, "started": time.time(), "mode": "Due / adaptive", "bank": "All"}
+            st.session_state.review = {"ids": ids, "index": 0, "correct": 0, "answered": 0, "started": time.time(), "mode": "Due / adaptive", "bank": "All", "combo": 0, "max_combo": 0}
             st.session_state.review_feedback = None
             st.session_state.review_started_at = time.time()
             st.session_state.pending_fx = "start"
@@ -811,6 +951,9 @@ def page_home():
         unsafe_allow_html=True,
     )
 
+    earned = [a for a in achievement_catalog() if a["earned"]]
+    st.markdown(f"<div class='km-card km-soft'><strong>🏅 Achievements</strong><br><span class='km-small'>{len(earned)}/{len(achievement_catalog())} badges unlocked · Open Progress to see the collection.</span></div>", unsafe_allow_html=True)
+
     if online_enabled():
         live = fetch_live_exams()
         st.markdown(f"<div class='km-callout'><span class='km-live-dot'></span><strong>{len(live)} examiner(s) active now</strong> · Open Rankings to watch the live room.</div>", unsafe_allow_html=True)
@@ -843,27 +986,59 @@ def page_home():
 def page_review():
     review = st.session_state.review
     if not review or review.get("finished"):
-        st.markdown("### 🎯 Build a review run")
-        st.markdown("<div class='km-card km-soft'><strong>Make it feel like a game level.</strong><br><span class='km-small'>Choose your bank, focus, and length — then start a short, sharp practice run.</span></div>", unsafe_allow_html=True)
-        c1, c2 = st.columns(2)
-        bank = c1.selectbox("Bank", BANK_OPTIONS, key="review_bank")
-        set_filter = c2.selectbox("Set", set_options_for_bank(bank), key="review_set")
-        categories = ["All"] + sorted({q["category"] for q in filter_questions(bank, set_filter)})
-        category = st.selectbox("Category", categories, key="review_category")
-        c1, c2 = st.columns(2)
-        mode = c1.selectbox("Study strategy", ["Due / adaptive", "Wrong answers", "Unseen", "Weakest", "Random"], key="review_mode")
-        count = c2.slider("Questions", min_value=5, max_value=100, value=20, step=5)
-        pool = filter_questions(bank, set_filter, category)
-        st.caption(f"{len(pool)} questions match these filters.")
-        if st.button("Start review run", type="primary", use_container_width=True, disabled=not pool):
-            ids = select_review_questions(pool, mode, count)
-            st.session_state.review = {"ids": ids, "index": 0, "correct": 0, "answered": 0, "started": time.time(), "mode": mode, "bank": bank, "set": set_filter, "category": category}
+        if review and review.get("finished"):
+            render_review_summary(review)
+            return
+
+        st.markdown("### 🎯 Choose a review mission")
+        st.markdown("<div class='km-card km-soft'><strong>Tap a mission and start.</strong><br><span class='km-small'>No setup needed for the quick modes. Custom filters are tucked under Advanced Mission.</span></div>", unsafe_allow_html=True)
+
+        def launch_quick(mode_name: str, count_value: int = 20):
+            ids = select_review_questions(QUESTIONS, mode_name, count_value)
+            st.session_state.review = {"ids": ids, "index": 0, "correct": 0, "answered": 0, "started": time.time(), "mode": mode_name, "bank": "All", "combo": 0, "max_combo": 0}
             st.session_state.review_feedback = None
             st.session_state.review_started_at = time.time()
             st.session_state.pending_fx = "start"
             st.rerun()
-        if review and review.get("finished"):
-            render_review_summary(review)
+
+        c1, c2 = st.columns(2)
+        with c1:
+            render_mode_card("Smart Mix", "The game chooses due, weak, and forgotten questions for you.", "🧠", "km-mode-blue")
+            if st.button("Play Smart Mix", use_container_width=True, type="primary", key="review_quick_smart"):
+                launch_quick("Due / adaptive", 20)
+        with c2:
+            render_mode_card("Weak Spot Hunt", "Attack questions you previously missed and reinforce them.", "🎯", "km-mode-pink")
+            if st.button("Hunt Weak Spots", use_container_width=True, key="review_quick_wrong"):
+                launch_quick("Wrong answers", 20)
+
+        c3, c4 = st.columns(2)
+        with c3:
+            render_mode_card("New Roads", "Only fresh questions first — perfect for expanding coverage.", "🗺️", "km-mode-green")
+            if st.button("Explore New Roads", use_container_width=True, key="review_quick_unseen"):
+                launch_quick("Unseen", 20)
+        with c4:
+            render_mode_card("Mystery Run", "A random 20-question challenge from the full database.", "🎲", "km-mode-violet")
+            if st.button("Start Mystery Run", use_container_width=True, key="review_quick_random"):
+                launch_quick("Random", 20)
+
+        with st.expander("🛠️ Advanced Mission — choose bank, set, category and length", expanded=False):
+            c1, c2 = st.columns(2)
+            bank = c1.selectbox("Bank", BANK_OPTIONS, key="review_bank")
+            set_filter = c2.selectbox("Set", set_options_for_bank(bank), key="review_set")
+            categories = ["All"] + sorted({q["category"] for q in filter_questions(bank, set_filter)})
+            category = st.selectbox("Category", categories, key="review_category")
+            c1, c2 = st.columns(2)
+            mode = c1.selectbox("Strategy", ["Due / adaptive", "Wrong answers", "Unseen", "Weakest", "Random"], key="review_mode")
+            count = c2.slider("Questions", min_value=5, max_value=100, value=20, step=5)
+            pool = filter_questions(bank, set_filter, category)
+            st.caption(f"{len(pool)} questions match these filters.")
+            if st.button("Launch custom mission", type="primary", use_container_width=True, disabled=not pool):
+                ids = select_review_questions(pool, mode, count)
+                st.session_state.review = {"ids": ids, "index": 0, "correct": 0, "answered": 0, "started": time.time(), "mode": mode, "bank": bank, "set": set_filter, "category": category, "combo": 0, "max_combo": 0}
+                st.session_state.review_feedback = None
+                st.session_state.review_started_at = time.time()
+                st.session_state.pending_fx = "start"
+                st.rerun()
         return
 
     ids = review["ids"]
@@ -877,11 +1052,17 @@ def page_review():
         c1, c2 = st.columns(2)
         if c1.button("✅ TRUE", use_container_width=True, type="primary"):
             answer_review(q, True)
-            st.session_state.pending_fx = "correct" if bool(q["answer"]) is True else "wrong"
+            if bool(q["answer"]) is True and int(review.get("combo", 0)) in {3, 5, 10, 15, 20}:
+                st.session_state.pending_fx = "combo"
+            else:
+                st.session_state.pending_fx = "correct" if bool(q["answer"]) is True else "wrong"
             st.rerun()
         if c2.button("❌ FALSE", use_container_width=True):
             answer_review(q, False)
-            st.session_state.pending_fx = "correct" if bool(q["answer"]) is False else "wrong"
+            if bool(q["answer"]) is False and int(review.get("combo", 0)) in {3, 5, 10, 15, 20}:
+                st.session_state.pending_fx = "combo"
+            else:
+                st.session_state.pending_fx = "correct" if bool(q["answer"]) is False else "wrong"
             st.rerun()
     else:
         if st.button("Next level →", use_container_width=True, type="primary"):
@@ -910,7 +1091,13 @@ def answer_review(q: dict, choice: bool):
     record_answer(q["id"], ok, elapsed)
     review["answered"] += 1
     review["correct"] += int(ok)
+    if ok:
+        review["combo"] = int(review.get("combo", 0)) + 1
+        review["max_combo"] = max(int(review.get("max_combo", 0)), review["combo"])
+    else:
+        review["combo"] = 0
     st.session_state.review_feedback = choice
+    check_new_achievements()
 
 
 def render_review_summary(review):
@@ -918,10 +1105,12 @@ def render_review_summary(review):
     correct = review["correct"]
     pct = 100 * correct / max(1, total)
     st.markdown("### Review complete")
-    c1, c2, c3 = st.columns(3)
+    feedback_animation("complete")
+    c1, c2, c3, c4 = st.columns(4)
     c1.metric("Score", f"{correct}/{total}")
     c2.metric("Accuracy", f"{pct:.0f}%")
-    c3.metric("Mode", review.get("mode", "Review"))
+    c3.metric("Best combo", f"{int(review.get('max_combo', 0))}x")
+    c4.metric("Mode", review.get("mode", "Review"))
     mascot_feedback("complete")
     if st.button("New review", use_container_width=True, type="primary"):
         st.session_state.review = None
@@ -970,7 +1159,9 @@ def submit_exam():
     exam["submitted"] = True
     add_session("exam", exam["ids"], correct, elapsed, exam.get("bank", "All"))
     finish_live_exam(exam, correct, elapsed)
-    st.session_state.pending_fx = "complete"
+    pct = 100 * correct / max(1, len(exam["ids"]))
+    st.session_state.pending_fx = "pass" if pct >= META["exam_standard"]["pass_percent"] else "retry"
+    check_new_achievements()
 
 
 def timer_widget(deadline: float):
@@ -996,22 +1187,29 @@ tick(); setInterval(tick,500);
 def page_exam():
     exam = st.session_state.exam
     if not exam:
-        st.markdown("### 🏁 Launch an exam run")
-        st.markdown("<div class='km-card km-soft'><strong>Practice like a challenge mode.</strong><br><span class='km-small'>A 50-question run is what goes onto the main shared leaderboard.</span></div>", unsafe_allow_html=True)
-        c1, c2 = st.columns(2)
-        bank = c1.selectbox("Bank", BANK_OPTIONS, key="exam_bank")
-        set_filter = c2.selectbox("Set", set_options_for_bank(bank), key="exam_set")
-        pool = filter_questions(bank, set_filter)
-        c1, c2 = st.columns(2)
-        max_count = min(100, len(pool))
-        default_count = min(50, max_count)
-        count = c1.number_input("Questions", min_value=5, max_value=max_count, value=default_count, step=5)
-        minutes = c2.number_input("Minutes", min_value=5, max_value=120, value=30, step=5)
-        st.markdown("<div class='km-callout'>🏆 Shared leaderboard note: the main board compares completed <strong>50-question exams</strong>. Use a nickname from Home or Game settings.</div>", unsafe_allow_html=True)
-        if st.button("Start exam run", use_container_width=True, type="primary", disabled=not pool):
-            start_exam(bank, set_filter, int(count), int(minutes))
+        st.markdown("### 🏁 Exam Challenge")
+        render_mode_card("Official-Style Run", "50 questions · 30 minutes · 90% practice target · leaderboard eligible", "🏆", "km-mode-orange")
+        if st.button("Start 50Q Challenge", use_container_width=True, type="primary", key="exam_quick_start"):
+            start_exam("All", "All", 50, 30)
             st.session_state.pending_fx = "start"
             st.rerun()
+
+        st.markdown("<div class='km-callout'>🔥 Finish a 50-question run to appear on the shared ranking board. Your live progress is visible while you play.</div>", unsafe_allow_html=True)
+
+        with st.expander("🛠️ Custom Challenge", expanded=False):
+            c1, c2 = st.columns(2)
+            bank = c1.selectbox("Bank", BANK_OPTIONS, key="exam_bank")
+            set_filter = c2.selectbox("Set", set_options_for_bank(bank), key="exam_set")
+            pool = filter_questions(bank, set_filter)
+            c1, c2 = st.columns(2)
+            max_count = min(100, len(pool))
+            default_count = min(50, max_count)
+            count = c1.number_input("Questions", min_value=5, max_value=max_count, value=default_count, step=5)
+            minutes = c2.number_input("Minutes", min_value=5, max_value=120, value=30, step=5)
+            if st.button("Launch custom challenge", use_container_width=True, disabled=not pool):
+                start_exam(bank, set_filter, int(count), int(minutes))
+                st.session_state.pending_fx = "start"
+                st.rerun()
         return
 
     if exam.get("submitted"):
@@ -1091,6 +1289,10 @@ def render_exam_results(exam):
     passed = pct >= pass_pct
     if online_enabled() and not exam.get("online_saved"):
         finish_live_exam(exam, correct, exam.get("elapsed", 0.0))
+    result_title = "MISSION CLEARED!" if passed else "TRAINING COMPLETE"
+    result_sub = "Excellent run — you cleared the practice target." if passed else "Review the misses, then come back for another run."
+    st.markdown(f"<div class='km-result-hero'><div style='font-size:2rem'>{'🏆' if passed else '🛠️'}</div><div class='km-result-score'>{pct:.0f}%</div><div class='km-result-title'>{result_title}</div><div class='km-result-sub'>{result_sub}</div></div>", unsafe_allow_html=True)
+    feedback_animation("pass" if passed else "retry")
     st.markdown("### 🏆 Exam result")
     c1, c2, c3 = st.columns(3)
     c1.metric("Score", f"{correct}/{total}")
@@ -1135,7 +1337,7 @@ def render_exam_results(exam):
         st.rerun()
     if c2.button("Review misses", use_container_width=True, disabled=not rows):
         ids = [q["id"] for _, q, _ in rows]
-        st.session_state.review = {"ids": ids, "index": 0, "correct": 0, "answered": 0, "started": time.time(), "mode": "Exam mistakes", "bank": exam.get("bank", "All")}
+        st.session_state.review = {"ids": ids, "index": 0, "correct": 0, "answered": 0, "started": time.time(), "mode": "Exam mistakes", "bank": exam.get("bank", "All"), "combo": 0, "max_combo": 0}
         st.session_state.review_feedback = None
         st.session_state.review_started_at = time.time()
         st.session_state.nav = "Review"
@@ -1272,6 +1474,15 @@ def page_progress():
     c2.metric("Coverage", f"{coverage:.1f}%")
     c3.metric("Attempts", attempts)
 
+    st.markdown("### 🏅 Achievement collection")
+    achievements = achievement_catalog()
+    cards = []
+    for a in achievements:
+        cls = "" if a["earned"] else " locked"
+        status = "Unlocked" if a["earned"] else "Locked"
+        cards.append(f"<div class='km-badge-card{cls}'><div class='km-badge-icon'>{a['icon']}</div><div class='km-badge-name'>{html.escape(a['name'])}</div><div class='km-badge-desc'>{html.escape(a['desc'])}<br><strong>{status}</strong></div></div>")
+    st.markdown("<div class='km-badge-grid'>" + "".join(cards) + "</div>", unsafe_allow_html=True)
+
     grouped = defaultdict(list)
     for q in QUESTIONS:
         grouped[q["category"]].append(q)
@@ -1369,11 +1580,13 @@ def play_pending_fx():
 
 
 def footer():
-    st.markdown("<div class='km-divider'></div><div class='km-small'>A1 B1 Karimen Reviewer · Build 3.1 · Study aid only · Shared ranking uses nicknames only</div>", unsafe_allow_html=True)
+    st.markdown("<div class='km-divider'></div><div class='km-small'>A1 B1 Karimen Reviewer · Build 3.2 Game+ · Study aid only · Shared ranking uses nicknames only</div>", unsafe_allow_html=True)
 
 
+prime_achievement_snapshot()
 nav = header()
 play_pending_fx()
+render_achievement_toast()
 if nav == "Home":
     page_home()
 elif nav == "Review":

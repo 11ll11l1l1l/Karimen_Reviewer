@@ -1,6 +1,18 @@
-# A1 B1 Karimen Reviewer — Streamlit Build 3.0
+# A1 B1 Karimen Reviewer — Streamlit Build 3.2 Game+
 
 Phone-first Streamlit reviewer containing 650 questions and 133 image questions.
+
+## Game+ features
+
+- Arcade / Cute / Night theme switcher
+- redesigned game-style home, review missions, and exam challenge flow
+- upgraded stereo WAV sound pack with start/correct/wrong/combo/achievement/pass/retry jingles
+- cute mascot bloops layered after feedback sounds
+- answer combo streaks and best-combo tracking
+- achievement badges derived from study progress
+- animated correct/wrong/combo/result feedback
+- mascot speech bubbles after each reviewed answer
+- animated exam result hero and pass celebration
 
 ## Included
 
