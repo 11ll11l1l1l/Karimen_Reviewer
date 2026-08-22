@@ -1,0 +1,156 @@
+{
+  "NPA_GENERAL": {
+    "organization": "警察庁 / National Police Agency",
+    "title": "交通の方法に関する教則",
+    "section": "第1章 第1節 基本的な心構え / 第2節 信号、標識・標示に従うこと",
+    "url": "https://www.npa.go.jp/bureau/traffic/20241113kyousoku.pdf",
+    "authority": "primary_official"
+  },
+  "NPA_SIGNAL": {
+    "organization": "警察庁 / National Police Agency",
+    "title": "交通の方法に関する教則",
+    "section": "第1章 第2節 信号、標識・標示に従うこと; 付表1 信号",
+    "url": "https://www.npa.go.jp/bureau/traffic/20241113kyousoku.pdf",
+    "authority": "primary_official"
+  },
+  "NPA_SIGNS": {
+    "organization": "警察庁 / National Police Agency",
+    "title": "交通の方法に関する教則",
+    "section": "付表2 標示板等; 付表3 標識・標示の種類と意味",
+    "url": "https://www.npa.go.jp/bureau/traffic/20241113kyousoku.pdf",
+    "authority": "primary_official"
+  },
+  "NPA_MED": {
+    "organization": "警察庁 / National Police Agency",
+    "title": "交通の方法に関する教則",
+    "section": "第4章 第1節 3 体調を整えること",
+    "url": "https://www.npa.go.jp/bureau/traffic/20241113kyousoku.pdf",
+    "authority": "primary_official"
+  },
+  "NPA_ALCOHOL": {
+    "organization": "警察庁 / National Police Agency",
+    "title": "交通の方法に関する教則",
+    "section": "第4章 第1節 4 酒気を帯びた状態などで運転をしないこと",
+    "url": "https://www.npa.go.jp/bureau/traffic/20241113kyousoku.pdf",
+    "authority": "primary_official"
+  },
+  "NPA_LICENSE": {
+    "organization": "警察庁 / National Police Agency",
+    "title": "交通の方法に関する教則",
+    "section": "第4章 第2節 運転免許の仕組み",
+    "url": "https://www.npa.go.jp/bureau/traffic/20241113kyousoku.pdf",
+    "authority": "primary_official"
+  },
+  "NPA_SAFEKNOW": {
+    "organization": "警察庁 / National Police Agency",
+    "title": "交通の方法に関する教則",
+    "section": "第4章 第5節 安全運転に必要な知識など (運転姿勢、携帯電話、シートベルト、チャイルドシート)",
+    "url": "https://www.npa.go.jp/bureau/traffic/20241113kyousoku.pdf",
+    "authority": "primary_official"
+  },
+  "NPA_PHONE": {
+    "organization": "警察庁 / National Police Agency",
+    "title": "運転中の携帯電話使用等に関する道路交通法の禁止規定",
+    "section": "自動車または原動機付自転車は、停止中を除き通話のため携帯電話等を使用してはならない",
+    "url": "https://www.npa.go.jp/bureau/traffic/keitai/nagarasumaho_leaflet.pdf",
+    "authority": "primary_official"
+  },
+  "NPA_START": {
+    "organization": "警察庁 / National Police Agency",
+    "title": "交通の方法に関する教則",
+    "section": "第5章 第1節 安全な発進",
+    "url": "https://www.npa.go.jp/bureau/traffic/20241113kyousoku.pdf",
+    "authority": "primary_official"
+  },
+  "NPA_ROAD_SIDE": {
+    "organization": "警察庁 / National Police Agency",
+    "title": "交通の方法に関する教則",
+    "section": "第5章 第2節 自動車の通行するところ",
+    "url": "https://www.npa.go.jp/bureau/traffic/20241113kyousoku.pdf",
+    "authority": "primary_official"
+  },
+  "NPA_PEDESTRIAN": {
+    "organization": "警察庁 / National Police Agency",
+    "title": "交通の方法に関する教則",
+    "section": "第5章 第3節 歩行者の保護など",
+    "url": "https://www.npa.go.jp/bureau/traffic/20241113kyousoku.pdf",
+    "authority": "primary_official"
+  },
+  "NPA_CROSSWALK": {
+    "organization": "警察庁 / National Police Agency",
+    "title": "横断歩道は歩行者優先です",
+    "section": "横断歩道等における歩行者等の優先・道路交通法第38条",
+    "url": "https://www.npa.go.jp/bureau/traffic/oudanhodou/info.html",
+    "authority": "primary_official"
+  },
+  "NPA_SPEED_BRAKE": {
+    "organization": "警察庁 / National Police Agency",
+    "title": "交通の方法に関する教則",
+    "section": "第5章 第4節 安全な速度と車間距離",
+    "url": "https://www.npa.go.jp/bureau/traffic/20241113kyousoku.pdf",
+    "authority": "primary_official"
+  },
+  "NPA_LANE_SIGNAL": {
+    "organization": "警察庁 / National Police Agency",
+    "title": "交通の方法に関する教則",
+    "section": "第5章 第5節 進路変更など",
+    "url": "https://www.npa.go.jp/bureau/traffic/20241113kyousoku.pdf",
+    "authority": "primary_official"
+  },
+  "NPA_OVERTAKE": {
+    "organization": "警察庁 / National Police Agency",
+    "title": "交通の方法に関する教則",
+    "section": "第5章 第6節 追越しなど",
+    "url": "https://www.npa.go.jp/bureau/traffic/20241113kyousoku.pdf",
+    "authority": "primary_official"
+  },
+  "NPA_INTERSECTION": {
+    "organization": "警察庁 / National Police Agency",
+    "title": "交通の方法に関する教則",
+    "section": "第5章 第7節 交差点の通り方",
+    "url": "https://www.npa.go.jp/bureau/traffic/20241113kyousoku.pdf",
+    "authority": "primary_official"
+  },
+  "NPA_NOSTOP": {
+    "organization": "警察庁 / National Police Agency",
+    "title": "交通の方法に関する教則",
+    "section": "第5章 第7節2(9) 停止禁止部分; 第8節 駐車と停車; 付表3(2) 停止禁止部分",
+    "url": "https://www.npa.go.jp/bureau/traffic/20241113kyousoku.pdf",
+    "authority": "primary_official"
+  },
+  "NPA_AUTO": {
+    "organization": "警察庁 / National Police Agency",
+    "title": "交通の方法に関する教則",
+    "section": "第5章 第9節 オートマチック車などの運転",
+    "url": "https://www.npa.go.jp/bureau/traffic/20241113kyousoku.pdf",
+    "authority": "primary_official"
+  },
+  "NPA_RAIL": {
+    "organization": "警察庁 / National Police Agency",
+    "title": "交通の方法に関する教則",
+    "section": "第6章 第1節 踏切",
+    "url": "https://www.npa.go.jp/bureau/traffic/20241113kyousoku.pdf",
+    "authority": "primary_official"
+  },
+  "NPA_HILL": {
+    "organization": "警察庁 / National Police Agency",
+    "title": "交通の方法に関する教則",
+    "section": "第6章 第2節 坂道・カーブ",
+    "url": "https://www.npa.go.jp/bureau/traffic/20241113kyousoku.pdf",
+    "authority": "primary_official"
+  },
+  "NPA_FIRSTAID": {
+    "organization": "警察庁 / National Police Agency",
+    "title": "交通の方法に関する教則",
+    "section": "第1章 第1節2(3) 応急救護処置への備え; 第10章 交通事故、故障、災害などのとき",
+    "url": "https://www.npa.go.jp/bureau/traffic/20241113kyousoku.pdf",
+    "authority": "primary_official"
+  },
+  "NPA_POLICE_SIGNAL": {
+    "organization": "警察庁 / National Police Agency",
+    "title": "交通の方法に関する教則",
+    "section": "付表1(3) 警察官、交通巡視員による信号",
+    "url": "https://www.npa.go.jp/bureau/traffic/20241113kyousoku.pdf",
+    "authority": "primary_official"
+  }
+}

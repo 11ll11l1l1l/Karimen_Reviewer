@@ -1,0 +1,4704 @@
+[
+  {
+    "id": "KM14-Q001",
+    "test": "KM14",
+    "number": 1,
+    "page": 1,
+    "type": "true_false",
+    "transcription": "This pavement marking indicates that vehicles may not pass through the area of the marking.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "The depicted yellow-bordered road marking is a no-entry area (立入り禁止部分); vehicles must not enter the marked part.",
+    "source_refs": [
+      "NPA_SIGNS"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [
+      {
+        "path": "figures/KM14-Q001_figure.png",
+        "kind": "source_crop_enhanced",
+        "recreated": false,
+        "note": "Enhanced crop of the original photographed figure; no symbols or text were invented."
+      }
+    ],
+    "source_image": "originals/KM14_page1.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM14_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM14-Q002",
+    "test": "KM14",
+    "number": 2,
+    "page": 1,
+    "type": "true_false",
+    "transcription": "When approaching a pedestrian crossing, drivers may keep your speed without slowing down if it is clear that there is no pedestrian that is crossing.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "At a pedestrian crossing, you must slow enough to stop unless it is clearly evident that no pedestrian or bicycle is crossing or about to cross. If it is clearly empty, that slowdown duty does not apply.",
+    "source_refs": [
+      "NPA_PEDESTRIAN",
+      "NPA_CROSSWALK"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM14_page1.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM14_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM14-Q003",
+    "test": "KM14",
+    "number": 3,
+    "page": 1,
+    "type": "true_false",
+    "transcription": "When stopping a vehicle, it is alright to brake strongly only once because hitting the brakes several times will disorient the vehicles behind.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "The NPA guide recommends braking progressively and, where appropriate, using the brake several times; flashing brake lamps can warn following traffic. Sudden hard braking is only for unavoidable danger.",
+    "source_refs": [
+      "NPA_SPEED_BRAKE"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM14_page1.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM14_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM14-Q004",
+    "test": "KM14",
+    "number": 4,
+    "page": 1,
+    "type": "true_false",
+    "transcription": "When proceeding to a road, make sure that other vehicles or pedestrians can safely proceed by following rules and keeping in mind the road and traffic rules.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "Drivers must follow traffic rules and pay attention to surrounding road users so that everyone can travel safely.",
+    "source_refs": [
+      "NPA_GENERAL"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM14_page1.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM14_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM14-Q005",
+    "test": "KM14",
+    "number": 5,
+    "page": 1,
+    "type": "true_false",
+    "transcription": "If you took medications because of headaches or colds that may induce drowsiness, you must not drive.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "The NPA guide specifically says not to drive after taking cold or headache medicine that has a drowsiness effect.",
+    "source_refs": [
+      "NPA_MED"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM14_page1.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM14_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM14-Q006",
+    "test": "KM14",
+    "number": 6,
+    "page": 1,
+    "type": "true_false",
+    "transcription": "The traffic signal light ahead is flashing red, you may reduce speed and go through while paying attention on the intersecting road.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "A flashing red signal requires vehicles to stop at the stopping position before proceeding; merely slowing is insufficient.",
+    "source_refs": [
+      "NPA_SIGNAL"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM14_page1.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM14_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM14-Q007",
+    "test": "KM14",
+    "number": 7,
+    "page": 1,
+    "type": "true_false",
+    "transcription": "In general rules, vehicles should proceed through the left side of the center line if a center line is present.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "Vehicles generally must travel on the left side of the road center, or left of the center line when one is present, subject to listed exceptions.",
+    "source_refs": [
+      "NPA_ROAD_SIDE"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM14_page1.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM14_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM14-Q008",
+    "test": "KM14",
+    "number": 8,
+    "page": 1,
+    "type": "true_false",
+    "transcription": "This sign indicates that cars wider than 2.2 meters including their load may not proceed through.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "The sign is a maximum-width restriction. The vehicle including its load must not exceed the displayed width.",
+    "source_refs": [
+      "NPA_SIGNS"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [
+      {
+        "path": "figures/KM14-Q008_figure.png",
+        "kind": "source_crop_enhanced",
+        "recreated": false,
+        "note": "Enhanced crop of the original photographed figure; no symbols or text were invented."
+      }
+    ],
+    "source_image": "originals/KM14_page1.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM14_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM14-Q009",
+    "test": "KM14",
+    "number": 9,
+    "page": 1,
+    "type": "true_false",
+    "transcription": "When there is a child playing on the road, you can pass through without slowing down as long as you sound your horn.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "When a child may be in danger, drivers must stop or slow so the child can pass safely. The horn does not give a driver priority or replace the duty to protect the child.",
+    "source_refs": [
+      "NPA_PEDESTRIAN",
+      "NPA_LANE_SIGNAL"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM14_page1.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM14_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM14-Q010",
+    "test": "KM14",
+    "number": 10,
+    "page": 1,
+    "type": "true_false",
+    "transcription": "This sign indicates that the width of the road is 2.2 meters.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "The sign sets the maximum permitted vehicle width; it does not state that the road itself is 2.2 m wide.",
+    "source_refs": [
+      "NPA_SIGNS"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [
+      {
+        "path": "figures/KM14-Q010_figure.png",
+        "kind": "source_crop_enhanced",
+        "recreated": false,
+        "note": "Enhanced crop of the original photographed figure; no symbols or text were invented."
+      }
+    ],
+    "source_image": "originals/KM14_page1.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM14_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM14-Q011",
+    "test": "KM14",
+    "number": 11,
+    "page": 1,
+    "type": "true_false",
+    "transcription": "On a road with vehicular lanes, recklessly changing lanes disturbs the vehicles behind and may cause troubles.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "The NPA guide says drivers must not change lanes unnecessarily because doing so inconveniences following traffic and can cause crashes.",
+    "source_refs": [
+      "NPA_ROAD_SIDE",
+      "NPA_LANE_SIGNAL"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM14_page1.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM14_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM14-Q012",
+    "test": "KM14",
+    "number": 12,
+    "page": 1,
+    "type": "true_false",
+    "transcription": "If it is difficult to pass through the left of the center line due to road work, drivers may go into the right side of the road.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "When road works make the left portion insufficient for passage, a vehicle may use part of the right side, while minimizing the encroachment and ensuring safety.",
+    "source_refs": [
+      "NPA_ROAD_SIDE"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM14_page1.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM14_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM14-Q013",
+    "test": "KM14",
+    "number": 13,
+    "page": 1,
+    "type": "true_false",
+    "transcription": "Automobiles and motorized bicycles should not go through pedestrian paths, side strips or bicycle lanes except when crossing to enter and exit areas that are adjacent to the road.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "Vehicles must not normally travel on sidewalks, roadside strips or bicycle paths, but may cross them to enter or leave roadside property, subject to safety duties.",
+    "source_refs": [
+      "NPA_ROAD_SIDE"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM14_page1.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM14_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM14-Q014",
+    "test": "KM14",
+    "number": 14,
+    "page": 2,
+    "type": "true_false",
+    "transcription": "A driver of an automobile don't always need to follow the indicated arrows on roads with these markings even it's safe to do so.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "When directional lane markings designate how traffic must proceed at an intersection, drivers must follow the indicated direction except for narrow statutory exceptions such as yielding to an emergency vehicle or unavoidable road works.",
+    "source_refs": [
+      "NPA_INTERSECTION",
+      "NPA_SIGNS"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [
+      {
+        "path": "figures/KM14-Q014_figure.png",
+        "kind": "source_crop_enhanced",
+        "recreated": false,
+        "note": "Enhanced crop of the original photographed figure; no symbols or text were invented."
+      }
+    ],
+    "source_image": "originals/KM14_page2.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM14_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM14-Q015",
+    "test": "KM14",
+    "number": 15,
+    "page": 2,
+    "type": "true_false",
+    "transcription": "At an intersection with stop signs, it's permitted to stop briefly once, then proceed into the intersection before other vehicles crosses the intersection.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "A stop sign requires a full stop and the driver must not obstruct vehicles or trams using the intersecting road. Stopping first does not automatically give priority.",
+    "source_refs": [
+      "NPA_INTERSECTION"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM14_page2.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM14_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM14-Q016",
+    "test": "KM14",
+    "number": 16,
+    "page": 2,
+    "type": "true_false",
+    "transcription": "When passing a bicycle and trying to turn left, you were about to encroach on the bicycle, you may sound the horn to warn the bicycle and turn left first.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "A driver turning left must avoid cutting across or endangering a bicycle. Sounding the horn does not create priority; the horn is limited to required horn locations or unavoidable danger.",
+    "source_refs": [
+      "NPA_PEDESTRIAN",
+      "NPA_LANE_SIGNAL",
+      "NPA_INTERSECTION"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM14_page2.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM14_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM14-Q017",
+    "test": "KM14",
+    "number": 17,
+    "page": 2,
+    "type": "true_false",
+    "transcription": "In a situation of violation and a police officer asked for your driving license, you don't need to show it.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "A driver must carry the appropriate licence and must present it when a police officer requests it after a traffic violation or accident.",
+    "source_refs": [
+      "NPA_LICENSE"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM14_page2.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM14_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM14-Q018",
+    "test": "KM14",
+    "number": 18,
+    "page": 2,
+    "type": "true_false",
+    "transcription": "When approaching a railway crossing, lower your speed in advance to stop safely before the railway crossing (or right before the stop line if present).",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "Before crossing a railway crossing, drivers must stop immediately before it or before the stop line and check safety, unless a traffic signal at the crossing permits passage. Slowing in advance so you can make that stop is correct.",
+    "source_refs": [
+      "NPA_RAIL"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM14_page2.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM14_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM14-Q019",
+    "test": "KM14",
+    "number": 19,
+    "page": 2,
+    "type": "true_false",
+    "transcription": "When the traffic light turns yellow, and you cannot stop safely as you were near the stop line, you went through.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "A yellow signal normally requires stopping, but if the signal changes to yellow when you are so close that you cannot stop safely, you may continue.",
+    "source_refs": [
+      "NPA_SIGNAL"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM14_page2.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM14_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM14-Q020",
+    "test": "KM14",
+    "number": 20,
+    "page": 2,
+    "type": "true_false",
+    "transcription": "A driver of a vehicle and motorized bicycle may use cellphones while driving and the flow of the traffic is light.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "Using a handheld cellphone for a call while driving is prohibited regardless of whether traffic is light, except when the vehicle is stopped or within the applicable automated-driving exception.",
+    "source_refs": [
+      "NPA_PHONE",
+      "NPA_SAFEKNOW"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM14_page2.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM14_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM14-Q021",
+    "test": "KM14",
+    "number": 21,
+    "page": 2,
+    "type": "true_false",
+    "transcription": "When this sign is posted, it indicates the start of the traffic rule.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "The pictured blue rectangular arrow is a one-way indication; it does not mean the start of a traffic-regulation zone.",
+    "source_refs": [
+      "NPA_SIGNS"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [
+      {
+        "path": "figures/KM14-Q021_figure.png",
+        "kind": "source_crop_enhanced",
+        "recreated": false,
+        "note": "Enhanced crop of the original photographed figure; no symbols or text were invented."
+      }
+    ],
+    "source_image": "originals/KM14_page2.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM14_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM14-Q022",
+    "test": "KM14",
+    "number": 22,
+    "page": 2,
+    "type": "true_false",
+    "transcription": "In 30 meters in front of a pedestrian crossing, you may not change lane to pass another vehicle or motorized bicycles or go beside them.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "At a pedestrian crossing or bicycle crossing and within 30 m before it, a vehicle must not overtake or pass another vehicle so as to move ahead of it.",
+    "source_refs": [
+      "NPA_CROSSWALK",
+      "NPA_OVERTAKE"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM14_page2.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM14_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM14-Q023",
+    "test": "KM14",
+    "number": 23,
+    "page": 2,
+    "type": "true_false",
+    "transcription": "When driving a regular vehicle going through a priority vehicle lane such as for fixed route bus lane, and a fixed route bus is approaching from behind, the driver may speed up and continue driving.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "A vehicle using a route-bus priority lane must promptly leave it when a route bus approaches, rather than speeding up and continuing in the lane.",
+    "source_refs": [
+      "NPA_ROAD_SIDE"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM14_page2.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM14_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM14-Q024",
+    "test": "KM14",
+    "number": 24,
+    "page": 2,
+    "type": "true_false",
+    "transcription": "When passing closely a stopped vehicle, you need to anticipate that the vehicle door may suddenly open and proceed cautiously by passing at a reduced speed and maintain safety distance.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "Drivers should anticipate a suddenly opening door or a person emerging from behind a stopped vehicle and pass cautiously with appropriate clearance and speed.",
+    "source_refs": [
+      "NPA_PEDESTRIAN"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM14_page2.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM14_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM14-Q025",
+    "test": "KM14",
+    "number": 25,
+    "page": 2,
+    "type": "true_false",
+    "transcription": "While driving a vehicle and you lost track of your way, so you drove while focusing on the car navigation (excluding when driving an automated self-driving vehicle)",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "A driver must not stare at a navigation display while driving because it reduces attention to surrounding traffic.",
+    "source_refs": [
+      "NPA_SAFEKNOW"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM14_page2.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM14_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM14-Q026",
+    "test": "KM14",
+    "number": 26,
+    "page": 2,
+    "type": "true_false",
+    "transcription": "In an intersection that this sign is posted, you should proceed after stopping once and not to block vehicles that are proceeding through the intersecting road.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "At a stop sign, stop at the stopping position and do not obstruct traffic on the intersecting road.",
+    "source_refs": [
+      "NPA_INTERSECTION"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [
+      {
+        "path": "figures/KM14-Q026_figure.png",
+        "kind": "source_crop_enhanced",
+        "recreated": false,
+        "note": "Enhanced crop of the original photographed figure; no symbols or text were invented."
+      }
+    ],
+    "source_image": "originals/KM14_page2.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM14_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM14-Q027",
+    "test": "KM14",
+    "number": 27,
+    "page": 2,
+    "type": "true_false",
+    "transcription": "Drivers may use the horn adhering to ‘horn blowing’ and ‘horn area’ signs, and when it's necessary in order to avoid danger, but you should not sound horn in any other cases.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "The horn must be sounded where a “sound horn” sign or required horn-zone situation applies, and may be used when unavoidable to prevent danger; otherwise it must not be sounded.",
+    "source_refs": [
+      "NPA_LANE_SIGNAL"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM14_page2.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM14_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM14-Q028",
+    "test": "KM14",
+    "number": 28,
+    "page": 3,
+    "type": "true_false",
+    "transcription": "When driving not in the vicinity of or in an intersection, drivers should go to the left side of the road and yield when an emergency vehicle approaches from behind.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "Outside an intersection or its vicinity, drivers must move to the left side and yield the way to an approaching emergency vehicle (with the one-way-road exception where moving left would obstruct it).",
+    "source_refs": [
+      "NPA_ROAD_SIDE"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM14_page3.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM14_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM14-Q029",
+    "test": "KM14",
+    "number": 29,
+    "page": 3,
+    "type": "true_false",
+    "transcription": "When making a right turn in an intersection, it's easier and safer to turn staying on the left side of the road in advance.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "For a normal right turn, a driver should move as close as practicable to the road center in advance and turn slowly just inside the intersection center; staying at the left edge is not the standard method.",
+    "source_refs": [
+      "NPA_INTERSECTION"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM14_page3.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM14_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM14-Q030",
+    "test": "KM14",
+    "number": 30,
+    "page": 3,
+    "type": "true_false",
+    "transcription": "When vehicle lanes dedicated to fixed route buses are marked on the left side of the road, drivers may not go through that dedicated vehicle lane even when making a left turn.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "Other vehicles are generally barred from a bus-only lane, but entering it as necessary to prepare for a left turn is an explicit exception.",
+    "source_refs": [
+      "NPA_ROAD_SIDE"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM14_page3.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM14_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM14-Q031",
+    "test": "KM14",
+    "number": 31,
+    "page": 3,
+    "type": "true_false",
+    "transcription": "This pavement marking indicates an area that stopping is not permitted, drivers must not enter when there is a risk that the vehicle will be stuck in the area.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "A “no stopping area” marking is used where vehicles must not stop; if congestion could trap the vehicle in the marked area, it must not enter.",
+    "source_refs": [
+      "NPA_NOSTOP",
+      "NPA_SIGNS"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [
+      {
+        "path": "figures/KM14-Q031_figure.png",
+        "kind": "source_crop_enhanced",
+        "recreated": false,
+        "note": "Enhanced crop of the original photographed figure; no symbols or text were invented."
+      }
+    ],
+    "source_image": "originals/KM14_page3.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM14_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM14-Q032",
+    "test": "KM14",
+    "number": 32,
+    "page": 3,
+    "type": "true_false",
+    "transcription": "Making sure to move into the open vehicle traffic lanes at all times on a road with vehicular lanes will make the traffic smoother and prevent risk.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "Drivers must not weave or change lanes unnecessarily. An open lane does not justify constant lane changes.",
+    "source_refs": [
+      "NPA_ROAD_SIDE",
+      "NPA_LANE_SIGNAL"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM14_page3.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM14_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM14-Q033",
+    "test": "KM14",
+    "number": 33,
+    "page": 3,
+    "type": "true_false",
+    "transcription": "When passing through intersections drivers should proceed with a safe speed and method as possible while adequately pay attention for pedestrians and other vehicles.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "At and around intersections, drivers must pay attention to pedestrians and other traffic and proceed using the safest speed and method appropriate to the situation.",
+    "source_refs": [
+      "NPA_INTERSECTION"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM14_page3.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM14_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM14-Q034",
+    "test": "KM14",
+    "number": 34,
+    "page": 3,
+    "type": "true_false",
+    "transcription": "When approaching a pedestrian crossing, drivers should slow down and able to stop before it when it's not clear whether there are pedestrians crossing or not.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "Unless it is clearly evident that nobody is crossing or about to cross, drivers approaching a crosswalk must slow sufficiently to be able to stop before it.",
+    "source_refs": [
+      "NPA_PEDESTRIAN",
+      "NPA_CROSSWALK"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM14_page3.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM14_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM14-Q035",
+    "test": "KM14",
+    "number": 35,
+    "page": 3,
+    "type": "true_false",
+    "transcription": "A person must not ask a person to drive if that person is drunk or does not have a license.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "The NPA guide says not to ask an unlicensed person or a person who has been drinking to drive.",
+    "source_refs": [
+      "NPA_GENERAL",
+      "NPA_ALCOHOL"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM14_page3.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM14_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM14-Q036",
+    "test": "KM14",
+    "number": 36,
+    "page": 3,
+    "type": "true_false",
+    "transcription": "Vehicles that proceeds to this light may not cross the stop line and proceed.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "For a steady yellow signal, vehicles must not proceed beyond the stopping position. Exception: if the light changes to yellow when the vehicle is already too close to stop safely, it may continue.",
+    "source_refs": [
+      "NPA_SIGNAL"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "medium",
+    "transcription_confidence": "high",
+    "notes": [
+      "The source sentence omits the official yellow-signal exception; the answer treats it as the normal meaning of a steady yellow signal."
+    ],
+    "figures": [
+      {
+        "path": "figures/KM14-Q036_figure.png",
+        "kind": "source_crop_enhanced",
+        "recreated": false,
+        "note": "Enhanced crop of the original photographed figure; no symbols or text were invented."
+      }
+    ],
+    "source_image": "originals/KM14_page3.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM14_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM14-Q037",
+    "test": "KM14",
+    "number": 37,
+    "page": 3,
+    "type": "true_false",
+    "transcription": "When driving in a corner of the road, driver should drive in a reduced speed.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "Drivers must proceed at a reduced speed near road bends/corners.",
+    "source_refs": [
+      "NPA_SPEED_BRAKE",
+      "NPA_HILL"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM14_page3.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM14_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM14-Q038",
+    "test": "KM14",
+    "number": 38,
+    "page": 3,
+    "type": "true_false",
+    "transcription": "When making a left turn, proceed with a reduced speed while staying as far left as possible in advance, adhering to the side of the intersection.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "For a left turn, move as close as practicable to the left edge in advance and proceed slowly along the edge of the intersection.",
+    "source_refs": [
+      "NPA_INTERSECTION"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM14_page3.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM14_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM14-Q039",
+    "test": "KM14",
+    "number": 39,
+    "page": 3,
+    "type": "true_false",
+    "transcription": "Before starting an automatic vehicle, verify that the gear shift is in D position before stepping on the brake pedal and start the engine.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "Before starting an automatic vehicle, confirm the parking brake is applied and the selector is in P, then press the brake pedal and start the engine. D is selected for moving forward after starting.",
+    "source_refs": [
+      "NPA_AUTO"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM14_page3.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM14_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM14-Q040",
+    "test": "KM14",
+    "number": 40,
+    "page": 3,
+    "type": "true_false",
+    "transcription": "Cars that proceeds towards this light may turn right at the intersection.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "A green right-arrow signal permits vehicles to proceed in the arrow direction even when the main signal is red or yellow, subject to the special rules for certain light vehicles/mopeds.",
+    "source_refs": [
+      "NPA_SIGNAL"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [
+      {
+        "path": "figures/KM14-Q040_figure.png",
+        "kind": "source_crop_enhanced",
+        "recreated": false,
+        "note": "Enhanced crop of the original photographed figure; no symbols or text were invented."
+      }
+    ],
+    "source_image": "originals/KM14_page3.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM14_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM14-Q041",
+    "test": "KM14",
+    "number": 41,
+    "page": 4,
+    "type": "true_false",
+    "transcription": "Correctly using a child seat may reduce damage from potential traffic accidents and prevent the child obstructing the driver.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "Correct use of a child seat substantially reduces injury in a crash and helps prevent a child from interfering with driving controls.",
+    "source_refs": [
+      "NPA_SAFEKNOW"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM14_page4.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM14_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM14-Q042",
+    "test": "KM14",
+    "number": 42,
+    "page": 4,
+    "type": "true_false",
+    "transcription": "This sign indicates one way street, drivers may not proceed in the opposite direction of the arrow.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "The rectangular one-way sign prohibits travel in the direction opposite the arrow.",
+    "source_refs": [
+      "NPA_SIGNS"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [
+      {
+        "path": "figures/KM14-Q042_figure.png",
+        "kind": "source_crop_enhanced",
+        "recreated": false,
+        "note": "Enhanced crop of the original photographed figure; no symbols or text were invented."
+      }
+    ],
+    "source_image": "originals/KM14_page4.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM14_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM14-Q043",
+    "test": "KM14",
+    "number": 43,
+    "page": 4,
+    "type": "true_false",
+    "transcription": "When passing by pedestrians you should slow down even if there is a safety distance between your vehicle and the pedestrian.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "When passing a pedestrian, the rule is to keep a safe lateral distance OR travel at reduced speed. If a sufficient safe distance is maintained, slowing is not automatically required.",
+    "source_refs": [
+      "NPA_PEDESTRIAN"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM14_page4.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM14_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM14-Q044",
+    "test": "KM14",
+    "number": 44,
+    "page": 4,
+    "type": "true_false",
+    "transcription": "Vehicles must proceed through the left side of the center lines of the road when a center line is present.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "Vehicles generally must travel on the left side of the road center/center line, subject to statutory exceptions.",
+    "source_refs": [
+      "NPA_ROAD_SIDE"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM14_page4.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM14_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM14-Q045",
+    "test": "KM14",
+    "number": 45,
+    "page": 4,
+    "type": "true_false",
+    "transcription": "If a driver of an automobile is driving leaning to one side, it's not dangerous as long as it's easier to drive that way",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "The NPA guide instructs drivers to maintain a proper driving posture and specifically says not to drive with the body leaning diagonally.",
+    "source_refs": [
+      "NPA_SAFEKNOW"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM14_page4.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM14_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM14-Q046",
+    "test": "KM14",
+    "number": 46,
+    "page": 4,
+    "type": "true_false",
+    "transcription": "Vehicles may not pass through on roads that this sign is posted, but motorized bicycles may.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "The pictured sign is “No vehicles” (車両通行止め). It prohibits vehicles generally, which includes general motorized bicycles/mopeds; they are not exempt.",
+    "source_refs": [
+      "NPA_SIGNS"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [
+      {
+        "path": "figures/KM14-Q046_figure.png",
+        "kind": "source_crop_enhanced",
+        "recreated": false,
+        "note": "Enhanced crop of the original photographed figure; no symbols or text were invented."
+      }
+    ],
+    "source_image": "originals/KM14_page4.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM14_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM14-Q047",
+    "test": "KM14",
+    "number": 47,
+    "page": 4,
+    "type": "true_false",
+    "transcription": "While driving back from work, urgent call came and you picked up your phone to make conversation.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "Holding and using a cellphone for a call while driving is prohibited even when the call is urgent; stop safely before using it.",
+    "source_refs": [
+      "NPA_PHONE",
+      "NPA_SAFEKNOW"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM14_page4.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM14_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM14-Q048",
+    "test": "KM14",
+    "number": 48,
+    "page": 4,
+    "type": "true_false",
+    "transcription": "I general rule, when passing automobiles and mopeds, drivers should pass on the right side of the road.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "As a general overtaking rule, pass another vehicle on its right. Exceptions apply, such as when the vehicle ahead is positioned to turn right or when passing a tram.",
+    "source_refs": [
+      "NPA_OVERTAKE"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM14_page4.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM14_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM14-Q049",
+    "test": "KM14",
+    "number": 49,
+    "page": 4,
+    "type": "true_false",
+    "transcription": "When passing by pedestrians, you should keep a safety distance between the vehicle and the pedestrians or drive with a reduced speed.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "The NPA guide expressly requires either a safe separation from pedestrians or reduced speed.",
+    "source_refs": [
+      "NPA_PEDESTRIAN"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM14_page4.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM14_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM14-Q050",
+    "test": "KM14",
+    "number": 50,
+    "page": 4,
+    "type": "true_false",
+    "transcription": "Hitting the brakes several times will disorient the vehicles behind, so when stopping it's fine to brake strongly once.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "Using the brakes progressively and, where appropriate, in several applications can warn following traffic. Sudden hard braking should be avoided except for unavoidable danger.",
+    "source_refs": [
+      "NPA_SPEED_BRAKE"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM14_page4.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM14_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM15-Q001",
+    "test": "KM15",
+    "number": 1,
+    "page": 1,
+    "type": "true_false",
+    "transcription": "When being passed by another vehicle and there is no enough space to pass, you should stay to the left as much as possible.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "A vehicle being overtaken must not increase speed and, where there is insufficient room, must move as far left as practicable to allow the overtaking vehicle to pass.",
+    "source_refs": [
+      "NPA_OVERTAKE"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM15_page1.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM15_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM15-Q002",
+    "test": "KM15",
+    "number": 2,
+    "page": 1,
+    "type": "true_false",
+    "transcription": "On a roads where this signs are posted, it's not permitted to go into the right hand side of the road in order to pass another vehicle.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "The sign prohibits crossing into the right-hand portion of the road for the purpose of overtaking.",
+    "source_refs": [
+      "NPA_SIGNS",
+      "NPA_OVERTAKE"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [
+      {
+        "path": "figures/KM15-Q002_figure.png",
+        "kind": "source_crop_enhanced",
+        "recreated": false,
+        "note": "Enhanced crop of the original photographed figure; no symbols or text were invented."
+      }
+    ],
+    "source_image": "originals/KM15_page1.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM15_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM15-Q003",
+    "test": "KM15",
+    "number": 3,
+    "page": 1,
+    "type": "true_false",
+    "transcription": "Since this sign indicates school and kindergarten nearby where many kids crossing, you need to proceed with caution.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "The school/kindergarten warning sign indicates a location where children may be present or cross; drivers should proceed with special caution.",
+    "source_refs": [
+      "NPA_PEDESTRIAN",
+      "NPA_SIGNS"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [
+      {
+        "path": "figures/KM15-Q003_figure.png",
+        "kind": "source_crop_enhanced",
+        "recreated": false,
+        "note": "Enhanced crop of the original photographed figure; no symbols or text were invented."
+      }
+    ],
+    "source_image": "originals/KM15_page1.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM15_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM15-Q004",
+    "test": "KM15",
+    "number": 4,
+    "page": 1,
+    "type": "true_false",
+    "transcription": "Since this sign was at the light intersection, when the traffic signal light ahead is red, and you confirmed that there were no pedestrians, crossing per the light and turned left.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "The white sign with a blue left arrow is the “left turn permitted” board. A vehicle may turn left even on a red or yellow signal, but must not obstruct pedestrians, bicycles or other traffic that has priority.",
+    "source_refs": [
+      "NPA_SIGNAL",
+      "NPA_SIGNS"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [
+      {
+        "path": "figures/KM15-Q004_figure.png",
+        "kind": "source_crop_enhanced",
+        "recreated": false,
+        "note": "Enhanced crop of the original photographed figure; no symbols or text were invented."
+      }
+    ],
+    "source_image": "originals/KM15_page1.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM15_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM15-Q005",
+    "test": "KM15",
+    "number": 5,
+    "page": 1,
+    "type": "true_false",
+    "transcription": "Even when the vehicle ahead is going to pass another vehicle, you may pass these vehicles as long as you are not exceeding the speed limit.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "Overtaking a vehicle that is itself overtaking another automobile is prohibited (double overtaking); staying below the speed limit does not make it legal.",
+    "source_refs": [
+      "NPA_OVERTAKE"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM15_page1.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM15_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM15-Q006",
+    "test": "KM15",
+    "number": 6,
+    "page": 1,
+    "type": "true_false",
+    "transcription": "When passing by a mud or puddles, the driver is not responsible for splashing muddy water on pedestrians as long as the vehicle drives at a reduced speed.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "Drivers must take care not to splash mud or water on others, using reduced speed or other precautions. Driving slowly does not remove responsibility if you still splash them.",
+    "source_refs": [
+      "NPA_PEDESTRIAN"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM15_page1.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM15_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM15-Q007",
+    "test": "KM15",
+    "number": 7,
+    "page": 1,
+    "type": "true_false",
+    "transcription": "In the image of this marking, vehicles that pass through vehicle traffic lane B may change their lane to vehicle traffic lane A.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "A yellow lane-boundary line prohibits crossing it for a lane change from the side where the yellow line applies. In the depicted arrangement, lane B is on the yellow-line side, so B-to-A is prohibited.",
+    "source_refs": [
+      "NPA_LANE_SIGNAL"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "medium",
+    "transcription_confidence": "high",
+    "notes": [
+      "The photographed diagram uses a paired white/yellow lane boundary; answer is based on the yellow line being on lane B side."
+    ],
+    "figures": [
+      {
+        "path": "figures/KM15-Q007_figure.png",
+        "kind": "source_crop_enhanced",
+        "recreated": false,
+        "note": "Enhanced crop of the original photographed figure; no symbols or text were invented."
+      }
+    ],
+    "source_image": "originals/KM15_page1.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM15_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM15-Q008",
+    "test": "KM15",
+    "number": 8,
+    "page": 1,
+    "type": "true_false",
+    "transcription": "When the traffic signal light ahead turns to yellow and you weren't able to stop safely as you were approaching the stop line, you went through.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "A vehicle may continue through a yellow signal if it changed to yellow when the vehicle was so close to the stopping position that it could not stop safely.",
+    "source_refs": [
+      "NPA_SIGNAL"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM15_page1.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM15_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM15-Q009",
+    "test": "KM15",
+    "number": 9,
+    "page": 1,
+    "type": "true_false",
+    "transcription": "When a route bus signals to take off from the bus stop, vehicles behind should avoid that take off, excluding when they would have to brake suddenly.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "A following vehicle must not obstruct a route bus that has signaled to leave a stop, except when avoiding the bus would require sudden braking or steering.",
+    "source_refs": [
+      "NPA_ROAD_SIDE"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM15_page1.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM15_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM15-Q010",
+    "test": "KM15",
+    "number": 10,
+    "page": 1,
+    "type": "true_false",
+    "transcription": "When there are three or more lanes in the same direction, drivers must keep the mostright traffic lane for passing, and the slower vehicles should proceed the leftmost lane. If the signs or marking indicates passage rules, drivers should follow it.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "With three or more lanes in one direction, the rightmost lane should generally be kept for overtaking; slower traffic uses the left, with faster traffic progressively to the right. Posted lane-use rules take precedence.",
+    "source_refs": [
+      "NPA_ROAD_SIDE"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM15_page1.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM15_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM15-Q011",
+    "test": "KM15",
+    "number": 11,
+    "page": 1,
+    "type": "true_false",
+    "transcription": "When the vehicle ahead is trying to pass another vehicle, as the driver you should drive safely and take responsibility.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "As written, this is a general safety statement: every driver remains responsible for safe driving. It does not authorize a second overtake; double overtaking remains prohibited.",
+    "source_refs": [
+      "NPA_GENERAL",
+      "NPA_OVERTAKE"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "medium",
+    "transcription_confidence": "high",
+    "notes": [
+      "The English source is unusually vague and does not state a specific manoeuvre. The answer is limited to the literal wording; do not interpret it as permission to overtake."
+    ],
+    "figures": [],
+    "source_image": "originals/KM15_page1.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM15_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM15-Q012",
+    "test": "KM15",
+    "number": 12,
+    "page": 1,
+    "type": "true_false",
+    "transcription": "Vehicles coming to this signal light should stop at the stop line.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "The pictured red flashing signal requires vehicles to stop at the stopping position before proceeding.",
+    "source_refs": [
+      "NPA_SIGNAL"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [
+      {
+        "path": "figures/KM15-Q012_figure.png",
+        "kind": "source_crop_enhanced",
+        "recreated": false,
+        "note": "Enhanced crop of the original photographed figure; no symbols or text were invented."
+      }
+    ],
+    "source_image": "originals/KM15_page1.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM15_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM15-Q013",
+    "test": "KM15",
+    "number": 13,
+    "page": 2,
+    "type": "true_false",
+    "transcription": "Using a child seat correctly may reduce damage from heavy traffic accidents and prevent obstructing the driver.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "A correctly fitted child seat reduces crash injury and helps prevent the child from interfering with driving.",
+    "source_refs": [
+      "NPA_SAFEKNOW"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM15_page2.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM15_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM15-Q014",
+    "test": "KM15",
+    "number": 14,
+    "page": 2,
+    "type": "true_false",
+    "transcription": "When an emergency vehicle is approaching from behind, and driving not in a vicinity on a road other than intersection, you should go to the lefthand side of the road and yield.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "Outside an intersection or its vicinity, move to the left and yield the way to the emergency vehicle, unless on a one-way road where moving left would obstruct it.",
+    "source_refs": [
+      "NPA_ROAD_SIDE"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM15_page2.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM15_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM15-Q015",
+    "test": "KM15",
+    "number": 15,
+    "page": 2,
+    "type": "true_false",
+    "transcription": "When driving a motorized bicycle or mopeds, if there is no speed limit designated by signs or markings you may drive up to a speed of 30km/h.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "The general maximum speed for a general motorized bicycle/moped is 30 km/h; if a lower maximum is posted, the lower limit applies.",
+    "source_refs": [
+      "NPA_SPEED_BRAKE"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM15_page2.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM15_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM15-Q016",
+    "test": "KM15",
+    "number": 16,
+    "page": 2,
+    "type": "true_false",
+    "transcription": "Vehicles that comes to this traffic signal light may proceed through while paying attention to other traffic.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "The pictured flashing yellow signal allows vehicles to proceed while paying attention to other traffic.",
+    "source_refs": [
+      "NPA_SIGNAL"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [
+      {
+        "path": "figures/KM15-Q016_figure.png",
+        "kind": "source_crop_enhanced",
+        "recreated": false,
+        "note": "Enhanced crop of the original photographed figure; no symbols or text were invented."
+      }
+    ],
+    "source_image": "originals/KM15_page2.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM15_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM15-Q017",
+    "test": "KM15",
+    "number": 17,
+    "page": 2,
+    "type": "true_false",
+    "transcription": "If it is difficult to pass through the left side of the center line of the road due to construction, drivers may proceed into the right side to pass.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "Road works that make the left portion insufficient are an explicit exception permitting limited use of the right side, provided it is done safely and with minimal encroachment.",
+    "source_refs": [
+      "NPA_ROAD_SIDE"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM15_page2.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM15_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM15-Q018",
+    "test": "KM15",
+    "number": 18,
+    "page": 2,
+    "type": "true_false",
+    "transcription": "When your traffic signal is flashing yellow in an intersection, you should make sure to stop.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "A flashing yellow signal means proceed with caution; it does not require a stop. A flashing red signal requires stopping.",
+    "source_refs": [
+      "NPA_SIGNAL"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM15_page2.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM15_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM15-Q019",
+    "test": "KM15",
+    "number": 19,
+    "page": 2,
+    "type": "true_false",
+    "transcription": "This sign indicates that turning is prohibited.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "The depicted pavement symbol is the U-turn-prohibited marking (転回禁止). The source English uses “turning,” but the official meaning is specifically that a U-turn/turning around is prohibited, not that every left or right turn is prohibited.",
+    "source_refs": [
+      "NPA_SIGNS"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "medium",
+    "transcription_confidence": "high",
+    "notes": [
+      "Translation note: “turning” is imprecise; the official marking means U-turn prohibited (転回禁止)."
+    ],
+    "figures": [
+      {
+        "path": "figures/KM15-Q019_figure.png",
+        "kind": "source_crop_enhanced",
+        "recreated": false,
+        "note": "Enhanced crop of the original photographed figure; no symbols or text were invented."
+      }
+    ],
+    "source_image": "originals/KM15_page2.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM15_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM15-Q020",
+    "test": "KM15",
+    "number": 20,
+    "page": 2,
+    "type": "true_false",
+    "transcription": "When driving a standard car and going through a priority vehicle lane such as for fixed route buses, a fixed route bus had approached from behind, so you changed lane to another vehicle lane.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "A vehicle in a route-bus priority lane must promptly leave the lane when a route bus approaches from behind.",
+    "source_refs": [
+      "NPA_ROAD_SIDE"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM15_page2.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM15_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM15-Q021",
+    "test": "KM15",
+    "number": 21,
+    "page": 2,
+    "type": "true_false",
+    "transcription": "While driving back at work, you remember an urgent business, so you picked up your cell phone to make a call while driving. (excluding cases when using automated self-driving vehicle)",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "Using a handheld cellphone for a call while driving is prohibited, apart from the limited automated-driving exception specified by law; urgency of the call is not an exception.",
+    "source_refs": [
+      "NPA_PHONE",
+      "NPA_SAFEKNOW"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM15_page2.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM15_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM15-Q022",
+    "test": "KM15",
+    "number": 22,
+    "page": 2,
+    "type": "true_false",
+    "transcription": "When starting a vehicle, you don't need to use your turn signal as long as you check vehicles coming from behind with your side mirrors.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "Before starting from the roadside, signal your intention to start and then confirm safety again using mirrors and direct observation. Checking mirrors does not replace the signal.",
+    "source_refs": [
+      "NPA_START"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM15_page2.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM15_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM15-Q023",
+    "test": "KM15",
+    "number": 23,
+    "page": 2,
+    "type": "true_false",
+    "transcription": "When driving through an intersection with poor visibility to the left and right, you should slow down even if the road you are passing through has the right of way.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "Drivers must slow at a blind intersection except where traffic is signal-controlled or when traveling on a priority road. Therefore “even if the road has the right of way” is not the legal rule.",
+    "source_refs": [
+      "NPA_SPEED_BRAKE",
+      "NPA_INTERSECTION"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM15_page2.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM15_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM15-Q024",
+    "test": "KM15",
+    "number": 24,
+    "page": 2,
+    "type": "true_false",
+    "transcription": "When going through intersections, drivers must immediately stop when an emergency vehicle approaches.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "Near an intersection, a driver should avoid entering/clear the intersection, move to the left and stop. Stopping immediately inside the intersection can obstruct the emergency vehicle and is not the rule.",
+    "source_refs": [
+      "NPA_ROAD_SIDE"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM15_page2.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM15_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM15-Q025",
+    "test": "KM15",
+    "number": 25,
+    "page": 2,
+    "type": "true_false",
+    "transcription": "A driver should keep a safety distance between cars considering the weather, tire conditions, road surface and cargo weight so that you won't collide into the vehicle in front of you even the vehicle ahead stop suddenly.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "Safe following distance must account for weather, road and tire condition, load and other factors so that you can avoid colliding even if the vehicle ahead stops suddenly.",
+    "source_refs": [
+      "NPA_SPEED_BRAKE"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM15_page2.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM15_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM15-Q026",
+    "test": "KM15",
+    "number": 26,
+    "page": 2,
+    "type": "true_false",
+    "transcription": "When driving a standard vehicle and going through a priority lane such as for fixed-route buses, a fixed route bus had approach from behind, so you speed up and continued driving in the priority vehicle lane.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "When a route bus approaches from behind in a priority lane, an ordinary vehicle must promptly leave the lane rather than speed up and continue.",
+    "source_refs": [
+      "NPA_ROAD_SIDE"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM15_page2.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM15_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM15-Q027",
+    "test": "KM15",
+    "number": 27,
+    "page": 3,
+    "type": "true_false",
+    "transcription": "In an intersection where traffic is not regulated (excluding roundabouts), when the crossing road is a priority lane or is wider, drive at reduced speed and yield to vehicles that are going through the intersecting road.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "At an uncontrolled intersection, if the intersecting road is a priority road or clearly wider, slow down and do not obstruct vehicles or trams on that road.",
+    "source_refs": [
+      "NPA_INTERSECTION"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM15_page3.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM15_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM15-Q028",
+    "test": "KM15",
+    "number": 28,
+    "page": 3,
+    "type": "true_false",
+    "transcription": "When nearing or approaching a pedestrian crossing, drivers should slow down so that you are able to stop at any time before it when it's not clear whether there are pedestrians or not in the pedestrian crossing.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "Unless it is clearly evident that nobody is crossing or about to cross, slow sufficiently to stop before the crosswalk.",
+    "source_refs": [
+      "NPA_PEDESTRIAN",
+      "NPA_CROSSWALK"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM15_page3.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM15_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM15-Q029",
+    "test": "KM15",
+    "number": 29,
+    "page": 3,
+    "type": "true_false",
+    "transcription": "At an intersection with traffic signal lights, since the light ahead of you will turn green soon when the side light turns red, drivers can proceed through even without looking at the light in front as long as the side light is red.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "Drivers must obey the signal facing them. A side-direction red signal does not guarantee that your signal is green because all-red periods and time-offset signals exist.",
+    "source_refs": [
+      "NPA_SIGNAL"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM15_page3.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM15_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM15-Q030",
+    "test": "KM15",
+    "number": 30,
+    "page": 3,
+    "type": "true_false",
+    "transcription": "When this sign is posted, vehicles that are taller than 3.3 meters with their cargo, but less than 3.3 meters themselves, may proceed through.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "A maximum-height sign applies to the total vehicle height including the load. If the vehicle plus cargo exceeds 3.3 m, it may not pass.",
+    "source_refs": [
+      "NPA_SIGNS"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [
+      {
+        "path": "figures/KM15-Q030_figure.png",
+        "kind": "source_crop_enhanced",
+        "recreated": false,
+        "note": "Enhanced crop of the original photographed figure; no symbols or text were invented."
+      }
+    ],
+    "source_image": "originals/KM15_page3.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM15_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM15-Q031",
+    "test": "KM15",
+    "number": 31,
+    "page": 3,
+    "type": "true_false",
+    "transcription": "With a three-point seat belts, it's advisable to make sure to tighten the shoulder belt so that it lies flat and avoids the neck in pain.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "A three-point belt should be snug, not twisted or slack, with the shoulder belt positioned so it does not run over the neck.",
+    "source_refs": [
+      "NPA_SAFEKNOW"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM15_page3.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM15_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM15-Q032",
+    "test": "KM15",
+    "number": 32,
+    "page": 3,
+    "type": "true_false",
+    "transcription": "When passing through a railroad crossing, drivers need not to stop right before it (or before the stop line if there is one) as long as an alarm isn't ringing.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "Drivers must stop immediately before a railway crossing or its stop line and check both directions, unless a traffic signal at the crossing permits passage. The absence of an alarm does not remove the stop requirement.",
+    "source_refs": [
+      "NPA_RAIL"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM15_page3.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM15_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM15-Q033",
+    "test": "KM15",
+    "number": 33,
+    "page": 3,
+    "type": "true_false",
+    "transcription": "In cases when you drink at night and still under the influence of alcohol the following morning of driving, you need to be vigilant.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "True. The National Police Agency teaching guide specifically warns that alcohol consumed the previous night may still affect a driver the following morning, so drivers must be vigilant about this carry-over effect. If alcohol is still affecting you, you must not drive.",
+    "source_refs": [
+      "NPA_ALCOHOL"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [
+      "Answer-sheet cross-check: marked TRUE. The English wording is awkward; it corresponds to the NPA warning that alcohol from the previous night may still affect next-morning driving."
+    ],
+    "figures": [],
+    "source_image": "originals/KM15_page3.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM15_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM15-Q034",
+    "test": "KM15",
+    "number": 34,
+    "page": 3,
+    "type": "true_false",
+    "transcription": "A driver of an automobile must follow the indicated arrows on roads with the designated markings except in circumstances that to give way to emergency vehicles.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "Directional lane markings must be followed. Emergency-vehicle yielding and unavoidable road works are recognized exceptions.",
+    "source_refs": [
+      "NPA_INTERSECTION",
+      "NPA_SIGNS"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [
+      {
+        "path": "figures/KM15-Q034_figure.png",
+        "kind": "source_crop_enhanced",
+        "recreated": false,
+        "note": "Enhanced crop of the original photographed figure; no symbols or text were invented."
+      }
+    ],
+    "source_image": "originals/KM15_page3.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM15_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM15-Q035",
+    "test": "KM15",
+    "number": 35,
+    "page": 3,
+    "type": "true_false",
+    "transcription": "Driving a vehicle or motorized bicycle on a road, the driver should have or carry a valid license in accordance to the vehicle and towing classification.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "A driver must hold the appropriate licence for the vehicle/towing status and carry the licence while driving.",
+    "source_refs": [
+      "NPA_LICENSE"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM15_page3.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM15_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM15-Q036",
+    "test": "KM15",
+    "number": 36,
+    "page": 3,
+    "type": "true_false",
+    "transcription": "This sign indicates “one-way street” sign.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "The round blue sign with an upward arrow is a designated-direction sign requiring straight travel; the one-way sign is a rectangular blue arrow sign.",
+    "source_refs": [
+      "NPA_SIGNS"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [
+      {
+        "path": "figures/KM15-Q036_figure.png",
+        "kind": "source_crop_enhanced",
+        "recreated": false,
+        "note": "Enhanced crop of the original photographed figure; no symbols or text were invented."
+      }
+    ],
+    "source_image": "originals/KM15_page3.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM15_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM15-Q037",
+    "test": "KM15",
+    "number": 37,
+    "page": 3,
+    "type": "true_false",
+    "transcription": "When entering a tunnel without vehicle traffic lanes, drivers may pass another vehicle or motorized bicycles when there are no oncoming vehicle.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "Overtaking automobiles or general mopeds in a tunnel is prohibited unless the tunnel has vehicle lanes, even if no oncoming vehicle is visible.",
+    "source_refs": [
+      "NPA_OVERTAKE"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM15_page3.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM15_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM15-Q038",
+    "test": "KM15",
+    "number": 38,
+    "page": 3,
+    "type": "true_false",
+    "transcription": "At roads with this sign, vehicles may proceed straight through.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "The pictured designated-direction sign allows/requires vehicles to proceed straight and prohibits directions not shown.",
+    "source_refs": [
+      "NPA_SIGNS"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [
+      {
+        "path": "figures/KM15-Q038_figure.png",
+        "kind": "source_crop_enhanced",
+        "recreated": false,
+        "note": "Enhanced crop of the original photographed figure; no symbols or text were invented."
+      }
+    ],
+    "source_image": "originals/KM15_page3.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM15_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM15-Q039",
+    "test": "KM15",
+    "number": 39,
+    "page": 4,
+    "type": "true_false",
+    "transcription": "This marking is designated in front of police and fire stations, it's fine to enter and stop in this area when there is no emergency dispatch of fire trucks, etc.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "A “no stopping area” in front of police/fire facilities must be kept clear. You must not enter it when congestion could cause you to stop there; the rule is not suspended merely because no emergency dispatch is occurring.",
+    "source_refs": [
+      "NPA_NOSTOP",
+      "NPA_SIGNS"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [
+      {
+        "path": "figures/KM15-Q039_figure.png",
+        "kind": "source_crop_enhanced",
+        "recreated": false,
+        "note": "Enhanced crop of the original photographed figure; no symbols or text were invented."
+      }
+    ],
+    "source_image": "originals/KM15_page4.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM15_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM15-Q040",
+    "test": "KM15",
+    "number": 40,
+    "page": 4,
+    "type": "true_false",
+    "transcription": "Drivers with standard motor vehicle licenses may drive standard motorcycles and motorized bicycles in addition to standard motor vehicle.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "A standard/ordinary motor-vehicle licence permits ordinary cars, small special vehicles and general motorized bicycles, but not standard motorcycles; a motorcycle licence is required for those.",
+    "source_refs": [
+      "NPA_LICENSE"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM15_page4.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM15_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM15-Q041",
+    "test": "KM15",
+    "number": 41,
+    "page": 4,
+    "type": "true_false",
+    "transcription": "When entering the right side of the road to pass another vehicle, do not pass if you will obstruct or block the oncoming vehicles.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "When an overtake would require entering the right side, it must not be done if it would obstruct oncoming traffic or prevent a safe return to the left side.",
+    "source_refs": [
+      "NPA_OVERTAKE"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM15_page4.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM15_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM15-Q042",
+    "test": "KM15",
+    "number": 42,
+    "page": 4,
+    "type": "true_false",
+    "transcription": "When closely passing by a stopped vehicle, drivers need to anticipate that the door may suddenly open and proceed with caution by driving at reduced speed and keeping a safe distance.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "Drivers should anticipate doors opening or people emerging and pass a stopped vehicle cautiously with sufficient clearance and speed.",
+    "source_refs": [
+      "NPA_PEDESTRIAN"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM15_page4.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM15_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM15-Q043",
+    "test": "KM15",
+    "number": 43,
+    "page": 4,
+    "type": "true_false",
+    "transcription": "When passing by a stopped school bus to let children getting off or on the bus, you checked to make sure they were safe but didn't slow down.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "When passing a stopped school/kindergarten bus, drivers must slow down and check safety; checking without reducing speed is not enough.",
+    "source_refs": [
+      "NPA_PEDESTRIAN"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM15_page4.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM15_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM15-Q044",
+    "test": "KM15",
+    "number": 44,
+    "page": 4,
+    "type": "true_false",
+    "transcription": "When there is an obstacle in front of you, speed up so you'll pass through before oncoming vehicles.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "If an obstacle blocks your side, stop or slow in advance and yield to oncoming traffic rather than speeding through.",
+    "source_refs": [
+      "NPA_OVERTAKE"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM15_page4.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM15_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM15-Q045",
+    "test": "KM15",
+    "number": 45,
+    "page": 4,
+    "type": "true_false",
+    "transcription": "This marking indicates that there is a bicycle crossing or pedestrian crossing ahead.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "The diamond road marking is an advance indication that a pedestrian crossing or bicycle crossing is ahead.",
+    "source_refs": [
+      "NPA_SIGNS"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [
+      {
+        "path": "figures/KM15-Q045_figure.png",
+        "kind": "source_crop_enhanced",
+        "recreated": false,
+        "note": "Enhanced crop of the original photographed figure; no symbols or text were invented."
+      }
+    ],
+    "source_image": "originals/KM15_page4.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM15_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM15-Q046",
+    "test": "KM15",
+    "number": 46,
+    "page": 4,
+    "type": "true_false",
+    "transcription": "On a road without pedestrian walkways or roadside strips, you should not proceed into the road shoulder (0.5 meters from the edge of the road).",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "On a road without sidewalks or roadside strips, vehicles must not travel into the 0.5 m road-shoulder portion at the edge.",
+    "source_refs": [
+      "NPA_ROAD_SIDE"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM15_page4.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM15_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM15-Q047",
+    "test": "KM15",
+    "number": 47,
+    "page": 4,
+    "type": "true_false",
+    "transcription": "When driving a vehicle or motorized bicycle on the road, you should have a drivers license according to the vehicle type and towing element, but you don't have to carry that drivers license.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "You must both hold the appropriate licence and carry it while driving.",
+    "source_refs": [
+      "NPA_LICENSE"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM15_page4.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM15_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM15-Q048",
+    "test": "KM15",
+    "number": 48,
+    "page": 4,
+    "type": "true_false",
+    "transcription": "On roads with this traffic sign, drivers are allowed to go to the right side of the road in order to pass other vehicles as long as there are no oncoming vehicles.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "The depicted sign prohibits entering the right-hand portion of the road for overtaking, even when no oncoming vehicle is visible.",
+    "source_refs": [
+      "NPA_SIGNS",
+      "NPA_OVERTAKE"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [
+      {
+        "path": "figures/KM15-Q048_figure.png",
+        "kind": "source_crop_enhanced",
+        "recreated": false,
+        "note": "Enhanced crop of the original photographed figure; no symbols or text were invented."
+      }
+    ],
+    "source_image": "originals/KM15_page4.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM15_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM15-Q049",
+    "test": "KM15",
+    "number": 49,
+    "page": 4,
+    "type": "true_false",
+    "transcription": "Since it's safer to pass in a shorter period of time, it's advisable to quickly check in front and behind you as well as oncoming traffic before speeding up and pass.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "Overtaking requires a full safety check, proper signals and acceleration only within the speed limit. “Speeding up” to shorten the overtake is not permission to exceed the limit or rush the manoeuvre.",
+    "source_refs": [
+      "NPA_OVERTAKE"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM15_page4.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM15_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM15-Q050",
+    "test": "KM15",
+    "number": 50,
+    "page": 4,
+    "type": "true_false",
+    "transcription": "This sign indicates an area where can make an emergency call.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "The green telephone sign identifies an emergency telephone.",
+    "source_refs": [
+      "NPA_SIGNS"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [
+      {
+        "path": "figures/KM15-Q050_figure.png",
+        "kind": "source_crop_enhanced",
+        "recreated": false,
+        "note": "Enhanced crop of the original photographed figure; no symbols or text were invented."
+      }
+    ],
+    "source_image": "originals/KM15_page4.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM15_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM16-Q001",
+    "test": "KM16",
+    "number": 1,
+    "page": 1,
+    "type": "true_false",
+    "transcription": "When you had a medication for headaches or colds that may make you feel drowsiness, do not drive.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "Do not drive after taking cold or headache medicine that can cause drowsiness.",
+    "source_refs": [
+      "NPA_MED"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM16_page1.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM16_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM16-Q002",
+    "test": "KM16",
+    "number": 2,
+    "page": 1,
+    "type": "true_false",
+    "transcription": "When there is an obstacle ahead, drivers must stop or slowdown in advance and let the oncoming vehicles to proceed ahead first.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "When an obstacle is in your path, stop or slow in advance and yield to oncoming traffic.",
+    "source_refs": [
+      "NPA_OVERTAKE"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM16_page1.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM16_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM16-Q003",
+    "test": "KM16",
+    "number": 3,
+    "page": 1,
+    "type": "true_false",
+    "transcription": "Drivers must stop when going in front of a stopped vehicle that is stopped in front of a pedestrian crossing.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "If another vehicle is stopped at or immediately before a crosswalk, you must stop before passing alongside it and moving ahead.",
+    "source_refs": [
+      "NPA_PEDESTRIAN",
+      "NPA_CROSSWALK"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM16_page1.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM16_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM16-Q004",
+    "test": "KM16",
+    "number": 4,
+    "page": 1,
+    "type": "true_false",
+    "transcription": "When pedestrians are crossing in a pedestrian crossing, drivers should stop and yield to those pedestrians (before the stop line if there is one).",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "When a pedestrian is crossing or about to cross at a crosswalk, stop before the crosswalk/stop line and yield.",
+    "source_refs": [
+      "NPA_PEDESTRIAN",
+      "NPA_CROSSWALK"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM16_page1.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM16_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM16-Q005",
+    "test": "KM16",
+    "number": 5,
+    "page": 1,
+    "type": "true_false",
+    "transcription": "You don't need to pay attention to your surroundings if the traffic is clear when crossing, turning or reversing.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "Drivers must check surrounding safety before changing direction, crossing or reversing; apparent light traffic does not remove that duty.",
+    "source_refs": [
+      "NPA_GENERAL",
+      "NPA_LANE_SIGNAL"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM16_page1.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM16_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM16-Q006",
+    "test": "KM16",
+    "number": 6,
+    "page": 1,
+    "type": "true_false",
+    "transcription": "This sign indicates not permitted to pass others.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "The pictured sign is a U-turn prohibition sign, not an overtaking prohibition sign.",
+    "source_refs": [
+      "NPA_SIGNS"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [
+      {
+        "path": "figures/KM16-Q006_figure.png",
+        "kind": "source_crop_enhanced",
+        "recreated": false,
+        "note": "Enhanced crop of the original photographed figure; no symbols or text were invented."
+      }
+    ],
+    "source_image": "originals/KM16_page1.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM16_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM16-Q007",
+    "test": "KM16",
+    "number": 7,
+    "page": 1,
+    "type": "true_false",
+    "transcription": "It is not required for drivers to give the right of way to pedestrians that are crossing at an intersection without pedestrian crossing.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "At an intersection or nearby where there is no crosswalk, a driver must not obstruct a pedestrian who is crossing.",
+    "source_refs": [
+      "NPA_CROSSWALK",
+      "NPA_PEDESTRIAN"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM16_page1.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM16_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM16-Q008",
+    "test": "KM16",
+    "number": 8,
+    "page": 1,
+    "type": "true_false",
+    "transcription": "Vehicles proceeding to this light may turn right at the intersection.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "A green right-arrow signal permits vehicles to proceed to the right even when the main signal is red, subject to the special rule for certain light vehicles/mopeds.",
+    "source_refs": [
+      "NPA_SIGNAL"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [
+      {
+        "path": "figures/KM16-Q008_figure.png",
+        "kind": "source_crop_enhanced",
+        "recreated": false,
+        "note": "Enhanced crop of the original photographed figure; no symbols or text were invented."
+      }
+    ],
+    "source_image": "originals/KM16_page1.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM16_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM16-Q009",
+    "test": "KM16",
+    "number": 9,
+    "page": 1,
+    "type": "true_false",
+    "transcription": "Before starting an engine of an automatic transmission vehicle, you must check that it's in D gear position before stepping on the brake pedal and start the engine.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "Before starting, confirm the selector is in P, the parking brake is applied, press the brake, then start the engine. D is for moving forward after the engine is started.",
+    "source_refs": [
+      "NPA_AUTO"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM16_page1.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM16_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM16-Q010",
+    "test": "KM16",
+    "number": 10,
+    "page": 1,
+    "type": "true_false",
+    "transcription": "When there are pedestrians with a guide dog, pedestrians using wheel chairs or those are holding white or yellow canes, drivers should stop or drive at a reduced speed and let them pass safely.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "Drivers must stop or slow to allow people using disability mobility devices, white/yellow canes or guide dogs to pass safely.",
+    "source_refs": [
+      "NPA_PEDESTRIAN"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM16_page1.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM16_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM16-Q011",
+    "test": "KM16",
+    "number": 11,
+    "page": 1,
+    "type": "true_false",
+    "transcription": "In tunnels without vehicular lanes, may pass another vehicle or motorized bicycles when it's clear that there are no oncoming vehicles.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "Overtaking automobiles or general mopeds is prohibited in tunnels unless vehicle lanes are provided.",
+    "source_refs": [
+      "NPA_OVERTAKE"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM16_page1.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM16_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM16-Q012",
+    "test": "KM16",
+    "number": 12,
+    "page": 1,
+    "type": "true_false",
+    "transcription": "When vehicle lanes are indicated for fixed-route buses on the left side of the road, you may not proceed through that dedicated vehicle lane even when turning left.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "Other vehicles are generally barred from bus-only lanes, but may enter as necessary to turn left (and in other listed unavoidable situations).",
+    "source_refs": [
+      "NPA_ROAD_SIDE"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM16_page1.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM16_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM16-Q013",
+    "test": "KM16",
+    "number": 13,
+    "page": 1,
+    "type": "true_false",
+    "transcription": "Since this sign is indicated at the intersection, even the light ahead is red, after confirming that there were no pedestrians crossing per the light and turned left.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "The pictured “left turn permitted” board allows a left turn even when the main signal is red or yellow, while requiring the driver not to obstruct pedestrians, bicycles or other traffic.",
+    "source_refs": [
+      "NPA_SIGNAL",
+      "NPA_SIGNS"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [
+      {
+        "path": "figures/KM16-Q013_figure.png",
+        "kind": "source_crop_enhanced",
+        "recreated": false,
+        "note": "Enhanced crop of the original photographed figure; no symbols or text were invented."
+      }
+    ],
+    "source_image": "originals/KM16_page1.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM16_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM16-Q014",
+    "test": "KM16",
+    "number": 14,
+    "page": 1,
+    "type": "true_false",
+    "transcription": "If you are insured even in the cases of an emergency, as long as you have an auto insurance, drivers not need to know first aid treatment or keep emergency supplies.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "Insurance does not replace emergency preparedness. The NPA guide recommends learning first-aid knowledge and keeping first-aid/emergency equipment available.",
+    "source_refs": [
+      "NPA_FIRSTAID"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM16_page1.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM16_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM16-Q015",
+    "test": "KM16",
+    "number": 15,
+    "page": 2,
+    "type": "true_false",
+    "transcription": "This mark indicates a dedicated lane for buses from 7:00am to 9:00am.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "The pictured road marking designates a bus-only lane with the shown time restriction, 7:00–9:00.",
+    "source_refs": [
+      "NPA_SIGNS"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [
+      {
+        "path": "figures/KM16-Q015_figure.png",
+        "kind": "source_crop_enhanced",
+        "recreated": false,
+        "note": "Enhanced crop of the original photographed figure; no symbols or text were invented."
+      }
+    ],
+    "source_image": "originals/KM16_page2.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM16_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM16-Q016",
+    "test": "KM16",
+    "number": 16,
+    "page": 2,
+    "type": "true_false",
+    "transcription": "When passing by a safety zone and there are pedestrians present, you should drive and proceed at a reduced speed.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "When passing a safety zone occupied by pedestrians, drivers must proceed at reduced speed.",
+    "source_refs": [
+      "NPA_PEDESTRIAN"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM16_page2.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM16_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM16-Q017",
+    "test": "KM16",
+    "number": 17,
+    "page": 2,
+    "type": "true_false",
+    "transcription": "On roads when this sign is posted, vehicles that are taller than 3.3 meters including the cargo may not pass through.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "A maximum-height restriction applies to the overall vehicle height including cargo; exceeding 3.3 m means the vehicle may not pass.",
+    "source_refs": [
+      "NPA_SIGNS"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [
+      {
+        "path": "figures/KM16-Q017_figure.png",
+        "kind": "source_crop_enhanced",
+        "recreated": false,
+        "note": "Enhanced crop of the original photographed figure; no symbols or text were invented."
+      }
+    ],
+    "source_image": "originals/KM16_page2.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM16_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM16-Q018",
+    "test": "KM16",
+    "number": 18,
+    "page": 2,
+    "type": "true_false",
+    "transcription": "The timing for cars or motorized bicycles to signal when changing lanes to the left while going in the same direction is about three seconds before changing lanes.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "For a same-direction lane change, the signal should be given about three seconds before the manoeuvre.",
+    "source_refs": [
+      "NPA_LANE_SIGNAL"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM16_page2.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM16_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM16-Q019",
+    "test": "KM16",
+    "number": 19,
+    "page": 2,
+    "type": "true_false",
+    "transcription": "It's difficult to see ahead of you when approaching in top of the hills, and there is a risk of collision with oncoming vehicles, it's prohibited to pass another vehicle or motorized bicycles.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "Overtaking automobiles or general mopeds is prohibited near the crest of an uphill slope because visibility is poor.",
+    "source_refs": [
+      "NPA_OVERTAKE",
+      "NPA_HILL"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM16_page2.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM16_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM16-Q020",
+    "test": "KM16",
+    "number": 20,
+    "page": 2,
+    "type": "true_false",
+    "transcription": "Moving into an open vehicle traffic lanes at any times on roads with vehicle lanes will make smoother traffic and prevent risks.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "Drivers must not change lanes unnecessarily or weave between lanes simply because another lane is open.",
+    "source_refs": [
+      "NPA_ROAD_SIDE",
+      "NPA_LANE_SIGNAL"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM16_page2.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM16_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM16-Q021",
+    "test": "KM16",
+    "number": 21,
+    "page": 2,
+    "type": "true_false",
+    "transcription": "Motorized bicycles are not allowed to go through vehicle lanes dedicated to fixed route buses.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "The NPA guide explicitly exempts small special vehicles, general motorized bicycles/mopeds and light vehicles from the restriction on route-bus-only lanes. Other restrictions may still apply.",
+    "source_refs": [
+      "NPA_ROAD_SIDE"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM16_page2.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM16_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM16-Q022",
+    "test": "KM16",
+    "number": 22,
+    "page": 2,
+    "type": "true_false",
+    "transcription": "At intersections this sign is posted, drivers are not allowed to turn right between 8:00am to 8:00pm.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "The displayed designated-direction sign permits only the shown directions during the supplemental 8–20 time period, so a right turn is prohibited then.",
+    "source_refs": [
+      "NPA_SIGNS"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [
+      {
+        "path": "figures/KM16-Q022_figure.png",
+        "kind": "source_crop_enhanced",
+        "recreated": false,
+        "note": "Enhanced crop of the original photographed figure; no symbols or text were invented."
+      }
+    ],
+    "source_image": "originals/KM16_page2.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM16_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM16-Q023",
+    "test": "KM16",
+    "number": 23,
+    "page": 2,
+    "type": "true_false",
+    "transcription": "The passenger at the back of an automobile do not need to wear the seatbelts, but the driver and front passenger is required.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "Where seat belts are fitted, the driver must wear one and must have front and rear passengers wear them, subject to limited statutory exceptions.",
+    "source_refs": [
+      "NPA_SAFEKNOW"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM16_page2.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM16_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM16-Q024",
+    "test": "KM16",
+    "number": 24,
+    "page": 2,
+    "type": "true_false",
+    "transcription": "After stopping once at intersections when this sign is designated, you have the right to proceed first over other vehicles that are going through the intersecting road.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "A stop sign requires stopping and yielding as necessary; it does not give the stopped vehicle priority over traffic on the intersecting road.",
+    "source_refs": [
+      "NPA_INTERSECTION"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [
+      {
+        "path": "figures/KM16-Q024_figure.png",
+        "kind": "source_crop_enhanced",
+        "recreated": false,
+        "note": "Enhanced crop of the original photographed figure; no symbols or text were invented."
+      }
+    ],
+    "source_image": "originals/KM16_page2.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM16_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM16-Q025",
+    "test": "KM16",
+    "number": 25,
+    "page": 2,
+    "type": "true_false",
+    "transcription": "Since that in the top of the hills the visibility is poor, drivers should proceed at reduced speed.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "Drivers must proceed at reduced speed near the crest of an uphill slope.",
+    "source_refs": [
+      "NPA_SPEED_BRAKE",
+      "NPA_HILL"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM16_page2.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM16_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM16-Q026",
+    "test": "KM16",
+    "number": 26,
+    "page": 2,
+    "type": "true_false",
+    "transcription": "When driving and leaning to one side, a driver will not be able to drive safely because the reaction will be slower for unexpected incidents.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "The NPA guide requires a proper driving posture and specifically warns against driving with the body leaned diagonally; an improper posture can impair safe control and response.",
+    "source_refs": [
+      "NPA_SAFEKNOW"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM16_page2.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM16_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM16-Q027",
+    "test": "KM16",
+    "number": 27,
+    "page": 2,
+    "type": "true_false",
+    "transcription": "On roads with this sign, you may go faster than 50km per hour speed, when it's clear that there are no other vehicles.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "A posted 50 km/h maximum must not be exceeded simply because the road is clear.",
+    "source_refs": [
+      "NPA_SPEED_BRAKE",
+      "NPA_SIGNS"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [
+      {
+        "path": "figures/KM16-Q027_figure.png",
+        "kind": "source_crop_enhanced",
+        "recreated": false,
+        "note": "Enhanced crop of the original photographed figure; no symbols or text were invented."
+      }
+    ],
+    "source_image": "originals/KM16_page2.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM16_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM16-Q028",
+    "test": "KM16",
+    "number": 28,
+    "page": 3,
+    "type": "true_false",
+    "transcription": "When another vehicle is approaching from behind when you were changing lanes, since the vehicle that is trying to change lane have the right of way, you changed lanes without worrying about the vehicles behind.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "A driver changing lanes must check behind and must not change lanes if doing so would force following traffic to brake or steer suddenly. The lane-changing vehicle does not have automatic right of way.",
+    "source_refs": [
+      "NPA_LANE_SIGNAL"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM16_page3.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM16_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM16-Q029",
+    "test": "KM16",
+    "number": 29,
+    "page": 3,
+    "type": "true_false",
+    "transcription": "When this sign is posted, two wheeled vehicles and motorized bicycles are not allowed to proceed.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "The pictured sign prohibits automobiles other than two-wheeled automobiles. Two-wheeled automobiles and general mopeds are not the class prohibited by this sign.",
+    "source_refs": [
+      "NPA_SIGNS"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [
+      {
+        "path": "figures/KM16-Q029_figure.png",
+        "kind": "source_crop_enhanced",
+        "recreated": false,
+        "note": "Enhanced crop of the original photographed figure; no symbols or text were invented."
+      }
+    ],
+    "source_image": "originals/KM16_page3.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM16_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM16-Q030",
+    "test": "KM16",
+    "number": 30,
+    "page": 3,
+    "type": "true_false",
+    "transcription": "When passing through a mud or puddles, you must take caution by driving at a reduced speed to prevent splashing mud and water and disturb others.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "Drivers must take precautions, including slowing, to avoid splashing mud or water on others.",
+    "source_refs": [
+      "NPA_PEDESTRIAN"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM16_page3.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM16_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM16-Q031",
+    "test": "KM16",
+    "number": 31,
+    "page": 3,
+    "type": "true_false",
+    "transcription": "This marking indicates that vehicles may not pass through the area.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "The yellow-bordered/hatched marking is a no-entry area (立入り禁止部分); vehicles must not enter it.",
+    "source_refs": [
+      "NPA_SIGNS",
+      "NPA_ROAD_SIDE"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [
+      {
+        "path": "figures/KM16-Q031_figure.png",
+        "kind": "source_crop_enhanced",
+        "recreated": false,
+        "note": "Enhanced crop of the original photographed figure; no symbols or text were invented."
+      }
+    ],
+    "source_image": "originals/KM16_page3.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM16_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM16-Q032",
+    "test": "KM16",
+    "number": 32,
+    "page": 3,
+    "type": "true_false",
+    "transcription": "When the traffic ahead is crowded, you must not enter an intersection even if the light is green and there is a risk of stopping inside the intersection.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "Even on green, do not enter an intersection if congestion may leave you stopped inside and obstruct cross traffic.",
+    "source_refs": [
+      "NPA_INTERSECTION"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM16_page3.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM16_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM16-Q033",
+    "test": "KM16",
+    "number": 33,
+    "page": 3,
+    "type": "true_false",
+    "transcription": "Those with standard motor vehicle license may drive standard motorcycles and motorized bicycles in addition to standard motor vehicle.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "An ordinary/standard car licence includes general mopeds but not standard motorcycles; a motorcycle licence is required for those.",
+    "source_refs": [
+      "NPA_LICENSE"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM16_page3.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM16_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM16-Q034",
+    "test": "KM16",
+    "number": 34,
+    "page": 3,
+    "type": "true_false",
+    "transcription": "In roads with this sign drivers should not change lanes or pass to the right side to overtake another vehicle.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "The pictured overtaking restriction with the “no overtaking” supplementary plate prohibits overtaking. It also incorporates the right-side protrusion restriction shown by the main sign. Ordinary lane changes unrelated to overtaking are governed separately.",
+    "source_refs": [
+      "NPA_SIGNS",
+      "NPA_OVERTAKE"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "medium",
+    "transcription_confidence": "high",
+    "notes": [
+      "The English wording can sound as though every lane change is forbidden. The depicted sign + supplementary plate specifically regulates overtaking."
+    ],
+    "figures": [
+      {
+        "path": "figures/KM16-Q034_figure.png",
+        "kind": "source_crop_enhanced",
+        "recreated": false,
+        "note": "Enhanced crop of the original photographed figure; no symbols or text were invented."
+      }
+    ],
+    "source_image": "originals/KM16_page3.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM16_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM16-Q035",
+    "test": "KM16",
+    "number": 35,
+    "page": 3,
+    "type": "true_false",
+    "transcription": "When passing by pedestrians, you should slow down even if there is a safety distance between your vehicle and the pedestrian.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "The rule requires a safe distance OR reduced speed. If a sufficient safe distance is maintained, slowing is not automatically required.",
+    "source_refs": [
+      "NPA_PEDESTRIAN"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM16_page3.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM16_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM16-Q036",
+    "test": "KM16",
+    "number": 36,
+    "page": 3,
+    "type": "true_false",
+    "transcription": "Motorized bicycles may not use vehicle lanes dedicated to fixed route bus.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "General motorized bicycles/mopeds are specifically exempt from the general prohibition on other vehicles using a route-bus-only lane.",
+    "source_refs": [
+      "NPA_ROAD_SIDE"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [
+      "Answer sheet contains an original blue TRUE mark plus a red correction on FALSE; the corrected FALSE answer is used and agrees with the NPA rule for exclusive lanes."
+    ],
+    "figures": [],
+    "source_image": "originals/KM16_page3.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM16_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true,
+      "correction_note": "Red correction on FALSE overrides original blue TRUE mark."
+    }
+  },
+  {
+    "id": "KM16-Q037",
+    "test": "KM16",
+    "number": 37,
+    "page": 3,
+    "type": "true_false",
+    "transcription": "Motorized bicycles are permitted to travel at 50km/h speed.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "A general motorized bicycle/moped has a general maximum of 30 km/h, and must obey any lower posted limit.",
+    "source_refs": [
+      "NPA_SPEED_BRAKE"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [
+      {
+        "path": "figures/KM16-Q037_figure.png",
+        "kind": "source_crop_enhanced",
+        "recreated": false,
+        "note": "Enhanced crop of the original photographed figure; no symbols or text were invented."
+      }
+    ],
+    "source_image": "originals/KM16_page3.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM16_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM16-Q038",
+    "test": "KM16",
+    "number": 38,
+    "page": 3,
+    "type": "true_false",
+    "transcription": "When making a left turn, you were about to encroach on the bicycle, you honked or sounded your horn to alert the bicyclist and turned left first.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "A left-turning driver must avoid cutting off or endangering a bicycle. Sounding the horn does not grant priority.",
+    "source_refs": [
+      "NPA_PEDESTRIAN",
+      "NPA_INTERSECTION",
+      "NPA_LANE_SIGNAL"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM16_page3.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM16_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM16-Q039",
+    "test": "KM16",
+    "number": 39,
+    "page": 3,
+    "type": "true_false",
+    "transcription": "If you overuse the footbrake on a long downgrade hill the footbrake may suddenly stop working, it is advisable to use the engine brake while using low gear.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "On long descents, repeated foot-brake use can cause brake fade/loss of effectiveness. Use a lower gear and engine braking.",
+    "source_refs": [
+      "NPA_HILL"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM16_page3.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM16_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM16-Q040",
+    "test": "KM16",
+    "number": 40,
+    "page": 4,
+    "type": "true_false",
+    "transcription": "On roads with this marking on the center line, crossing in to the right lane of the road to pass another vehicle is prohibited.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "A yellow center-line restriction prohibits crossing into the right side of the road for overtaking.",
+    "source_refs": [
+      "NPA_SIGNS",
+      "NPA_OVERTAKE"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [
+      {
+        "path": "figures/KM16-Q040_figure.png",
+        "kind": "source_crop_enhanced",
+        "recreated": false,
+        "note": "Enhanced crop of the original photographed figure; no symbols or text were invented."
+      }
+    ],
+    "source_image": "originals/KM16_page4.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM16_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM16-Q041",
+    "test": "KM16",
+    "number": 41,
+    "page": 4,
+    "type": "true_false",
+    "transcription": "The hand signal of the police officer is the same as green light for those proceeding in the direction of the arrows",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "With an officer holding both arms horizontally, traffic moving parallel to the officer’s front/arms has the meaning of a green signal, while traffic crossing that direction has red. The arrows in the pictured diagram run in the red-signal direction.",
+    "source_refs": [
+      "NPA_POLICE_SIGNAL"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "medium",
+    "transcription_confidence": "high",
+    "notes": [
+      "Answer depends on the orientation shown in the diagram; the photographed arrows are perpendicular to the officer’s outstretched arms."
+    ],
+    "figures": [
+      {
+        "path": "figures/KM16-Q041_figure.png",
+        "kind": "source_crop_enhanced",
+        "recreated": false,
+        "note": "Enhanced crop of the original photographed figure; no symbols or text were invented."
+      }
+    ],
+    "source_image": "originals/KM16_page4.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM16_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM16-Q042",
+    "test": "KM16",
+    "number": 42,
+    "page": 4,
+    "type": "true_false",
+    "transcription": "When there are three or more vehicular lanes in the same direction, you should keep the right most lane open for passing or overtaking and the slower vehicle should proceed to the most left lane. If the signs or markings indicate passage, you must follow.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "With three or more lanes, the rightmost lane should normally be left for overtaking and slower traffic should keep further left; posted lane-use controls take precedence.",
+    "source_refs": [
+      "NPA_ROAD_SIDE"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM16_page4.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM16_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM16-Q043",
+    "test": "KM16",
+    "number": 43,
+    "page": 4,
+    "type": "true_false",
+    "transcription": "When the vehicle in front stops or drives at a reduced speed at an intersection or railway crossing, drivers must not barge or cut in front of the vehicle.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "The NPA guide expressly prohibits cutting in front of or crossing ahead of a vehicle that has stopped or slowed at an intersection or railway crossing.",
+    "source_refs": [
+      "NPA_OVERTAKE"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM16_page4.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM16_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM16-Q044",
+    "test": "KM16",
+    "number": 44,
+    "page": 4,
+    "type": "true_false",
+    "transcription": "Automobiles and motorized bicycles should not go through pedestrian paths, bicycle lanes or side strips except when crossing for entering and exiting that are adjacent to the road.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "Vehicles generally may not travel on sidewalks, bicycle paths or roadside strips, but may cross them to enter or leave roadside property subject to safety rules.",
+    "source_refs": [
+      "NPA_ROAD_SIDE"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM16_page4.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM16_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM16-Q045",
+    "test": "KM16",
+    "number": 45,
+    "page": 4,
+    "type": "true_false",
+    "transcription": "In areas where there is mud or puddle, it's not your responsibility even you splashed them as long as you drive at a reduced speed.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "Drivers must take care not to splash mud or water on others; reduced speed is a precaution, not an exemption from responsibility.",
+    "source_refs": [
+      "NPA_PEDESTRIAN"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM16_page4.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM16_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM16-Q046",
+    "test": "KM16",
+    "number": 46,
+    "page": 4,
+    "type": "true_false",
+    "transcription": "On roads that have this sign, large motorcycles and standard motorcycles may not pass through, but motorized bicycles may.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "The sign prohibits two-wheeled automobiles AND general motorized bicycles/mopeds. Mopeds are not permitted by this sign.",
+    "source_refs": [
+      "NPA_SIGNS"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [
+      {
+        "path": "figures/KM16-Q046_figure.png",
+        "kind": "source_crop_enhanced",
+        "recreated": false,
+        "note": "Enhanced crop of the original photographed figure; no symbols or text were invented."
+      }
+    ],
+    "source_image": "originals/KM16_page4.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM16_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM16-Q047",
+    "test": "KM16",
+    "number": 47,
+    "page": 4,
+    "type": "true_false",
+    "transcription": "When a route bus signals to take off from the bus stop, vehicles behind should avoid that take-off, excluding cases where the vehicle would have to brake suddenly to avoid the bus.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "A following vehicle must not obstruct a route bus that signals to leave a stop, except where doing so would require sudden braking or steering.",
+    "source_refs": [
+      "NPA_ROAD_SIDE"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM16_page4.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM16_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM16-Q048",
+    "test": "KM16",
+    "number": 48,
+    "page": 4,
+    "type": "true_false",
+    "transcription": "At this light, vehicles may proceed in the direction of the arrow while observing other traffic.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "False. The arrow shown is a YELLOW arrow, not a green arrow. Under the National Police Agency signal rules, a yellow arrow permits a streetcar to proceed in the arrow direction even while the main signal is yellow or red, but ordinary vehicles must not proceed. The main signal shown is red.",
+    "source_refs": [
+      "NPA_SIGNAL"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [
+      "Answer-sheet cross-check: marked FALSE. Earlier verification incorrectly treated the pictured yellow arrow as a green vehicle arrow."
+    ],
+    "figures": [
+      {
+        "path": "figures/KM16-Q048_figure.png",
+        "kind": "source_crop_enhanced",
+        "recreated": false,
+        "note": "Enhanced crop of the original photographed figure; no symbols or text were invented."
+      }
+    ],
+    "source_image": "originals/KM16_page4.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM16_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM16-Q049",
+    "test": "KM16",
+    "number": 49,
+    "page": 4,
+    "type": "true_false",
+    "transcription": "When proceeding in front of a vehicle that is stopped in front of a pedestrian crossing, you should stop.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": true,
+    "correct_answer_label": "True",
+    "explanation": "Before passing alongside a vehicle stopped at or immediately before a pedestrian crossing and moving ahead of it, you must stop.",
+    "source_refs": [
+      "NPA_PEDESTRIAN",
+      "NPA_CROSSWALK"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM16_page4.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM16_answers.jpg",
+      "marked_answer": true,
+      "cross_checked": true
+    }
+  },
+  {
+    "id": "KM16-Q050",
+    "test": "KM16",
+    "number": 50,
+    "page": 4,
+    "type": "true_false",
+    "transcription": "Cars and motorized bicycles may go through roadside strips when the car lanes are crowded.",
+    "choices": [
+      "True",
+      "False"
+    ],
+    "correct_answer": false,
+    "correct_answer_label": "False",
+    "explanation": "Traffic congestion does not allow cars or general mopeds to drive along roadside strips; vehicles generally must not travel there, apart from specified crossing/entry exceptions.",
+    "source_refs": [
+      "NPA_ROAD_SIDE"
+    ],
+    "verification_status": "verified",
+    "answer_confidence": "high",
+    "transcription_confidence": "high",
+    "notes": [],
+    "figures": [],
+    "source_image": "originals/KM16_page4.jpg",
+    "answer_key": {
+      "path": "answer_keys/KM16_answers.jpg",
+      "marked_answer": false,
+      "cross_checked": true
+    }
+  }
+]

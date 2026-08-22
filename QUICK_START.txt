@@ -1,0 +1,25 @@
+KARIMEN STREAMLIT REVIEWER — QUICK START
+
+LOCAL TEST
+1. Open this folder in Command Prompt / PowerShell.
+2. Run: python -m pip install -r requirements.txt
+3. Run: streamlit run app.py
+4. Open the address Streamlit shows (normally http://localhost:8501).
+
+FREE WEB HOSTING
+1. Create a GitHub repository (for example: karimen-reviewer).
+2. Upload ALL files/folders from this package to the repository root.
+3. Sign in to https://share.streamlit.io using GitHub.
+4. Create a new app and select your GitHub repository.
+5. Branch: main
+6. Main file path: app.py
+7. Deploy.
+
+UPDATING LATER
+Replace changed files in GitHub or push a new Git commit. Streamlit Community Cloud redeploys from the repository.
+
+PHONE USE
+Open the Streamlit URL in your phone browser. You can add the page to the phone Home Screen for faster access.
+
+PROGRESS
+Use Home > Download progress to save karimen_progress.json. Use Import progress to restore it on another device or after a deployment reset.
