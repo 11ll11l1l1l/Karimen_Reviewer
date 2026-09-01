@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 190" role="img" aria-labelledby="title desc">
+  <title id="title">ALAM</title>
+  <desc id="desc">Geometric A and mountain mark with the tagline See, Understand, Act.</desc>
+  <defs>
+    <linearGradient id="a" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0B3A67"/>
+      <stop offset="1" stop-color="#1768B2"/>
+    </linearGradient>
+    <linearGradient id="sun" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FFD35A"/>
+      <stop offset="1" stop-color="#F2A51A"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(10 8)">
+    <circle cx="88" cy="86" r="78" fill="#F4F8FC" stroke="#D9E6F2" stroke-width="3"/>
+    <circle cx="118" cy="44" r="18" fill="url(#sun)"/>
+    <path d="M24 145 L88 20 L153 145 L124 145 L88 74 L52 145 Z" fill="url(#a)"/>
+    <path d="M55 127 L88 84 L106 107 L118 96 L141 127 Z" fill="#FFFFFF" opacity=".96"/>
+    <path d="M61 127 L87 99 L98 111 L106 104 L126 127 Z" fill="#CFE3F5"/>
+    <path d="M47 151 C71 139 103 139 134 151" fill="none" stroke="#2E8FB8" stroke-width="6" stroke-linecap="round" opacity=".7"/>
+  </g>
+  <g transform="translate(190 32)">
+    <text x="0" y="76" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="78" font-weight="900" letter-spacing="-4" fill="#112B4A">ALAM</text>
+    <text x="4" y="116" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="24" font-weight="700" letter-spacing=".8" fill="#4B6178">See · Understand · Act</text>
+  </g>
+</svg>
