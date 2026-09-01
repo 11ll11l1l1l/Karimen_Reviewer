@@ -23,14 +23,14 @@
       "publisher": "Government of Japan Public Relations Office",
       "title": "【防災特集】ACTION01 災害に事前に備える",
       "url": "https://www.gov-online.go.jp/tokusyu/bousai/preparation.html",
-      "published_at": "2026-03-01",
+      "published_at": null,
       "source_type": "official"
     },
     {
       "publisher": "Cabinet Office Public Opinion Survey",
       "title": "防災に関する世論調査（令和7年8月調査）",
       "url": "https://survey.gov-online.go.jp/public_safety/202510/r07/r07-bousai/",
-      "published_at": "2025-10-01",
+      "published_at": null,
       "source_type": "official"
     }
   ],
@@ -79,13 +79,13 @@
       "deep": "Do a five-minute household audit: count usable rolls, estimate household size, check whether portable toilet bags/absorbent sets exist, and place the oldest toilet-paper packs where they will be used first. Do not create a hidden 'emergency pile' that expires or gets damp. Rolling stock works because the emergency supply is also ordinary inventory."
     },
     "who_is_affected": "Households in Japan, especially families that would struggle to shop during a disaster, supply disruption or temporary isolation.",
-    "when": "Do it now during Disaster Prevention Week, then maintain the level continuously through normal shopping.",
+    "when": "Do it now following Disaster Day, then maintain the level continuously through normal shopping.",
     "financial_impact": "Usually only a timing shift in normal household spending: the recommendation is to hold more of a product you already consume, not to buy a specialized high-cost kit.",
     "time_minutes": 5,
     "travel_minutes": 0,
     "risk_if_ignored": "A disaster or short-term buying surge can leave stores temporarily short of toilet paper and other hygiene supplies, forcing emergency shopping when transport or logistics may already be impaired.",
     "action": "PREPARE",
-    "deadline": "No hard legal deadline. Best done before the next disruption; September Disaster Prevention Week is a practical trigger to audit stock.",
+    "deadline": "No hard legal deadline. Best done before the next disruption; September's Disaster Day is a practical trigger to audit stock.",
     "effort": "LOW",
     "potential_benefit": "One fewer hygiene/logistics problem during an emergency, with minimal waste if the stock is rotated normally.",
     "downside": "Storage space. Avoid panic buying; build toward the target gradually and use long-roll/compact products if space is tight.",
