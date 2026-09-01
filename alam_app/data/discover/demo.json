@@ -1,0 +1,51 @@
+[
+  {
+    "id": "demo-discover-001",
+    "agent": "discover",
+    "created_at": "2026-09-01T21:50:00+09:00",
+    "type": "technology",
+    "title": "Sample: AI-assisted factory inspection gets a new capability",
+    "summary": "Demo record ito para makita ang Discover card. Sa live version, dito lalabas ang verified development, measurable improvement at limitation.",
+    "why_it_matters": "Ang goal ng Discover ay malaman mo agad kung ano ang bago at kung hype lang ba o may totoong significance.",
+    "importance": 82,
+    "confidence": 88,
+    "tags": ["AI", "Engineering", "Manufacturing"],
+    "geography": ["Global"],
+    "status": "new",
+    "demo": true,
+    "sources": [],
+    "content": {
+      "whats_new": "Placeholder example ng measurable new capability.",
+      "skeptical_view": "Hindi sapat ang demo result kung wala pang production evidence.",
+      "what_next": "Hintayin ang independent benchmark o real deployment.",
+      "recommendation": "WATCH — interesting, pero huwag agad mag-assume na production-ready.",
+      "usefulness": 70,
+      "novelty": 85
+    }
+  },
+  {
+    "id": "demo-discover-002",
+    "agent": "discover",
+    "created_at": "2026-09-01T18:50:00+09:00",
+    "type": "japan",
+    "title": "Sample: Japan policy signal na worth bantayan",
+    "summary": "Example lang ito ng policy discovery. Sa live feed, official Japanese sources ang priority bago gumawa ng conclusion.",
+    "why_it_matters": "Early signal can matter, pero dapat malinaw kung proposal, confirmed rule, o implementation na.",
+    "importance": 76,
+    "confidence": 72,
+    "tags": ["Japan", "Policy"],
+    "geography": ["Japan"],
+    "status": "watch",
+    "demo": true,
+    "sources": [],
+    "content": {
+      "what_happened": "Placeholder policy discussion.",
+      "whats_new": "May bagong official signal, pero hindi pa final rule.",
+      "skeptical_view": "Discussion does not guarantee implementation.",
+      "what_next": "Watch for formal guidance or implementation date.",
+      "recommendation": "WATCH LANG MUNA.",
+      "usefulness": 72,
+      "novelty": 70
+    }
+  }
+]

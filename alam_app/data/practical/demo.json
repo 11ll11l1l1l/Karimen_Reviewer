@@ -1,0 +1,56 @@
+[
+  {
+    "id": "demo-practical-001",
+    "agent": "practical",
+    "created_at": "2026-09-01T21:15:00+09:00",
+    "type": "saving",
+    "title": "Sample: May possible household saving — pero sulit lang under the right condition",
+    "summary": "Demo ng Practical card: dapat may yen impact, effort, catch at clear DO / WAIT / SKIP recommendation.",
+    "why_it_matters": "Hindi lahat ng tipid ay worth your time. Dapat kinukumpara ang actual saving sa effort at risk.",
+    "importance": 79,
+    "confidence": 91,
+    "tags": ["Tipid", "Japan", "Household"],
+    "geography": ["Japan"],
+    "status": "new",
+    "demo": true,
+    "sources": [],
+    "content": {
+      "who_is_affected": "Households in Japan na pasok sa sample condition.",
+      "financial_impact": "Illustrative only: around ¥3,000–¥8,000/year.",
+      "risk_if_ignored": "Low in this demo.",
+      "action": "WAIT — verify muna ang eligibility at total cost.",
+      "deadline": "No real deadline; demo only.",
+      "effort": "LOW",
+      "potential_benefit": "Small but easy saving if qualified.",
+      "downside": "Possible hidden fees or low-value effort.",
+      "usefulness": 90,
+      "novelty": 68
+    }
+  },
+  {
+    "id": "demo-practical-002",
+    "agent": "practical",
+    "created_at": "2026-09-01T16:50:00+09:00",
+    "type": "risk",
+    "title": "Sample: New scam pattern — ano ang warning signs?",
+    "summary": "Demo safety alert. Live records should use police, Consumer Affairs Agency or other strong Japanese sources whenever possible.",
+    "why_it_matters": "Practical alerts should prevent actual loss, not just repeat generic 'be careful online' advice.",
+    "importance": 88,
+    "confidence": 94,
+    "tags": ["Safety", "Scam", "Japan"],
+    "geography": ["Japan"],
+    "status": "new",
+    "demo": true,
+    "sources": [],
+    "content": {
+      "who_is_affected": "Residents receiving suspicious payment or account messages.",
+      "risk_if_ignored": "Potential financial loss or account compromise.",
+      "action": "AVOID — huwag gamitin ang link sa unsolicited message; access the official service manually.",
+      "effort": "LOW",
+      "potential_benefit": "High downside avoided for very little effort.",
+      "downside": "None beyond taking an extra minute to verify.",
+      "usefulness": 95,
+      "novelty": 74
+    }
+  }
+]
