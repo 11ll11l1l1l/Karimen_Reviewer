@@ -1,0 +1,42 @@
+name: ALAM app checks
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'alam_app/**'
+      - '.github/workflows/alam-checks.yml'
+  pull_request:
+    paths:
+      - 'alam_app/**'
+      - '.github/workflows/alam-checks.yml'
+
+jobs:
+  validate-alam:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - name: Install ALAM dependencies
+        run: pip install -r alam_app/requirements.txt
+      - name: Python syntax check
+        run: python -m py_compile alam_app/streamlit_app.py
+      - name: Start ALAM Streamlit server
+        shell: bash
+        run: |
+          streamlit run alam_app/streamlit_app.py --server.headless=true --server.port=8512 > /tmp/alam-streamlit.log 2>&1 &
+          PID=$!
+          trap 'kill $PID || true' EXIT
+          for i in {1..30}; do
+            if curl -fsS http://localhost:8512/_stcore/health >/dev/null; then
+              echo 'ALAM health check passed'
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/alam-streamlit.log
+          exit 1
