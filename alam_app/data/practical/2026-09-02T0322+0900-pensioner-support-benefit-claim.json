@@ -1,0 +1,109 @@
+{
+  "id": "practical-jp-pensioner-support-benefit-2026",
+  "agent": "practical",
+  "created_at": "2026-09-02T03:22:16+09:00",
+  "type": "benefit_deadline",
+  "title": "Green pension-benefit letters are going out now; eligible recipients can lose retroactive payments if they wait past January 4",
+  "summary": "Japan Pension Service started mailing green 年金生活者支援給付金 claim packets on September 1 to basic-pension recipients who newly qualify. Kung dumating ito sa bahay, huwag i-file-away lang: eligible claims received by January 4, 2027 can be paid retroactively from October 2026, while later claims generally start only from the month after filing.",
+  "why_it_matters": "For a qualifying low-income pensioner, the benefit can be several thousand yen per month. The standard old-age formula can reach ¥5,620/month for someone with 480 paid contribution months, so missing four months of retroactivity can mean roughly ¥22,480 forgone in that example. The application is also available electronically for people who received the postcard-form claim.",
+  "importance": 91,
+  "confidence": 98,
+  "tags": ["Japan", "Pension", "Benefit", "Deadline", "Household Money"],
+  "geography": ["Japan"],
+  "status": "new",
+  "sources": [
+    {
+      "publisher": "Japan Pension Service",
+      "title": "令和8年度の年金生活者支援給付金請求書（はがき型）の送付について",
+      "url": "https://www.nenkin.go.jp/oshirase/taisetu/kojin/2026/202609/0901.html",
+      "published_at": "2026-09-01",
+      "source_type": "official"
+    },
+    {
+      "publisher": "Japan Pension Service",
+      "title": "手続きが遅れると年金生活者支援給付金は受け取れなくなりますか。",
+      "url": "https://www.nenkin.go.jp/section/faq/jukyu/seido/sonota-kyufu/shienkyufukin/hagaki/kigen.html",
+      "published_at": "2026-09-01",
+      "source_type": "official"
+    },
+    {
+      "publisher": "Japan Pension Service",
+      "title": "老齢（補足的老齢）年金生活者支援給付金の概要",
+      "url": "https://www.nenkin.go.jp/service/jukyu/seido/sonota-kyufu/shienkyufukin/rourei.html",
+      "published_at": "2026-04-01",
+      "source_type": "official"
+    },
+    {
+      "publisher": "Japan Pension Service",
+      "title": "年金生活者支援給付金",
+      "url": "https://www.nenkin.go.jp/service/jukyu/seido/sonota-kyufu/shienkyufukin/20190805.html",
+      "published_at": "2026-09-01",
+      "source_type": "official"
+    }
+  ],
+  "claims": [
+    {
+      "kind": "FACT",
+      "text": "Japan Pension Service began sending postcard-form pensioner support benefit claims from September 1, 2026 to basic-pension recipients newly identified as eligible; some people whose eligibility cannot yet be confirmed receive an A4 claim plus an income-status form instead.",
+      "source_refs": [1],
+      "basis": "Official September 1 Japan Pension Service notice"
+    },
+    {
+      "kind": "FACT",
+      "text": "If an eligible person's claim reaches Japan Pension Service by January 4, 2027, the benefit can be paid retroactively from October 2026; if it arrives later, payment generally begins from the month after the claim.",
+      "source_refs": [2, 4],
+      "basis": "Official deadline FAQ and benefit procedure page"
+    },
+    {
+      "kind": "FACT",
+      "text": "For old-age recipients born on or after April 2, 1956, one eligibility route requires age 65+, receipt of basic old-age pension, all household members exempt from municipal resident tax, and prior-year pension plus other income at or below the specified thresholds; the full paid-contribution component is ¥5,620 per month when 480 contribution-paid months are credited.",
+      "source_refs": [3],
+      "basis": "Official eligibility and 2026 benefit formula"
+    },
+    {
+      "kind": "ESTIMATE",
+      "text": "At ¥5,620 per month, four months of October-January support equals ¥22,480, illustrating the scale of retroactive benefit that can be lost by a late claim for a person receiving that full paid-contribution component.",
+      "source_refs": [2, 3],
+      "basis": "¥5,620 × 4 months; actual entitlement varies with contribution history, income and benefit category"
+    },
+    {
+      "kind": "FACT",
+      "text": "Japan Pension Service says it and MHLW do not ask by phone for bank PINs or charge a fee for this benefit.",
+      "source_refs": [4],
+      "basis": "Official anti-fraud warning"
+    },
+    {
+      "kind": "INFERENCE",
+      "text": "Because the government is proactively mailing likely new qualifiers and the potential missed payment can exceed ¥10,000, opening and acting on the green packet promptly has high practical value for affected households.",
+      "source_refs": [1, 2, 3],
+      "basis": "Inference from targeted mailing, deadline mechanics and benefit size"
+    }
+  ],
+  "content": {
+    "reading_levels": {
+      "30_sec": "APPLY if a green Japan Pension Service envelope for 年金生活者支援給付金 arrives. New likely qualifiers are being mailed from September 1. A qualifying claim received by January 4, 2027 preserves payment back to October 2026; later filing can lose those earlier months. No application fee is required.",
+      "2_min": "This is targeted mainly at low-income basic-pension recipients who newly qualify. For old-age support, the rules include age 65+, basic old-age pension receipt, household-wide resident-tax exemption and income limits; disability and survivor categories have their own rules. The old-age benefit is formula-based rather than one flat amount. A person with 480 paid contribution months can receive a ¥5,620/month paid-contribution component in FY2026. If your postcard-form claim arrives, you can return it or use the supported electronic application. The critical practical date is January 4, 2027: eligible claims received by then can still be paid from October 2026.",
+      "deep": "Do not assume every pensioner qualifies, and do not calculate entitlement from age alone. Japan Pension Service is mailing postcard claims to people it identifies as newly eligible, while cases needing more income verification can receive an A4 claim and income-status form. If the green packet arrives, verify the sender and complete the official process promptly. The agency explicitly warns that it does not ask for bank PINs by phone and does not demand fees for the benefit."
+    },
+    "who_is_affected": "Basic-pension recipients in Japan who newly meet the pensioner support benefit requirements, especially low-income old-age pensioners in resident-tax-exempt households; disability and survivor pension recipients may qualify under separate criteria.",
+    "when": "Mailing started September 1, 2026. October 2026 is the retroactive benefit start month for this annual claim cycle when the qualifying claim is received by January 4, 2027.",
+    "financial_impact": "Benefit varies. For the old-age category, the FY2026 paid-contribution component is up to ¥5,620/month for 480 paid months, with additional/different calculations for exempt months and reduced supplemental payments near the income threshold. Example only: four months at ¥5,620 = ¥22,480.",
+    "risk_if_ignored": "An eligible recipient who waits beyond January 4, 2027 can lose the ability to receive the October 2026 onward months retroactively; later entitlement generally starts from the month after filing.",
+    "action": "APPLY — if the official green claim packet arrives, verify it and submit promptly by postcard or the supported electronic route. Do not pay anyone a fee or disclose a bank PIN for this benefit.",
+    "deadline": "January 4, 2027 to preserve retroactive payment from October 2026; follow any earlier submission date printed on the individual packet where practical.",
+    "effort": "LOW",
+    "potential_benefit": "Potentially several thousand yen per month for an eligible pensioner, plus preservation of up to several months of retroactive payment by meeting the January 4 cutoff.",
+    "downside": "Eligibility is means-tested and benefit amounts vary, so receiving pension alone does not guarantee payment. A suspicious phone call, fee request or request for a bank PIN is not part of the official process.",
+    "what_would_change_mind": "Change the recommendation if Japan Pension Service revises the January 4 retroactivity deadline, eligibility rules or application procedure. For an individual household, an official determination of non-eligibility would end the need to apply.",
+    "usefulness": 96,
+    "novelty": 86,
+    "pr_vs_reality": {
+      "official_claim": "Japan Pension Service is notifying newly eligible pension recipients and asks recipients to submit the claim promptly.",
+      "evidence_says": [
+        "The benefit requires an actual claim; eligibility alone does not automatically complete the process for new recipients.",
+        "The January 4 receipt date has real financial consequences because later claims lose retroactive months."
+      ],
+      "verdict": "For anyone who receives the official packet, this is real money with a low-effort form: act rather than postpone."
+    }
+  }
+}
