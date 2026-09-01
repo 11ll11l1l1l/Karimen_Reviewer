@@ -1,0 +1,96 @@
+[
+  {
+    "id": "practical-jp-energy-support-end-sep2026",
+    "agent": "practical",
+    "created_at": "2026-09-01T23:41:37+09:00",
+    "type": "household_cost",
+    "title": "Electricity at gas bill support ends after September usage",
+    "summary": "Verified: ang 2026 national electricity/gas bill support covers July-September usage only. For low-voltage electricity, September usage still gets a ¥3.5/kWh discount and city gas gets ¥14/m³; absent a new extension, mawawala ang discount starting October usage.",
+    "why_it_matters": "For a household using 300 kWh/month, the low-voltage electricity discount alone is about ¥1,050/month. With city gas, the combined monthly gap after support ends can easily exceed ¥1,000, so useful itong isama sa autumn/winter budget kahit walang application na kailangan ngayon.",
+    "importance": 86,
+    "confidence": 96,
+    "tags": ["Japan", "Electricity", "Gas", "Household costs", "Subsidy"],
+    "geography": ["Japan"],
+    "status": "watch",
+    "sources": [
+      {
+        "publisher": "Ministry of Economy, Trade and Industry",
+        "title": "2026年7月、8月及び9月使用分の電気・ガス料金支援の実施に伴い、電気・都市ガス料金の値引きを行うことができる特例認可・承認を行いました",
+        "url": "https://www.meti.go.jp/press/2026/06/20260612003/20260612003.html",
+        "published_at": "2026-06-12",
+        "source_type": "official"
+      },
+      {
+        "publisher": "Tokyo Gas",
+        "title": "『電気・ガス料金負担軽減支援事業補助金』に伴うガス料金・電気料金の値引きについて",
+        "url": "https://www.tokyo-gas.co.jp/news/topics/20260615-01.html",
+        "published_at": "2026-06-15",
+        "source_type": "official"
+      },
+      {
+        "publisher": "Tokyo Gas",
+        "title": "原料費調整制度に基づく2026年10月検針分のガス料金について",
+        "url": "https://www.tokyo-gas.co.jp/news/press/20260828-02.html",
+        "published_at": "2026-08-28",
+        "source_type": "official"
+      }
+    ],
+    "content": {
+      "who_is_affected": "Households in Japan using eligible low-voltage electricity and/or city gas plans covered by the national support program.",
+      "when": "Support applies through September 2026 usage (generally reflected in October billing/inspection timing depending on the provider). From October usage onward, no continuation is verified yet.",
+      "financial_impact": "Verified September-support rate: low-voltage electricity ¥3.5/kWh and city gas ¥14/m³. Example estimate: 300 kWh/month electricity = about ¥1,050/month of support; 30 m³/month city gas = about ¥420/month. Combined example = about ¥1,470/month, or roughly ¥17,600/year if the same gap persisted for 12 months. Actual bills also depend on fuel/raw-material adjustments and usage.",
+      "risk_if_ignored": "No paperwork penalty, pero puwedeng ma-underbudget ang autumn/winter utility cost by ¥1,000+ per month for a typical-use household if you assume the summer support continues.",
+      "action": "WATCH — huwag mag-apply; automatic ang current discount. Check your October/November bill and any METI extension announcement before changing providers or buying hardware just to offset this subsidy ending.",
+      "deadline": "September 30, 2026 usage period is the current practical end point of the verified support window.",
+      "effort": "LOW",
+      "potential_benefit": "Better household budgeting and avoiding an unnecessary contract/device purchase based on a temporary subsidized bill level.",
+      "downside": "The exact post-support increase is not guaranteed because wholesale fuel/raw-material adjustments can move bills up or down. A later government extension would reduce or remove this expected gap.",
+      "confidence": 96,
+      "usefulness": 91,
+      "novelty": 72,
+      "verified_fact": "METI's approved support table covers July, August and September 2026 usage only, with September rates of ¥3.5/kWh for low-voltage electricity and ¥14/m³ for city gas.",
+      "inference": "If no extension is announced, a household's bill will lose that per-unit discount from October usage, all else equal.",
+      "evidence_that_changes_recommendation": "A METI announcement extending or replacing the subsidy beyond September 2026, or a provider-specific tariff change large enough to offset the subsidy loss."
+    }
+  },
+  {
+    "id": "practical-jp-investment-recovery-secondary-scam-20260901",
+    "agent": "practical",
+    "created_at": "2026-09-01T23:41:37+09:00",
+    "type": "fraud_risk",
+    "title": "New warning: scammers are targeting past investment-fraud victims again",
+    "summary": "Consumer Affairs Agency warned on September 1 about secondary scams aimed at people who already lost money in investment trouble. Common pitch: 'buy another investment to get your refund,' 'a government relief system will refund you,' or 'we can handle the refund process' — then they ask for more money.",
+    "why_it_matters": "High-risk ito because the target is already financially hurt and may be emotionally motivated to recover losses. One extra payment can easily turn an existing loss into a much larger one, while the preventive action costs almost nothing.",
+    "importance": 92,
+    "confidence": 98,
+    "tags": ["Japan", "Scam", "Investment", "Consumer protection", "Fraud"],
+    "geography": ["Japan"],
+    "status": "new",
+    "sources": [
+      {
+        "publisher": "Consumer Affairs Agency",
+        "title": "投資系トラブルの二次被害にご注意ください!",
+        "url": "https://www.caa.go.jp/policies/policy/consumer_policy/caution/caution_045/index.html",
+        "published_at": "2026-09-01",
+        "source_type": "official"
+      }
+    ],
+    "content": {
+      "who_is_affected": "Anyone in Japan who previously lost money in an investment, crypto, fake platform, fraudulent business, or similar scheme — especially if contacted unexpectedly by a 'refund,' 'recovery,' legal, support, or new-investment service.",
+      "when": "Consumer Affairs Agency warning published September 1, 2026; treat this as active immediately.",
+      "financial_impact": "Potential additional loss can be tens of thousands to millions of yen depending on the payment requested. The agency did not publish one standard loss amount, so no precise average is claimed here.",
+      "risk_if_ignored": "You may pay a second scammer, send more money into another investment, or disclose personal/financial information while trying to recover the first loss.",
+      "action": "AVOID — do not pay any upfront 'recovery' fee and do not buy a new investment as a condition for refund. If contacted, independently verify through an official regulator/agency and call Consumer Hotline 188 if unsure.",
+      "deadline": "No fixed deadline; act before sending any money or documents.",
+      "effort": "LOW",
+      "potential_benefit": "Can prevent a second financial loss with a one-minute pause and independent verification.",
+      "downside": "A legitimate lawyer or authorized recovery process may charge valid fees, so 'never pay anyone' would be too broad. The key is to verify identity, authority, contract terms and recovery basis independently before payment.",
+      "confidence": 98,
+      "usefulness": 95,
+      "novelty": 88,
+      "verified_fact": "CAA says it is seeing consultations where prior investment-trouble victims are asked to pay money for supposed recovery, including claims about buying another product, government relief, or refund-procedure assistance.",
+      "inference": "Past victims are particularly valuable targets because scammers can exploit urgency and sunk-loss psychology; this explains why the risk/reward of independent verification is unusually high.",
+      "evidence_that_changes_recommendation": "If the contact can be independently verified as a licensed/authorized professional or official process through a regulator, court, police, financial institution or known firm — using contact details obtained independently, not from the message itself — then evaluate the actual contract rather than rejecting it automatically."
+    }
+  }
+]
