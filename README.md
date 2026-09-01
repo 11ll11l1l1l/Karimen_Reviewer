@@ -1,7 +1,20 @@
-# Japan Driving License Exam Reviewer v5.1 — Detailed Explanations
+# Japan Driving License Exam Reviewer v5.3 — English-First Exam Practice
 
 A mobile-first Streamlit reviewer for Japanese driving-license written-exam study, upgraded from the v4.4 Karimen Reviewer without removing the existing game, progress, mascot, sound, ranking, or review features.
 
+
+
+## v5.3 English-first upgrade
+
+- **Every one of the 1,550 questions is available in English.**
+- Karimen retains its existing 650 English questions.
+- All 900 Honmen questions now include **Exam English** translated from the preserved Japanese source.
+- Honmen translation is intentionally fairly literal rather than over-polished, to train the learner to parse awkward English-test wording while preserving conditions, exceptions, negatives and measurements.
+- English is always the primary question language. The app no longer silently falls back to Japanese.
+- The original Japanese source remains available from **Settings → Show original Japanese source under English questions** for audit/reference.
+- `validate.py` blocks a release if any English question is missing.
+
+The v5.3 Honmen English is practice translation created from the source material; it is not presented as an official police-issued English question bank.
 
 ## v5.2 additions
 
@@ -36,13 +49,13 @@ A mobile-first Streamlit reviewer for Japanese driving-license written-exam stud
 - 10 uploaded Honmen practice sets
 - 90 true/false questions per set
 - 95 embedded question images recovered from the uploaded MHTML result pages
-- Japanese source wording is preserved after removing furigana/page numbering; no unverified English translation was invented
+- Japanese source wording is preserved after removing furigana/page numbering, and each record now has an English-first exam-style translation
 - 896 answers were explicitly marked by the saved quiz-result HTML; 4 source-result items lacked an explicit correct-answer class and are separately verified against driving/safety references in `questions.json`
 
 ### Total
 - **1,550 source question records**
 - **228 image references**
-- A compressed deployment copy of the full question bank (`data/questions_v51.json.xz`) is included; the readable JSON remains in the downloadable package.
+- A compressed deployment copy of the full question bank (`data/questions_v53.json.xz`) is included; the readable JSON remains in the downloadable package.
 - **1,539 distinct content keys** (11 exact duplicate-content records retained for source completeness)
 
 ## Exam format handling

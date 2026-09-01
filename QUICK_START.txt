@@ -1,4 +1,4 @@
-JAPAN DRIVING LICENSE EXAM REVIEWER v5.2 — QUICK START
+JAPAN DRIVING LICENSE EXAM REVIEWER v5.3 — QUICK START
 
 LOCAL
 1. pip install -r requirements.txt
@@ -21,3 +21,8 @@ python strict_runtime_test.py
 python supabase_stub_test.py
 
 Real Streamlit AppTest/server startup runs in GitHub Actions after push.
+
+ENGLISH-FIRST v5.3
+- All 1,550 questions display in English by default.
+- Original Japanese can be shown from Settings for reference.
+- Honmen Exam English intentionally preserves some literal/awkward phrasing for translation-test practice.

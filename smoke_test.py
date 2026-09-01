@@ -4,12 +4,15 @@ from datetime import date
 from karimen_core import default_progress, record_answer, mastery, select_question_ids, daily_question_ids, normalize_progress
 
 ROOT=Path(__file__).resolve().parent
-packed=(ROOT/'data/questions_v51.json.xz').read_bytes() if (ROOT/'data/questions_v51.json.xz').exists() else None
+packed=(ROOT/'data/questions_v53.json.xz').read_bytes() if (ROOT/'data/questions_v53.json.xz').exists() else None
 if packed is None:
-    parts=sorted((ROOT/'data/deploy').glob('questions_v51_xz_part*.b64'))
+    parts=sorted((ROOT/'data/deploy').glob('questions_v53_xz_part*.b64'))
     packed=base64.b64decode(''.join(x.read_text(encoding='ascii').strip() for x in parts)) if parts else None
 doc=json.loads(lzma.decompress(packed).decode('utf8')) if packed else json.load(open(ROOT/'data/questions.json',encoding='utf8')); qs=doc['questions']; ids={q['id'] for q in qs}
 assert len(qs)==1550
+assert all(str(q.get('question_en') or '').strip() for q in qs)
+assert all(str(q.get('question_en_exam') or '').strip() for q in qs)
+assert sum(q['bank']=='Honmen' and bool(str(q.get('question_en_exam') or '').strip()) for q in qs)==900
 p=default_progress()
 # Hard unseen priority: after heavily practicing one record, it cannot crowd out unseen records.
 seen=qs[0]

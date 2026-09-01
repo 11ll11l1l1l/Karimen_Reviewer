@@ -5,13 +5,13 @@ param(
 
 $ErrorActionPreference = "Stop"
 $Source = Split-Path -Parent $MyInvocation.MyCommand.Path
-$Work = Join-Path $env:TEMP "Karimen_Reviewer_v52_deploy"
+$Work = Join-Path $env:TEMP "Karimen_Reviewer_v53_deploy"
 
 if (Test-Path $Work) { Remove-Item -Recurse -Force $Work }
 Write-Host "Cloning $RepoUrl ..."
 git clone --branch $Branch $RepoUrl $Work
 
-Write-Host "Copying Japan Driving License Exam Reviewer v5.2 ..."
+Write-Host "Copying Japan Driving License Exam Reviewer v5.3 ..."
 $null = robocopy $Source $Work /E /XD .git __pycache__ /XF *.pyc *.v51bak deploy_to_github.ps1 deploy_to_github.sh
 if ($LASTEXITCODE -gt 7) { throw "Robocopy failed with exit code $LASTEXITCODE" }
 
@@ -23,9 +23,9 @@ try {
         Write-Host "No Git changes detected. Repository already matches this package."
         exit 0
     }
-    git commit -m "Upgrade Japan Driving License Exam Reviewer to v5.2"
+    git commit -m "Upgrade Japan Driving License Exam Reviewer to v5.3"
     git push origin $Branch
-    Write-Host "v5.2 pushed successfully to $Branch."
+    Write-Host "v5.3 pushed successfully to $Branch."
     Write-Host "Next: check GitHub Actions / Streamlit deployment, then run supabase_setup.sql once if player_profiles does not exist."
 }
 finally {

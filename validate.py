@@ -1,12 +1,12 @@
 from pathlib import Path
 import json, sys, collections, statistics, zipfile, lzma, base64, io
 ROOT=Path(__file__).resolve().parent
-DATA_XZ=ROOT/'data/questions_v51.json.xz'
+DATA_XZ=ROOT/'data/questions_v53.json.xz'
 def joined_parts(directory, pattern):
     parts=sorted(directory.glob(pattern)) if directory.exists() else []
     if not parts: return None
     return base64.b64decode(''.join(p.read_text(encoding='ascii').strip() for p in parts))
-packed=DATA_XZ.read_bytes() if DATA_XZ.exists() else joined_parts(ROOT/'data/deploy','questions_v51_xz_part*.b64')
+packed=DATA_XZ.read_bytes() if DATA_XZ.exists() else joined_parts(ROOT/'data/deploy','questions_v53_xz_part*.b64')
 DOC=json.loads(lzma.decompress(packed).decode('utf8') if packed else (ROOT/'data/questions.json').read_text(encoding='utf8'))
 BUNDLE=ROOT/'assets'/'honmen_questions.zip'
 bundle_bytes=BUNDLE.read_bytes() if BUNDLE.exists() else joined_parts(ROOT/'assets/deploy','honmen_zip_part*.b64')
@@ -28,7 +28,8 @@ required_detail=['rule_title','rule_summary','why_answer','practical_meaning','e
 for q in qs:
     for field in ['id','bank','category','explanation','content_key']+required_detail:
         if not q.get(field): errors.append(f"{q.get('id')}: missing {field}")
-    if not (q.get('question_en') or q.get('question_ja')): errors.append(f"{q.get('id')}: no question text")
+    if not str(q.get('question_en') or '').strip(): errors.append(f"{q.get('id')}: missing English question")
+    if not str(q.get('question_en_exam') or '').strip(): errors.append(f"{q.get('id')}: missing Exam English question")
     if not isinstance(q.get('answer'),bool): errors.append(f"{q.get('id')}: answer not bool")
     if len(q.get('explanation_detailed','')) < 500: errors.append(f"{q.get('id')}: detailed explanation is too short")
     if q.get('explanation_quality','').endswith('review_recommended'):
@@ -51,7 +52,22 @@ if int(meta.get('answer_key_correction_count_v51') or 0)!=41:
 quality=collections.Counter(q.get('explanation_quality') for q in qs)
 if quality.get('official_category_anchor_review_recommended',0)!=0:
     errors.append(f'Category-only explanations remain: {quality.get("official_category_anchor_review_recommended",0)}')
-if meta.get('version')!='5.1-detailed-explanations-audited': errors.append(f"Unexpected metadata version: {meta.get('version')}")
+if meta.get('version')!='5.3-english-first-exam-translation': errors.append(f"Unexpected metadata version: {meta.get('version')}")
+english_count=sum(bool(str(q.get('question_en') or '').strip()) for q in qs)
+exam_english_count=sum(bool(str(q.get('question_en_exam') or '').strip()) for q in qs)
+honmen_english_count=sum(q.get('bank')=='Honmen' and bool(str(q.get('question_en_exam') or '').strip()) for q in qs)
+if english_count!=1550: errors.append(f'Expected English for 1550 questions, found {english_count}')
+if exam_english_count!=1550: errors.append(f'Expected Exam English for 1550 questions, found {exam_english_count}')
+if honmen_english_count!=900: errors.append(f'Expected English for all 900 Honmen questions, found {honmen_english_count}')
+if int(meta.get('english_question_count') or 0)!=1550: errors.append('Metadata English question count is not 1550')
+if int(meta.get('honmen_english_translation_count') or 0)!=900: errors.append('Metadata Honmen English translation count is not 900')
+import re
+japanese_chars=re.compile(r'[\u3040-\u30ff\u3400-\u9fff]')
+for q in qs:
+    if japanese_chars.search(str(q.get('question_en_exam') or '')):
+        errors.append(f"{q['id']}: Japanese characters remain in Exam English")
+    if q.get('bank')=='Honmen' and q.get('translation_status')!='exam_english_v53_human_reviewed':
+        errors.append(f"{q['id']}: Honmen translation status not v5.3 reviewed")
 # Ensure the imminent 2026-09-01 statutory-speed change is represented explicitly.
 for qid in ['KARIMEN-S07-Q004','KARIMEN-S09-Q014']:
     q=next((x for x in qs if x['id']==qid),None)
@@ -71,6 +87,7 @@ legacy=json.loads((ROOT/'data/legacy_id_map.json').read_text())
 if len(legacy)!=650: errors.append(f'Legacy map count {len(legacy)} != 650')
 lengths=[len(q.get('explanation_detailed','')) for q in qs]
 print('Questions:',len(qs))
+print('English questions:',english_count,'Exam English:',exam_english_count,'Honmen English:',honmen_english_count)
 print('Banks:',dict(counts))
 print('Image refs:',len(image_refs))
 print('Distinct content:',len({q['content_key'] for q in qs}))

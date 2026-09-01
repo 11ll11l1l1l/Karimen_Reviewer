@@ -53,7 +53,7 @@ except Exception:
 
 ROOT = Path(__file__).resolve().parent
 DATA_FILE = ROOT / "data" / "questions.json"
-COMPRESSED_DATA_FILE = ROOT / "data" / "questions_v51.json.xz"
+COMPRESSED_DATA_FILE = ROOT / "data" / "questions_v53.json.xz"
 COMPRESSED_DATA_PARTS = ROOT / "data" / "deploy"
 QUESTION_ASSET_ROOT = ROOT
 SOUND_DIR = ROOT / "assets" / "sounds"
@@ -62,7 +62,7 @@ HONMEN_IMAGE_BUNDLE = ROOT / "assets" / "honmen_questions.zip"
 HONMEN_IMAGE_PARTS = ROOT / "assets" / "deploy"
 FALLBACK_MASCOT = ROOT / "assets" / "mascot.png"
 JST = timezone(timedelta(hours=9))
-BUILD = "5.2 All-Activity League + Humor + Device Memory"
+BUILD = "5.3 English-First Exam Translation"
 
 st.set_page_config(
     page_title="Japan Driving License Exam Reviewer",
@@ -88,7 +88,7 @@ def load_data():
     if COMPRESSED_DATA_FILE.exists():
         packed = COMPRESSED_DATA_FILE.read_bytes()
     else:
-        packed = _joined_b64_parts(COMPRESSED_DATA_PARTS, "questions_v51_xz_part*.b64")
+        packed = _joined_b64_parts(COMPRESSED_DATA_PARTS, "questions_v53_xz_part*.b64")
     if packed:
         raw = lzma.decompress(packed).decode("utf-8")
     else:
@@ -312,8 +312,9 @@ def filter_questions(bank: str = "All", set_filter: str = "All", category: str =
 
 
 def question_text(q: dict) -> str:
-    """Use verified English when supplied; otherwise preserve the uploaded Japanese source text."""
-    return str(q.get("question_en") or q.get("question_ja") or "").strip()
+    """Return English exam-practice wording only; Japanese is an optional source reference."""
+    text = str(q.get("question_en_exam") or q.get("question_en") or "").strip()
+    return text or "[English translation missing — please report this question.]"
 
 
 def content_seen_count(questions: list[dict] | None = None) -> tuple[int, int]:
@@ -1591,7 +1592,7 @@ def header():
         scope = BANK_SCOPE_LABELS.get(active_bank_scope(), "Karimen + Honmen")
         total = len(active_questions())
         cseen, ctotal = content_seen_count()
-        st.markdown(f"<div class='km-top'><div class='km-logo'>🚗 JAPAN DRIVING LICENSE EXAM REVIEWER</div><div class='km-tag'>Karimen • Honmen • Practice • Master • Pass</div><div class='km-hud'><span>{html.escape(st.session_state.avatar)} {html.escape(safe_player_name())}</span><span>📚 {html.escape(scope)}</span><span>⭐ Level {level}</span><span>🪙 {total_xp():,} XP</span><span>🔥 Daily {daily_challenge_streak()}</span><span>🗺️ {cseen}/{ctotal} unique rules</span><span>📘 {unique_seen_count()}/{total} records</span></div></div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='km-top'><div class='km-logo'>🚗 JAPAN DRIVING LICENSE EXAM REVIEWER</div><div class='km-tag'>Karimen • Honmen • Practice • Master • Pass</div><div class='km-hud'><span>{html.escape(st.session_state.avatar)} {html.escape(safe_player_name())}</span><span>📚 {html.escape(scope)}</span><span>⭐ Level {level}</span><span>🪙 {total_xp():,} XP</span><span>🔥 Daily {daily_challenge_streak()}</span><span>🗺️ {cseen}/{ctotal} unique rules</span><span>📘 {unique_seen_count()}/{total} records</span><span>🌐 English {int(META.get('english_question_count') or 0)}/{len(QUESTIONS)}</span></div></div>", unsafe_allow_html=True)
     with c2:
         state = st.session_state.mascot_state
         asset = category_asset(st.session_state.mascot_category) if state == "idle" else reaction_asset(state)
@@ -1612,7 +1613,7 @@ def header():
         c2.checkbox("Mascot voice", key="opt_voice")
         c3.checkbox("Phone vibration", key="opt_haptics")
         c1, c2 = st.columns(2)
-        c1.checkbox("Show Japanese under translated Karimen questions", key="opt_japanese")
+        c1.checkbox("Show original Japanese source under English questions", key="opt_japanese")
         c2.selectbox("Theme", ["Arcade", "Cute", "Night"], key="opt_theme")
         selected_voice = st.selectbox("Mascot voice style", VOICE_MODES, key="voice_mode", disabled=not st.session_state.opt_voice)
         if st.session_state.opt_voice and selected_voice in NEURAL_VOICE_IDS:
@@ -1742,14 +1743,16 @@ def render_question(q: dict, position: int, total: int, reveal: bool = False, se
     stars = "★" * diff + "☆" * (3 - diff)
     primary = html.escape(question_text(q)).replace("\n", "<br>")
     ja_raw = str(q.get("question_ja") or "").strip()
-    en_raw = str(q.get("question_en") or "").strip()
     secondary = ""
-    if st.session_state.opt_japanese and ja_raw and en_raw and ja_raw != en_raw:
-        secondary = f'<div class="km-ja">{html.escape(ja_raw).replace(chr(10), "<br>")}</div>'
-    lang_badge = "🇯🇵 Original Japanese" if ja_raw and not en_raw else ""
+    if st.session_state.opt_japanese and ja_raw:
+        secondary = (
+            '<div class="km-ja"><strong>🇯🇵 Original Japanese source</strong><br>'
+            f'{html.escape(ja_raw).replace(chr(10), "<br>")}</div>'
+        )
+    translation_badge = "🇬🇧 Exam English"
     st.markdown(
         f"<div class='km-question'><div class='km-qhead'><span class='km-cat'>🚦 {html.escape(q['category'])}</span><span class='km-diff'>{stars}</span><span><b>Q{position}/{total}</b></span></div>"
-        f"<div class='km-qid'>{html.escape(q['id'])} · {html.escape(bank_label(q))} {'· '+lang_badge if lang_badge else ''}</div>"
+        f"<div class='km-qid'>{html.escape(q['id'])} · {html.escape(bank_label(q))} · {translation_badge}</div>"
         f"<div class='km-qtext'>{primary}</div>{secondary}</div>", unsafe_allow_html=True)
     for img in q.get("images", []):
         path = QUESTION_ASSET_ROOT / img
@@ -2709,7 +2712,7 @@ def page_bank():
         saved = set(active_bookmarks()); pool = [q for q in pool if q["id"] in saved]
     st.caption(f"{len(pool)} source records")
     if bank == "Honmen":
-        st.info("Honmen source wording is preserved in Japanese. These ten uploaded sets contain 90 true/false questions each.")
+        st.info("All 900 Honmen questions are available in English-first exam practice wording. The translation intentionally stays fairly literal so you can practice awkward English-test phrasing. The original Japanese source is preserved and can be shown from Settings for audit/reference.")
     if not pool:
         st.info("No questions match this filter yet."); return
     labels = [f"{q['id']} · {q['category']} · {question_text(q)[:80]}" for q in pool]

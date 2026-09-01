@@ -25,13 +25,14 @@ if missing_core: errors.append(f'v4.3 core functions removed: {missing_core}')
 
 app_text=(ROOT/'app.py').read_text(encoding='utf-8')
 required_markers=[
-    'BUILD = "5.2 All-Activity League + Humor + Device Memory"',
+    'BUILD = "5.3 English-First Exam Translation"',
     'Natural neural voice (online)',
     'Saved Rules', 'Image Drill', 'Guess Check',
     'Overall Study League', 'By Study Mode',
     "Mochi's motivational roast", 'Cartoon future:',
     'Remember my selected driver on this device',
     'exam + all-activity ranking write access',
+    '🇬🇧 Exam English', 'Show original Japanese source under English questions',
     'Karimen', 'Honmen',
 ]
 for marker in required_markers:

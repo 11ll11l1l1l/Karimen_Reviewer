@@ -1,4 +1,4 @@
-name: Japan Driving License Reviewer v5.2 checks
+name: Japan Driving License Reviewer v5.3 checks
 
 on:
   push:
@@ -21,7 +21,7 @@ jobs:
         run: python validate.py
       - name: Release compatibility audit
         run: python release_audit.py
-      - name: Core + v5.2 feature regressions
+      - name: Core + v5.3 regressions
         run: |
           python smoke_test.py
           python runtime_stub_test.py

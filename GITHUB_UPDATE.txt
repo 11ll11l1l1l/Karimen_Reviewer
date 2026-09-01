@@ -1,4 +1,4 @@
-JAPAN DRIVING LICENSE EXAM REVIEWER v5.2 — GITHUB / STREAMLIT UPDATE
+JAPAN DRIVING LICENSE EXAM REVIEWER v5.3 — GITHUB / STREAMLIT UPDATE
 
 This package is a complete replacement for the earlier v4.x/v5.x repository contents.
 
@@ -10,10 +10,14 @@ This package is a complete replacement for the earlier v4.x/v5.x repository cont
 6. After deployment, open Rankings and press Re-test connection. The diagnostic now checks player_profiles plus exam ranking tables.
 
 SUPABASE
-- If the v5 migration was already run, v5.2 requires no new table. Overall Study League reads player_profiles.progress.
+- If the v5 migration was already run, v5.3 requires no new table. Overall Study League reads player_profiles.progress.
 - If the repository is still on v4.x, run this package's supabase_setup.sql once in Supabase SQL Editor so player_profiles exists.
 - Keep SUPABASE_URL and SUPABASE_SECRET_KEY (or legacy SUPABASE_SERVICE_ROLE_KEY) in Streamlit Cloud Secrets.
 
 DEVICE MEMORY
 - extra-streamlit-components supplies the writable cookie manager.
 - The cookie stores only profile name + bank scope, for convenience; it is not authentication or fingerprinting.
+
+V5.3 DATA NOTE
+- The question bank is now 1,550/1,550 English-first, including 900 translated Honmen records.
+- No Supabase schema change is required beyond the existing v5 migration.
