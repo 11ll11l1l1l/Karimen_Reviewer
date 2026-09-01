@@ -1,0 +1,42 @@
+JAPAN DRIVING LICENSE EXAM REVIEWER v5.3 — VERIFICATION
+
+PASS  Python compilation
+PASS  1,550-question validator
+PASS  English questions 1,550 / 1,550
+PASS  Exam English 1,550 / 1,550
+PASS  Honmen English 900 / 900
+PASS  Karimen 650 / Honmen 900 counts
+PASS  228 image references
+PASS  no Japanese characters in Exam English fields
+PASS  all Honmen translations marked v5.3 reviewed
+PASS  release compatibility audit
+PASS  v4.3 app functions preserved 92/92
+PASS  v4.3 core functions preserved 16/16
+PASS  current app functions 132
+PASS  current core functions 24
+PASS  core smoke test
+PASS  runtime stub test
+PASS  strict session/game-state regression
+PASS  v4.4 retained-feature regression
+PASS  Supabase integration/permission stubs
+PASS  v5.2 rankings/humor/device-memory behavior retained by runtime regressions
+
+Question-bank integrity:
+- 1,550 source records
+- 650 Karimen
+- 900 Honmen
+- 1,539 distinct-content groups
+- 228 image references
+- 41 audited Honmen source-key corrections retained
+- detailed explanation minimum 704 characters; median 1,196; mean 1,153.3
+
+English-first behavior:
+- question card uses question_en_exam/question_en only
+- no silent fallback from English to Japanese
+- original Japanese source is optional and hidden by default
+- validator blocks release if any English question is missing
+
+Local limitation:
+Real Streamlit is not installed in this container, so Streamlit AppTest cannot run locally.
+The included GitHub Actions workflow installs the actual dependencies, runs Streamlit AppTest,
+and starts a real headless Streamlit server after push.
