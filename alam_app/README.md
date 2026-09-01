@@ -44,14 +44,14 @@ Streamlit reads those records and renders the feed.
 - **Reflect** — psychology, philosophy and modern Christian reflection
 - **Trends** — longitudinal signals and prediction accountability
 
-## Demo data
+## Production data
 
-The included `demo.json` files are clearly marked with `"demo": true`. They exist only to make the first deployment visually useful before scheduled agents begin writing live records.
+The original first-deployment `demo.json` records were removed on September 2, 2026 after live agent ingestion was confirmed. The four public feeds now use source-backed live records only.
 
-Once live ingestion is working, delete the four demo files.
+Do not add sample or synthetic articles to the production data folders. Empty output is preferred when an agent cannot find information that clears the quality and verification threshold.
 
 ## Agent write rule
 
-Agents should add new JSON files or append new day partitions. They should not modify `streamlit_app.py`.
+Agents should add new timestamped JSON files or append new day partitions. They should not modify `streamlit_app.py`.
 
 See `AGENT_DATA_CONTRACT.md`.
