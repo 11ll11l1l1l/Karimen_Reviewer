@@ -1,0 +1,117 @@
+{
+  "id": "practical-jp-national-pension-childcare-exemption-2026",
+  "agent": "practical",
+  "created_at": "2026-09-02T00:25:15+09:00",
+  "type": "benefit",
+  "title": "October starts a new National Pension childcare exemption worth up to ¥215,040 per eligible parent",
+  "summary": "Starting October 1, 2026, puwedeng ma-waive ang National Pension premiums ng eligible Category 1 parents habang inaalagaan ang child under age 1. Hindi ito income-tested, at counted pa rin ang exempt months as paid for future basic pension—pero kailangan mag-file ng application; hindi automatic.",
+  "why_it_matters": "The FY2026 National Pension premium is ¥17,920/month. For an eligible father or adoptive parent receiving the full 12-month childcare exemption, that is up to ¥215,040 of direct avoided contributions; eligible mothers can also receive the new childcare exemption after the existing maternity exemption period. This is a real cash-flow benefit with little downside if eligible.",
+  "importance": 94,
+  "confidence": 98,
+  "tags": ["Japan", "National Pension", "Childcare", "Benefits", "Parents", "Deadline"],
+  "geography": ["Japan"],
+  "status": "new",
+  "sources": [
+    {
+      "publisher": "Japan Pension Service",
+      "title": "令和8年（2026年）10月から国民年金保険料の育児免除制度が始まります!",
+      "url": "https://www.nenkin.go.jp/tokusetsu/ikujimenjo.html",
+      "published_at": "2026-04-01",
+      "source_type": "official"
+    },
+    {
+      "publisher": "Japan Pension Service",
+      "title": "国民年金（こくみんねんきん）",
+      "url": "https://www.nenkin.go.jp/international/simplejapanese/japanese-system/nationalpension/nationalpension.html",
+      "published_at": "2026-04-01",
+      "source_type": "official"
+    },
+    {
+      "publisher": "Japan Pension Service",
+      "title": "令和8年（2026年）10月から 国民年金保険料の育児免除制度が始まります！",
+      "url": "https://www.nenkin.go.jp/tokusetsu/ikujimenjo.files/ikumensyuuchi.pdf",
+      "published_at": "2026-04-01",
+      "source_type": "official"
+    }
+  ],
+  "claims": [
+    {
+      "kind": "FACT",
+      "text": "From October 1, 2026, National Pension Category 1 insured parents caring for a child under age 1 can apply for a childcare-period premium exemption without an income test, provided the parent-child relationship continues and they share the same address.",
+      "source_refs": [1],
+      "basis": "Japan Pension Service eligibility rules"
+    },
+    {
+      "kind": "FACT",
+      "text": "The exempted childcare months are treated as contribution-paid months when calculating future Old-age Basic Pension benefits.",
+      "source_refs": [1],
+      "basis": "Japan Pension Service benefit explanation"
+    },
+    {
+      "kind": "FACT",
+      "text": "For a biological father or adoptive parent, the childcare exemption can run from the month childcare begins through the month before the child's first birthday, up to 12 months; for a biological mother with maternity exemption, the new childcare exemption generally continues for up to 9 months after the maternity-exemption period.",
+      "source_refs": [1],
+      "basis": "Japan Pension Service exemption-period rules"
+    },
+    {
+      "kind": "FACT",
+      "text": "The National Pension premium for April 2026 through March 2027 is ¥17,920 per month.",
+      "source_refs": [2, 3],
+      "basis": "Japan Pension Service FY2026 contribution amount"
+    },
+    {
+      "kind": "ESTIMATE",
+      "text": "At the FY2026 premium, a full 12-month childcare exemption is worth up to ¥215,040 per eligible parent in avoided National Pension contributions; 9 months is ¥161,280.",
+      "source_refs": [1, 2],
+      "basis": "¥17,920 × 12 months and ¥17,920 × 9 months"
+    },
+    {
+      "kind": "FACT",
+      "text": "If both spouses are Category 1 insured and individually meet the requirements, both can qualify. Contributions already paid for a qualifying childcare-exemption period can be credited or refunded after filing.",
+      "source_refs": [1],
+      "basis": "Japan Pension Service explicitly states both spouses can qualify and previously paid qualifying premiums can be adjusted/refunded"
+    },
+    {
+      "kind": "FACT",
+      "text": "The Japan Pension Service leaflet says smartphone electronic filing is available via Mynaportal; filing is also possible at the municipal National Pension counter or by post.",
+      "source_refs": [3],
+      "basis": "Official Japan Pension Service leaflet"
+    },
+    {
+      "kind": "INFERENCE",
+      "text": "Eligible parents who do not file may unnecessarily continue paying premiums that could have been waived, so checking eligibility before October has unusually good financial return for the effort involved.",
+      "source_refs": [1, 2, 3],
+      "basis": "Inference from application requirement, contribution amount and preserved pension credit"
+    }
+  ],
+  "content": {
+    "reading_levels": {
+      "30_sec": "DO NOW: If ikaw or your spouse is National Pension Category 1 and may child na under 1 on/after October 1, check eligibility now. The new childcare exemption can remove ¥17,920/month of pension contributions while keeping those months credited as paid for future pension. Full 12 months = up to ¥215,040 per eligible parent. Application is required.",
+      "2_min": "This is different from ordinary low-income pension exemption. Walang income test. Eligible Category 1 insured parents include many self-employed, agricultural, student, unemployed and other people not enrolled in Employees' Pension. The parent must maintain the legal parent-child relationship and live at the same address as the child. A father or adoptive parent can receive up to 12 months through the month before the first birthday. A biological mother who has the existing maternity exemption generally gets up to another 9 months after that maternity period. If both spouses are Category 1 and eligible, both can qualify. Already-paid premiums for qualifying months can be credited or refunded after filing.",
+      "deep": "The value is unusually strong because the exemption does not reduce future basic-pension credit. At the FY2026 premium of ¥17,920/month, 12 months equals ¥215,040 and 9 months equals ¥161,280. The scheme only applies to qualifying months on or after October 1, 2026, so families whose child is already under 1 at launch may receive only the remaining months before the first birthday. Category 2 workers such as Employees' Pension members use separate maternity/childcare leave premium-exemption rules, while Category 3 dependent spouses are not covered by this new Category 1 scheme. Electronic filing via Mynaportal is promoted by Japan Pension Service; municipal counter and postal filing are also available."
+    },
+    "who_is_affected": "National Pension Category 1 insured parents aged 20-59 who are caring for a child under age 1 on or after October 1, 2026 and meet the parent-child and same-address conditions. This can include self-employed people, farmers, students and unemployed people. Category 2 Employees' Pension members and Category 3 dependent spouses use different rules and are not covered by this new Category 1 exemption.",
+    "when": "Starts October 1, 2026. Only qualifying months from October 2026 onward are covered by this new scheme; a child already born before launch may leave fewer than 12 eligible months.",
+    "financial_impact": "FY2026 premium is ¥17,920/month. Maximum example: 12 months = ¥215,040 avoided contributions for an eligible father/adoptive parent; 9-month childcare exemption = ¥161,280 for an eligible biological mother after the maternity-exemption period. If both parents independently qualify as Category 1, both can receive their applicable exemptions.",
+    "estimated_saving_yen": 215040,
+    "time_minutes": 15,
+    "travel_minutes": 0,
+    "risk_if_ignored": "Main risk is paying National Pension premiums unnecessarily during months that could qualify for exemption. Because the exempt months still count as paid for future basic pension, skipping the application can be a pure cash-flow loss rather than a tradeoff between today's cash and future pension credit.",
+    "action": "DO NOW — check whether you or your spouse will be Category 1 on October 1 and whether your child will still be under 1. If yes, prepare to file through Mynaportal or the municipal/pension-office route rather than assuming the exemption happens automatically.",
+    "deadline": "No single universal filing cutoff is stated in the cited launch page, but the scheme begins October 1, 2026. Practical target: verify eligibility and filing method before October so qualifying premiums are not paid unnecessarily.",
+    "effort": "LOW",
+    "potential_benefit": "Up to ¥215,040 per eligible parent at the FY2026 monthly premium for a full 12-month period, while preserving pension credit. Already-paid qualifying premiums may be credited or refunded after filing.",
+    "downside": "Not everyone with a baby qualifies. Category 2 and Category 3 insured people are outside this new Category 1 scheme; same-address and legal parent-child conditions apply; mothers' exemption timing interacts with the separate maternity exemption; and children already close to age 1 on October 1 may generate only a few eligible months.",
+    "what_would_change_mind": "Change the recommendation if Japan Pension Service revises eligibility, filing requirements, refund treatment or the start date. For an individual household, the recommendation also changes if the parent is actually Category 2/3 rather than Category 1 or the child has already aged out before October 1.",
+    "usefulness": 98,
+    "novelty": 87,
+    "pr_vs_reality": {
+      "official_claim": "Japan Pension Service frames the program as childcare-period economic support for Category 1 insured parents, with pension credit preserved despite premium exemption.",
+      "evidence_says": [
+        "The cash benefit is concrete: ¥17,920 per qualifying month at the FY2026 rate.",
+        "The strongest limitation is eligibility: it is not a universal baby benefit and requires filing; Category 2 and Category 3 insured people are treated under different systems."
+      ],
+      "verdict": "Very high-value for the narrow group that qualifies; worth an immediate eligibility check because the benefit can exceed ¥200,000 with little administrative downside."
+    }
+  }
+}
