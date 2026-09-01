@@ -1,0 +1,25 @@
+JAPAN DRIVING LICENSE EXAM REVIEWER v5.1 — VERIFICATION
+
+PASS  Python compilation
+PASS  1,550-question validator
+PASS  650 Karimen / 900 Honmen counts
+PASS  228 image references
+PASS  no missing IDs/images/details
+PASS  no generic WHY placeholder
+PASS  no generic exam-trap placeholder
+PASS  no generic practical-meaning placeholder
+PASS  core smoke test
+PASS  runtime stub test
+PASS  strict session/game-state regression
+PASS  Supabase integration/permission stub
+PASS  release compatibility audit
+PASS  v4.3 app functions preserved 92/92
+PASS  v4.3 core functions preserved 16/16
+
+Detailed explanation length after refinement:
+minimum 704 characters
+median 1,196 characters
+mean 1,153.3 characters
+
+Local limitation:
+Real Streamlit/Supabase/edge-tts packages are not installed in this container. Run the included GitHub Actions workflow after deployment for real Streamlit AppTest and headless server startup verification.

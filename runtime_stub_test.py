@@ -115,26 +115,26 @@ def load(name):
 app=load('app_profile_test')
 assert fake.session_state.get('profile_ready') is False
 assert app.active_bank_scope()=='All'
-assert len(app.active_questions())==650
+assert len(app.active_questions())==1550
 
 # Simulate completed profile and reload main Home.
 fake.session_state['profile_ready']=True
 fake.session_state['player_name']='Tester'
 fake.session_state['avatar']='🐱'
-fake.session_state['bank_scope']='A1'
+fake.session_state['bank_scope']='Karimen'
 fake.session_state['route']='Home'; fake.session_state['nav_choice']='Home'; fake.session_state['sync_nav']=False
 app2=load('app_main_test')
-assert len(app2.active_questions())==150
-assert all(q['bank']=='A1' for q in app2.active_questions())
-assert app2.effective_bank('All')=='A1'
-assert app2.filter_questions('B1')==[]
+assert len(app2.active_questions())==650
+assert all(q['bank']=='Karimen' for q in app2.active_questions())
+assert app2.effective_bank('All')=='Karimen'
+assert app2.filter_questions('Honmen')==[]
 # Render non-game pages with inert widgets.
 for fn in [app2.page_play, app2.page_mistakes, app2.page_progress, app2.page_rankings, app2.page_bank]:
     fn()
-# B1 scope.
-fake.session_state['bank_scope']='B1'
-assert len(app2.active_questions())==500
-assert all(q['bank']=='B1' for q in app2.active_questions())
+# Honmen scope.
+fake.session_state['bank_scope']='Honmen'
+assert len(app2.active_questions())==900
+assert all(q['bank']=='Honmen' for q in app2.active_questions())
 # Leaderboard tie break: score first, then fastest.
 board=app2.build_best_leaderboard([
  {'display_name':'A','avatar':'🐱','score':45,'total_questions':50,'percent':90,'elapsed_seconds':600,'passed':True},
@@ -143,4 +143,32 @@ board=app2.build_best_leaderboard([
 ])
 assert board.iloc[0]['Examiner'].endswith('B')
 assert board.iloc[1]['Time']=='8:20'
+
+# v5.2: all-answer activity league includes non-exam study answers.
+p1=app2.default_progress(); p2=app2.default_progress()
+qids=[q['id'] for q in app2.QUESTIONS[:6]]
+for qid in qids:
+    app2.record_answer(p1,qid,True,1.0)
+for qid in qids[:3]:
+    app2.record_answer(p2,qid,True,1.0)
+app2.add_session(p1,'review',qids,6,30,'Karimen')
+app2.add_session(p2,'daily',qids[:3],3,20,'Karimen')
+league=app2.build_activity_leaderboard([
+    {'name':'StudyA','avatar':'🐱','progress':p1},
+    {'name':'StudyB','avatar':'🚙','progress':p2},
+], 'All')
+assert len(league)==2 and league.iloc[0]['Driver'].endswith('StudyA')
+assert int(league.iloc[0]['League points']) > int(league.iloc[1]['League points'])
+mode_board=app2.build_mode_leaderboard([{'name':'StudyA','avatar':'🐱','progress':p1}], 'review', 'All')
+assert len(mode_board)==1 and mode_board.iloc[0]['Total correct']=='6/6'
+
+# v5.2: wrong-answer feedback is bilingual/motivational and explicitly fictional.
+joke=app2.mistake_comedy(app2.QUESTIONS[0], 1)
+assert joke['taunt'] and joke['event'].startswith('Cartoon future:') and joke['rule']
+
+# v5.2: browser memory remains optional and does not fingerprint the device.
+app2.stx=None
+assert app2.remembered_device_choice() is None
+assert app2.remember_device_profile('StudyA','Karimen') is False
+
 print('RUNTIME_STUB_OK')

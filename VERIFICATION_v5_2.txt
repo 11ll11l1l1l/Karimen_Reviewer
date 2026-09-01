@@ -1,0 +1,30 @@
+JAPAN DRIVING LICENSE EXAM REVIEWER v5.2 — VERIFICATION
+
+PASS  Python compilation
+PASS  1,550-question validator
+PASS  650 Karimen / 900 Honmen counts
+PASS  228 image references
+PASS  1,539 distinct content groups
+PASS  no missing IDs/images/details
+PASS  detailed explanation quality audit
+PASS  release compatibility audit
+PASS  v4.3 app functions preserved 92/92
+PASS  v4.3 core functions preserved 16/16
+PASS  core smoke test
+PASS  runtime stub test
+PASS  strict Streamlit-state/game-state regression stubs
+PASS  Supabase integration/permission stub
+PASS  v5.2 all-activity ranking assertions
+PASS  v5.2 per-mode ranking assertions
+PASS  v5.2 contextual mistake-humor assertions
+PASS  v5.2 optional device-memory fallback assertions
+
+Current top-level functions:
+- app.py: 132
+- karimen_core.py: 24
+
+Local limitation:
+Real Streamlit is not installed in this sandbox. The included GitHub Actions workflow installs requirements and runs real Streamlit AppTest plus a headless server health check after push.
+
+Device-memory design:
+The optional cookie stores only driver profile name + Karimen/Honmen scope for automatic selection. It is not authentication and does not use IP/device fingerprinting.

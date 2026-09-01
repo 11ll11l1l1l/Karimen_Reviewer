@@ -1,4 +1,4 @@
-name: Karimen app checks
+name: Japan Driving License Reviewer v5.2 checks
 
 on:
   push:
@@ -21,7 +21,7 @@ jobs:
         run: python validate.py
       - name: Release compatibility audit
         run: python release_audit.py
-      - name: Core smoke tests
+      - name: Core + v5.2 feature regressions
         run: |
           python smoke_test.py
           python runtime_stub_test.py
@@ -32,7 +32,7 @@ jobs:
       - name: Start real Streamlit server
         shell: bash
         run: |
-          streamlit run app.py --server.headless=true --server.port=8501 > /tmp/karimen-streamlit.log 2>&1 &
+          streamlit run app.py --server.headless=true --server.port=8501 > /tmp/jdl-reviewer-streamlit.log 2>&1 &
           PID=$!
           trap 'kill $PID || true' EXIT
           for i in {1..30}; do
@@ -42,5 +42,5 @@ jobs:
             fi
             sleep 1
           done
-          cat /tmp/karimen-streamlit.log
+          cat /tmp/jdl-reviewer-streamlit.log
           exit 1

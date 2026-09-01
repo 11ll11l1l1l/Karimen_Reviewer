@@ -108,7 +108,7 @@ st.session_state.widget_keys.clear()
 st.session_state['profile_ready']=True
 st.session_state['player_name']='Tester'
 st.session_state['avatar']='🐱'
-st.session_state['bank_scope']='A1'
+st.session_state['bank_scope']='Karimen'
 st.session_state['voice_mode']='Off'; st.session_state['opt_voice']=False
 for route in ['Home','Play','Mistakes','Progress','Rankings','Bank']:
     st.session_state.widget_keys.clear()
@@ -121,7 +121,7 @@ st.session_state.widget_keys.clear()
 st.session_state['route']='Home'; st.session_state['nav_choice']='Home'; st.session_state['sync_nav']=False
 app=load('strict_game_logic')
 assert app.launch_smart() and st.session_state.review and st.session_state.review['ids']
-assert all(app.BY_ID[qid]['bank']=='A1' for qid in st.session_state.review['ids'])
+assert all(app.BY_ID[qid]['bank']=='Karimen' for qid in st.session_state.review['ids'])
 q=app.BY_ID[st.session_state.review['ids'][0]]
 # Two wrong answers should move the mascot into a pleading state; a recovery should become comeback.
 wrong_choice = not bool(q['answer'])
@@ -140,7 +140,7 @@ app.answer_review(q, bool(q['answer']))
 assert st.session_state.review_feedback['state']=='comeback'
 
 assert app.launch_daily() and len(st.session_state.review['ids'])==10
-assert all(app.BY_ID[qid]['bank']=='A1' for qid in st.session_state.review['ids'])
+assert all(app.BY_ID[qid]['bank']=='Karimen' for qid in st.session_state.review['ids'])
 assert app.launch_survival() and st.session_state.review['lives']==3
 # Lose all three lives deterministically.
 for _ in range(3):
@@ -152,7 +152,7 @@ assert st.session_state.review['finished'] is True and st.session_state.review['
 
 assert app.start_exam(count=50, minutes=30)
 exam=st.session_state.exam
-assert len(exam['ids'])==50 and all(app.BY_ID[qid]['bank']=='A1' for qid in exam['ids'])
+assert len(exam['ids'])==50 and all(app.BY_ID[qid]['bank']=='Karimen' for qid in exam['ids'])
 # Submit a perfect deterministic mock exam to exercise scoring and result state.
 exam['answers']={qid: bool(app.BY_ID[qid]['answer']) for qid in exam['ids']}
 app.submit_exam()
@@ -162,7 +162,7 @@ print('STRICT_GAME_STATE_OK')
 # v4.4 additions: saved rules, confidence, skip, and resume.
 st.session_state.widget_keys.clear()
 st.session_state['review']=None; st.session_state['review_feedback']=None; st.session_state['exam']=None; st.session_state['active_game']=None
-first_a1 = next(q for q in app.QUESTIONS if q['bank']=='A1')
+first_a1 = next(q for q in app.QUESTIONS if q['bank']=='Karimen')
 assert app.toggle_bookmark(st.session_state.progress, first_a1['id']) is True
 assert app.is_bookmarked(st.session_state.progress, first_a1['id'])
 assert app.bookmark_count() >= 1

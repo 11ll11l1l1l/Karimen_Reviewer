@@ -2,18 +2,26 @@ from __future__ import annotations
 
 import base64
 import html
+import io
 import json
+import lzma
 import os
 import random
 import re
 import time
 import uuid
+import zipfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
+
+try:
+    import extra_streamlit_components as stx
+except Exception:
+    stx = None
 
 from karimen_core import (
     add_session,
@@ -45,15 +53,19 @@ except Exception:
 
 ROOT = Path(__file__).resolve().parent
 DATA_FILE = ROOT / "data" / "questions.json"
+COMPRESSED_DATA_FILE = ROOT / "data" / "questions_v51.json.xz"
+COMPRESSED_DATA_PARTS = ROOT / "data" / "deploy"
 QUESTION_ASSET_ROOT = ROOT
 SOUND_DIR = ROOT / "assets" / "sounds"
 MASCOT_DIR = ROOT / "assets" / "mascots"
+HONMEN_IMAGE_BUNDLE = ROOT / "assets" / "honmen_questions.zip"
+HONMEN_IMAGE_PARTS = ROOT / "assets" / "deploy"
 FALLBACK_MASCOT = ROOT / "assets" / "mascot.png"
 JST = timezone(timedelta(hours=9))
-BUILD = "4.4 Polished"
+BUILD = "5.2 All-Activity League + Humor + Device Memory"
 
 st.set_page_config(
-    page_title="Karimen Reviewer",
+    page_title="Japan Driving License Exam Reviewer",
     page_icon="🐱",
     layout="wide",
     initial_sidebar_state="collapsed",
@@ -61,16 +73,52 @@ st.set_page_config(
 
 
 @st.cache_data(show_spinner=False)
+def _joined_b64_parts(directory: Path, pattern: str) -> bytes | None:
+    parts = sorted(directory.glob(pattern)) if directory.exists() else []
+    if not parts:
+        return None
+    try:
+        encoded = "".join(p.read_text(encoding="ascii").strip() for p in parts)
+        return base64.b64decode(encoded)
+    except Exception:
+        return None
+
+
 def load_data():
-    doc = json.loads(DATA_FILE.read_text(encoding="utf-8"))
+    if COMPRESSED_DATA_FILE.exists():
+        packed = COMPRESSED_DATA_FILE.read_bytes()
+    else:
+        packed = _joined_b64_parts(COMPRESSED_DATA_PARTS, "questions_v51_xz_part*.b64")
+    if packed:
+        raw = lzma.decompress(packed).decode("utf-8")
+    else:
+        raw = DATA_FILE.read_text(encoding="utf-8")
+    doc = json.loads(raw)
     questions = doc["questions"]
     return doc["metadata"], questions, {q["id"]: q for q in questions}
 
 
 META, QUESTIONS, BY_ID = load_data()
+
+
+def apply_effective_answer_schedules():
+    """Apply promulgated future rule changes when their effective date arrives."""
+    today = datetime.now(JST).date().isoformat()
+    for q in QUESTIONS:
+        for change in q.get("answer_schedule") or []:
+            if str(change.get("from") or "9999-12-31") <= today:
+                for field in ("answer", "why_answer", "rule_summary", "practical_meaning", "exam_trap", "official_section"):
+                    if field in change:
+                        q[field] = change[field]
+                q["effective_rule_date"] = change.get("from")
+    BY_ID.clear()
+    BY_ID.update({q["id"]: q for q in QUESTIONS})
+
+
+apply_effective_answer_schedules()
 VALID_IDS = set(BY_ID)
-BANK_OPTIONS = ["All", "A1", "B1"]
-BANK_SCOPE_LABELS = {"All": "A1 + B1", "A1": "A1 only", "B1": "B1 only"}
+BANK_OPTIONS = ["All", "Karimen", "Honmen"]
+BANK_SCOPE_LABELS = {"All": "Karimen + Honmen", "Karimen": "Karimen", "Honmen": "Honmen"}
 AVATARS = ["🐱", "🚙", "🦊", "🐼", "🌸", "⭐", "🚦"]
 CHARACTER_NAMES = {"🐱": "Police Cat", "🚙": "Road Car", "🦊": "Fox Driver", "🐼": "Panda Driver", "🌸": "Sakura", "⭐": "Road Star", "🚦": "Traffic Light"}
 VOICE_MODES = [
@@ -81,7 +129,10 @@ VOICE_MODES = [
     "Cute bloops",
     "Off",
 ]
-PASS_PERCENT = float(META.get("exam_standard", {}).get("pass_percent", 90))
+PASS_PERCENT = 90.0
+DEVICE_COOKIE_NAME = "jdlr_last_driver_v1"
+DEVICE_COOKIE_DAYS = 180
+DEFAULT_PROFILES = [{"name": "Geesene", "avatar": "🚙"}, {"name": "Quennie", "avatar": "🌸"}]
 
 
 def init_state():
@@ -124,6 +175,14 @@ def init_state():
         "voice_volume": 90,
         "fx_volume": 72,
         "resume_notice": None,
+        "local_profiles": {p["name"]: p["avatar"] for p in DEFAULT_PROFILES},
+        "progress_by_profile": {},
+        "profile_id": None,
+        "profile_remote": False,
+        "remember_device": True,
+        "suppress_device_autologin": False,
+        "device_memory_notice": None,
+        "_device_cookie_manager": None,
     }
     for key, value in defaults.items():
         if key not in st.session_state:
@@ -131,7 +190,7 @@ def init_state():
     # Migrate live sessions from v4.3 safely before any widgets are created.
     if st.session_state.get("voice_mode") == "Natural device voice":
         st.session_state.voice_mode = "Device voice (offline)"
-    if int((st.session_state.get("progress") or {}).get("version", 0) or 0) < 7:
+    if int((st.session_state.get("progress") or {}).get("version", 0) or 0) < 8:
         st.session_state.progress = normalize_progress(st.session_state.progress, VALID_IDS)
 
 
@@ -207,12 +266,11 @@ def bank_label(q: dict) -> str:
 
 
 def set_options_for_bank(bank: str) -> list[str]:
-    if bank == "A1":
-        return ["All", "14", "15", "16"]
-    if bank == "B1":
+    if bank == "Karimen":
+        return ["All"] + [str(i) for i in range(1, 11)] + ["14", "15", "16"]
+    if bank == "Honmen":
         return ["All"] + [str(i) for i in range(1, 11)]
     return ["All"]
-
 
 def active_bank_scope() -> str:
     scope = str(st.session_state.get("bank_scope", "All"))
@@ -253,6 +311,38 @@ def filter_questions(bank: str = "All", set_filter: str = "All", category: str =
     return list(qs)
 
 
+def question_text(q: dict) -> str:
+    """Use verified English when supplied; otherwise preserve the uploaded Japanese source text."""
+    return str(q.get("question_en") or q.get("question_ja") or "").strip()
+
+
+def content_seen_count(questions: list[dict] | None = None) -> tuple[int, int]:
+    qs = questions if questions is not None else active_questions()
+    groups = {}
+    for q in qs:
+        groups.setdefault(str(q.get("content_key") or q["id"]), []).append(q)
+    seen = 0
+    for group in groups.values():
+        if any(int(qstat(q["id"]).get("attempts", 0) or 0) > 0 for q in group):
+            seen += 1
+    return seen, len(groups)
+
+
+def exam_bank_options() -> list[str]:
+    scope = active_bank_scope()
+    return ["Karimen", "Honmen"] if scope == "All" else [scope]
+
+
+def exam_defaults(bank: str) -> tuple[int, int, str]:
+    if bank == "Honmen":
+        return 90, 50, "90-question source-set simulation; the uploaded sets do not include the five additional official-format hazard/illustration scoring items."
+    return 50, 30, "Karimen practice format: 50 questions / 30 minutes / 90% target."
+
+
+def standard_exam_size(bank: str) -> int:
+    return 90 if bank == "Honmen" else 50
+
+
 def safe_player_name() -> str:
     raw = (st.session_state.player_name or "").strip()
     raw = re.sub(r"[^\w .\-]", "", raw, flags=re.UNICODE)[:24].strip()
@@ -285,7 +375,10 @@ def session_matches_scope(session: dict) -> bool:
     scope = active_bank_scope()
     if scope == "All":
         return True
-    return str(session.get("bank") or "") == scope
+    bank = str(session.get("bank") or "")
+    if bank in {"A1", "B1"}:
+        bank = "Karimen"
+    return bank == scope
 
 
 def daily_completed_today() -> bool:
@@ -326,8 +419,8 @@ def achievement_catalog() -> list[dict]:
         {"id": "image", "icon": "👀", "name": "Sharp Eye", "desc": "Practice 20 image questions", "earned": image_seen >= 20},
         {"id": "daily3", "icon": "📅", "name": "Daily Driver", "desc": "Complete a 3-day daily streak", "earned": daily_challenge_streak() >= 3},
         {"id": "survivor", "icon": "❤️", "name": "Survivor", "desc": "Reach 15 questions in Survival", "earned": survival_best >= 15},
-        {"id": "pass", "icon": "🏆", "name": "Mock Pass", "desc": "Pass a 50-question mock exam", "earned": any(float(s.get("percent") or 0) >= PASS_PERCENT for s in exams)},
-        {"id": "perfect", "icon": "💯", "name": "Perfect Drive", "desc": "Score 50/50 on a mock exam", "earned": any(int(s.get("questions") or 0) == 50 and int(s.get("correct") or 0) == 50 for s in exams)},
+        {"id": "pass", "icon": "🏆", "name": "Mock Pass", "desc": "Pass a bank-standard mock exam", "earned": any(float(s.get("percent") or 0) >= PASS_PERCENT for s in exams)},
+        {"id": "perfect", "icon": "💯", "name": "Perfect Drive", "desc": "Get a perfect score on a bank-standard mock exam", "earned": any(int(s.get("questions") or 0) in {50, 90} and int(s.get("correct") or 0) == int(s.get("questions") or 0) for s in exams)},
         {"id": "boss", "icon": "👑", "name": "Boss Breaker", "desc": "Clear a Boss Exam with 90%+", "earned": any(s.get("mode") == "boss" and float(s.get("percent") or 0) >= 90 for s in sessions)},
         {"id": "collector", "icon": "⭐", "name": "Rule Collector", "desc": "Bookmark 10 rules to revisit", "earned": bookmark_count() >= 10},
     ]
@@ -354,7 +447,7 @@ def level_info():
 
 def driver_title(level: int) -> str:
     title = "Learner Driver"
-    for req, name in [(3, "Road Rookie"), (6, "City Driver"), (10, "Road Expert"), (15, "Karimen Ace"), (22, "Road Master")]:
+    for req, name in [(3, "Road Rookie"), (6, "City Driver"), (10, "Road Expert"), (15, "License Ace"), (22, "Road Master")]:
         if level >= req:
             title = name
     return title
@@ -388,7 +481,7 @@ def coach_recommendation() -> tuple[str, str, str]:
     if unique_seen_count() < max(25, int(0.5 * len(active_questions()))):
         return "🗺️ Expand coverage", "Smart Review will prioritize unseen and due rules so your bank coverage keeps growing.", "review"
     if best_exam_percent() < PASS_PERCENT:
-        return "🏁 Mock Exam", "You have enough coverage to check readiness with a 50-question exam.", "exam"
+        return "🏁 Mock Exam", "You have enough coverage to check readiness with a bank-standard mock exam.", "exam"
     return "👑 Boss Exam", "Your recent progress is strong. Challenge the hardest 20 questions next.", "boss"
 
 
@@ -451,13 +544,57 @@ def audio_uri(path_str: str) -> str | None:
 
 
 @st.cache_data(show_spinner=False)
+def honmen_bundle_bytes() -> bytes | None:
+    if HONMEN_IMAGE_BUNDLE.exists():
+        try:
+            return HONMEN_IMAGE_BUNDLE.read_bytes()
+        except Exception:
+            return None
+    return _joined_b64_parts(HONMEN_IMAGE_PARTS, "honmen_zip_part*.b64")
+
+
+@st.cache_data(show_spinner=False)
+def bundled_question_image_names() -> set[str]:
+    bundle = honmen_bundle_bytes()
+    if not bundle:
+        return set()
+    try:
+        with zipfile.ZipFile(io.BytesIO(bundle), "r") as archive:
+            return set(archive.namelist())
+    except Exception:
+        return set()
+
+
+def question_image_available(path: Path) -> bool:
+    if path.exists():
+        return True
+    try:
+        relative = path.resolve().relative_to(ROOT.resolve()).as_posix()
+    except Exception:
+        relative = path.as_posix()
+    return relative in bundled_question_image_names()
+
+
+@st.cache_data(show_spinner=False)
 def image_uri(path_str: str) -> str | None:
     path = Path(path_str)
-    if not path.exists():
+    data = None
+    if path.exists():
+        data = path.read_bytes()
+    else:
+        bundle = honmen_bundle_bytes()
+        if bundle:
+            try:
+                relative = path.resolve().relative_to(ROOT.resolve()).as_posix()
+                with zipfile.ZipFile(io.BytesIO(bundle), "r") as archive:
+                    data = archive.read(relative)
+            except Exception:
+                data = None
+    if data is None:
         return None
     suffix = path.suffix.lower().lstrip(".") or "png"
     mime = "image/jpeg" if suffix in {"jpg", "jpeg"} else f"image/{suffix}"
-    return f"data:{mime};base64," + base64.b64encode(path.read_bytes()).decode("ascii")
+    return f"data:{mime};base64," + base64.b64encode(data).decode("ascii")
 
 
 @st.cache_data(show_spinner=False, ttl=86400)
@@ -656,7 +793,7 @@ def render_mascot_image(asset: Path, compact: bool = False, header: bool = False
     if not uri:
         return
     cls = "km-mascot-frame" + (" compact" if compact else "") + (" header" if header else "")
-    st.markdown(f"<div class='{cls}'><img src='{uri}' alt='Karimen cat mascot'></div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='{cls}'><img src='{uri}' alt='driving-license cat mascot'></div>", unsafe_allow_html=True)
 
 
 # ---------- Mascot ----------
@@ -699,6 +836,61 @@ def reaction_asset(state: str) -> Path:
     }
     path = MASCOT_DIR / mapping.get(state, "reaction_idle.png")
     return path if path.exists() else category_asset(st.session_state.mascot_category)
+
+
+def mistake_comedy(q: dict, wrong_chain: int = 1) -> dict:
+    """Bilingual motivational teasing plus a clearly fictional/cartoon consequence."""
+    rule = str(q.get("rule_title") or q.get("category") or "this rule").strip()
+    text = " ".join([
+        str(q.get("question_en") or ""), str(q.get("question_ja") or ""),
+        rule, str(q.get("rule_summary") or ""), str(q.get("practical_meaning") or ""),
+    ]).casefold()
+    rng = random.Random(f"{q.get('id','Q')}:{wrong_chain}")
+    taunts = [
+        "Ay naku! The examiner just did the slow head shake. Read the condition again, boss.",
+        "Sablay! Your confidence entered the intersection before your knowledge did. Reset and go again.",
+        "Wrong turn, lods. Brain GPS says: recalculating... now check the exact rule.",
+        "Hindi puwedeng 'feeling tama' sa exam, boss. Rule muna bago vibes.",
+        "Mochi says: close! Pero close is not a driver's license. Lock in the rule and take it back.",
+        "Oops. The answer went left while the rule went right. Kaya pa 'yan—one clean correction.",
+    ]
+    contexts = [
+        (("railroad", "railway", "踏切", "train"), "Cartoon future: the crossing bell starts ringing like it is personally disappointed in you."),
+        (("pedestrian", "crosswalk", "歩行者", "横断歩道"), "Cartoon future: a grandma at the crossing gives you the legendary disappointed-teacher stare."),
+        (("parking", "stopping", "駐車", "停車"), "Cartoon future: your car becomes Japan's newest piece of unauthorized street furniture."),
+        (("lane", "course change", "進路変更", "車線"), "Cartoon future: you start collecting lanes like Pokémon and everyone behind you unlocks the horn achievement."),
+        (("signal", "traffic light", "信号", "police officer"), "Cartoon future: you debate the signal so long that the pedestrian light gets promoted before you move."),
+        (("speed", "braking", "brake", "速度", "制動"), "Cartoon future: your konbini coffee reaches the windshield before your driving plan does."),
+        (("windshield", "visibility", "rain", "fog", "くもり", "視界"), "Cartoon future: the windshield turns into Silent Hill: Japan Edition and the navigation quietly says, 'Good luck, boss.'"),
+        (("horn", "警音器"), "Cartoon future: one unnecessary honk and the neighborhood thinks a barangay fiesta parade somehow started in Japan."),
+        (("ambulance", "emergency vehicle", "緊急自動車"), "Cartoon future: the ambulance behind you wonders whether you are the main road or a side quest."),
+        (("seat belt", "seatbelt", "シートベルト"), "Cartoon future: the seatbelt files an HR complaint because nobody listens to its one job."),
+        (("headlight", "light", "灯火"), "Cartoon future: even the moths stop and ask, 'Boss, sure ka ba sa lights na 'yan?'"),
+        (("bicycle", "自転車"), "Cartoon future: the bicycle gives you a tiny bell ring that somehow sounds more judgmental than a car horn."),
+    ]
+    event = None
+    for keys, line in contexts:
+        if any(key.casefold() in text for key in keys):
+            event = line
+            break
+    if event is None:
+        event = f"Cartoon future: the examiner writes '{rule}' on a giant flash card and tapes it to your imaginary dashboard."
+    if wrong_chain >= 3:
+        taunt = "Tatlong sablay streak! Mochi is holding an emergency meeting with your brain cells. One careful answer breaks it."
+    else:
+        taunt = rng.choice(taunts)
+    return {"taunt": taunt, "event": event, "rule": rule}
+
+
+def render_mistake_comedy(q: dict, wrong_chain: int = 1):
+    joke = mistake_comedy(q, wrong_chain)
+    st.markdown(
+        "<div class='km-card' style='border:2px solid #ffcf5a;background:linear-gradient(135deg,#fff8dc,#fff)'>"
+        f"<strong>😼 Mochi's motivational roast</strong><br>{html.escape(joke['taunt'])}"
+        f"<div class='km-divider'></div><strong>🎬 If this were a cartoon:</strong><br>{html.escape(joke['event'])}"
+        f"<div class='km-divider'></div><span class='km-small'>Rule to recover: {html.escape(joke['rule'])}</span></div>",
+        unsafe_allow_html=True,
+    )
 
 
 def mascot_message(state: str, category: str, combo: int = 0, wrong_chain: int = 0) -> str:
@@ -769,6 +961,72 @@ def render_mascot_panel(category: str, state: str | None = None, message: str | 
     st.markdown("</div>", unsafe_allow_html=True)
 
 
+# ---------- Browser/device player memory ----------
+def device_cookie_manager():
+    """Return one per-session cookie manager when the optional component is installed."""
+    if stx is None:
+        return None
+    manager = st.session_state.get("_device_cookie_manager")
+    if manager is not None:
+        return manager
+    try:
+        manager = stx.CookieManager(key="jdlr_device_cookie_manager")
+        st.session_state._device_cookie_manager = manager
+        return manager
+    except Exception:
+        return None
+
+
+def remembered_device_choice() -> dict | None:
+    manager = device_cookie_manager()
+    if manager is None:
+        return None
+    try:
+        raw = manager.get(DEVICE_COOKIE_NAME)
+        if not raw:
+            return None
+        data = json.loads(str(raw))
+        name = str(data.get("name") or "").strip()
+        scope = str(data.get("scope") or "All")
+        if not name:
+            return None
+        return {"name": name, "scope": scope if scope in BANK_OPTIONS else "All"}
+    except Exception:
+        return None
+
+
+def remember_device_profile(name: str, scope: str) -> bool:
+    if not st.session_state.get("remember_device", True):
+        return False
+    manager = device_cookie_manager()
+    if manager is None:
+        return False
+    try:
+        payload = json.dumps({"name": str(name).strip(), "scope": scope if scope in BANK_OPTIONS else "All"}, ensure_ascii=False)
+        manager.set(
+            DEVICE_COOKIE_NAME,
+            payload,
+            key=f"remember_driver_{abs(hash(payload))}",
+            path="/",
+            expires_at=datetime.now() + timedelta(days=DEVICE_COOKIE_DAYS),
+            same_site="strict",
+        )
+        return True
+    except Exception:
+        return False
+
+
+def forget_device_profile() -> bool:
+    manager = device_cookie_manager()
+    if manager is None:
+        return False
+    try:
+        manager.delete(DEVICE_COOKIE_NAME, key=f"forget_driver_{int(time.time() * 1000)}")
+        return True
+    except Exception:
+        return False
+
+
 # ---------- Shared Supabase rankings ----------
 def _secret(name: str) -> str:
     try:
@@ -831,7 +1089,7 @@ def online_enabled() -> bool:
 def _ranking_probe_payload(session_id: str) -> dict:
     return {
         "session_id": session_id,
-        "display_name": "__karimen_healthcheck__",
+        "display_name": "__license_reviewer_healthcheck__",
         "avatar": "🐾",
         "bank": "All",
         "set_label": "healthcheck",
@@ -882,14 +1140,18 @@ def ranking_connection_state(force: bool = False) -> tuple[bool, str]:
     try:
         db.table("exam_results").select("session_id").limit(1).execute()
         db.table("live_exams").select("session_id").limit(1).execute()
+        db.table("player_profiles").select("display_name").limit(1).execute()
         db.table("live_exams").upsert(_ranking_probe_payload(probe_id), on_conflict="session_id").execute()
+        probe_name = f"__health_{probe_id}"
+        db.table("player_profiles").upsert({"display_name": probe_name, "avatar": "🐾", "progress": default_progress()}, on_conflict="display_name").execute()
         try:
             db.table("live_exams").delete().eq("session_id", probe_id).execute()
+            db.table("player_profiles").delete().eq("display_name", probe_name).execute()
         except Exception:
             # A diagnostic row is harmless because status='diagnostic' is never shown.
             pass
         st.session_state.online_error = None
-        return finish(True, f"Connected with {source} ({role}) and verified ranking write access.")
+        return finish(True, f"Connected with {source} ({role}) and verified exam + all-activity ranking write access.")
     except Exception as exc:
         st.session_state.online_error = str(exc)
         return finish(False, f"Supabase client exists, but ranking read/write verification failed: {exc}")
@@ -1031,21 +1293,287 @@ def live_rankings_fragment(bank_filter: str = "All"):
 
 
 def build_best_leaderboard(results: list[dict]) -> pd.DataFrame:
-    valid = [r for r in results if int(r.get("total_questions") or 0) == 50]
-    best: dict[tuple[str, str, str], dict] = {}
+    valid = [r for r in results if int(r.get("total_questions") or 0) in {50, 90}]
+    best: dict[tuple[str, str, str, int], dict] = {}
     for r in valid:
-        key = (str(r.get("display_name") or "Driver"), str(r.get("avatar") or "🚙"), str(r.get("bank") or "All"))
-        score = int(r.get("score") or 0)
+        total = int(r.get("total_questions") or 0)
+        bank = str(r.get("bank") or "All")
+        if bank in {"A1", "B1"}:
+            bank = "Karimen"
+            r = dict(r); r["bank"] = bank
+        key = (str(r.get("display_name") or "Driver"), str(r.get("avatar") or "🚙"), bank, total)
+        pct = float(r.get("percent") or 0)
         elapsed = float(r.get("elapsed_seconds") or 999999)
         prev = best.get(key)
-        if prev is None or score > int(prev.get("score") or 0) or (score == int(prev.get("score") or 0) and elapsed < float(prev.get("elapsed_seconds") or 999999)):
+        if prev is None or pct > float(prev.get("percent") or 0) or (pct == float(prev.get("percent") or 0) and elapsed < float(prev.get("elapsed_seconds") or 999999)):
             best[key] = r
-    ordered = sorted(best.values(), key=lambda r: (-int(r.get("score") or 0), float(r.get("elapsed_seconds") or 999999), str(r.get("display_name") or "")))
+    ordered = sorted(best.values(), key=lambda r: (-float(r.get("percent") or 0), float(r.get("elapsed_seconds") or 999999), str(r.get("display_name") or "")))
     rows = []
     for i, r in enumerate(ordered[:100], 1):
-        elapsed = int(float(r.get("elapsed_seconds") or 0))
-        rows.append({"Rank": i, "Examiner": f"{r.get('avatar') or '🚙'} {r.get('display_name') or 'Driver'}", "Best": f"{int(r.get('score') or 0)}/50", "Accuracy": f"{float(r.get('percent') or 0):.1f}%", "Time": f"{elapsed//60}:{elapsed%60:02d}", "Bank": r.get("bank") or "All", "Result": "PASS" if r.get("passed") else "REVIEW"})
+        elapsed = int(float(r.get("elapsed_seconds") or 0)); total = int(r.get("total_questions") or 0)
+        rows.append({"Rank": i, "Examiner": f"{r.get('avatar') or '🚙'} {r.get('display_name') or 'Driver'}", "Best": f"{int(r.get('score') or 0)}/{total}", "Accuracy": f"{float(r.get('percent') or 0):.1f}%", "Time": f"{elapsed//60}:{elapsed%60:02d}", "Bank": r.get("bank") or "All", "Result": "PASS" if r.get("passed") else "REVIEW"})
     return pd.DataFrame(rows)
+
+
+def _normalized_bank_name(value: str) -> str:
+    bank = str(value or "All")
+    return "Karimen" if bank in {"A1", "B1"} else bank
+
+
+def _profile_progress(profile: dict) -> dict:
+    raw = profile.get("progress") if isinstance(profile, dict) else None
+    if not isinstance(raw, dict):
+        return default_progress()
+    try:
+        return normalize_progress(raw, VALID_IDS)
+    except Exception:
+        return default_progress()
+
+
+def profile_activity_metrics(profile: dict, bank_filter: str = "All") -> dict:
+    """Aggregate all answer activity, regardless of game mode, for one driver."""
+    progress = _profile_progress(profile)
+    allowed_ids = {
+        q["id"] for q in QUESTIONS
+        if bank_filter == "All" or q.get("bank") == bank_filter
+    }
+    stats = progress.get("question_stats", {}) or {}
+    scoped = [stats.get(qid, {}) for qid in allowed_ids if isinstance(stats.get(qid), dict)]
+    attempts = sum(int(x.get("attempts", 0) or 0) for x in scoped)
+    correct = sum(int(x.get("correct", 0) or 0) for x in scoped)
+    wrong = max(0, attempts - correct)
+    unique_seen = sum(1 for x in scoped if int(x.get("attempts", 0) or 0) > 0)
+    accuracy = 100.0 * correct / max(1, attempts) if attempts else 0.0
+    coverage = 100.0 * unique_seen / max(1, len(allowed_ids))
+
+    sessions = []
+    for row in progress.get("sessions", []) or []:
+        if not isinstance(row, dict):
+            continue
+        bank = _normalized_bank_name(row.get("bank"))
+        if bank_filter != "All" and bank != bank_filter:
+            continue
+        sessions.append(row)
+    daily_done = sum(1 for row in sessions if row.get("mode") == "daily")
+    exam_passes = sum(1 for row in sessions if row.get("mode") == "exam" and float(row.get("percent", 0) or 0) >= PASS_PERCENT)
+    boss_passes = sum(1 for row in sessions if row.get("mode") == "boss" and float(row.get("percent", 0) or 0) >= 90)
+    # League points reward correct answers most, but still give small credit for
+    # practice, new-rule coverage, and completed challenge modes.
+    league_points = correct * 10 + wrong * 2 + unique_seen * 4 + len(sessions) * 5 + daily_done * 25 + exam_passes * 50 + boss_passes * 75
+    return {
+        "name": str(profile.get("name") or "Driver"),
+        "avatar": str(profile.get("avatar") or "🚙"),
+        "league_points": int(league_points),
+        "attempts": attempts,
+        "correct": correct,
+        "wrong": wrong,
+        "accuracy": accuracy,
+        "unique_seen": unique_seen,
+        "coverage": coverage,
+        "sessions": len(sessions),
+    }
+
+
+def build_activity_leaderboard(profiles: list[dict], bank_filter: str = "All") -> pd.DataFrame:
+    rows = [profile_activity_metrics(p, bank_filter) for p in profiles]
+    rows = [r for r in rows if r["attempts"] > 0 or r["sessions"] > 0]
+    rows.sort(key=lambda r: (-r["league_points"], -r["unique_seen"], -r["accuracy"], r["name"].casefold()))
+    out = []
+    for i, r in enumerate(rows[:100], 1):
+        out.append({
+            "Rank": i,
+            "Driver": f"{r['avatar']} {r['name']}",
+            "League points": r["league_points"],
+            "Correct": f"{r['correct']}/{r['attempts']}",
+            "Accuracy": f"{r['accuracy']:.1f}%",
+            "Unique rules": r["unique_seen"],
+            "Coverage": f"{r['coverage']:.1f}%",
+            "Sessions": r["sessions"],
+        })
+    return pd.DataFrame(out)
+
+
+MODE_LABELS = {
+    "review": "Smart / Targeted Review",
+    "daily": "Daily Challenge",
+    "daily_replay": "Daily Replay",
+    "survival": "Survival",
+    "boss": "Boss Exam",
+    "exam": "Practice Exam",
+}
+
+
+def build_mode_leaderboard(profiles: list[dict], mode: str, bank_filter: str = "All") -> pd.DataFrame:
+    rows = []
+    for profile in profiles:
+        progress = _profile_progress(profile)
+        matched = []
+        for session in progress.get("sessions", []) or []:
+            if not isinstance(session, dict) or str(session.get("mode") or "") != mode:
+                continue
+            bank = _normalized_bank_name(session.get("bank"))
+            if bank_filter != "All" and bank != bank_filter:
+                continue
+            matched.append(session)
+        if not matched:
+            continue
+        total_q = sum(int(x.get("questions", 0) or 0) for x in matched)
+        total_correct = sum(int(x.get("correct", 0) or 0) for x in matched)
+        acc = 100.0 * total_correct / max(1, total_q)
+        best = max(float(x.get("percent", 0) or 0) for x in matched)
+        rows.append({
+            "name": str(profile.get("name") or "Driver"),
+            "avatar": str(profile.get("avatar") or "🚙"),
+            "correct": total_correct,
+            "questions": total_q,
+            "accuracy": acc,
+            "sessions": len(matched),
+            "best": best,
+        })
+    rows.sort(key=lambda r: (-r["correct"], -r["accuracy"], -r["best"], r["name"].casefold()))
+    return pd.DataFrame([
+        {
+            "Rank": i,
+            "Driver": f"{r['avatar']} {r['name']}",
+            "Total correct": f"{r['correct']}/{r['questions']}",
+            "Accuracy": f"{r['accuracy']:.1f}%",
+            "Sessions": r["sessions"],
+            "Best session": f"{r['best']:.1f}%",
+        }
+        for i, r in enumerate(rows[:100], 1)
+    ])
+
+
+# ---------- Driver profiles ----------
+def _profile_key(name: str) -> str:
+    return re.sub(r"\s+", " ", str(name or "").strip()).casefold()
+
+
+def ensure_default_profiles_remote():
+    db = supabase_client()
+    if db is None:
+        return
+    if st.session_state.get("profiles_seeded_remote"):
+        return
+    try:
+        for row in DEFAULT_PROFILES:
+            db.table("player_profiles").upsert(
+                {"display_name": row["name"], "avatar": row["avatar"]},
+                on_conflict="display_name",
+            ).execute()
+        st.session_state.profiles_seeded_remote = True
+    except Exception:
+        # Old Supabase schemas can still use the app locally until supabase_setup.sql is rerun.
+        st.session_state.profiles_seeded_remote = False
+
+
+def fetch_player_profiles() -> list[dict]:
+    merged = {_profile_key(x["name"]): {"name": x["name"], "avatar": x["avatar"], "progress": None, "remote": False} for x in DEFAULT_PROFILES}
+    for name, avatar in (st.session_state.get("local_profiles") or {}).items():
+        merged[_profile_key(name)] = {"name": name, "avatar": avatar, "progress": (st.session_state.get("progress_by_profile") or {}).get(name), "remote": False}
+    db = supabase_client()
+    if db is not None:
+        ensure_default_profiles_remote()
+        try:
+            res = db.table("player_profiles").select("display_name,avatar,progress").order("display_name").execute()
+            for r in list(res.data or []):
+                name = str(r.get("display_name") or "").strip()
+                if not name:
+                    continue
+                merged[_profile_key(name)] = {"name": name, "avatar": str(r.get("avatar") or "🚙"), "progress": r.get("progress"), "remote": True}
+        except Exception as exc:
+            st.session_state.online_error = str(exc)
+    return sorted(merged.values(), key=lambda x: (0 if x["name"] in {"Geesene", "Quennie"} else 1, x["name"].casefold()))
+
+
+def register_player_profile(name: str, avatar: str) -> tuple[bool, str]:
+    cleaned = re.sub(r"[^\w .\-]", "", (name or "").strip(), flags=re.UNICODE)[:24].strip()
+    if len(cleaned) < 2:
+        return False, "Enter a name with at least 2 characters."
+    existing = {_profile_key(x["name"]) for x in fetch_player_profiles()}
+    if _profile_key(cleaned) in existing:
+        return False, "That driver name is already registered. Choose it above instead."
+    st.session_state.local_profiles[cleaned] = avatar
+    st.session_state.progress_by_profile.setdefault(cleaned, default_progress())
+    db = supabase_client()
+    if db is not None:
+        try:
+            db.table("player_profiles").insert({"display_name": cleaned, "avatar": avatar, "progress": default_progress()}).execute()
+            return True, f"Registered {cleaned}."
+        except Exception as exc:
+            st.session_state.online_error = str(exc)
+            return True, f"Registered {cleaned} for this browser session. Rerun supabase_setup.sql to enable shared profile persistence."
+    return True, f"Registered {cleaned} locally. Connect Supabase to keep profiles across browser sessions/devices."
+
+
+def persist_current_profile_progress():
+    if not st.session_state.get("profile_ready") or not st.session_state.get("player_name"):
+        return
+    name = safe_player_name()
+    st.session_state.progress_by_profile[name] = st.session_state.progress
+    st.session_state.local_profiles[name] = st.session_state.avatar
+    db = supabase_client()
+    if db is None:
+        return
+    try:
+        db.table("player_profiles").upsert({
+            "display_name": name,
+            "avatar": st.session_state.avatar,
+            "progress": st.session_state.progress,
+            "updated_at": utc_now_iso(),
+        }, on_conflict="display_name").execute()
+        st.session_state.profile_remote = True
+    except Exception as exc:
+        st.session_state.profile_remote = False
+        st.session_state.online_error = str(exc)
+
+
+def activate_player_profile(profile: dict, scope: str, remember: bool = True):
+    # Save the outgoing profile before switching.
+    if st.session_state.get("profile_ready") and st.session_state.get("player_name"):
+        persist_current_profile_progress()
+    name = str(profile.get("name") or "Driver")
+    avatar = str(profile.get("avatar") or "🚙")
+    raw = profile.get("progress")
+    if not isinstance(raw, dict):
+        raw = (st.session_state.get("progress_by_profile") or {}).get(name)
+    try:
+        progress = normalize_progress(raw, VALID_IDS) if isinstance(raw, dict) and raw else default_progress()
+    except Exception:
+        progress = default_progress()
+    st.session_state.player_name = name
+    st.session_state.avatar = avatar
+    st.session_state.progress = progress
+    st.session_state.progress_by_profile[name] = progress
+    st.session_state.bank_scope = scope if scope in BANK_OPTIONS else "All"
+    st.session_state.profile_ready = True
+    st.session_state.profile_remote = bool(profile.get("remote"))
+    st.session_state.route = "Home"
+    st.session_state.nav_choice = "Home"
+    st.session_state.sync_nav = False
+    st.session_state.review = None
+    st.session_state.exam = None
+    st.session_state.active_game = None
+    st.session_state.achievements_ready = False
+    st.session_state.suppress_device_autologin = False
+    prime_achievements()
+    if remember:
+        remember_device_profile(name, st.session_state.bank_scope)
+
+
+def try_auto_activate_remembered_profile() -> bool:
+    if st.session_state.get("profile_ready") or st.session_state.get("suppress_device_autologin"):
+        return False
+    choice = remembered_device_choice()
+    if not choice:
+        return False
+    target = _profile_key(choice.get("name"))
+    for profile in fetch_player_profiles():
+        if _profile_key(profile.get("name")) == target:
+            activate_player_profile(profile, choice.get("scope", "All"), remember=False)
+            st.session_state.device_memory_notice = f"Remembered this device: {profile.get('avatar', '🚙')} {profile.get('name', 'Driver')}"
+            return True
+    return False
 
 
 # ---------- Routing ----------
@@ -1060,9 +1588,10 @@ def header():
     level, _, _ = level_info()
     c1, c2 = st.columns([5.5, 1.1])
     with c1:
-        scope = BANK_SCOPE_LABELS.get(active_bank_scope(), "A1 + B1")
+        scope = BANK_SCOPE_LABELS.get(active_bank_scope(), "Karimen + Honmen")
         total = len(active_questions())
-        st.markdown(f"<div class='km-top'><div class='km-logo'>🐾 KARIMEN REVIEWER</div><div class='km-tag'>Practice • Learn • Master • Pass</div><div class='km-hud'><span>{html.escape(st.session_state.avatar)} {html.escape(safe_player_name())}</span><span>📚 {html.escape(scope)}</span><span>⭐ Level {level}</span><span>🪙 {total_xp():,} XP</span><span>🔥 Daily {daily_challenge_streak()}</span><span>📘 {unique_seen_count()}/{total}</span></div></div>", unsafe_allow_html=True)
+        cseen, ctotal = content_seen_count()
+        st.markdown(f"<div class='km-top'><div class='km-logo'>🚗 JAPAN DRIVING LICENSE EXAM REVIEWER</div><div class='km-tag'>Karimen • Honmen • Practice • Master • Pass</div><div class='km-hud'><span>{html.escape(st.session_state.avatar)} {html.escape(safe_player_name())}</span><span>📚 {html.escape(scope)}</span><span>⭐ Level {level}</span><span>🪙 {total_xp():,} XP</span><span>🔥 Daily {daily_challenge_streak()}</span><span>🗺️ {cseen}/{ctotal} unique rules</span><span>📘 {unique_seen_count()}/{total} records</span></div></div>", unsafe_allow_html=True)
     with c2:
         state = st.session_state.mascot_state
         asset = category_asset(st.session_state.mascot_category) if state == "idle" else reaction_asset(state)
@@ -1074,27 +1603,22 @@ def header():
         st.session_state.sync_nav = False
     choice = st.radio("Navigation", nav_options, horizontal=True, key="nav_choice", label_visibility="collapsed")
     if choice != st.session_state.route:
-        # Preserve an active review/exam while browsing another page. Returning
-        # to Play resumes it instead of silently orphaning the run.
         st.session_state.route = choice
 
     with st.expander("⚙️ Settings", expanded=False):
-        st.markdown(f"**Player:** {st.session_state.avatar} {html.escape(safe_player_name())}  \n**Question scope:** {BANK_SCOPE_LABELS.get(active_bank_scope(), 'A1 + B1')}")
+        st.markdown(f"**Player:** {st.session_state.avatar} {html.escape(safe_player_name())}  \n**Question scope:** {BANK_SCOPE_LABELS.get(active_bank_scope(), 'Karimen + Honmen')}")
         c1, c2, c3 = st.columns(3)
         c1.checkbox("Sound effects", key="opt_sound")
         c2.checkbox("Mascot voice", key="opt_voice")
         c3.checkbox("Phone vibration", key="opt_haptics")
         c1, c2 = st.columns(2)
-        c1.checkbox("Show Japanese text", key="opt_japanese")
+        c1.checkbox("Show Japanese under translated Karimen questions", key="opt_japanese")
         c2.selectbox("Theme", ["Arcade", "Cute", "Night"], key="opt_theme")
-        selected_voice = st.selectbox(
-            "Mascot voice style", VOICE_MODES, key="voice_mode", disabled=not st.session_state.opt_voice,
-            help="Online neural voices are preferred. If neural generation fails, v4.4 does not secretly switch to a robotic device voice; choose Device voice explicitly if you want offline speech.",
-        )
+        selected_voice = st.selectbox("Mascot voice style", VOICE_MODES, key="voice_mode", disabled=not st.session_state.opt_voice)
         if st.session_state.opt_voice and selected_voice in NEURAL_VOICE_IDS:
             v1, v2 = st.columns(2)
-            v1.slider("Voice speed", min_value=-5, max_value=5, step=1, key="voice_rate", help="Small adjustments only; 0 is most natural.")
-            v2.slider("Voice pitch", min_value=-3, max_value=3, step=1, key="voice_pitch", help="Small adjustments only; 0 is most natural.")
+            v1.slider("Voice speed", min_value=-5, max_value=5, step=1, key="voice_rate")
+            v2.slider("Voice pitch", min_value=-3, max_value=3, step=1, key="voice_pitch")
         if st.session_state.opt_voice:
             v1, v2 = st.columns(2)
             v1.slider("Mascot voice volume", min_value=20, max_value=100, step=5, key="voice_volume")
@@ -1102,20 +1626,36 @@ def header():
             if st.button("🔊 Test selected voice", use_container_width=True, key="settings_test_voice"):
                 queue_media(voice="ready")
                 st.rerun()
-            status = st.session_state.get("voice_backend_status") or "Not tested yet"
-            css = "km-voice-warn" if "unavailable" in status.lower() or "device" in status.lower() else "km-voice-ok"
-            st.markdown(f"<div class='{css}'>Voice: {html.escape(status)}</div>", unsafe_allow_html=True)
-            if st.session_state.get("voice_backend_error"):
-                st.caption(st.session_state.voice_backend_error)
-            st.caption("If automatic speech is silent on mobile, tap Hear mascot or Test selected voice once. Browsers can block audio autoplay until the page has received a user interaction.")
+            st.caption(st.session_state.get("voice_backend_status") or "Not tested yet")
         pending = resumable_game()
         if pending:
-            st.caption("Finish or discard the active run before changing player or bank scope. This prevents accidental loss of an unfinished exam/review.")
-        if st.button("Change player / character / A1-B1 scope", use_container_width=True, key="change_profile", disabled=bool(pending)):
+            st.caption("Finish or discard the active run before switching driver profiles.")
+        if st.button("Change driver / avatar / bank scope", use_container_width=True, key="change_profile", disabled=bool(pending)):
+            persist_current_profile_progress()
+            st.session_state.suppress_device_autologin = True
             st.session_state.profile_ready = False
             st.session_state.active_game = None
             st.rerun()
-
+        remember_now = st.checkbox("Remember selected driver on this device", key="remember_device", help="Stores only the selected profile name and bank scope in this browser; it is not authentication or device fingerprinting.")
+        dc1, dc2 = st.columns(2)
+        if dc1.button("Save device preference", use_container_width=True, key="save_device_driver"):
+            if remember_now:
+                if remember_device_profile(safe_player_name(), active_bank_scope()):
+                    st.success("This browser will remember the current driver and bank scope.")
+                else:
+                    st.info("Browser device memory is unavailable in this session.")
+            else:
+                if forget_device_profile():
+                    st.success("Automatic driver selection is off for this browser.")
+                else:
+                    st.info("No writable browser cookie manager is available in this session.")
+        if dc2.button("Forget remembered driver", use_container_width=True, key="forget_device_driver"):
+            if forget_device_profile():
+                st.session_state.remember_device = False
+                st.session_state.device_memory_notice = "Remembered driver cleared for this browser."
+                st.success("Remembered driver cleared.")
+            else:
+                st.info("No writable browser cookie manager is available in this session.")
 
 def render_toast():
     ach = st.session_state.achievement_toast
@@ -1145,6 +1685,46 @@ def render_sources(q: dict):
                 st.write(f"- {org} — {title}" + (f" · {section}" if section else ""))
 
 
+def render_explanation(q: dict):
+    """Render the teaching explanation as separate, scannable study blocks."""
+    verdict = "TRUE / 正解" if bool(q.get("answer")) else "FALSE / 不正解"
+    quality = str(q.get("explanation_quality") or "")
+    st.markdown(f"#### Why this is {verdict}")
+    st.write(q.get("why_answer") or q.get("explanation") or "")
+
+    c1, c2 = st.columns(2)
+    with c1:
+        st.markdown("**Rule to remember**")
+        st.write(q.get("rule_summary") or "Apply the governing traffic rule exactly as stated.")
+    with c2:
+        st.markdown("**What this means while driving**")
+        st.write(q.get("practical_meaning") or "Use the rule to keep enough time, space, visibility, and control to avoid conflict.")
+
+    st.markdown("**Common exam trap**")
+    st.info(q.get("exam_trap") or "Watch for absolute wording, swapped distances/timing, and exceptions that do not actually apply.")
+
+    if q.get("law_change_note"):
+        effective = q.get("effective_rule_date") or (q.get("answer_schedule") or [{}])[0].get("from")
+        prefix = f"Law change effective {effective}: " if effective else "Law-change note: "
+        st.warning(prefix + str(q.get("law_change_note")))
+
+    if q.get("answer_corrected_from_source"):
+        original = "TRUE" if bool(q.get("source_answer")) else "FALSE"
+        st.warning(
+            f"Answer-key audit: the uploaded study page originally keyed this as {original}. "
+            "That source key was overridden after checking the governing rule. "
+            + str(q.get("answer_correction_reason") or "")
+        )
+    elif quality.endswith("review_recommended"):
+        st.caption("Explanation status: official category-level rule anchor. This item is flagged for a narrower human rule review rather than pretending a more specific source was verified.")
+    elif quality:
+        st.caption("Explanation status: " + quality.replace("_", " "))
+
+    section = str(q.get("official_section") or "").strip()
+    if section:
+        st.caption(f"Official guide section: {section}")
+
+
 def render_contained_image(path: Path, alt: str = "Question illustration"):
     uri = image_uri(str(path))
     if not uri:
@@ -1160,12 +1740,20 @@ def render_question(q: dict, position: int, total: int, reveal: bool = False, se
     st.session_state.mascot_category = q["category"]
     diff = max(1, min(3, int(q.get("difficulty") or 1)))
     stars = "★" * diff + "☆" * (3 - diff)
-    qtext = html.escape(q["question_en"]).replace("\n", "<br>")
-    ja = html.escape(q.get("question_ja", "")).replace("\n", "<br>")
-    st.markdown(f"<div class='km-question'><div class='km-qhead'><span class='km-cat'>🚦 {html.escape(q['category'])}</span><span class='km-diff'>{stars}</span><span><b>Q{position}/{total}</b></span></div><div class='km-qid'>{html.escape(q['id'])} · {html.escape(bank_label(q))}</div><div class='km-qtext'>{qtext}</div>{f'<div class=\"km-ja\">{ja}</div>' if st.session_state.opt_japanese and ja else ''}</div>", unsafe_allow_html=True)
+    primary = html.escape(question_text(q)).replace("\n", "<br>")
+    ja_raw = str(q.get("question_ja") or "").strip()
+    en_raw = str(q.get("question_en") or "").strip()
+    secondary = ""
+    if st.session_state.opt_japanese and ja_raw and en_raw and ja_raw != en_raw:
+        secondary = f'<div class="km-ja">{html.escape(ja_raw).replace(chr(10), "<br>")}</div>'
+    lang_badge = "🇯🇵 Original Japanese" if ja_raw and not en_raw else ""
+    st.markdown(
+        f"<div class='km-question'><div class='km-qhead'><span class='km-cat'>🚦 {html.escape(q['category'])}</span><span class='km-diff'>{stars}</span><span><b>Q{position}/{total}</b></span></div>"
+        f"<div class='km-qid'>{html.escape(q['id'])} · {html.escape(bank_label(q))} {'· '+lang_badge if lang_badge else ''}</div>"
+        f"<div class='km-qtext'>{primary}</div>{secondary}</div>", unsafe_allow_html=True)
     for img in q.get("images", []):
         path = QUESTION_ASSET_ROOT / img
-        if path.exists():
+        if question_image_available(path):
             render_contained_image(path, f"Illustration for {q['id']}")
         else:
             st.warning(f"Missing question image: {img}")
@@ -1173,9 +1761,9 @@ def render_question(q: dict, position: int, total: int, reveal: bool = False, se
         ok = selected is not None and bool(selected) == bool(q["answer"])
         correct_text = "TRUE" if q["answer"] else "FALSE"
         cls = "km-feedback-good" if ok else "km-feedback-bad"
-        st.markdown(f"<div class='km-card {cls}'><strong>{'✅ Correct' if ok else '❌ Incorrect'}</strong> · Correct answer: <strong>{correct_text}</strong><div class='km-exp'>{html.escape(q['explanation'])}</div></div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='km-card {cls}'><strong>{'✅ Correct' if ok else '❌ Incorrect'}</strong> · Correct answer: <strong>{correct_text}</strong></div>", unsafe_allow_html=True)
+        render_explanation(q)
         render_sources(q)
-
 
 def game_hud(review: dict):
     combo = int(review.get("combo", 0))
@@ -1238,21 +1826,19 @@ def start_review(ids: list[str], label: str, kind: str = "review", bank: str = "
 
 
 def launch_smart():
-    return start_review(select_question_ids(active_questions(), st.session_state.progress, "Due / adaptive", 20), "Smart Review", bank=effective_bank("All"))
-
+    ids = select_question_ids(active_questions(), st.session_state.progress, "Coverage first", 20)
+    return start_review(ids, "Coverage-First Smart Review", bank=effective_bank("All"))
 
 def launch_daily():
     replay = daily_completed_today()
     kind = "daily_replay" if replay else "daily"
     label = "Daily Challenge Replay" if replay else "Today's Daily Challenge"
-    ids = daily_question_ids(active_questions(), today_jst(), 10)
+    ids = daily_question_ids(active_questions(), today_jst(), 10, progress=st.session_state.progress, player_token=safe_player_name())
     return start_review(ids, label, kind=kind, bank=effective_bank("All"), target=90)
 
-
 def launch_survival():
-    ids = select_question_ids(active_questions(), st.session_state.progress, "Due / adaptive", 50)
+    ids = select_question_ids(active_questions(), st.session_state.progress, "Coverage first", 50)
     return start_review(ids, "Survival Mode", kind="survival", bank=effective_bank("All"), lives=3)
-
 
 def launch_boss():
     ids = select_question_ids(active_questions(), st.session_state.progress, "Weakest", 20)
@@ -1274,9 +1860,8 @@ def launch_bookmarks():
 
 def launch_image_drill():
     pool = [q for q in active_questions() if q.get("images")]
-    ids = select_question_ids(pool, st.session_state.progress, "Due / adaptive", 20)
+    ids = select_question_ids(pool, st.session_state.progress, "Coverage first", 20)
     return start_review(ids, "Image Drill", kind="review", bank=effective_bank("All"))
-
 
 def launch_guessed():
     ids = select_question_ids(active_questions(), st.session_state.progress, "Guessed", 20)
@@ -1314,6 +1899,7 @@ def finish_review(review: dict):
         max_combo=int(review.get("max_combo", 0)), lives_left=review.get("lives"),
     )
     review["session_saved"] = True
+    persist_current_profile_progress()
     pct = float(row.get("percent") or 0)
     success = kind not in {"boss"} or pct >= 90
     set_mascot_state("victory" if success else "pleading", st.session_state.mascot_category, speak=True)
@@ -1328,6 +1914,7 @@ def answer_review(q: dict, choice: bool):
     elapsed = time.time() - st.session_state.review_started_at
     ok = bool(choice) == bool(q["answer"])
     record_answer(st.session_state.progress, q["id"], ok, elapsed)
+    persist_current_profile_progress()
     review["answered"] = int(review.get("answered", 0)) + 1
     review["correct"] = int(review.get("correct", 0)) + int(ok)
     prev_wrong = int(review.get("wrong_chain", 0))
@@ -1364,8 +1951,11 @@ def answer_review(q: dict, choice: bool):
             retry_counts[q["id"]] = used + 1
             retry_queued = True
     message = set_mascot_state(state, q["category"], int(review.get("combo", 0)), int(review.get("wrong_chain", 0)), speak=False)
+    comedy = None if ok else mistake_comedy(q, int(review.get("wrong_chain", 1)))
+    if comedy:
+        message = comedy["taunt"]
     queue_media(fx, state_voice(state))
-    st.session_state.review_feedback = {"selected": bool(choice), "ok": ok, "state": state, "message": message, "confidence": None, "retry_queued": retry_queued}
+    st.session_state.review_feedback = {"selected": bool(choice), "ok": ok, "state": state, "message": message, "confidence": None, "retry_queued": retry_queued, "comedy": comedy}
     if review.get("kind") == "survival" and int(review.get("lives", 1)) <= 0:
         review["finished"] = True
         finish_review(review)
@@ -1443,6 +2033,7 @@ def page_review():
         t1, t2, t3 = st.columns(3)
         if t1.button("★ Saved" if bookmarked else "☆ Save rule", use_container_width=True, key=f"review_bookmark_{q['id']}_{idx}"):
             toggle_bookmark(st.session_state.progress, q["id"])
+            persist_current_profile_progress()
             check_new_achievements()
             st.rerun()
         if t2.button("↪ Skip for later", use_container_width=True, disabled=feedback is not None or idx >= len(ids) - 1, key=f"review_skip_{q['id']}_{idx}"):
@@ -1466,15 +2057,19 @@ def page_review():
                 sure_label = "🧠 I knew it" if feedback.get("ok") else "😬 I was sure"
                 if c1.button(sure_label, use_container_width=True, key=f"confidence_sure_{q['id']}_{idx}"):
                     record_confidence(st.session_state.progress, q["id"], False, bool(feedback.get("ok")))
+                    persist_current_profile_progress()
                     st.session_state.review_feedback["confidence"] = "sure"
                     st.rerun()
                 if c2.button("🎲 I guessed", use_container_width=True, key=f"confidence_guess_{q['id']}_{idx}"):
                     record_confidence(st.session_state.progress, q["id"], True, bool(feedback.get("ok")))
+                    persist_current_profile_progress()
                     st.session_state.review_feedback["confidence"] = "guess"
                     st.rerun()
             else:
                 label = "Marked as guessed" if feedback.get("confidence") == "guess" else "Confidence recorded"
                 st.caption(f"✓ {label}")
+            if not feedback.get("ok"):
+                render_mistake_comedy(q, int(review.get("wrong_chain", 1)))
             if feedback.get("retry_queued"):
                 st.info("🔁 This missed rule has been queued once more later in this run so you can retrieve it again from memory.")
             if st.button("Next question ➜", use_container_width=True, type="primary", key=f"review_next_{q['id']}_{idx}"):
@@ -1509,24 +2104,33 @@ def page_review():
 
 
 # ---------- Exam ----------
-def start_exam(bank: str = "All", set_filter: str = "All", count: int = 50, minutes: int = 30) -> bool:
-    pool = filter_questions(bank, set_filter)
+def start_exam(bank: str = "All", set_filter: str = "All", count: int | None = None, minutes: int | None = None) -> bool:
+    # When the global scope is All, a default exam starts with Karimen rather than mixing
+    # two fundamentally different exam formats. Honmen remains one tap away in Custom Exam.
+    resolved = effective_bank(bank)
+    if resolved == "All":
+        resolved = "Karimen"
+    pool = filter_questions(resolved, set_filter)
     if not pool:
         return False
-    count = max(1, min(int(count), len(pool)))
-    ids = [q["id"] for q in random.sample(pool, count)]
+    default_count, default_minutes, format_note = exam_defaults(resolved)
+    count = default_count if count is None else int(count)
+    minutes = default_minutes if minutes is None else int(minutes)
+    count = max(1, min(count, len(pool)))
+    seed = int(uuid.uuid4().hex[:16], 16)
+    ids = select_question_ids(pool, st.session_state.progress, "Coverage first", count, seed=seed)
     now = time.time()
     st.session_state.exam = {
         "ids": ids, "index": 0, "answers": {}, "flagged": [], "started": now, "started_iso": utc_now_iso(),
-        "deadline": now + int(minutes) * 60, "minutes": int(minutes), "bank": effective_bank(bank), "set": set_filter,
+        "deadline": now + minutes * 60, "minutes": minutes, "bank": resolved, "set": set_filter,
         "submitted": False, "session_id": uuid.uuid4().hex, "online_saved": False, "celebrated": False,
+        "selection_strategy": "coverage_first", "format_note": format_note,
     }
     st.session_state.active_game = "exam"
     queue_media("start", "ready")
     sync_live_exam(st.session_state.exam)
     go("Play")
     return True
-
 
 def submit_exam():
     exam = st.session_state.exam
@@ -1543,13 +2147,13 @@ def submit_exam():
     exam["correct"] = correct
     exam["elapsed"] = elapsed
     exam["submitted"] = True
-    row = add_session(st.session_state.progress, "exam", exam["ids"], correct, elapsed, exam.get("bank", "All"))
+    row = add_session(st.session_state.progress, "exam", exam["ids"], correct, elapsed, exam.get("bank", "All"), set_label=exam.get("set", "All"), selection_strategy=exam.get("selection_strategy", "coverage_first"))
+    persist_current_profile_progress()
     save_online_result(exam)
     passed = float(row.get("percent") or 0) >= PASS_PERCENT
     set_mascot_state("victory" if passed else "pleading", "Simulation / Exam", speak=False)
     queue_media("pass" if passed else "retry", "victory" if passed else "pleading")
     check_new_achievements()
-
 
 def timer_widget(deadline: float):
     deadline_ms = int(deadline * 1000)
@@ -1573,7 +2177,7 @@ def render_exam_results(exam: dict):
     c3.metric("Target", f"{PASS_PERCENT:.0f}%")
     c4.metric("Time", f"{int(exam.get('elapsed', 0)) // 60}:{int(exam.get('elapsed', 0)) % 60:02d}")
     render_mascot_panel("Simulation / Exam", "victory" if passed else "pleading")
-    if passed and total == 50 and not exam.get("celebrated"):
+    if passed and total in {50, 90} and not exam.get("celebrated"):
         st.balloons()
         exam["celebrated"] = True
     misses = []
@@ -1587,12 +2191,13 @@ def render_exam_results(exam: dict):
         st.success("Perfect score.")
     for pos, q, ans in misses:
         with st.expander(f"Q{pos} · {q['id']} · {q['category']}"):
-            st.write(q["question_en"])
+            st.write(question_text(q))
             if st.session_state.opt_japanese and q.get("question_ja"):
                 st.caption(q["question_ja"])
             st.write(f"Your answer: {'TRUE' if ans is True else 'FALSE' if ans is False else 'Unanswered'}")
             st.write(f"Correct answer: {'TRUE' if q['answer'] else 'FALSE'}")
-            st.write(q["explanation"])
+            render_mistake_comedy(q, 1)
+            render_explanation(q)
             render_sources(q)
     c1, c2, c3 = st.columns(3)
     if c1.button("New exam", use_container_width=True, type="primary", key="exam_new_result"):
@@ -1627,7 +2232,9 @@ def page_exam():
     idx = int(exam["index"])
     q = BY_ID[ids[idx]]
     c1, c2 = st.columns([4, 1.25])
-    c1.progress((idx + 1) / max(1, len(ids)), text=f"Exam · Question {idx + 1}/{len(ids)} · Answered {len(exam['answers'])}/{len(ids)}")
+    c1.progress((idx + 1) / max(1, len(ids)), text=f"{exam.get('bank', 'Exam')} · Question {idx + 1}/{len(ids)} · Answered {len(exam['answers'])}/{len(ids)}")
+    if idx == 0 and exam.get("format_note"):
+        st.caption(exam["format_note"])
     with c2:
         timer_widget(float(exam["deadline"]))
     render_question(q, idx + 1, len(ids), reveal=False)
@@ -1697,7 +2304,8 @@ def resume_game(kind: str):
 def page_home():
     level, xp, goal = level_info()
     seen = unique_seen_count()
-    st.markdown(f"<div class='km-profile'><div class='km-profile-name'>{html.escape(st.session_state.avatar)} {html.escape(safe_player_name())}</div><div class='km-profile-sub'>Level {level} · {driver_title(level)}</div><div class='km-xp'><i style='width:{100 * xp / goal:.1f}%'></i></div><div style='font-size:.8rem;font-weight:750'>{xp}/{goal} XP to next level · Total XP {total_xp():,}</div><div class='km-chips'><div class='km-chip'>🔥 Daily {daily_challenge_streak()}</div><div class='km-chip'>🏆 Best exam {best_exam_percent():.0f}%</div><div class='km-chip'>📘 {seen}/{len(active_questions())} seen</div><div class='km-chip'>⭐ {bookmark_count()} saved</div></div></div>", unsafe_allow_html=True)
+    content_seen, content_total = content_seen_count()
+    st.markdown(f"<div class='km-profile'><div class='km-profile-name'>{html.escape(st.session_state.avatar)} {html.escape(safe_player_name())}</div><div class='km-profile-sub'>Level {level} · {driver_title(level)}</div><div class='km-xp'><i style='width:{100 * xp / goal:.1f}%'></i></div><div style='font-size:.8rem;font-weight:750'>{xp}/{goal} XP to next level · Total XP {total_xp():,}</div><div class='km-chips'><div class='km-chip'>🔥 Daily {daily_challenge_streak()}</div><div class='km-chip'>🏆 Best exam {best_exam_percent():.0f}%</div><div class='km-chip'>📘 {seen}/{len(active_questions())} records</div><div class='km-chip'>🗺️ {content_seen}/{content_total} unique rules</div><div class='km-chip'>⭐ {bookmark_count()} saved</div></div></div>", unsafe_allow_html=True)
     pending = resumable_game()
     if pending:
         kind, label = pending
@@ -1731,13 +2339,15 @@ def page_home():
     st.markdown("<div class='km-section'>Quick play</div>", unsafe_allow_html=True)
     c1, c2, c3 = st.columns(3)
     with c1:
-        render_mode_card("Smart Review", "Adaptive queue prioritizes due, weak, and unseen rules.", "🧠", "km-blue")
+        render_mode_card("Smart Review", "Hard-priority unseen coverage first; adaptive weakness only breaks ties after coverage.", "🧠", "km-blue")
         if st.button("Start Smart Review", use_container_width=True, type="primary", key="home_smart"):
             if launch_smart():
                 st.rerun()
     with c2:
-        render_mode_card("Exam Mode", "50 questions, 30 minutes, 90% practice target.", "🏁", "km-green")
-        if st.button("Start 50Q Exam", use_container_width=True, key="home_exam"):
+        exam_bank = active_bank_scope() if active_bank_scope() in {"Karimen", "Honmen"} else "Karimen"
+        dq, dm, _ = exam_defaults(exam_bank)
+        render_mode_card("Exam Mode", f"{exam_bank}: {dq} questions, {dm} minutes, 90% practice target.", "🏁", "km-green")
+        if st.button(f"Start {exam_bank} Exam", use_container_width=True, key="home_exam"):
             if start_exam():
                 st.rerun()
     with c3:
@@ -1794,7 +2404,7 @@ def page_play():
     boss_unlocked = level >= 5 or unique_seen_count() >= 100
     modes = [
         ("📘", "Review Mode", "Learn with explanations and adaptive repetition.", "review", "km-blue"),
-        ("📝", "Exam Mode", "Full 50-question simulation with timer and flags.", "exam", "km-green"),
+        ("📝", "Exam Mode", "Karimen 50Q or Honmen 90Q source-set simulation with timer and flags.", "exam", "km-green"),
         ("📅", "Daily Challenge", "Ten fixed questions per day. Build a streak.", "daily", "km-purple"),
         ("⚡", "Survival Mode", "Three lives. Every wrong answer costs a heart.", "survival", "km-orange"),
         ("👑", "Boss Exam", "Twenty of your hardest questions. Target 90%.", "boss", "km-pink"),
@@ -1841,7 +2451,7 @@ def page_play():
         categories = ["All"] + sorted({q["category"] for q in pool0})
         category = st.selectbox("Category", categories, key="custom_category")
         c1, c2 = st.columns(2)
-        strategy = c1.selectbox("Strategy", ["Due / adaptive", "Wrong answers", "Guessed", "Unseen", "Weakest", "Random"], key="custom_strategy")
+        strategy = c1.selectbox("Strategy", ["Coverage first", "Wrong answers", "Guessed", "Unseen", "Weakest", "Random"], key="custom_strategy")
         count = c2.slider("Questions", 5, 100, 20, 5, key="custom_count")
         pool = filter_questions(bank, set_filter, category)
         st.caption(f"{len(pool)} questions match these filters.")
@@ -1853,15 +2463,17 @@ def page_play():
                 st.warning("No questions currently match that strategy. Try another strategy.")
     with st.expander("🛠️ Custom exam", expanded=False):
         c1, c2 = st.columns(2)
-        bank = c1.selectbox("Exam bank", available_bank_options(), key="exam_custom_bank")
+        bank = c1.selectbox("Exam bank", exam_bank_options(), key="exam_custom_bank")
         set_filter = c2.selectbox("Exam set", set_options_for_bank(bank), key="exam_custom_set")
         pool = filter_questions(bank, set_filter)
         c1, c2 = st.columns(2)
         max_count = max(1, min(100, len(pool)))
         min_count = 5 if max_count >= 5 else 1
-        default_count = min(50, max_count)
+        base_count, base_minutes, note = exam_defaults(bank if bank != "All" else "Karimen")
+        default_count = min(base_count, max_count)
         count = c1.number_input("Questions", min_value=min_count, max_value=max_count, value=max(min_count, default_count), step=5 if max_count >= 5 else 1, key="exam_custom_count")
-        minutes = c2.number_input("Minutes", min_value=5, max_value=120, value=30, step=5, key="exam_custom_minutes")
+        minutes = c2.number_input("Minutes", min_value=5, max_value=120, value=base_minutes, step=5, key="exam_custom_minutes")
+        st.caption(note)
         if st.button("Launch custom exam", use_container_width=True, disabled=not pool, key="exam_custom_launch"):
             if start_exam(bank, set_filter, int(count), int(minutes)):
                 st.rerun()
@@ -1884,13 +2496,13 @@ def page_mistakes():
     for q, s in shown[:50]:
         acc = 100 * int(s.get("correct", 0)) / max(1, int(s.get("attempts", 0)))
         with st.expander(f"{q['id']} · {q['category']} · {int(s.get('wrong', 0))} miss(es) · {acc:.0f}%"):
-            st.write(q["question_en"])
+            st.write(question_text(q))
             for img in q.get("images", []):
                 path = ROOT / img
-                if path.exists():
+                if question_image_available(path):
                     render_contained_image(path, f"Illustration for {q['id']}")
             st.success(f"Correct answer: {'TRUE' if q['answer'] else 'FALSE'}")
-            st.write(q["explanation"])
+            render_explanation(q)
             render_sources(q)
 
 
@@ -1903,6 +2515,15 @@ def page_progress():
     c4.metric("Saved rules", bookmark_count())
     c5.metric("Pass readiness", f"{pass_readiness():.0f}%")
     st.caption("Pass readiness is an in-app study estimate based on recent mock exams, category mastery, and bank coverage. It is not an official probability.")
+    st.markdown("<div class='km-section'>Coverage by bank</div>", unsafe_allow_html=True)
+    cov_cols = st.columns(2)
+    for col, bank_name in zip(cov_cols, ["Karimen", "Honmen"]):
+        bank_q = [q for q in QUESTIONS if q["bank"] == bank_name]
+        seen_records = sum(1 for q in bank_q if int(qstat(q["id"]).get("attempts", 0) or 0) > 0)
+        seen_content, total_content = content_seen_count(bank_q)
+        with col:
+            st.metric(bank_name, f"{seen_records}/{len(bank_q)} records")
+            st.progress(seen_content / max(1, total_content), text=f"{seen_content}/{total_content} distinct rules encountered")
     scoped_stats = [qstat(q["id"]) for q in active_questions()]
     guessed = sum(int(x.get("confidence_guessed", 0) or 0) for x in scoped_stats)
     lucky = sum(int(x.get("confidence_guess_correct", 0) or 0) for x in scoped_stats)
@@ -1951,26 +2572,21 @@ def page_progress():
 
 
 def local_rankings_df() -> pd.DataFrame:
-    rows = [s for s in st.session_state.progress.get("sessions", []) if s.get("mode") == "exam" and int(s.get("questions", 0)) == 50 and session_matches_scope(s)]
-    data = []
-    for s in rows:
-        data.append({"Driver": f"{st.session_state.avatar} {safe_player_name()}", "Score": f"{int(s.get('correct', 0))}/50", "Percent": float(s.get("percent", 0)), "Seconds": float(s.get("seconds", 0)), "Completed": s.get("timestamp", "")})
-    if not data:
-        return pd.DataFrame(columns=["Driver", "Score", "Percent", "Seconds", "Completed"])
-    return pd.DataFrame(data).sort_values(["Percent", "Seconds"], ascending=[False, True])
+    current = {"name": safe_player_name(), "avatar": st.session_state.avatar, "progress": st.session_state.progress}
+    return build_activity_leaderboard([current], active_bank_scope())
 
 
 def page_rankings():
-    st.markdown("<div class='km-section'>🏆 Live Rankings</div>", unsafe_allow_html=True)
+    st.markdown("<div class='km-section'>🏆 Rankings</div>", unsafe_allow_html=True)
     connected, message = ranking_connection_state()
     role = supabase_key_role()
     c1, c2 = st.columns([3, 1])
     with c1:
         if connected:
-            st.success("🟢 Supabase ranking connected and write-tested")
+            st.success("🟢 Supabase rankings connected: exams + full study activity")
             st.caption(message)
         else:
-            st.error("Shared ranking is not ready.")
+            st.error("Shared rankings are not ready.")
             st.caption(message)
     with c2:
         if st.button("🔄 Re-test connection", use_container_width=True, key="ranking_retest"):
@@ -1983,57 +2599,97 @@ def page_rankings():
             ranking_connection_state(force=True)
             st.rerun()
 
+    rank_options = available_bank_options()
+    bank_filter = st.selectbox("Ranking bank", rank_options, key="ranking_bank_filter", help="Overall activity can be compared across all banks or within Karimen/Honmen.")
+    board_choice = st.selectbox(
+        "Leaderboard",
+        ["Overall Study League", "By Study Mode", "Standard Exam Best", "Live Exam Room"],
+        key="ranking_board_choice",
+    )
+
     if not connected:
         st.markdown(
             "<div class='km-card'><strong>Required Streamlit Secrets</strong><br>"
             "<code>SUPABASE_URL</code><br><code>SUPABASE_SECRET_KEY</code> or <code>SUPABASE_SERVICE_ROLE_KEY</code><br><br>"
-            "Do not use the anon/publishable key with the included RLS setup. Run <code>supabase_setup.sql</code> in the same Supabase project, then restart the Streamlit app.</div>",
+            "Run the included <code>supabase_setup.sql</code> so <code>player_profiles</code>, <code>live_exams</code>, and <code>exam_results</code> are available. "
+            "Do not use the anon/publishable key with the included RLS setup.</div>",
             unsafe_allow_html=True,
         )
         st.caption(f"Detected key role: {role}")
+        local_profile = {"name": safe_player_name(), "avatar": st.session_state.avatar, "progress": st.session_state.progress}
+        if board_choice == "Overall Study League":
+            local = build_activity_leaderboard([local_profile], bank_filter)
+            st.markdown("#### This device's current driver")
+            st.dataframe(local, use_container_width=True, hide_index=True)
+        elif board_choice == "By Study Mode":
+            mode = st.selectbox("Study mode", list(MODE_LABELS), format_func=lambda x: MODE_LABELS[x], key="local_mode_rank")
+            local = build_mode_leaderboard([local_profile], mode, bank_filter)
+            st.dataframe(local, use_container_width=True, hide_index=True)
+        else:
+            local_exams = [s for s in st.session_state.progress.get("sessions", []) if s.get("mode") == "exam"]
+            if local_exams:
+                st.dataframe(pd.DataFrame(local_exams[-20:][::-1]), use_container_width=True, hide_index=True)
+            else:
+                st.info("No local exam results yet.")
         if st.session_state.online_error:
             with st.expander("Connection error details"):
                 st.code(st.session_state.online_error)
-        local = local_rankings_df()
-        if not local.empty:
-            st.markdown("#### This device's 50-question results")
-            st.dataframe(local, use_container_width=True, hide_index=True)
         return
 
-    rank_options = available_bank_options()
-    bank_filter = st.selectbox("Ranking bank", rank_options, key="ranking_bank_filter", help="Rankings are most comparable within the same question bank.")
-    st.caption("Active exams are shown for five minutes after their last heartbeat. Live data refreshes every 15 seconds.")
-    live_rankings_fragment(bank_filter)
-
-    st.markdown("#### All-time best 50-question exams")
-    results = fetch_exam_results(500)
-    if bank_filter != "All":
-        results = [r for r in results if str(r.get("bank") or "All") == bank_filter]
-    board = build_best_leaderboard(results)
-    if board.empty:
-        st.info("No completed 50-question exams have been submitted yet.")
-    else:
-        top3 = board.head(3).to_dict("records")
-        if top3:
-            cols = st.columns(len(top3))
+    profiles = fetch_player_profiles()
+    if board_choice == "Overall Study League":
+        st.markdown("#### Overall Study League — every answered question counts")
+        st.caption("League points count correct answers from Review, Daily, Survival, Boss and Exam modes, plus smaller practice/coverage bonuses. Accuracy and unique-rule coverage are shown separately so volume does not hide quality.")
+        board = build_activity_leaderboard(profiles, bank_filter)
+        if board.empty:
+            st.info("No shared study activity has been saved yet.")
+        else:
+            top3 = board.head(3).to_dict("records")
+            cols = st.columns(len(top3)) if top3 else []
             medals = ["🥇", "🥈", "🥉"]
             for i, (col, row) in enumerate(zip(cols, top3)):
                 with col:
-                    st.markdown(f"<div class='km-card' style='text-align:center'><div style='font-size:2rem'>{medals[i]}</div><strong>{html.escape(str(row['Examiner']))}</strong><div style='font-size:1.45rem;font-weight:950'>{html.escape(str(row['Best']))}</div><span class='km-small'>{html.escape(str(row['Time']))} · {html.escape(str(row['Accuracy']))} · {html.escape(str(row['Bank']))}</span></div>", unsafe_allow_html=True)
-        st.dataframe(board, use_container_width=True, hide_index=True)
-        my_exact = f"{st.session_state.avatar} {safe_player_name()}"
-        mine = board[board["Examiner"] == my_exact]
-        if not mine.empty:
-            row = mine.iloc[0]
-            st.info(f"Your current best rank: #{int(row['Rank'])} · {row['Best']} · {row['Time']} · {row['Bank']}")
+                    st.markdown(
+                        f"<div class='km-card' style='text-align:center'><div style='font-size:2rem'>{medals[i]}</div>"
+                        f"<strong>{html.escape(str(row['Driver']))}</strong><div style='font-size:1.45rem;font-weight:950'>{int(row['League points']):,} pts</div>"
+                        f"<span class='km-small'>{html.escape(str(row['Accuracy']))} · {int(row['Unique rules'])} unique rules</span></div>",
+                        unsafe_allow_html=True,
+                    )
+            st.dataframe(board, use_container_width=True, hide_index=True)
+            mine = board[board["Driver"] == f"{st.session_state.avatar} {safe_player_name()}"]
+            if not mine.empty:
+                row = mine.iloc[0]
+                st.info(f"Your Overall Study League rank: #{int(row['Rank'])} · {int(row['League points']):,} points · {row['Accuracy']} accuracy · {int(row['Unique rules'])} unique rules")
 
-    if results:
-        st.markdown("#### Recent finishes")
-        recent = []
-        for r in results[:20]:
-            elapsed = int(float(r.get("elapsed_seconds") or 0))
-            recent.append({"Examiner": f"{r.get('avatar') or '🚙'} {r.get('display_name') or 'Driver'}", "Score": f"{int(r.get('score') or 0)}/{int(r.get('total_questions') or 0)}", "Accuracy": f"{float(r.get('percent') or 0):.1f}%", "Time": f"{elapsed//60}:{elapsed%60:02d}", "Bank": r.get("bank") or "All"})
-        st.dataframe(pd.DataFrame(recent), use_container_width=True, hide_index=True)
+    elif board_choice == "By Study Mode":
+        mode = st.selectbox("Study mode", list(MODE_LABELS), format_func=lambda x: MODE_LABELS[x], key="mode_rank_selector")
+        st.markdown(f"#### {MODE_LABELS[mode]} activity")
+        st.caption("Mode ranking totals all saved sessions in that mode. It ranks total correct answers first, then accuracy and best session.")
+        board = build_mode_leaderboard(profiles, mode, bank_filter)
+        if board.empty:
+            st.info("No shared sessions for this mode yet.")
+        else:
+            st.dataframe(board, use_container_width=True, hide_index=True)
+
+    elif board_choice == "Standard Exam Best":
+        st.markdown("#### All-time best standard practice exams")
+        results = fetch_exam_results(500)
+        if bank_filter != "All":
+            results = [r for r in results if _normalized_bank_name(r.get("bank")) == bank_filter]
+        board = build_best_leaderboard(results)
+        if board.empty:
+            st.info("No completed standard practice exams have been submitted yet.")
+        else:
+            st.dataframe(board, use_container_width=True, hide_index=True)
+            mine = board[board["Examiner"] == f"{st.session_state.avatar} {safe_player_name()}"]
+            if not mine.empty:
+                row = mine.iloc[0]
+                st.info(f"Your best standard-exam rank: #{int(row['Rank'])} · {row['Best']} · {row['Time']} · {row['Bank']}")
+
+    else:
+        st.markdown("#### Live exam room")
+        st.caption("Active exams are shown for five minutes after their last heartbeat. Live data refreshes every 15 seconds.")
+        live_rankings_fragment(bank_filter)
 
     if st.session_state.online_error:
         with st.expander("Connection details"):
@@ -2050,31 +2706,25 @@ def page_bank():
     pool = filter_questions(bank, set_filter, category)
     saved_only = st.checkbox("Show bookmarked rules only", value=False, key="bank_saved_only")
     if saved_only:
-        saved = set(active_bookmarks())
-        pool = [q for q in pool if q["id"] in saved]
-    st.caption(f"{len(pool)} questions")
+        saved = set(active_bookmarks()); pool = [q for q in pool if q["id"] in saved]
+    st.caption(f"{len(pool)} source records")
+    if bank == "Honmen":
+        st.info("Honmen source wording is preserved in Japanese. These ten uploaded sets contain 90 true/false questions each.")
     if not pool:
-        st.info("No questions match this filter yet.")
-        return
-    labels = [f"{q['id']} · {q['category']} · {q['question_en'][:80]}" for q in pool]
+        st.info("No questions match this filter yet."); return
+    labels = [f"{q['id']} · {q['category']} · {question_text(q)[:80]}" for q in pool]
     label = st.selectbox("Select question", labels, key="bank_page_question")
     q = pool[labels.index(label)]
     saved = is_bookmarked(st.session_state.progress, q["id"])
     if st.button("★ Remove bookmark" if saved else "☆ Bookmark this rule", use_container_width=True, key=f"bank_bookmark_{q['id']}"):
-        toggle_bookmark(st.session_state.progress, q["id"])
-        check_new_achievements()
-        st.rerun()
+        toggle_bookmark(st.session_state.progress, q["id"]); persist_current_profile_progress(); check_new_achievements(); st.rerun()
     render_question(q, 1, 1, reveal=True, selected=q["answer"])
-    s = qstat(q["id"])
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Attempts", int(s.get("attempts", 0)))
-    c2.metric("Wrong", int(s.get("wrong", 0)))
-    c3.metric("Mastery", f"{mastery(s):.0f}%")
-
+    s = qstat(q["id"]); c1, c2, c3 = st.columns(3)
+    c1.metric("Attempts", int(s.get("attempts", 0))); c2.metric("Wrong", int(s.get("wrong", 0))); c3.metric("Mastery", f"{mastery(s):.0f}%")
 
 def backup_panel():
     with st.expander("💾 Progress backup / restore", expanded=False):
-        st.download_button("Download progress", data=progress_json(), file_name="karimen_progress_v44.json", mime="application/json", use_container_width=True, key="download_progress")
+        st.download_button("Download progress", data=progress_json(), file_name="japan_driving_license_reviewer_progress_v5.json", mime="application/json", use_container_width=True, key="download_progress")
         uploaded = st.file_uploader("Import progress JSON", type=["json"], key="progress_upload")
         if uploaded is not None:
             raw = uploaded.getvalue()
@@ -2083,6 +2733,7 @@ def backup_panel():
                 try:
                     st.session_state.progress = normalize_progress(json.loads(raw.decode("utf-8")), VALID_IDS)
                     st.session_state.last_import_hash = marker
+                    persist_current_profile_progress()
                     prime_achievements()
                     st.success("Progress imported successfully.")
                     st.rerun()
@@ -2092,48 +2743,60 @@ def backup_panel():
 
 # ---------- First-screen player setup ----------
 def page_profile_setup():
-    st.markdown("<div class='km-profile-setup'><h1>🐾 KARIMEN REVIEWER</h1><p>Choose your driver profile before entering the game.</p></div>", unsafe_allow_html=True)
-    left, right = st.columns([1, 1.5])
+    st.markdown("<div class='km-profile-setup'><h1>🚗 JAPAN DRIVING LICENSE EXAM REVIEWER</h1><p>Choose your driver profile and study bank.</p></div>", unsafe_allow_html=True)
+    profiles = fetch_player_profiles()
+    left, right = st.columns([1, 1.8])
     with left:
         render_mascot_image(reaction_asset("idle"))
-        st.markdown("<div class='km-card'><strong>Blue traffic-officer cat</strong><br><span class='km-small'>The same gray-and-white mascot changes pose and outfit as you study.</span></div>", unsafe_allow_html=True)
+        st.markdown("<div class='km-card'><strong>Separate driver histories</strong><br><span class='km-small'>Each profile keeps its own seen questions, mistakes, bookmarks, confidence data, and coverage priority.</span></div>", unsafe_allow_html=True)
     with right:
-        with st.form("profile_setup", clear_on_submit=False):
-            name = st.text_input("Your ranking name", value=st.session_state.player_name, placeholder=f"Driver-{st.session_state.guest_code}", max_chars=24, help="This nickname is shown on the shared Supabase ranking board.")
-            avatar = st.selectbox("Your player character", AVATARS, index=AVATARS.index(st.session_state.avatar) if st.session_state.avatar in AVATARS else 0, format_func=lambda x: f"{x}  {CHARACTER_NAMES.get(x, 'Driver')}")
-            scope = st.radio("Question bank", ["All", "A1", "B1"], index=["All", "A1", "B1"].index(active_bank_scope()), format_func=lambda x: BANK_SCOPE_LABELS[x], horizontal=True, help="This becomes the global scope for review, exams, daily challenge, survival, mistakes, and progress statistics.")
-            c1, c2 = st.columns(2)
-            voice_mode = c1.selectbox("Mascot voice", VOICE_MODES, index=VOICE_MODES.index(st.session_state.get("voice_mode", "Natural neural voice (online)")) if st.session_state.get("voice_mode", "Natural neural voice (online)") in VOICE_MODES else 0)
-            theme = c2.selectbox("Theme", ["Arcade", "Cute", "Night"], index=["Arcade", "Cute", "Night"].index(st.session_state.opt_theme))
-            submitted = st.form_submit_button("Start driving →", use_container_width=True, type="primary")
-        st.caption("Voice recommendation: Natural neural voice. It requires internet, but v4.4 will stay silent if neural TTS fails instead of secretly switching to a robotic device voice.")
-        if submitted:
-            cleaned = re.sub(r"[^\w .\-]", "", (name or "").strip(), flags=re.UNICODE)[:24].strip()
-            if len(cleaned) < 2:
-                st.error("Enter a nickname with at least 2 characters so rankings can identify your result.")
-            else:
-                st.session_state.player_name = cleaned
-                st.session_state.avatar = avatar
-                st.session_state.bank_scope = scope
-                for stale_key in ["custom_bank", "custom_set", "exam_custom_bank", "exam_custom_set", "bank_page_bank", "bank_page_set", "bank_page_category", "bank_page_question", "bank_saved_only", "mistake_filter", "custom_category", "custom_strategy", "ranking_bank_filter"]:
-                    st.session_state.pop(stale_key, None)
-                st.session_state.voice_mode = voice_mode
-                st.session_state.opt_voice = voice_mode != "Off"
-                st.session_state.opt_theme = theme
-                st.session_state.profile_ready = True
-                st.session_state.route = "Home"
-                st.session_state.nav_choice = "Home"
-                st.session_state.sync_nav = False
-                st.rerun()
+        scope = st.radio("Study bank", BANK_OPTIONS, index=BANK_OPTIONS.index(active_bank_scope()), format_func=lambda x: BANK_SCOPE_LABELS[x], horizontal=True, key="login_bank_scope")
+        remember_login = st.checkbox("Remember my selected driver on this device", key="remember_device", help="Saves only the profile name and bank scope in this browser for automatic selection next time.")
+        st.caption("On a shared device, use Settings → Change driver at any time. This feature does not use IP/device fingerprinting.")
+        st.markdown("#### Choose driver")
+        cols = st.columns(2)
+        chosen = None
+        for i, profile in enumerate(profiles):
+            with cols[i % 2]:
+                remote_tag = "☁️" if profile.get("remote") else ""
+                st.markdown(f"<div class='km-card' style='text-align:center'><div style='font-size:2.3rem'>{html.escape(profile['avatar'])}</div><strong>{html.escape(profile['name'])}</strong><div class='km-small'>{remote_tag} Driver profile</div></div>", unsafe_allow_html=True)
+                if st.button(f"Drive as {profile['name']}", use_container_width=True, type="primary" if profile['name'] in {"Geesene", "Quennie"} else "secondary", key=f"profile_pick_{i}"):
+                    chosen = profile
+        if chosen:
+            if not remember_login:
+                forget_device_profile()
+            activate_player_profile(chosen, scope, remember=bool(remember_login))
+            st.rerun()
 
+        with st.expander("➕ Register another driver", expanded=False):
+            with st.form("register_driver", clear_on_submit=False):
+                name = st.text_input("Driver name", max_chars=24, placeholder="Enter a new name")
+                avatar = st.selectbox("Avatar", AVATARS, format_func=lambda x: f"{x}  {CHARACTER_NAMES.get(x, 'Driver')}")
+                submitted = st.form_submit_button("Register driver", use_container_width=True)
+            if submitted:
+                ok, msg = register_player_profile(name, avatar)
+                if ok:
+                    st.success(msg)
+                    st.rerun()
+                else:
+                    st.error(msg)
+        if online_enabled():
+            st.caption("Supabase detected: registered profiles and progress can persist across sessions/devices after the included v5 SQL migration is applied.")
+        else:
+            st.caption("Supabase is not connected. New profiles still work, but registration/progress persistence is limited to this Streamlit browser session unless you export a backup.")
 
 # ---------- Main ----------
+if not st.session_state.profile_ready:
+    try_auto_activate_remembered_profile()
 if not st.session_state.profile_ready:
     page_profile_setup()
     st.stop()
 
 prime_achievements()
 header()
+if st.session_state.get("device_memory_notice"):
+    st.caption(st.session_state.device_memory_notice)
+    st.session_state.device_memory_notice = None
 play_pending_media()
 render_toast()
 
@@ -2154,4 +2817,4 @@ else:
     st.session_state.route = "Home"
     st.rerun()
 
-st.markdown(f"<div class='km-divider'></div><div class='km-small'>Karimen Reviewer · Build {BUILD} · {len(active_questions())} active questions ({BANK_SCOPE_LABELS.get(active_bank_scope(), 'A1 + B1')}) · Study aid only</div>", unsafe_allow_html=True)
+st.markdown(f"<div class='km-divider'></div><div class='km-small'>Japan Driving License Exam Reviewer · Build {BUILD} · {len(active_questions())} active source records ({BANK_SCOPE_LABELS.get(active_bank_scope(), 'Karimen + Honmen')}) · Study aid only</div>", unsafe_allow_html=True)

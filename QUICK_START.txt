@@ -1,30 +1,23 @@
-KARIMEN REVIEWER v4.4 POLISHED — QUICK START
+JAPAN DRIVING LICENSE EXAM REVIEWER v5.2 — QUICK START
 
-1. Keep this whole folder structure intact.
-2. If using Supabase rankings, keep your existing Streamlit Cloud Secrets.
-3. If you never ran the v4.3 Supabase migration, run supabase_setup.sql once in Supabase SQL Editor.
-4. Install requirements:
+LOCAL
+1. pip install -r requirements.txt
+2. streamlit run app.py
+3. Choose a driver and Karimen/Honmen scope.
+4. Leave “Remember my selected driver on this device” on if you want this browser to auto-select that profile next time.
 
-   pip install -r requirements.txt
+SHARED PROGRESS / RANKINGS
+- Configure SUPABASE_URL + SUPABASE_SECRET_KEY in Streamlit Secrets.
+- Run supabase_setup.sql once if your database predates v5.0.
+- Rankings now include Overall Study League, By Study Mode, Standard Exam Best and Live Exam Room.
 
-5. Run locally:
+VERIFY
+python -m compileall -q app.py karimen_core.py
+python validate.py
+python release_audit.py
+python smoke_test.py
+python runtime_stub_test.py
+python strict_runtime_test.py
+python supabase_stub_test.py
 
-   streamlit run app.py
-
-6. First screen:
-   - enter ranking nickname
-   - choose player character
-   - choose A1+B1, A1 only, or B1 only
-   - choose mascot voice/theme
-
-Recommended voice: Natural neural voice (online).
-If neural speech cannot be produced, v4.4 stays silent rather than secretly using a robotic device voice. Use Settings > Test selected voice to confirm the backend on your deployment.
-
-Useful checks before deployment:
-
-   python validate.py
-   python release_audit.py
-   python smoke_test.py
-   python runtime_stub_test.py
-   python strict_runtime_test.py
-   python supabase_stub_test.py
+Real Streamlit AppTest/server startup runs in GitHub Actions after push.

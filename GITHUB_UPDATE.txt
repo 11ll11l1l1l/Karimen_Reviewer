@@ -1,31 +1,19 @@
-KARIMEN REVIEWER v4.4 POLISHED — GITHUB UPDATE
+JAPAN DRIVING LICENSE EXAM REVIEWER v5.2 — GITHUB / STREAMLIT UPDATE
 
-You said you will deploy later. When you are ready:
+This package is a complete replacement for the earlier v4.x/v5.x repository contents.
 
-1. Extract Karimen_Streamlit_Reviewer_v4_4_Polished.zip.
-2. Copy the CONTENTS of the extracted folder into your existing local GitHub repository folder.
-3. Do not delete your Streamlit Cloud Secrets. They are not stored in this package.
-4. From a terminal opened in the repository folder, check the branch:
-
-   git branch --show-current
-   git status
-
-5. Stage, commit, and push:
-
-   git add .
-   git commit -m "Update Karimen Reviewer to v4.4 Polished"
-   git push origin main
-
-If step 4 says your branch is master instead of main, use:
-
-   git push origin master
-
-6. On GitHub, open Actions > Karimen app checks.
-7. Wait for the workflow to turn green before relying on the deployment.
-8. In the deployed app, open Rankings and use Re-test connection.
-9. In Settings, press Test selected voice. If the neural backend is active it will report the chosen Neural voice ID.
+1. Keep your existing Streamlit Cloud Secrets. Do not commit them to GitHub.
+2. Replace repository application files with this package.
+3. Commit and push to main.
+4. GitHub Actions installs requirements and runs validation, regressions, Streamlit AppTest and a real headless health check.
+5. Streamlit Community Cloud should redeploy automatically from main if the app is already linked to this repository.
+6. After deployment, open Rankings and press Re-test connection. The diagnostic now checks player_profiles plus exam ranking tables.
 
 SUPABASE
-- If the v4.3 supabase_setup.sql migration was already run successfully, v4.4 requires no new database schema change.
-- If it was never run, run this package's supabase_setup.sql once in Supabase SQL Editor.
-- Keep SUPABASE_URL and SUPABASE_SECRET_KEY (or legacy SUPABASE_SERVICE_ROLE_KEY) in Streamlit Cloud Secrets, never in GitHub source files.
+- If the v5 migration was already run, v5.2 requires no new table. Overall Study League reads player_profiles.progress.
+- If the repository is still on v4.x, run this package's supabase_setup.sql once in Supabase SQL Editor so player_profiles exists.
+- Keep SUPABASE_URL and SUPABASE_SECRET_KEY (or legacy SUPABASE_SERVICE_ROLE_KEY) in Streamlit Cloud Secrets.
+
+DEVICE MEMORY
+- extra-streamlit-components supplies the writable cookie manager.
+- The cookie stores only profile name + bank scope, for convenience; it is not authentication or fingerprinting.
