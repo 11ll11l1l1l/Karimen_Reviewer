@@ -6,17 +6,28 @@ ALAM keeps GitHub JSON as the agent/audit trail and uses Supabase as the durable
 
 Open Supabase -> SQL Editor.
 
-For a fresh ALAM Supabase schema, run these files in order:
+### Existing ALAM Supabase project created with the earlier UUID schema
+
+The first ALAM Supabase schema used UUID article IDs. The v5 agent/audit contract uses stable text article IDs, so do not alter those UUID IDs in place.
+
+Run these files in order:
+
+1. `supabase/ALAM_EXISTING_DB_PATCH.sql`
+2. `supabase/ALAM_FULL_SETUP.sql`
+
+The compatibility bridge is non-destructive. It preserves the earlier UUID tables as `*_legacy_20260902` and leaves the existing `agents` table intact. PostgreSQL keeps the old foreign-key relationships attached to those preserved tables.
+
+### Fresh ALAM Supabase project
+
+Run `supabase/ALAM_FULL_SETUP.sql`.
+
+The individual migration files remain available for development/history:
 
 1. `supabase/migrations/001_alam_core.sql`
 2. `supabase/migrations/003_comments_and_wisdom.sql`
 3. `supabase/migrations/004_public_story_history.sql`
 
-If an earlier draft of `001_alam_core.sql` was already executed before the lifecycle/status correction, run this compatibility sequence instead:
-
-1. `supabase/migrations/002_alam_schema_corrections.sql`
-2. `supabase/migrations/003_comments_and_wisdom.sql`
-3. `supabase/migrations/004_public_story_history.sql`
+If an earlier draft of `001_alam_core.sql` was already executed before the lifecycle/status correction, use `002_alam_schema_corrections.sql` before migrations 003 and 004.
 
 Do not put the service-role/secret key in Streamlit Secrets or public code.
 
