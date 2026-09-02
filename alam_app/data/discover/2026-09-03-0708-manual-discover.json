@@ -1,0 +1,110 @@
+{
+  "id": "japan-residence-fee-reform-2026-10-01",
+  "agent": "discover",
+  "created_at": "2026-09-03T07:08:00+09:00",
+  "type": "policy",
+  "title": "Japan residence-renewal fees jump from October 1",
+  "summary": "Simula October 1, Japan will charge residence-status change and renewal fees based on the period granted. Online applications that were ¥5,500 can rise to ¥10,330–¥65,550 including the new payment fee; applications accepted by September 30 keep the old fee.",
+  "why_it_matters": "Malaki ang jump para sa foreign residents, especially kung mahaba ang granted stay. The filing date now matters financially, so anyone already eligible to renew should check whether submitting by September 30 is practical and appropriate.",
+  "importance": 95,
+  "confidence": 99,
+  "tags": ["Japan", "Immigration", "Foreign Residents", "Residence Status", "Fees"],
+  "geography": ["Japan"],
+  "status": "NEW",
+  "sources": [
+    {
+      "publisher": "Immigration Services Agency of Japan",
+      "title": "Online application fees and payment methods for applications accepted on or after October 1, 2026",
+      "url": "https://www.moj.go.jp/isa/11_00107.html",
+      "published_at": "2026-08-28",
+      "source_type": "official"
+    },
+    {
+      "publisher": "Immigration Services Agency of Japan",
+      "title": "Q&A on the October 1, 2026 revision of residence permit fees",
+      "url": "https://www.moj.go.jp/isa/applications/faq/01_00650.html",
+      "published_at": "2026-08-28",
+      "source_type": "official"
+    },
+    {
+      "publisher": "Immigration Services Agency of Japan",
+      "title": "Fee reduction or exemption measures from October 1, 2026",
+      "url": "https://www.moj.go.jp/isa/10_00273.html",
+      "published_at": "2026-08-28",
+      "source_type": "official"
+    }
+  ],
+  "claims": [
+    {
+      "kind": "FACT",
+      "text": "The revised residence-status change and renewal fee schedule applies to applications accepted on or after October 1, 2026.",
+      "source_refs": [1, 2],
+      "basis": "Official Immigration Services Agency notice and Q&A"
+    },
+    {
+      "kind": "FACT",
+      "text": "For online change or renewal applications, the total payment after October 1 ranges from ¥10,330 for a period of three months or less to ¥65,550 for five years or more, including the payment-processing fee.",
+      "source_refs": [1],
+      "basis": "Official online fee table"
+    },
+    {
+      "kind": "FACT",
+      "text": "Applications accepted by September 30 remain subject to the pre-revision fee even if permission is granted after October 1.",
+      "source_refs": [1, 2],
+      "basis": "Official transition rule"
+    },
+    {
+      "kind": "FACT",
+      "text": "The online system does not support the new fee-reduction measure; eligible applicants seeking a reduction must apply at a counter with supporting documents.",
+      "source_refs": [1, 3],
+      "basis": "Official reduction-measure guidance"
+    },
+    {
+      "kind": "INFERENCE",
+      "text": "Foreign residents who are already eligible to submit a renewal before September 30 may face a materially lower fee if they file before the new schedule starts, but timing should not override eligibility or document readiness.",
+      "source_refs": [1, 2],
+      "basis": "Inference from the official transition rule"
+    }
+  ],
+  "editorial_visual": {
+    "style": "editorial",
+    "motif": "document",
+    "secondary_motif": "yen",
+    "scene": "a residence card and application form climbing a steep staircase made of increasingly large yen coins, while a small calendar page marked October 1 waits at the top",
+    "caption": "The filing date suddenly has a much bigger price tag",
+    "silliness": 28,
+    "exaggeration": 72
+  },
+  "content": {
+    "key_message": "If a residence-status renewal or change is already legitimately due, September 30 is now an important cost cutoff.",
+    "whats_new": [
+      "Fee levels will depend on the period of stay granted instead of one flat renewal/change fee.",
+      "Online payment changes to convenience-store or bank payment, with a separate processing fee.",
+      "The old fee remains for applications accepted no later than September 30."
+    ],
+    "skeptical_view": "The highest published fee is not what every applicant will pay; the amount depends on the period actually granted. Some applicants may also qualify for reduction or exemption measures, so headline comparisons can overstate an individual case.",
+    "what_next": "Check the expiration date and the earliest lawful filing window for your status. If you are already eligible and documents are complete, compare filing before September 30 with waiting until October.",
+    "what_would_change_mind": "A later official notice changing the effective date, fee table, transition rule, or reduction eligibility would materially change this advice.",
+    "recommendation": "WATCH / ACT IF ELIGIBLE: do not rush an incomplete application, but do not ignore the September 30 cutoff if your renewal or status change is already ready to file.",
+    "usefulness": 96,
+    "novelty": 92,
+    "impact": {
+      "money": "HIGH",
+      "family": "MED",
+      "career": "MED",
+      "japan": "HIGH",
+      "urgency": "HIGH"
+    },
+    "connection_tags": ["foreign-resident-policy", "immigration-fees", "october-2026"],
+    "reading_levels": {
+      "30 sec": {
+        "what_happened": "Japan's residence change/renewal fees rise from October 1 and will depend on the granted stay length.",
+        "why_it_matters": "The difference can be tens of thousands of yen.",
+        "what_to_do_watch": "If you are already eligible to file, check whether submitting by September 30 is sensible.",
+        "bottom_line": "The acceptance date, not the approval date, determines whether the old fee applies."
+      },
+      "2_min": "The Immigration Services Agency has published the October 1 fee schedule and transition rules. Online change/renewal applications accepted on or after October 1 can total ¥10,330 to ¥65,550 depending on the granted period, while applications accepted by September 30 retain the old fee. Reduction measures exist for some cases, but the online system does not process those reductions."
+    },
+    "bottom_line": "For foreign residents with a legitimate renewal/change window already open, September 30 is a real financial deadline."
+  }
+}
