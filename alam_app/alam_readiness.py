@@ -23,6 +23,16 @@ from alam_supabase import get_supabase_public
 
 ARTICLE_FOLDERS = ("discover", "practical", "reflection", "trend")
 
+RUNTIME_STATUS_CSS = r"""
+<style>
+.alam-runtime-status{display:flex;align-items:flex-start;gap:9px;border-radius:13px;padding:9px 11px;margin:-3px 0 10px;font-size:.72rem;line-height:1.4}
+.alam-runtime-status.live{background:rgba(8,125,91,.08);border:1px solid rgba(8,125,91,.13);color:#087454}
+.alam-runtime-status.fallback{background:#FFF7E8;border:1px solid #F5D995;color:#815900}
+.alam-runtime-dot{width:7px;height:7px;border-radius:50%;margin-top:.29rem;flex:none;background:currentColor}
+@media(max-width:760px){.alam-runtime-status{font-size:.68rem;padding:8px 9px;margin-bottom:8px}}
+</style>
+"""
+
 
 def _safe_iso(value):
     """Return an aware UTC datetime for freshness comparisons, or ``None``."""
@@ -143,6 +153,29 @@ def _freshness_text(value):
     return f"{seconds // 86400} d ago"
 
 
+def render_runtime_status():
+    """Show the current feed source without making an extra database request.
+
+    ``load_article_records`` sets ``alam_content_source`` before the brand/header is
+    rendered. Using that already-known state makes the runtime indicator effectively
+    free and prevents a misleading green "live" impression while ALAM is deliberately
+    serving its GitHub audit fallback during a database-sync outage or migration.
+    """
+    source = st.session_state.get("alam_content_source")
+    if source == "supabase":
+        st.markdown(
+            '<div class="alam-runtime-status live"><span class="alam-runtime-dot"></span>'
+            '<div><strong>Supabase live.</strong> Current story feed is being served from the durable database layer.</div></div>',
+            unsafe_allow_html=True,
+        )
+    elif source == "local_fallback":
+        st.markdown(
+            '<div class="alam-runtime-status fallback"><span class="alam-runtime-dot"></span>'
+            '<div><strong>Safe fallback mode.</strong> ALAM is serving the verified GitHub audit archive because the Supabase mirror is not populated/current yet. Content remains usable, but cross-device database features may be incomplete.</div></div>',
+            unsafe_allow_html=True,
+        )
+
+
 def render_cutover_readiness():
     """Render an operator-focused readiness panel inside ALAM Settings."""
     st.markdown("#### Production readiness")
@@ -167,6 +200,10 @@ def render_cutover_readiness():
         st.warning("DATABASE POPULATED · Supabase has published stories, but this session has not confirmed the feed cutover yet.")
     else:
         st.error("NOT CUT OVER · Supabase has no published ALAM stories; the app is still relying on migration fallback data.")
+        st.caption(
+            "If the SQL schema is already installed, the next required step is the trusted GitHub Actions mirror. "
+            "That workflow needs repository Actions secrets SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY."
+        )
 
     cols = st.columns(4)
     cols[0].metric("Audit stories", audit_count)
