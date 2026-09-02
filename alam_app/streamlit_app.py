@@ -140,8 +140,9 @@ portraits.install(views)
 # replacing category/story identity colors. It uses Japan local time on rerun.
 time_theme.install_time_theme()
 
-# Article loading is intentionally limited to the four article directories so
-# growing discussion/wisdom archives do not slow the main feed scan.
+# Supabase is now the preferred source of truth. During migration the loader keeps
+# the existing local article folders as a safe fallback until published DB content
+# exists, so the live app never goes blank during cutover.
 all_records = extras.load_article_records()
 current_records = latest_by_story(all_records)
 # Preserve older philosophical records in history while the current public section
@@ -150,7 +151,9 @@ current_records = [r for r in current_records if r.get("_category") != "reflecti
 # Muting is local to the reader. It hides future feed appearances without changing
 # or deleting shared ALAM intelligence.
 records = [r for r in current_records if not localstate.is_muted(r)]
-comments = load_comments()
+# When the feed is Supabase-backed, cross-agent perspectives are loaded from the DB
+# for these story IDs; otherwise the existing local comment archive remains active.
+comments = load_comments([r.get("id") for r in current_records])
 
 views.render_brand(records)
 # A six-scene Japan-time header makes the daypart immediately visible; the continuous
