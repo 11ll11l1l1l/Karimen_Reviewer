@@ -20,7 +20,7 @@ Permanent constraints:
 
 - Mobile Streamlit app with Today, Discover, Action, Market, More, Weekly, Search, Saved, Predictions, Settings, article detail, time-aware visual system, and editorial-image fallback.
 - Decision-first Today and article-page hierarchy.
-- Saved-story version awareness and updated-since-saved behavior where version state exists.
+- Saved-story version awareness with updated-since-saved detection, updated-first ordering, compact Before/Now preview when defensible, and explicit review acknowledgement that clears the current update without unsaving the story.
 - Detailed ALAM Panel presentation preserving substantive SUPPORT/CHALLENGE/MIXED reasoning.
 - Evidence view with source count, official/primary count, publisher/domain diversity, classified-claim coverage, and source-to-claim support. Diversity is explicitly not treated as proof of editorial independence.
 - Supabase-first public article loading with local JSON migration fallback.
@@ -33,13 +33,13 @@ Permanent constraints:
 - Reconciliation repairs partial-write cases where the current article advances but derived tables fail.
 - Source reconciliation uses upsert-before-delete to avoid deliberately erasing the prior good evidence set before desired rows are accepted.
 - Exact duplicate audit payloads are removed before deterministic version numbering.
-- **Fail-closed chronology preflight:** materially different versions of one stable article ID may no longer share the same explicit `created_at`. The trusted sync validates the complete public archive before incremental content writes and aborts on ambiguity rather than letting archive path ordering choose the production current version.
+- Fail-closed chronology preflight rejects materially different versions of one stable article ID sharing the same explicit `created_at` before public content writes.
 - Legacy records with no explicit `created_at` remain compatible; path ordering is retained only as a deterministic fallback for those historical shapes.
 - Reconciliation is scoped to the four public ALAM article directories, so private Job Radar data is unreachable by construction.
 - A public-safe sync-health RPC contract exists in migration `005_public_sync_health.sql`; direct public reads of `agent_runs` remain blocked by RLS.
 - Backend readiness classification distinguishes disconnected, diagnostics unavailable, never synchronized, running, failed, partial, stale sync, local fallback, synchronized-empty, unknown status, and ready.
 - Settings renders one calm Data status verdict from that classifier and keeps raw private workflow/error metadata out of the public UI.
-- CI gates reconciliation/chronology, Evidence, backend readiness, product readiness, syntax, production data, image behavior, dependency installation, and Streamlit startup health.
+- CI gates reconciliation/chronology, Evidence, backend readiness, product readiness, Saved material-update review state, syntax, production data, image behavior, dependency installation, and Streamlit startup health.
 
 ## B. In progress / requires production verification
 
@@ -75,7 +75,7 @@ Required evidence before declaring cutover complete:
 
 1. Keep Today decision-first and prevent secondary modules from making the page endless.
 2. Preserve detailed cross-agent reasoning, uncertainty, implications, and disagreement.
-3. Continue refining material-change notices for saved stories/history.
+3. Improve Saved/history change previews only when complete history or explicit v5 `change_summary` exists; never infer a change from weak metadata.
 4. Revisit fallback/stale-data communication only after real production readiness telemetry exists.
 5. Refine Evidence only when backend metadata can improve trust without inventing source independence.
 
@@ -83,7 +83,7 @@ Required evidence before declaring cutover complete:
 
 1. Select an auth/account approach without a login wall.
 2. Keep anonymous use fully functional.
-3. Sync authenticated bookmarks, preferences, reads, feedback, inbox, and briefing state through RLS-protected tables.
+3. Sync authenticated bookmarks, preferences, reads, feedback, inbox, briefing state, and saved-update review baselines through RLS-protected tables.
 4. Preserve browser-local state as anonymous/offline fallback.
 
 ### P2 — Intelligence layer
@@ -133,9 +133,11 @@ These require external credentials/consoles and must not be falsely marked compl
 
 - Multiple visual/CSS modules remain layered in install order.
 - Browser-local Saved/preferences remain primary user state until auth synchronization exists.
+- Saved update acknowledgement is intentionally browser-local; cross-device review state requires future authenticated persistence.
+- The current four-argument Saved renderer remains backward-compatible. Explicit v5 `content.change_summary` can render Before/Now without hydrated history; legacy records without explicit change summaries safely omit the preview.
 - Local JSON fallback protects cutover but can eventually mask stale database synchronization; narrow it only after Supabase stability is proven.
 - Production migration 005 plus a real trusted sync are still required before repository readiness logic proves live cutover.
-- The six-hour threshold is operational **sync freshness**, not a claim that article facts expire after six hours.
+- The six-hour threshold is operational sync freshness, not a claim that article facts expire after six hours.
 - Historical audit records may lack current v5 fields. The chronology preflight deliberately does not treat missing `created_at` as an explicit timestamp conflict.
 - Same explicit timestamp + different payload now fails trusted sync before content writes. Correct the GitHub audit timestamp/payload rather than bypassing this guard.
 - Reconciliation does not delete unrelated Supabase articles absent from GitHub; broad orphan cleanup requires a separate reviewed policy.
@@ -189,10 +191,23 @@ These require external credentials/consoles and must not be falsely marked compl
 - Decision: distinguish harmless exact duplicates from ambiguous material ties. Fail trusted sync closed when distinct payloads share an explicit timestamp. Preserve historical records with no explicit timestamp for backward compatibility.
 - Implementation: `ArchiveConflictError`, explicit timestamp normalization, `_validate_archive_chronology()`, and `prepare_public_archive()` in `alam_supabase_reconcile.py`. `alam_supabase_sync_job.py` now preflights the complete public archive before incremental ingestion and reuses the validated snapshot for reconciliation.
 - Files/schema affected: `alam_app/alam_supabase_reconcile.py`, `alam_app/alam_supabase_sync_job.py`, `alam_app/test_alam_supabase_reconcile.py`, and this roadmap. No database migration or RLS change.
-- Security/rollback: no public access was widened. On conflict, only the trusted run audit record may be written; public content mutation is stopped. GitHub audit files remain the rollback/source-of-truth layer.
-- Validation performed: deterministic regression tests cover exact duplicates, normal chronology, explicit equal-time conflict rejection through both helper and public preflight entry point, and backward compatibility for missing timestamps. Full ALAM CI is the release gate.
+- Validation performed: deterministic regression tests cover exact duplicates, normal chronology, explicit equal-time conflict rejection through both helper and public preflight entry point, and backward compatibility for missing timestamps.
 - Remaining limitation/risk: malformed explicit timestamp strings still use the existing parser fallback semantics; stronger schema validation can be considered with source-quality gates. Database-level partial-write failure injection remains open.
-- Recommended next action: after CI confirms this iteration, Backend should move to database-level failure injection or pre-publication source/rejection quality gates. Product requires no UI change for this guard because audit conflicts are operator failures, not reader states.
+- Recommended next action: Backend should move to database-level failure injection or pre-publication source/rejection quality gates.
+
+### 2026-09-03 — Saved material-update review queue
+
+- Agent: Product Builder.
+- Problem found: Saved correctly detected a newer material story version, but the `UPDATED SINCE SAVED` signal had no completion path. After reading the change, the badge remained permanently until the reader unsaved and re-saved the story.
+- Root cause: bookmark version state was captured only when the story was first saved. There was no separate acknowledgement action to say “I reviewed this version, keep watching for the next one.”
+- Decision: treat a Saved update as an explicit review state. Acknowledgement advances only the local saved-version baseline; it does not mark the story unsaved and does not silently conflate Saved review with general Read state.
+- Implementation: added monotonic `_advance_saved_snapshot()` and `acknowledge_saved_update()` in `alam_local_state.py`; Saved keeps updated stories first, shows conservative Before/Now copy when `change_snapshot()` has defensible evidence, and provides a full-width `Mark this update reviewed` action. Existing four-argument renderer compatibility is preserved for rolling deployments.
+- Files/schema affected: `alam_app/alam_local_state.py`, `alam_app/alam_saved_views.py`, `alam_app/test_alam_saved_update_flow.py`, `.github/workflows/alam-checks.yml`, and this roadmap. No Supabase schema or RLS change.
+- Mobile behavior: the existing wrapped card layout is preserved; update preview copy uses a compact high-contrast block and the acknowledgement action remains a full-width touch target. On narrow screens the preview typography is increased slightly for readability.
+- Validation performed: deterministic tests prove acknowledgement is monotonic/idempotent, an older rerun cannot move the review baseline backward, explicit v5 change summaries work without hydrated history, and no preview is manufactured for a static record. CI now runs these tests and compiles the Saved view explicitly; the compatibility checkpoint passed the full ALAM workflow before this roadmap update.
+- Remaining limitation/risk: acknowledgement is anonymous browser-local state today. Imported legacy Saved ID codes intentionally do not invent historical review baselines. Full cross-device review persistence belongs with future authenticated state.
+- Recommended Backend action: no backend change is required for this flow. When authenticated persistence is designed, include the saved-story reviewed-version baseline under per-user RLS rather than deriving it from generic read history.
+- Recommended Product action: next prioritize accessibility/performance or another reader friction with measurable utility; do not auto-clear a Saved update merely because a story page was opened.
 
 ## H. Agent handoff template
 
