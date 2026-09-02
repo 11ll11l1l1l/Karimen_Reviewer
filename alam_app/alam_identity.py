@@ -84,12 +84,8 @@ def _cookie_get(manager) -> str | None:
         return None
 
 
-def _cookie_set(manager, device_id: str) -> bool:
-    """Best-effort persistent device cookie write.
-
-    The first render can occur before the custom CookieManager frontend has mounted,
-    so callers intentionally repeat this write after successful onboarding.
-    """
+def _cookie_set(manager, device_id: str, *, key: str) -> bool:
+    """Best-effort persistent device cookie write with an explicit component key."""
     canonical = _valid_device_id(device_id)
     if manager is None or not canonical:
         return False
@@ -101,7 +97,7 @@ def _cookie_set(manager, device_id: str) -> bool:
             max_age=COOKIE_MAX_AGE,
             same_site="lax",
             path="/",
-            key="set_alam_device_id",
+            key=key,
         )
         return True
     except Exception:
@@ -147,10 +143,10 @@ def init_identity(manager=None) -> dict:
     # reliable than waiting for the third-party CookieManager component to hydrate.
     device_id = _valid_device_id(st.session_state.get("alam_device_id")) or _cookie_get(manager)
     if not device_id:
+        # Keep an unregistered ID only in this Streamlit session. We deliberately do
+        # not write a browser cookie yet; registration is the single authoritative
+        # persistence point, after the CookieManager frontend is already mounted.
         device_id = _new_uuid()
-        # This first write is opportunistic. The authoritative persistence write is
-        # repeated after onboarding submission, once the cookie component is mounted.
-        _cookie_set(manager, device_id)
     st.session_state["alam_device_id"] = device_id
 
     visitor, error = _lookup(device_id)
@@ -212,9 +208,13 @@ def render_onboarding(manager=None) -> bool:
     """Render first-visit onboarding. Return True only when the visitor is recognized."""
     init_identity(manager)
     if is_recognized():
-        # Refresh the persistent cookie during a normal mounted render. This repairs
-        # older ALAM sessions whose first-render cookie write was lost.
-        _cookie_set(manager, str(st.session_state.get("alam_device_id") or ""))
+        # Refresh the expiry for known devices. A separate component key avoids
+        # colliding with the authoritative first-registration write.
+        _cookie_set(
+            manager,
+            str(st.session_state.get("alam_device_id") or ""),
+            key="refresh_alam_device_id",
+        )
         return True
 
     if WELCOME_ART.exists():
@@ -246,10 +246,13 @@ def render_onboarding(manager=None) -> bool:
             str(st.session_state.get("alam_session_id")),
         )
         if profile:
-            # Important: repeat the cookie write here. By the time a human has typed a
-            # name and submitted the form, the CookieManager component is mounted, so
-            # this write reliably survives browser refreshes/new Streamlit sessions.
-            persisted = _cookie_set(manager, device_id)
+            # Registration is the only first-visit cookie write. By this point the
+            # user has interacted with the page and the CookieManager is mounted.
+            persisted = _cookie_set(
+                manager,
+                device_id,
+                key="confirm_alam_device_id",
+            )
             st.session_state["alam_device_cookie_persisted"] = persisted
             st.session_state["alam_visitor"] = dict(profile)
             st.session_state["alam_identity_error"] = None
