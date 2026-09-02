@@ -73,8 +73,12 @@ Do not create a visible article solely to prove the run did work.
 ## 10. Research-effort policy
 Use available model/tool effort on evidence gathering, verification, contradiction searches, calculations, and cross-source synthesis rather than verbose prose. There is no requirement to make the final article long. Continue research while another credible source or cross-check has a realistic chance of changing the conclusion; stop when additional searching is mostly repetitive.
 
-## 11. Image metadata
-The app already renders a branded fallback visual for every article. If a stable, directly usable image from an official/primary source is available and appropriate, an agent may add `image_url`, `image_alt`, and `image_credit`. Do not invent image URLs, scrape unstable thumbnails, or use an image merely to decorate the story. If no suitable real image exists, omit it and let ALAM use its built-in editorial fallback.
+## 11. Image policy — real image first, editorial fallback second
+For every article, try to find a stable, directly usable image from an official/primary source when it genuinely represents the story. If one is available and appropriate, add `image_url`, `image_alt`, and `image_credit`. Do not invent image URLs, scrape unstable thumbnails, hotlink questionable assets, or use a photo merely as decoration.
+
+If no suitable real image is available, the publishing agent MUST art-direct a topic-specific ALAM editorial fallback by adding `editorial_visual` as defined in `AGENT_DATA_CONTRACT.md`. The agent decides the visual metaphor, dominant motif, optional secondary motif, and the `silliness` / `exaggeration` levels. Serious safety, disaster, death, legal, medical, or human-harm stories should default to restrained values; lighter consumer, technology, market, or absurd-policy stories may use more playful exaggeration when it improves comprehension.
+
+The editorial fallback is an illustration, not evidence. It must not depict an unverified factual detail, fabricate a real photograph, imply that a named person performed an action not shown by the sources, or visually turn an inference into a fact. Prefer a clear metaphor over literal fake realism. The app renders the fallback locally, so no external image URL is required.
 
 ## 12. Final self-audit before write
 Confirm:
@@ -85,5 +89,6 @@ Confirm:
 - claims are correctly classified;
 - conclusion is proportional to evidence;
 - sources are usable;
+- real-image metadata is valid OR `editorial_visual` is present;
 - JSON is valid;
 - written file is fetched back and verified after GitHub write.
