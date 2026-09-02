@@ -53,6 +53,21 @@ def check_supabase_connection():
         return False, _safe_error(exc)
 
 
+def _normalize_category(record):
+    category = str(record.get("category") or record.get("_category") or record.get("agent") or "").strip().lower()
+    aliases = {
+        "adaptive_discovery": "discover",
+        "discovery": "discover",
+        "practical_living": "practical",
+        "practical_living_safety": "practical",
+        "daily_reflection": "reflection",
+        "market": "reflection",
+        "interest_culture": "trend",
+        "culture": "trend",
+    }
+    return aliases.get(category, category)
+
+
 def _article_row_to_record(row):
     """Convert a typed Supabase article row into ALAM's v5 article contract."""
     if not isinstance(row, dict):
@@ -86,22 +101,30 @@ def _article_row_to_record(row):
     if not record.get("id") or not record.get("title"):
         return None
 
-    category = str(record.get("category") or record.get("_category") or record.get("agent") or "").strip().lower()
-    category_aliases = {
-        "adaptive_discovery": "discover",
-        "discovery": "discover",
-        "practical_living": "practical",
-        "practical_living_safety": "practical",
-        "daily_reflection": "reflection",
-        "market": "reflection",
-        "interest_culture": "trend",
-        "culture": "trend",
-    }
-    category = category_aliases.get(category, category)
-    record["_category"] = category
+    record["_category"] = _normalize_category(record)
     record["_path"] = f"supabase://articles/{record['id']}"
     record["_record_key"] = f"supabase::{record['id']}"
     record["_storage"] = "supabase"
+    return record
+
+
+def _history_row_to_record(row):
+    payload = row.get("record") if isinstance(row.get("record"), dict) else {}
+    record = dict(payload)
+    article_id = row.get("article_id") or record.get("id")
+    if not article_id or not record.get("title"):
+        return None
+    record["id"] = str(article_id)
+    if row.get("lifecycle_status"):
+        record["status"] = row.get("lifecycle_status")
+    if row.get("created_at"):
+        record["created_at"] = row.get("created_at")
+    record["_category"] = _normalize_category(record)
+    version_no = row.get("version_no")
+    record["_path"] = f"supabase://article_versions/{article_id}/{version_no}"
+    record["_record_key"] = f"supabase-version::{article_id}::{version_no}"
+    record["_storage"] = "supabase_version"
+    record["_version_no"] = version_no
     return record
 
 
@@ -174,6 +197,31 @@ def load_published_articles(limit=500):
                             }
                             for s in db_sources
                         ]
+        return records, None
+    except Exception as exc:
+        return [], _safe_error(exc)
+
+
+@st.cache_data(ttl=45, show_spinner=False)
+def load_article_history(article_ids, limit=2000):
+    """Return read-only historical versions for published stories."""
+    ids = [str(x) for x in article_ids if x]
+    if not ids:
+        return [], None
+    try:
+        response = (
+            get_supabase_public().table("article_versions")
+            .select("article_id,version_no,lifecycle_status,record,created_at")
+            .in_("article_id", ids[:500])
+            .order("created_at", desc=False)
+            .limit(int(limit))
+            .execute()
+        )
+        records = []
+        for row in response.data or []:
+            record = _history_row_to_record(row)
+            if record:
+                records.append(record)
         return records, None
     except Exception as exc:
         return [], _safe_error(exc)
