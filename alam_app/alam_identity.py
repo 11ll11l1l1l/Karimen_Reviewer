@@ -1,12 +1,12 @@
 """Privacy-preserving anonymous identity and interaction telemetry for ALAM.
 
 ALAM remembers a browser by a random UUID stored in a long-lived cookie. Returning
-sessions read that cookie from Streamlit's native initial-request context first, which
-avoids custom-component initialization races. The existing CookieManager is used only
-for writes/fallback reads. ALAM never attempts hardware/browser fingerprinting and does
-not store IP addresses for recognition. The public Supabase key can only call narrow
-SECURITY DEFINER RPCs; visitor tables remain closed to direct public reads/writes under
-RLS.
+sessions read that cookie from Streamlit's native initial-request context, avoiding
+custom-component initialization/read races. CookieManager is used only for the
+first-registration cookie write. ALAM never attempts hardware/browser fingerprinting
+and does not store IP addresses for recognition. The public Supabase key can only call
+narrow SECURITY DEFINER RPCs; visitor tables remain closed to direct public reads/writes
+under RLS.
 """
 
 from __future__ import annotations
@@ -64,24 +64,19 @@ def _device_metadata() -> dict:
 
 
 def _request_cookie_get() -> str | None:
-    """Read the cookie synchronously from the browser's initial Streamlit request."""
+    """Read the device cookie synchronously from the initial Streamlit request."""
     try:
         return _valid_device_id(st.context.cookies.get(DEVICE_COOKIE))
     except Exception:
         return None
 
 
-def _cookie_get(manager) -> str | None:
-    """Prefer native request cookies; fall back to the legacy component cache."""
-    native = _request_cookie_get()
-    if native:
-        return native
-    if manager is None:
-        return None
-    try:
-        return _valid_device_id(manager.get(cookie=DEVICE_COOKIE))
-    except Exception:
-        return None
+def _cookie_get(manager=None) -> str | None:
+    """Return the native request cookie without invoking a custom component read."""
+    # Keep the manager argument for call-site/backward compatibility, but deliberately
+    # do not use manager.get(). Component reads can cause asynchronous reruns and are
+    # unnecessary because Streamlit exposes initial request cookies directly.
+    return _request_cookie_get()
 
 
 def _cookie_set(manager, device_id: str, *, key: str) -> bool:
@@ -139,13 +134,13 @@ def init_identity(manager=None) -> dict:
         return dict(st.session_state.get("alam_visitor") or {})
 
     # On a brand-new Streamlit session, st.context.cookies contains the cookies from
-    # the initial HTTP/WebSocket request immediately. This is substantially more
-    # reliable than waiting for the third-party CookieManager component to hydrate.
+    # the initial HTTP/WebSocket request immediately. This avoids waiting for the
+    # third-party CookieManager component to hydrate just to identify a return visit.
     device_id = _valid_device_id(st.session_state.get("alam_device_id")) or _cookie_get(manager)
     if not device_id:
         # Keep an unregistered ID only in this Streamlit session. We deliberately do
-        # not write a browser cookie yet; registration is the single authoritative
-        # persistence point, after the CookieManager frontend is already mounted.
+        # not write a browser cookie yet; successful registration is the single
+        # authoritative persistence point.
         device_id = _new_uuid()
     st.session_state["alam_device_id"] = device_id
 
@@ -208,13 +203,9 @@ def render_onboarding(manager=None) -> bool:
     """Render first-visit onboarding. Return True only when the visitor is recognized."""
     init_identity(manager)
     if is_recognized():
-        # Refresh the expiry for known devices. A separate component key avoids
-        # colliding with the authoritative first-registration write.
-        _cookie_set(
-            manager,
-            str(st.session_state.get("alam_device_id") or ""),
-            key="refresh_alam_device_id",
-        )
+        # A valid 730-day device cookie already exists. Do not rewrite it on every
+        # Streamlit render: component writes can trigger additional reruns and timing
+        # noise, while providing no recognition benefit.
         return True
 
     if WELCOME_ART.exists():
@@ -246,8 +237,8 @@ def render_onboarding(manager=None) -> bool:
             str(st.session_state.get("alam_session_id")),
         )
         if profile:
-            # Registration is the only first-visit cookie write. By this point the
-            # user has interacted with the page and the CookieManager is mounted.
+            # First registration is the single authoritative cookie write. By this
+            # point the user has interacted with the page and CookieManager is mounted.
             persisted = _cookie_set(
                 manager,
                 device_id,
