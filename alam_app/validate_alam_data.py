@@ -3,6 +3,8 @@ from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlparse
 
+from alam_publication_quality import assess_article
+
 ROOT = Path(__file__).resolve().parent
 DATA = ROOT / "data"
 ERRORS = []
@@ -81,6 +83,15 @@ def validate_article(path, row):
         for ref in refs:
             if not isinstance(ref, int) or ref < 1 or ref > len(sources):
                 err(path, f"claim {i} source_ref {ref!r} out of range")
+
+    # The repository validator and trusted Supabase preflight intentionally consume
+    # the same minimum evidence contract. This prevents CI from accepting a modern
+    # article that production synchronization would later reject, while legacy audit
+    # rows remain rebuildable under the cutoff compatibility rule.
+    quality = assess_article(row)
+    for reason in quality["reasons"]:
+        err(path, f"publication quality: {reason}")
+
     content = row.get("content") or {}
     if not isinstance(content, dict):
         err(path, "content must be object")
