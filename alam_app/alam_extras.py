@@ -1,13 +1,15 @@
 import base64
 import json
-from datetime import datetime, timezone
-from pathlib import Path
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 import streamlit as st
 
-from alam_core import DATA_DIR, category_meta, esc, feed_score, is_followed, parse_dt, toggle_follow, type_label
+from alam_core import DATA_DIR, feed_score, is_followed, normalize_category, parse_dt
 
 WISDOM_DIR = DATA_DIR / "wisdom"
+ARTICLE_DIRS = [DATA_DIR / name for name in ("discover", "practical", "reflection", "trend")]
+JST = ZoneInfo("Asia/Tokyo")
 
 EXTRA_CSS = r"""
 <style>
@@ -16,7 +18,6 @@ EXTRA_CSS = r"""
 .wisdom-verse strong{color:#344054}
 .wisdom-question{font-size:.82rem;line-height:1.38;font-weight:760;color:#273142;margin-top:6px}
 .saved-sync{font-size:.76rem;color:#667085;line-height:1.45}
-.search-result-meta{font-size:.70rem;color:#98A2B3;margin:-3px 0 7px}
 @media(max-width:760px){
   .block-container{padding-bottom:7.2rem!important}
   .st-key-main_nav{position:fixed!important;top:auto!important;bottom:.55rem!important;left:50%!important;transform:translateX(-50%)!important;width:calc(100% - 1rem)!important;max-width:720px!important;z-index:1001!important;margin:0!important;padding:.38rem!important;border:1px solid rgba(23,32,42,.10)!important;border-radius:19px!important;background:rgba(245,244,240,.96)!important;box-shadow:0 14px 40px rgba(23,32,42,.18)!important;backdrop-filter:blur(18px)!important;-webkit-backdrop-filter:blur(18px)!important}
@@ -44,6 +45,32 @@ def install_extras_css():
 
 
 @st.cache_data(ttl=60)
+def load_article_records():
+    """Load only article folders, avoiding comments/wisdom scans on every refresh."""
+    records = []
+    for folder in ARTICLE_DIRS:
+        if not folder.exists():
+            continue
+        for path in sorted(folder.rglob("*.json")):
+            if path.name.startswith("_"):
+                continue
+            try:
+                payload = json.loads(path.read_text(encoding="utf-8"))
+                batch = payload if isinstance(payload, list) else [payload]
+                for idx, item in enumerate(batch):
+                    if not isinstance(item, dict) or not item.get("id") or not item.get("title"):
+                        continue
+                    copy = dict(item)
+                    copy["_path"] = str(path.relative_to(DATA_DIR.parent))
+                    copy["_category"] = normalize_category(copy)
+                    copy["_record_key"] = f"{copy['_path']}::{idx}"
+                    records.append(copy)
+            except Exception:
+                continue
+    return sorted(records, key=lambda r: parse_dt(r.get("created_at")), reverse=True)
+
+
+@st.cache_data(ttl=60)
 def load_latest_wisdom():
     if not WISDOM_DIR.exists():
         return None
@@ -58,7 +85,7 @@ def load_latest_wisdom():
     if not rows:
         return None
     rows.sort(key=lambda r: str(r.get("date")))
-    today = datetime.now(timezone.utc).date().isoformat()
+    today = datetime.now(JST).date().isoformat()
     eligible = [r for r in rows if str(r.get("date")) <= today]
     return eligible[-1] if eligible else rows[-1]
 
@@ -67,17 +94,16 @@ def render_wisdom_strip():
     item = load_latest_wisdom()
     if not item:
         return
-    verses = item.get("verses") or []
     verse_html = []
-    for verse in verses[:2]:
+    for verse in (item.get("verses") or [])[:2]:
         if not isinstance(verse, dict) or not verse.get("reference") or not verse.get("text"):
             continue
-        translation = f" ({esc(verse.get('translation'))})" if verse.get("translation") else ""
+        translation = f" ({verse.get('translation')})" if verse.get("translation") else ""
         verse_html.append(
-            f'<div class="wisdom-verse"><strong>{esc(verse["reference"])}{translation}</strong> — “{esc(verse["text"])}”</div>'
+            f'<div class="wisdom-verse"><strong>{verse["reference"]}{translation}</strong> — “{verse["text"]}”</div>'
         )
-    question = esc(item.get("question", ""))
-    based_on = esc(item.get("based_on", "yesterday"))
+    question = str(item.get("question", ""))
+    based_on = str(item.get("based_on", "yesterday"))
     st.markdown(
         '<div class="wisdom-strip">'
         + ''.join(verse_html)
@@ -99,12 +125,7 @@ def _haystack(record):
 def render_search(records, comments, manager, views):
     st.markdown('<div class="hero mobile-hero"><div class="hero-kicker">🔎 SEARCH</div><div class="hero-title">Hanapin ang signal, hindi lang ang headline.</div><div class="hero-copy">Search titles, summaries, tags, places and article details.</div></div>', unsafe_allow_html=True)
     query = st.text_input("Search ALAM", placeholder="e.g. visa, gasoline, semiconductors, JGB, scam...")
-    categories = st.multiselect(
-        "Lens",
-        ["Discover", "Action", "Market", "Trends"],
-        default=[],
-        placeholder="All lenses",
-    )
+    categories = st.multiselect("Lens", ["Discover", "Action", "Market", "Trends"], default=[], placeholder="All lenses")
     key_map = {"Discover": "discover", "Action": "practical", "Market": "reflection", "Trends": "trend"}
     wanted = {key_map[x] for x in categories}
     matches = records
@@ -159,7 +180,7 @@ def render_saved(records, manager, comments, views):
             st.session_state["followed_stories"] = ids
             if manager:
                 try:
-                    manager.set("alam_followed", json.dumps(ids), expires_at=datetime.now() + __import__("datetime").timedelta(days=365), key="import_followed")
+                    manager.set("alam_followed", json.dumps(ids), expires_at=datetime.now() + timedelta(days=365), key="import_followed")
                 except Exception:
                     pass
             st.success(f"Imported {len(ids)} saved topic IDs.")
