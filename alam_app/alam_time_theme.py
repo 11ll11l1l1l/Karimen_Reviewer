@@ -53,7 +53,8 @@ def _light_position(hour):
         x = 6.0 + 88.0 * progress
         altitude = math.sin(math.pi * progress)
         y = 72.0 - 64.0 * altitude
-        strength = 0.24 + 0.18 * altitude
+        # Strong enough to be noticed on reopen, but still behind readable surfaces.
+        strength = 0.30 + 0.20 * altitude
         return x, y, strength, "sun"
 
     if hour > sunset:
@@ -63,7 +64,7 @@ def _light_position(hour):
     x = 88.0 - 70.0 * progress
     altitude = max(0.0, math.sin(math.pi * progress))
     y = 34.0 - 18.0 * altitude
-    strength = 0.16 + 0.08 * altitude
+    strength = 0.19 + 0.09 * altitude
     return x, y, strength, "moon"
 
 
@@ -113,7 +114,7 @@ def theme_for_time(now=None):
 def theme_css(now=None):
     theme = theme_for_time(now)
     light_alpha = theme["light_strength"]
-    inner_alpha = min(0.50, light_alpha + 0.08)
+    inner_alpha = min(0.56, light_alpha + 0.08)
     return f"""
 <style>
 :root{{
@@ -137,10 +138,10 @@ def theme_css(now=None):
     radial-gradient(circle at var(--time-light-x) var(--time-light-y),
       rgba(var(--time-light-rgb),{inner_alpha:.3f}) 0,
       rgba(var(--time-light-rgb),{light_alpha:.3f}) 7rem,
-      rgba(var(--time-light-rgb),.10) 18rem,
-      transparent 34rem),
-    radial-gradient(circle at 7% 7%,rgba(var(--time-glow-a-rgb),.19),transparent 33rem),
-    radial-gradient(circle at 95% 8%,rgba(var(--time-glow-b-rgb),.15),transparent 32rem),
+      rgba(var(--time-light-rgb),.12) 19rem,
+      transparent 35rem),
+    radial-gradient(circle at 7% 7%,rgba(var(--time-glow-a-rgb),.23),transparent 33rem),
+    radial-gradient(circle at 95% 8%,rgba(var(--time-glow-b-rgb),.18),transparent 32rem),
     linear-gradient(180deg,var(--bg),var(--time-bg-deep)) !important;
   color:var(--ink);
   transition:background .7s ease;
@@ -153,8 +154,9 @@ def theme_css(now=None):
   box-shadow:var(--time-shadow) !important;
 }}
 .hero:after{{
-  background:linear-gradient(135deg,rgba(var(--time-light-rgb),.23),rgba(var(--time-glow-b-rgb),.18)) !important;
+  background:linear-gradient(135deg,rgba(var(--time-light-rgb),.27),rgba(var(--time-glow-b-rgb),.20)) !important;
 }}
+.hero-kicker{{color:var(--time-accent) !important}}
 .story-card,.detail-shell{{
   background:rgba(var(--time-surface-rgb),.90) !important;
   box-shadow:0 10px 30px rgba(23,32,42,.055);
@@ -166,8 +168,12 @@ def theme_css(now=None):
 .empty-box{{background:rgba(var(--time-surface-rgb),.52) !important}}
 .so-what{{background:rgba(var(--time-surface-rgb),.68) !important}}
 div[data-testid="stRadio"] label{{background:rgba(var(--time-surface-rgb),.72) !important}}
-.live-pill{{background:rgba(var(--time-light-rgb),.16) !important}}
+.live-pill{{background:rgba(var(--time-light-rgb),.19) !important}}
 .article-visual,.article-visual img{{background:var(--time-bg-deep) !important}}
+.st-key-main_nav{{
+  background:rgba(var(--time-surface-rgb),.88) !important;
+  border-color:rgba(var(--time-glow-a-rgb),.13) !important;
+}}
 .stButton>button{{
   box-shadow:0 5px 16px rgba(var(--time-glow-a-rgb),.09);
   border-color:rgba(var(--time-glow-a-rgb),.15);
