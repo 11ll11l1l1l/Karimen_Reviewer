@@ -239,10 +239,15 @@ else:
             dbviews.render_prediction_lab(records, views.render_prediction_lab)
         elif secondary == "Settings":
             extras.render_settings()
-            # Connectivity and feed-source labels are useful but insufficient during
-            # migration. The readiness panel independently compares the committed
-            # GitHub audit archive with public Supabase rows so a failed/stale mirror
-            # cannot be mistaken for a successful production cutover.
+            # Present one backend-owned synchronization verdict before the operator
+            # metrics. Readers should not have to infer whether "connected" plus a
+            # few table counts means the trusted mirror is actually current/complete.
+            # This RPC is queried only in Settings, not on every ordinary page, so the
+            # deeper deployment truth does not add latency to normal reading.
+            readiness.render_sync_readiness()
+            # Coverage remains a separate operator diagnostic. A successful trusted
+            # run can still have an audit-mirror gap, and conversely matching article
+            # IDs do not prove the latest trusted workflow itself was healthy.
             readiness.render_cutover_readiness()
             _sanitize_preference_state()
             try:
