@@ -189,7 +189,7 @@ def load_agent_comments(article_ids):
         client = get_supabase_public()
         response = (
             client.table("agent_comments")
-            .select("id,article_id,agent_id,stance,comment,created_at")
+            .select("id,article_id,agent_id,persona_id,reply_to,stance,comment,record,created_at")
             .in_("article_id", ids[:500])
             .eq("status", "published")
             .order("created_at", desc=False)
@@ -201,6 +201,32 @@ def load_agent_comments(article_ids):
         return grouped, None
     except Exception as exc:
         return {}, _safe_error(exc)
+
+
+@st.cache_data(ttl=60, show_spinner=False)
+def load_latest_wisdom_from_db():
+    """Load the latest public daily wisdom entry from Supabase."""
+    try:
+        response = (
+            get_supabase_public().table("wisdom_entries")
+            .select("entry_date,based_on,question,verses,record,created_at")
+            .order("entry_date", desc=True)
+            .limit(1)
+            .execute()
+        )
+        rows = list(response.data or [])
+        if not rows:
+            return None, None
+        row = rows[0]
+        payload = row.get("record") if isinstance(row.get("record"), dict) else {}
+        item = dict(payload)
+        item["date"] = str(row.get("entry_date"))
+        item["based_on"] = row.get("based_on") or item.get("based_on")
+        item["question"] = row.get("question") or item.get("question")
+        item["verses"] = row.get("verses") or item.get("verses") or []
+        return item, None
+    except Exception as exc:
+        return None, _safe_error(exc)
 
 
 @st.cache_data(ttl=60, show_spinner=False)
@@ -253,12 +279,19 @@ def load_article_relationships(article_ids, limit=500):
 @st.cache_data(ttl=60, show_spinner=False)
 def database_public_health():
     """Small read-only deployment diagnostic for Settings."""
-    health = {"articles": None, "sources": None, "comments": None, "predictions": None}
+    health = {"articles": None, "sources": None, "comments": None, "predictions": None, "wisdom": None}
     try:
         client = get_supabase_public()
-        for table in health:
-            response = client.table(table if table != "comments" else "agent_comments").select("id", count="exact").limit(1).execute()
-            health[table] = getattr(response, "count", None)
+        table_map = {
+            "articles": "articles",
+            "sources": "article_sources",
+            "comments": "agent_comments",
+            "predictions": "predictions",
+            "wisdom": "wisdom_entries",
+        }
+        for label, table in table_map.items():
+            response = client.table(table).select("*", count="exact").limit(1).execute()
+            health[label] = getattr(response, "count", None)
         return health, None
     except Exception as exc:
         return health, _safe_error(exc)
