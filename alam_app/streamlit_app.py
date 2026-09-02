@@ -18,7 +18,7 @@ import alam_polish as polish
 import alam_portraits as portraits
 import alam_visual_system as visual_system
 import alam_time_theme as time_theme
-from alam_editorial_visual import editorial_data_uri
+from alam_generated_images import generated_or_editorial_data_uri
 from alam_market_views import is_market_record, render_market
 from alam_personas import load_comments
 from alam_runtime_safety import install_runtime_safety
@@ -84,15 +84,15 @@ localstate.init_local_profile(manager)
 intelligence.init_preferences()
 extras.install_extras_css()
 
-# Keep the existing real-image lookup first. When no usable real image exists,
-# render the publishing agent's topic-specific editorial art direction locally.
-visual_system._svg_data_uri = editorial_data_uri
+# Real/official image remains first. If none exists, use the persistent AI-generated
+# editorial asset created after publishing; only then fall back to deterministic SVG.
+visual_system._svg_data_uri = generated_or_editorial_data_uri
 visual_system.install_visual_system(views)
 polish.install(views, reader)
 # Replace the old generic sprite with the fixed generated character portraits.
 portraits.install(views)
-# Apply this last so the time palette softly tints all surfaces without replacing
-# category/story identity colors. It is calculated from Japan local time on rerun.
+# Apply this last so the moving sun/moon atmosphere tints the full app without
+# replacing category/story identity colors. It uses Japan local time on rerun.
 time_theme.install_time_theme()
 
 # Article loading is intentionally limited to the four article directories so
