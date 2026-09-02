@@ -6,10 +6,12 @@ on:
     paths:
       - 'alam_app/**'
       - '.github/workflows/alam-checks.yml'
+      - '.github/workflows/alam-editorial-images.yml'
   pull_request:
     paths:
       - 'alam_app/**'
       - '.github/workflows/alam-checks.yml'
+      - '.github/workflows/alam-editorial-images.yml'
 
 jobs:
   validate-alam:
@@ -23,10 +25,12 @@ jobs:
           cache: 'pip'
       - name: Validate ALAM production data
         run: python alam_app/validate_alam_data.py
+      - name: Editorial image pipeline self-test
+        run: python alam_app/alam_image_generation.py --self-test
       - name: Install ALAM dependencies
         run: pip install -r alam_app/requirements.txt
       - name: Python syntax check
-        run: python -m py_compile alam_app/streamlit_app.py alam_app/alam_core.py alam_app/alam_personas.py alam_app/alam_views.py alam_app/alam_mobile_views.py alam_app/alam_market_views.py alam_app/alam_visual_system.py alam_app/alam_editorial_visual.py alam_app/alam_time_theme.py alam_app/alam_extras.py alam_app/alam_intelligence.py alam_app/alam_local_state.py alam_app/alam_reader_views.py alam_app/validate_alam_data.py
+        run: python -m py_compile alam_app/streamlit_app.py alam_app/alam_core.py alam_app/alam_personas.py alam_app/alam_views.py alam_app/alam_mobile_views.py alam_app/alam_market_views.py alam_app/alam_visual_system.py alam_app/alam_editorial_visual.py alam_app/alam_generated_images.py alam_app/alam_image_generation.py alam_app/alam_time_theme.py alam_app/alam_extras.py alam_app/alam_intelligence.py alam_app/alam_local_state.py alam_app/alam_reader_views.py alam_app/validate_alam_data.py
       - name: Start ALAM Streamlit server
         shell: bash
         run: |
