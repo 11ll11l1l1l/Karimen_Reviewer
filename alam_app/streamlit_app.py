@@ -20,6 +20,7 @@ import alam_portraits as portraits
 import alam_visual_system as visual_system
 import alam_time_theme as time_theme
 import alam_time_headers as time_headers
+import alam_supabase_views as dbviews
 from alam_generated_images import generated_or_editorial_data_uri
 from alam_market_views import is_market_record, render_market
 from alam_personas import load_comments
@@ -142,7 +143,8 @@ time_theme.install_time_theme()
 
 # Supabase is now the preferred source of truth. During migration the loader keeps
 # the existing local article folders as a safe fallback until published DB content
-# exists, so the live app never goes blank during cutover.
+# exists, so the live app never goes blank during cutover. Historical DB versions are
+# also folded into all_records so existing Before/Now timelines keep working.
 all_records = extras.load_article_records()
 current_records = latest_by_story(all_records)
 # Preserve older philosophical records in history while the current public section
@@ -168,7 +170,10 @@ selected = next((r for r in current_records if str(r.get("id")) == str(selected_
 
 if selected:
     views.render_detail(all_records, selected, comments, manager)
+    dbviews.render_change_summary(selected)
+    dbviews.render_disagreement(selected, comments)
     intelligence.render_story_snapshot(selected, all_records, records, comments)
+    dbviews.render_story_connections(selected, current_records)
     reader.render_detail_reader_controls(selected, manager)
     extras.render_share_tools(selected)
 else:
@@ -205,6 +210,7 @@ else:
         )
         if secondary == "Weekly":
             intelligence.render_weekly(records, all_records)
+            dbviews.render_connect_the_dots(records)
             st.divider()
             reader.render_agent_audit(records, all_records, comments)
         elif secondary == "Search":
@@ -212,7 +218,7 @@ else:
         elif secondary == "Saved":
             extras.render_saved(records, manager, comments, views)
         elif secondary == "Predictions":
-            views.render_prediction_lab(records)
+            dbviews.render_prediction_lab(records, views.render_prediction_lab)
         elif secondary == "Settings":
             extras.render_settings()
             _sanitize_preference_state()
