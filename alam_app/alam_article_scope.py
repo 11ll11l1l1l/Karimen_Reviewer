@@ -19,6 +19,17 @@ from alam_core import parse_dt
 from alam_supabase import load_article_history, load_published_articles
 
 
+def selected_history_ids(article_id):
+    """Return the one stable story ID a detail route is allowed to hydrate.
+
+    Keeping this tiny policy pure makes the performance boundary testable without a
+    live database. Empty/invalid selections return no IDs rather than accidentally
+    widening into the full feed.
+    """
+    story_id = str(article_id or "").strip()
+    return [story_id] if story_id else []
+
+
 def _dedupe_current_from_history(current_records, history_records):
     """Combine current rows with history without duplicating the current version.
 
@@ -74,11 +85,11 @@ def load_selected_article_records(article_id):
     if st.session_state.get("alam_content_source") != "supabase":
         return current_records
 
-    story_id = str(article_id or "").strip()
-    if not story_id:
+    history_ids = selected_history_ids(article_id)
+    if not history_ids:
         return current_records
 
-    history, history_error = load_article_history([story_id])
+    history, history_error = load_article_history(history_ids)
     if history_error:
         st.session_state["alam_supabase_history_error"] = history_error
         history = []
