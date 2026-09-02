@@ -1,19 +1,33 @@
-from collections import Counter
+import base64
+from pathlib import Path
 from urllib.parse import urlparse
 
 import streamlit as st
 
-from alam_core import CATEGORY_META, age_label, esc, parse_dt, source_quality
+from alam_core import age_label, esc
 from alam_personas import comments_for_story, persona_for_comment
 import alam_visual_system as visual
 
-RAW_BASE = "https://raw.githubusercontent.com/11ll11l1l1l/Karimen_Reviewer/main/alam_app/assets"
-PANEL_SPRITE = f"{RAW_BASE}/panel/panel_faces.svg"
+APP_DIR = Path(__file__).resolve().parent
+ASSET_DIR = APP_DIR / "assets"
+
+
+def _asset_data_uri(path):
+    try:
+        payload = Path(path).read_bytes()
+    except OSError:
+        return ""
+    suffix = Path(path).suffix.lower()
+    mime = "image/svg+xml" if suffix == ".svg" else "image/png" if suffix == ".png" else "image/jpeg"
+    return f"data:{mime};base64," + base64.b64encode(payload).decode("ascii")
+
+
+PANEL_SPRITE = _asset_data_uri(ASSET_DIR / "panel" / "panel_faces.svg")
 FALLBACK_IMAGES = {
-    "discover": f"{RAW_BASE}/editorial/discover.svg",
-    "practical": f"{RAW_BASE}/editorial/practical.svg",
-    "reflection": f"{RAW_BASE}/editorial/market.svg",
-    "trend": f"{RAW_BASE}/editorial/trend.svg",
+    "discover": _asset_data_uri(ASSET_DIR / "editorial" / "discover.svg"),
+    "practical": _asset_data_uri(ASSET_DIR / "editorial" / "practical.svg"),
+    "reflection": _asset_data_uri(ASSET_DIR / "editorial" / "market.svg"),
+    "trend": _asset_data_uri(ASSET_DIR / "editorial" / "trend.svg"),
 }
 
 FACE_POS = {
@@ -90,8 +104,6 @@ def article_image_html(record, hero=False, show_credit=False):
     alt = record.get("image_alt") or f"Visual for {record.get('title', 'ALAM story')}"
     hero_class = " hero" if hero else ""
     credit_html = f'<div class="image-credit">{esc(credit)}</div>' if credit else ""
-    # A repository-hosted fallback is used instead of a data URI so images render
-    # consistently through Streamlit and mobile browsers.
     return (
         f'<div class="article-visual{hero_class}">'
         f'<img src="{esc(source)}" alt="{esc(alt)}" loading="lazy" '
@@ -215,11 +227,9 @@ def render_research_audit(records, all_records, comments, reader):
 
 
 def install(views, reader=None):
-    # Patch the visual function used inside the existing card/detail closures.
     visual.article_image_html = article_image_html
     views._render_panel = render_panel
     views._render_full_thread = render_full_thread
     views.render_footer = render_footer
     if reader is not None:
-        original_metrics = reader._audit_metrics
         reader.render_agent_audit = lambda records, all_records, comments: render_research_audit(records, all_records, comments, reader)
