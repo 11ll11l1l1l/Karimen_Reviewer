@@ -35,10 +35,13 @@ Permanent constraints:
 - Source reconciliation uses upsert-before-delete to avoid intentionally erasing the previous good evidence set before desired sources are accepted.
 - Exact duplicate audit payloads are deduplicated before deterministic version numbering; equal timestamps use archive path ordering as a stable tie-breaker.
 - Reconciliation is scoped only to the four public ALAM article directories, preventing private Job Radar ingestion by construction.
-- Pure helper regression tests cover canonical payload identity, duplicate removal, chronological ordering, deterministic equal-time ordering, Evidence calculations, and Supabase-readiness classification.
+- Pure helper regression tests cover canonical payload identity, duplicate removal, chronological ordering, deterministic equal-time ordering, Evidence calculations, Supabase-readiness classification, and product-facing readiness copy.
 - A public-safe synchronization health contract now exists in repository code: migration `005_public_sync_health.sql` exposes only sanitized aggregate trusted-sync status through `alam_public_sync_health()`, while direct anonymous access to `agent_runs` remains blocked by RLS.
 - `alam_supabase_health.py` converts connection, sanitized sync status, freshness, article count, and actual feed source into explicit readiness states rather than treating “Supabase connected” as equivalent to “cutover healthy.”
-- ALAM CI gates reconciliation, Evidence, and Supabase-readiness regression tests and compiles the trusted-sync/readiness modules.
+- Settings now renders one calm Data status verdict from that backend classifier before operator mirror metrics. It distinguishes ready, empty-but-healthy, sync running, local fallback, stale sync, partial sync, failed sync, never-synchronized, unavailable diagnostics, empty diagnostics, unknown status, and disconnected states without exposing private run diagnostics.
+- Product readiness wording explicitly calls stale telemetry “sync freshness” and does not imply that visible articles become factually stale after the operational threshold.
+- The trusted-sync RPC is queried only inside Settings; normal reading pages keep the no-extra-query runtime source indicator for performance.
+- ALAM CI gates reconciliation, Evidence, backend Supabase-readiness, and product readiness-presentation regression tests and compiles the trusted-sync/readiness modules.
 
 ## B. In progress / requires production verification
 
@@ -52,7 +55,7 @@ Required evidence:
 - `article_sources`, `article_versions`, `agent_comments`, `wisdom_entries`, predictions, and relationships have expected mirrored rows where applicable.
 - A trusted `agent_runs` entry shows a successful synchronization and contains reconciliation totals.
 - Migration `005_public_sync_health.sql` has been applied to production so the public app can read sanitized trusted-sync health without opening `agent_runs` RLS.
-- ALAM Settings reports the live feed as Supabase, not local fallback, and uses the readiness classifier once Product Agent integration is complete.
+- ALAM Settings reports the live feed as Supabase, not local fallback, and the Data status card resolves to `ready` or the intentionally healthy empty state rather than diagnostics-unavailable/fallback.
 - Article evidence/history still render correctly after cutover.
 - No private Job Radar data is present in public ALAM tables.
 
@@ -66,19 +69,18 @@ Required evidence:
 
 ### P0 — Reliability / data integrity
 
-1. Product Agent: integrate `load_public_sync_health()` + `classify_supabase_readiness()` into Settings/operational-state presentation without exposing private diagnostics.
-2. Apply and verify migration `005_public_sync_health.sql` in production, then verify a real successful trusted sync and readiness output.
-3. Extend reconciliation/idempotency tests to database-level failure injection for article-row success followed by version/source failure.
-4. Harden same-story/same-timestamp-but-different-payload conflict handling so agent bugs cannot silently create ambiguous chronological versions.
-5. Add stronger source/evidence quality gates before publication and structured rejection reasons.
-6. Add stale/outdated lifecycle checks and safe story-expiration rules.
+1. Apply and verify migration `005_public_sync_health.sql` in production, then verify a real successful trusted sync and Settings readiness output.
+2. Extend reconciliation/idempotency tests to database-level failure injection for article-row success followed by version/source failure.
+3. Harden same-story/same-timestamp-but-different-payload conflict handling so agent bugs cannot silently create ambiguous chronological versions.
+4. Add stronger source/evidence quality gates before publication and structured rejection reasons.
+5. Add stale/outdated lifecycle checks and safe story-expiration rules.
 
 ### P1 — Core reader/product quality
 
 1. Keep Today hierarchy decision-first and prevent secondary modules from making the page feel endless.
 2. Preserve detailed cross-agent reasoning, uncertainty, implication, and disagreement; group stance only when it improves comprehension without duplicating the full thread.
 3. Continue refining material-change notices for saved stories and history.
-4. Improve partial-data/loading/fallback/stale-data states using the backend readiness contract, without overwhelming ordinary readers.
+4. Revisit fallback/stale-data communication only after production migration 005 is applied and real operational behavior can be observed; avoid duplicating Settings warnings across ordinary reading pages unless evidence shows users need them there.
 5. Refine Evidence only where new backend metadata materially improves trust; do not imply source independence from publisher/domain diversity alone.
 
 ### P1 — Persistent user state
@@ -136,8 +138,8 @@ These require credentials or external consoles and must never be falsely marked 
 - Multiple visual/CSS modules remain layered in install order. Avoid endless override chains; consolidate only after regression checks.
 - Browser-local Saved/preferences remain primary user state until auth synchronization is implemented.
 - Local JSON fallback is intentionally protective during cutover but can eventually mask stale database synchronization. Decide whether it becomes explicit disaster recovery or is narrowed after production Supabase stability is proven.
-- A healthy public Supabase connection does not prove ingestion is current. The new readiness contract solves the classification layer, but the production RPC migration and Product Settings integration remain pending.
-- The six-hour stale threshold in `alam_supabase_health.py` is a conservative operational default, not a claim that article content itself becomes factually stale after six hours. Product UI should phrase it as sync freshness.
+- A healthy public Supabase connection does not prove ingestion is current. The readiness classifier plus Settings Data status card solve repository-level classification/presentation, but production migration 005 and a real trusted sync are still required before cutover can be verified.
+- The six-hour stale threshold in `alam_supabase_health.py` is a conservative operational default, not a claim that article content itself becomes factually stale after six hours. Product UI intentionally labels this as sync freshness.
 - Existing audit records may contain historical shapes; maintain translation compatibility until archive normalization is safe.
 - Reconciliation intentionally treats GitHub JSON as authoritative for known public article IDs. It does not delete unrelated Supabase articles absent from the GitHub archive; broad orphan cleanup requires a separately reviewed policy.
 - Deterministic reconciliation can repair derived version slots, including deleting trailing duplicate version numbers not justified by the GitHub audit. The GitHub audit itself is never deleted.
@@ -145,6 +147,7 @@ These require credentials or external consoles and must never be falsely marked 
 - Supabase reconciliation is server-side only and relies on service-role workflow credentials. Missing credentials stop trusted repair before database changes begin.
 - Evidence source-group diversity cannot establish editorial independence or prove separate outlets did not repeat the same upstream report.
 - The public sync-health RPC deliberately exposes no raw error text or workflow metadata. Operator-level diagnosis still belongs in trusted GitHub Actions logs/admin tooling.
+- Settings intentionally retains both the concise Data status card and detailed mirror metrics. If production observation shows this is too dense for ordinary readers, operator details should move behind an expander rather than deleting the underlying diagnostics.
 
 ## G. Verification evidence / development log
 
@@ -194,9 +197,23 @@ These require credentials or external consoles and must never be falsely marked 
 - Files/schema affected: one additive SQL function/grant migration plus the new backend health module/test and `.github/workflows/alam-checks.yml`. Existing table/RLS policies were not loosened.
 - Security: direct public reads of `agent_runs` remain prohibited. RPC output excludes metadata, raw error messages, workflow/private-repository identifiers, credentials, and Job Radar state. The function grants execution only to `anon` and `authenticated` after revoking default PUBLIC execution.
 - Rollback: dropping `public.alam_public_sync_health()` removes the public diagnostic surface without touching content or trusted run records. The Python module already treats a missing RPC as diagnostics-unavailable rather than healthy.
-- Validation performed: deterministic tests cover PostgREST list normalization, disconnected precedence, missing migration, never-synced, failed, partial, stale, fallback, synchronized-empty, and fully-ready states. ALAM CI was triggered by the implementation; final conclusion must be checked after this roadmap commit.
-- Remaining limitation/risk: production Supabase still needs migration 005 applied; Settings has not yet been wired to the classifier; six-hour freshness is an operational sync threshold and should not be presented as article factual freshness.
+- Validation performed: deterministic tests cover PostgREST list normalization, disconnected precedence, missing migration, never-synced, failed, partial, stale, fallback, synchronized-empty, and fully-ready states. The implementation commit's ALAM workflow completed successfully.
+- Remaining limitation/risk: production Supabase still needs migration 005 applied; six-hour freshness is an operational sync threshold and should not be presented as article factual freshness.
 - Recommended next action: Product Builder should render the readiness contract in Settings and any compact operational state using calm user-facing language. Next Backend pass should add failure-injection coverage or same-timestamp conflict hardening after production cutover health is observable.
+
+### 2026-09-03 — Trusted sync status UX
+
+- Agent: Product Builder.
+- Problem found: Settings still required readers/operators to infer deployment health from “Supabase connected,” feed-source text, table counts, and mirror coverage. Those signals could not clearly communicate latest trusted-sync failure, partial completion, stale synchronization, or a missing public diagnostics migration.
+- Root cause: Agent A had intentionally centralized operational semantics in `classify_supabase_readiness()`, but Product had not yet rendered that contract.
+- Decision: show one calm, mobile-readable Data status verdict before detailed mirror diagnostics; keep operator coverage below as a separate truth dimension. Query the sanitized sync-health RPC only in Settings so normal reading paths incur no extra operational-health request.
+- Implementation: `alam_readiness.py` now renders backend-classified product copy for all supported readiness states, compact sync-age/feed/article metadata, and state-specific operator actions without printing raw RPC errors. `streamlit_app.py` wires it before mirror details. `test_alam_readiness_views.py` protects failure/fallback/stale wording, and ALAM CI explicitly tests/compiles the product readiness layer.
+- Files affected: `alam_app/alam_readiness.py`, `alam_app/streamlit_app.py`, `alam_app/test_alam_readiness_views.py`, `.github/workflows/alam-checks.yml`, and this roadmap.
+- Mobile behavior: the status card uses one compact hierarchy and wrapping metadata pills; it does not add a new persistent warning to ordinary Today/article screens.
+- Security/privacy: the UI consumes only Agent A's sanitized public RPC contract. Raw sync errors, workflow metadata, repository identifiers, service credentials, and private Job Radar state are not rendered.
+- Validation performed: deterministic copy/freshness tests were added, syntax coverage now includes `alam_readiness.py`, and the full ALAM workflow was triggered. Final conclusion should be checked after this roadmap commit because the documentation commit creates a new workflow run.
+- Remaining limitation/risk: until migration `005_public_sync_health.sql` exists in production, Settings will correctly show diagnostics pending rather than claiming readiness. The detailed Settings section may still be dense; move operator-only coverage behind an expander later if production observation supports that change.
+- Recommended next action for Backend: apply/verify migration 005 and a real trusted sync when owner credentials permit, then prioritize database-level failure injection or same-timestamp conflict hardening. Recommended next Product pass: observe the real production states before adding more warning surfaces; otherwise continue saved-story change clarity or accessibility/performance work.
 
 ## H. Agent handoff template
 
