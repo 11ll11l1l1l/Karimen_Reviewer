@@ -28,6 +28,7 @@ import alam_supabase_views as dbviews
 import alam_readiness as readiness
 import alam_evidence_views as evidence_views
 import alam_accessibility as accessibility
+from alam_comment_scope import comment_scope_ids
 from alam_generated_images import generated_or_editorial_data_uri
 from alam_market_views import is_market_record, render_market
 from alam_personas import load_comments
@@ -171,9 +172,18 @@ current_records = [r for r in current_records if r.get("_category") != "reflecti
 # Muting is local to the reader. It hides future feed appearances without changing
 # or deleting shared ALAM intelligence.
 records = [r for r in current_records if not localstate.is_muted(r)]
+
+selected_id = st.session_state.get("selected_story")
+# Resolve selection before comment hydration. Article detail needs one story's panel,
+# not every discussion in the feed; narrowing this boundary cuts avoidable Supabase
+# response size and parsing work on the most latency-sensitive mobile navigation.
+# A stale selected ID safely falls back to full-feed scope inside comment_scope_ids.
+selected = next((r for r in current_records if str(r.get("id")) == str(selected_id)), None)
+comment_ids = comment_scope_ids(current_records, selected.get("id") if selected else selected_id)
 # When the feed is Supabase-backed, cross-agent perspectives are loaded from the DB
-# for these story IDs; otherwise the existing local comment archive remains active.
-comments = load_comments([r.get("id") for r in current_records])
+# only for the IDs this view can actually render. Feed/list pages keep the full current
+# scope, preserving card/panel behavior; a selected article requests one story only.
+comments = load_comments(comment_ids)
 
 views.render_brand(records)
 # Make the active persistence mode visible. A healthy-looking header should never
@@ -183,11 +193,6 @@ readiness.render_runtime_status()
 # palette/sun-position theme underneath still changes smoothly between these scenes.
 time_headers.render_time_header()
 extras.render_wisdom_strip()
-
-selected_id = st.session_state.get("selected_story")
-# Allow a muted story that is already open to remain accessible so it can be
-# unmuted from its detail page.
-selected = next((r for r in current_records if str(r.get("id")) == str(selected_id)), None)
 
 if selected:
     # The page-level reader now puts the four decision questions ahead of the depth
