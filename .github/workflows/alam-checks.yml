@@ -5,13 +5,17 @@ on:
     branches: [main]
     paths:
       - 'alam_app/**'
+      - 'supabase/migrations/**'
       - '.github/workflows/alam-checks.yml'
       - '.github/workflows/alam-editorial-images.yml'
+      - '.github/workflows/alam-supabase-sync.yml'
   pull_request:
     paths:
       - 'alam_app/**'
+      - 'supabase/migrations/**'
       - '.github/workflows/alam-checks.yml'
       - '.github/workflows/alam-editorial-images.yml'
+      - '.github/workflows/alam-supabase-sync.yml'
 
 jobs:
   validate-alam:
@@ -34,7 +38,31 @@ jobs:
       - name: Reliable layered image renderer regression test
         run: python alam_app/test_reliable_image_renderer.py
       - name: Python syntax check
-        run: python -m py_compile alam_app/streamlit_app.py alam_app/alam_core.py alam_app/alam_personas.py alam_app/alam_views.py alam_app/alam_mobile_views.py alam_app/alam_market_views.py alam_app/alam_visual_system.py alam_app/alam_editorial_visual.py alam_app/alam_generated_images.py alam_app/alam_image_generation.py alam_app/alam_image_renderer.py alam_app/alam_time_theme.py alam_app/alam_time_headers.py alam_app/alam_extras.py alam_app/alam_intelligence.py alam_app/alam_local_state.py alam_app/alam_reader_views.py alam_app/test_article_image_render.py alam_app/test_reliable_image_renderer.py alam_app/validate_alam_data.py
+        run: >-
+          python -m py_compile
+          alam_app/streamlit_app.py
+          alam_app/alam_core.py
+          alam_app/alam_personas.py
+          alam_app/alam_views.py
+          alam_app/alam_mobile_views.py
+          alam_app/alam_market_views.py
+          alam_app/alam_visual_system.py
+          alam_app/alam_editorial_visual.py
+          alam_app/alam_generated_images.py
+          alam_app/alam_image_generation.py
+          alam_app/alam_image_renderer.py
+          alam_app/alam_time_theme.py
+          alam_app/alam_time_headers.py
+          alam_app/alam_extras.py
+          alam_app/alam_intelligence.py
+          alam_app/alam_local_state.py
+          alam_app/alam_reader_views.py
+          alam_app/alam_supabase.py
+          alam_app/alam_supabase_ingest.py
+          alam_app/alam_supabase_views.py
+          alam_app/test_article_image_render.py
+          alam_app/test_reliable_image_renderer.py
+          alam_app/validate_alam_data.py
       - name: Start ALAM Streamlit server
         shell: bash
         run: |
