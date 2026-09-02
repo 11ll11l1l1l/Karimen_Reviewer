@@ -2,17 +2,11 @@
 
 **Ano'ng bago. Bakit mahalaga. Ano'ng gagawin.**
 
-ALAM is a mobile-first Taglish intelligence aggregator for Filipino readers. It is separate from the Karimen reviewer even though both currently live in the same GitHub repository.
+ALAM is a mobile-first Taglish intelligence system for Filipino readers. It is separate from the Karimen reviewer even though both currently live in the same GitHub repository.
 
 ## Streamlit deployment
 
-Use a second Streamlit Community Cloud app with entry point:
-
-```text
-alam_app/streamlit_app.py
-```
-
-Dependencies are isolated in `alam_app/requirements.txt`.
+Use a second Streamlit Community Cloud app with entry point `alam_app/streamlit_app.py`. Dependencies are isolated in `alam_app/requirements.txt`.
 
 ## Public lenses
 
@@ -22,6 +16,21 @@ Dependencies are isolated in `alam_app/requirements.txt`.
 - **Trends** — longitudinal signals, connections and prediction accountability
 
 The private Global Engineering Job Radar is chat-only and never publishes into ALAM.
+
+## ALAM v5 intelligence layer
+
+The app now adds intelligence on top of the article feed rather than simply listing headlines:
+
+- **Today in 3 lines:** Know / Do / Watch
+- **Story lifecycle:** NEW → DEVELOPING → CONFIRMED → FADING → RESOLVED
+- **What changed:** previous state → current state for material story updates
+- **Personal relevance:** local reader-selected interests rank and label stories without hiding important general news
+- **Impact matrix:** money, family, career, Japan and urgency
+- **Evidence health:** source strength, independence and FACT sourcing
+- **ALAM disagreement:** surfaces meaningful cross-agent challenge instead of forcing consensus
+- **Connect the dots:** links related stories through shared verified signal tags
+- **Weekly intelligence:** rolling 7-day accountability plus a Sunday Trend-agent synthesis when enough material exists
+- **In-app alert rules:** importance/action/material-change filters; these are not phone push notifications
 
 ## Lightweight reflection layer
 
@@ -33,16 +42,17 @@ This is intentionally not a separate long-form Reflection feed. It is written to
 
 ## App navigation
 
-Primary mobile navigation is intentionally limited to five destinations: **Today, Discover, Action, Market, More**. On small screens it is pinned to the bottom for easier one-handed use.
+Primary mobile navigation is limited to **Today, Discover, Action, Market, More** and is pinned near the bottom on small screens.
 
 `More` contains:
 - Trends
+- Weekly
 - Search
 - Saved
 - Predictions
-- Settings / dark mode
+- Settings / dark mode / relevance / alert rules
 
-Article detail supports short reading, panel views, evidence, deep view, saving/following and copy/share text.
+Article detail supports short reading, panel views, evidence, deep view, saving/following, copy/share text and the v5 Intelligence Snapshot.
 
 ## Architecture
 
@@ -58,13 +68,15 @@ alam_app/data/
   wisdom/
 ```
 
-The app accepts either a single JSON record or a JSON array. Agents should batch multiple same-run comments/articles whenever practical to reduce Git commit/file churn.
+The app accepts either a single JSON record or a JSON array. Agents batch multiple same-run comments/articles when practical to reduce Git churn. Article loading is isolated from the comments/wisdom archive to keep startup cost controlled.
+
+GitHub remains the current ingestion and audit layer. A future database migration should preserve the same v5 contract rather than changing agent semantics; user account storage is intentionally not introduced until authentication/cross-device state is needed.
 
 ## Production rules
 
 The original demo records were removed on September 2, 2026. Production folders must not contain sample or synthetic articles. Empty output is preferred when research does not clear the quality threshold.
 
-Agents must never overwrite historical intelligence. Material updates reuse a stable story ID but create a new timestamped record.
+Agents never overwrite historical intelligence. Material updates reuse a stable story ID but create a new timestamped record with an explicit change summary.
 
 ## Validation
 

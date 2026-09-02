@@ -19,8 +19,9 @@ EXTRA_CSS = r"""
 .wisdom-question{font-size:.82rem;line-height:1.38;font-weight:760;color:#273142;margin-top:6px}
 .saved-sync{font-size:.76rem;color:#667085;line-height:1.45}
 @media(max-width:760px){
-  .block-container{padding-bottom:7.2rem!important}
-  .st-key-main_nav{position:fixed!important;top:auto!important;bottom:.55rem!important;left:50%!important;transform:translateX(-50%)!important;width:calc(100% - 1rem)!important;max-width:720px!important;z-index:1001!important;margin:0!important;padding:.38rem!important;border:1px solid rgba(23,32,42,.10)!important;border-radius:19px!important;background:rgba(245,244,240,.96)!important;box-shadow:0 14px 40px rgba(23,32,42,.18)!important;backdrop-filter:blur(18px)!important;-webkit-backdrop-filter:blur(18px)!important}
+  .block-container{padding-bottom:10rem!important}
+  .st-key-main_nav{position:fixed!important;top:auto!important;bottom:calc(3.65rem + env(safe-area-inset-bottom, 0px))!important;left:50%!important;transform:translateX(-50%)!important;width:calc(100% - 1.6rem)!important;max-width:680px!important;z-index:1001!important;margin:0!important;padding:.34rem!important;border:1px solid rgba(23,32,42,.10)!important;border-radius:18px!important;background:rgba(245,244,240,.97)!important;box-shadow:0 12px 34px rgba(23,32,42,.16)!important;backdrop-filter:blur(18px)!important;-webkit-backdrop-filter:blur(18px)!important}
+  .st-key-main_nav button{min-height:39px!important;padding-left:.34rem!important;padding-right:.34rem!important}
   .wisdom-strip{padding:8px 10px;margin-bottom:9px}.wisdom-verse{font-size:.68rem}.wisdom-question{font-size:.77rem}
 }
 </style>
