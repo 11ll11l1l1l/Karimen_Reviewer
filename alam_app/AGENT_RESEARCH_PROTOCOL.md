@@ -122,10 +122,18 @@ It should not repeat the full article or claim ledger.
 - **Market:** “What moved, why, and what should I watch next?”
 - **Trend:** “What pattern is forming, how strong is the evidence, and what would disprove it?”
 
-## 12. Image policy — real image first, editorial fallback second
-For every article, try to find a stable, directly usable image from an official/primary source when it genuinely represents the story. If one is available and appropriate, add `image_url`, `image_alt`, and `image_credit`. Do not invent image URLs, scrape unstable thumbnails, hotlink questionable assets, or use a photo merely as decoration.
+## 12. Image policy — real image first, generated editorial image second, SVG emergency fallback third
+Every published article should have a useful visual path, but the visual must never weaken evidence quality.
 
-If no suitable real image exists, the publishing agent MUST add `editorial_visual` and art-direct a topic-specific ALAM editorial illustration. Use this shape:
+### Priority 1 — verified real image
+Try first to find a stable, directly usable image from an official/primary source when it genuinely represents the story. If one is available and appropriate, add `image_url`, `image_alt`, and `image_credit`. Do not invent image URLs, scrape unstable thumbnails, hotlink questionable assets, or use a photo merely as decoration.
+
+### Priority 2 — persistent AI-generated editorial image
+If no suitable real image exists, the publishing agent MUST add `editorial_visual` and art-direct a unique ALAM editorial illustration. The post-publish image workflow uses this art direction plus the verified article title, summary and why-it-matters to generate a 16:9 WebP image, stores it under `alam_app/assets/editorial/generated/YYYY/MM/`, and stamps system-managed `generated_image` metadata into the article JSON.
+
+Publishing agents own the art direction; they must NOT invent a `generated_image.path`, model result or generation timestamp themselves. Those fields are written only after an image is actually generated and persisted.
+
+Use this agent-owned shape:
 
 ```json
 "editorial_visual": {
@@ -141,9 +149,29 @@ If no suitable real image exists, the publishing agent MUST add `editorial_visua
 
 Allowed motifs are `yen`, `chip`, `robot`, `factory`, `train`, `family`, `shield`, `document`, `market`, `policy`, `home`, `earthquake`, `car`, `weather`, `globe`, and `battery`. `motif` is required for the fallback; `secondary_motif` is optional. `silliness` and `exaggeration` are integers from 0–100 and are chosen by the publishing agent to fit the story.
 
-Serious safety, disaster, death, legal, medical, or human-harm stories should normally keep silliness low. Lighter consumer, technology, market, or absurd-policy stories may use more playful exaggeration when it improves comprehension. The illustration is not evidence: it must not depict an unverified factual detail, fabricate a real photograph, imply an unverified action by a named person, or visually turn an inference into a fact. Prefer a clear metaphor over fake realism.
+The generated image should behave like a magazine/newspaper editorial illustration, not like fabricated evidence. Prefer one clear metaphor over a collage. Do not request visible headlines, captions, logos, trademarks, watermarks, fake charts with readable labels, or fake UI inside the image. Do not depict an unverified event as documentary photography or imply an unverified action by a named person.
 
-Existing legacy records that lack both a real image and `editorial_visual` are still supported: the app infers a restrained topic motif automatically.
+Serious safety, disaster, death, legal, medical, war, crime, scam, recall or human-harm stories should use restrained respectful imagery and very low silliness. Lighter consumer, technology, market, engineering or absurd-policy stories may use more playful exaggeration when it improves comprehension.
+
+When generation succeeds, system-managed metadata looks like:
+
+```json
+"generated_image": {
+  "status": "ready",
+  "path": "alam_app/assets/editorial/generated/2026/09/story-id-1234abcd.webp",
+  "model": "gpt-image-2",
+  "size": "1536x864",
+  "quality": "medium",
+  "format": "webp",
+  "prompt_signature": "...",
+  "generated_at": "2026-09-02T19:30:00+09:00"
+}
+```
+
+### Priority 3 — deterministic SVG emergency fallback
+If AI generation is temporarily unavailable, rejected, rate-limited or not configured, the article remains publishable. ALAM renders the existing deterministic SVG editorial visual from `editorial_visual` so there is no broken-image state. A later image-generation run may retry and replace the SVG display with a persistent WebP without changing the factual article.
+
+Existing legacy records that lack both a real image and `editorial_visual` are still supported: the app infers a restrained topic motif automatically for the emergency SVG.
 
 ## 13. Final self-audit before write
 Confirm:
@@ -156,6 +184,7 @@ Confirm:
 - headline and first two sentences are understandable without specialist knowledge;
 - 30-second version gives a clear message rather than a compressed data dump;
 - sources are usable;
-- a verified real image is supplied OR `editorial_visual` is present;
+- a verified real image is supplied OR `editorial_visual` is present so the generated-image pipeline can run;
+- serious-story image direction is respectful and non-sensational;
 - JSON is valid;
 - written file is fetched back and verified after GitHub write.
