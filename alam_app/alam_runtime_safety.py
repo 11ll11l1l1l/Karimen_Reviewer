@@ -4,6 +4,7 @@ import sys
 import streamlit as st
 
 import alam_core
+import alam_hybrid_feed
 import alam_mobile_shell
 
 
@@ -91,6 +92,59 @@ def _install_cookie_layout_guard():
     alam_core.stx.CookieManager = guarded_cookie_manager
 
 
+def _overlay_verified_audit(records, extras):
+    """Add only GitHub versions missing from an otherwise live Supabase result."""
+    if st.session_state.get("alam_content_source") != "supabase":
+        return records
+    local_loader = getattr(extras, "_load_local_article_records", None)
+    if local_loader is None:
+        return records
+    audit_records = local_loader()
+    merged, overlay_count = alam_hybrid_feed.merge_missing_audit_versions(records, audit_records)
+    if overlay_count:
+        st.session_state["alam_content_source"] = "hybrid_fallback"
+        st.session_state["alam_audit_overlay_versions"] = int(overlay_count)
+        return merged
+    st.session_state.pop("alam_audit_overlay_versions", None)
+    return records
+
+
+def _install_hybrid_feed_hooks():
+    """Keep verified hourly agent output visible while the trusted mirror lags.
+
+    Both the fast current-feed loader and the mature full-history loader are wrapped.
+    This matters because ``streamlit_app.py`` uses the former to resolve selections and
+    the latter for normal list routes. The overlay activates only when Supabase itself
+    returned content and GitHub contains a material version absent from that result.
+    """
+    extras = sys.modules.get("alam_extras")
+    if extras is None:
+        return
+
+    full_loader = getattr(extras, "load_article_records", None)
+    if full_loader is not None and not getattr(full_loader, "_alam_hybrid_overlay", False):
+        original_full = full_loader
+
+        def load_article_records_with_overlay(*args, **kwargs):
+            records = original_full(*args, **kwargs)
+            return _overlay_verified_audit(records, extras)
+
+        load_article_records_with_overlay._alam_hybrid_overlay = True
+        extras.load_article_records = load_article_records_with_overlay
+
+    article_scope = sys.modules.get("alam_article_scope")
+    current_loader = getattr(article_scope, "load_current_article_records", None) if article_scope else None
+    if current_loader is not None and not getattr(current_loader, "_alam_hybrid_overlay", False):
+        original_current = current_loader
+
+        def load_current_article_records_with_overlay(*args, **kwargs):
+            records = original_current(*args, **kwargs)
+            return _overlay_verified_audit(records, extras)
+
+        load_current_article_records_with_overlay._alam_hybrid_overlay = True
+        article_scope.load_current_article_records = load_current_article_records_with_overlay
+
+
 def _install_mobile_shell_hooks():
     """Apply compact mobile chrome through modules already called by streamlit_app."""
     extras = sys.modules.get("alam_extras")
@@ -112,11 +166,11 @@ def _install_mobile_shell_hooks():
 
 
 def install_runtime_safety():
-    """Install score hardening plus startup-safe mobile shell guards.
+    """Install score hardening, sync continuity and startup-safe mobile shell guards.
 
     This installer intentionally patches existing call sites instead of duplicating
-    business logic in ``streamlit_app.py``. The public feed/data contracts therefore
-    remain unchanged while the mobile shell can be repaired independently.
+    business logic in ``streamlit_app.py``. The public data contracts therefore remain
+    unchanged while cross-cutting reliability fixes can be applied independently.
     """
     alam_core.feed_score = safe_feed_score
     for name, module in list(sys.modules.items()):
@@ -126,4 +180,5 @@ def install_runtime_safety():
             setattr(module, "feed_score", safe_feed_score)
 
     _install_cookie_layout_guard()
+    _install_hybrid_feed_hooks()
     _install_mobile_shell_hooks()
