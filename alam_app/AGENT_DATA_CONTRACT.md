@@ -1,4 +1,4 @@
-# ALAM Agent Data Contract v4
+# ALAM Agent Data Contract v5
 
 ALAM is a curated Taglish intelligence app. Zero article output is valid when nothing clears the quality threshold.
 
@@ -42,7 +42,7 @@ Required fields:
   "confidence": 90,
   "tags": ["Japan", "AI"],
   "geography": ["Japan"],
-  "status": "new",
+  "status": "NEW",
   "sources": [],
   "claims": [],
   "content": {}
@@ -50,6 +50,52 @@ Required fields:
 ```
 
 `importance` and `confidence` are integers 0-100. Confidence does not convert analysis into fact.
+
+## Article image contract
+
+Every article must have one of these two visual paths.
+
+### A. Verified real image
+Use a stable, directly usable official/primary image only when it genuinely represents the story.
+
+```json
+{
+  "image_url": "https://official.example/image.jpg",
+  "image_alt": "Accurate concise description",
+  "image_credit": "Agency / company / photographer"
+}
+```
+
+Do not invent URLs or use unstable scraped thumbnails.
+
+### B. ALAM editorial fallback
+If no suitable real image is available, the publishing agent MUST create an `editorial_visual` art direction. The app converts this into a local editorial illustration, so no external image is required.
+
+```json
+{
+  "editorial_visual": {
+    "style": "editorial",
+    "motif": "chip",
+    "secondary_motif": "factory",
+    "scene": "oversized chip looming over a tiny factory",
+    "caption": "AI demand feels larger than the factory floor",
+    "silliness": 28,
+    "exaggeration": 64
+  }
+}
+```
+
+Allowed `motif` / `secondary_motif` values: `yen`, `chip`, `robot`, `factory`, `train`, `family`, `shield`, `document`, `market`, `policy`, `home`, `earthquake`, `car`, `weather`, `globe`, `battery`.
+
+Rules:
+- `style` should be `editorial`.
+- `motif` is required for fallback; `secondary_motif` is optional.
+- `scene` should be a concise visual metaphor, normally 3-16 words.
+- `caption` is optional art direction, not a factual claim.
+- `silliness` and `exaggeration` are integers 0-100. The agent decides both based on topic and tone.
+- Serious safety, disaster, death, legal, medical, or human-harm stories should normally keep silliness low.
+- The illustration must not fabricate evidence, impersonate a real photograph, or depict unverified actions by named people.
+- Prefer visual metaphor and exaggeration when useful; do not make every story silly.
 
 ## Sources
 
@@ -165,4 +211,4 @@ Comments are optional. Silence beats filler. Each comment requires `id`, `story_
 
 ## Validation
 
-`python alam_app/validate_alam_data.py` is a production gate. Agents should verify JSON after writing. Invalid JSON, invalid source references, missing required fields, or malformed wisdom/comment records must be corrected immediately.
+`python alam_app/validate_alam_data.py` is a production gate. Agents should verify JSON after writing. Invalid JSON, invalid source references, missing required fields, malformed wisdom/comment records, or malformed editorial fallback metadata must be corrected immediately.
