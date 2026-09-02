@@ -16,6 +16,7 @@ import alam_local_state as localstate
 import alam_reader_views as reader
 import alam_story_page as story_page
 import alam_panel_views as panel_views
+import alam_saved_views as saved_views
 import alam_polish as polish
 import alam_image_renderer as image_renderer
 import alam_portraits as portraits
@@ -82,6 +83,7 @@ st.markdown(intelligence.INTEL_CSS, unsafe_allow_html=True)
 st.markdown(reader.READER_CSS, unsafe_allow_html=True)
 st.markdown(story_page.STORY_PAGE_CSS, unsafe_allow_html=True)
 st.markdown(panel_views.PANEL_CSS, unsafe_allow_html=True)
+st.markdown(saved_views.SAVED_CSS, unsafe_allow_html=True)
 st.markdown(readiness.RUNTIME_STATUS_CSS, unsafe_allow_html=True)
 st.markdown(polish.POLISH_CSS, unsafe_allow_html=True)
 st.markdown(portraits.PORTRAIT_CSS, unsafe_allow_html=True)
@@ -229,7 +231,7 @@ else:
         elif secondary == "Search":
             extras.render_search(records, comments, manager, views)
         elif secondary == "Saved":
-            extras.render_saved(records, manager, comments, views)
+            saved_views.render_saved(records, manager, comments, views)
         elif secondary == "Predictions":
             dbviews.render_prediction_lab(records, views.render_prediction_lab)
         elif secondary == "Settings":
