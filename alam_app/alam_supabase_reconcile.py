@@ -16,6 +16,7 @@ from __future__ import annotations
 import json
 from collections import defaultdict
 
+from alam_publication_quality import validate_archive_items
 from alam_supabase_ingest import (
     LIFECYCLE,
     _article_inputs,
@@ -123,17 +124,29 @@ def _validate_archive_chronology(article_id, records):
 
 
 def prepare_public_archive():
-    """Load, deduplicate, and validate public archive records before DB mutation.
+    """Load, quality-check, deduplicate, and validate public archive records.
 
     This is deliberately pure with respect to Supabase. The trusted sync job calls it
-    before incremental ingestion so a malformed chronology cannot partially advance
-    production content. Reconciliation calls the same function to guarantee both
-    paths enforce exactly one archive-ordering contract.
+    before incremental ingestion, so both evidence-contract failures and ambiguous
+    chronology stop before any public content mutation. Reconciliation calls the same
+    function to guarantee both write paths enforce exactly one archive contract.
 
     Returns a mapping of stable article ID to deterministic version tuples.
     """
+    # Materialize exactly once. `_article_inputs()` currently returns a list, but
+    # keeping this boundary iterator-safe prevents the quality pass from consuming a
+    # generator and leaving chronology/reconciliation with an empty archive. It also
+    # guarantees every preflight stage examines the same immutable in-process snapshot.
+    items = list(_article_inputs())
+
+    # Evidence quality is checked against the complete allow-listed public archive
+    # before invalid shapes are filtered for chronology grouping. Otherwise a v5 row
+    # missing its stable ID/title could be silently skipped here and the trusted job
+    # could incorrectly report a healthy mirror despite rejecting repository input.
+    validate_archive_items(items)
+
     grouped = defaultdict(list)
-    for category, path, record in _article_inputs():
+    for category, path, record in items:
         if not isinstance(record, dict) or not record.get("id") or not record.get("title"):
             continue
         grouped[str(record["id"])].append((category, path, record))
@@ -248,7 +261,7 @@ def reconcile_public_archive(client, prepared_archive=None):
 
     ``prepared_archive`` lets the trusted sync job reuse the already validated
     preflight snapshot, avoiding a second archive scan and guaranteeing that the
-    records written are the same records that passed conflict detection.
+    records written are the same records that passed quality and conflict detection.
     """
     grouped = prepared_archive if prepared_archive is not None else prepare_public_archive()
 
@@ -276,9 +289,8 @@ def reconcile_public_archive(client, prepared_archive=None):
         stats["reconcile_sources_upserted"] += source_upserts
         stats["reconcile_sources_deleted"] += source_deletes
 
-        # Topics currently use a small delete/rebuild helper. Running it here is still
-        # valuable because the next reconciliation retries it after any partial job.
-        # Prediction writes are already upserts and therefore naturally convergent.
+        # Topic/prediction helpers are convergent and are re-run here so a later
+        # reconciliation can repair any earlier partial trusted-sync failure.
         stats["reconcile_topics"] += int(_sync_topics(client, latest) or 0)
         stats["reconcile_predictions"] += int(bool(_sync_prediction(client, latest, category)))
 

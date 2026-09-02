@@ -19,6 +19,7 @@ import sys
 from contextlib import redirect_stdout
 from datetime import datetime, timezone
 
+from alam_publication_quality import PublicationQualityError, persist_quality_rejections
 from alam_supabase_ingest import _client, run as run_ingestion
 from alam_supabase_reconcile import prepare_public_archive, reconcile_public_archive
 
@@ -68,18 +69,16 @@ def _parse_stats(output):
 
 
 def _story_counts(stats):
-    """Translate ingestion counters into the generic ``agent_runs`` story columns.
+    """Translate trusted-sync counters into the generic ``agent_runs`` columns.
 
-    ``stories_found`` represents valid/invalid article records encountered during
-    this job. ``stories_published`` counts only rows that actually advanced the live
-    article state; unchanged historical inputs are intentionally excluded. Invalid
-    records are treated as rejected for operational visibility, while hard database
-    errors remain represented by the run status and metadata.
+    ``article_rejected`` is populated by archive quality preflight before public
+    mutation. Counting it separately from malformed low-level ``article_invalid``
+    records keeps operator telemetry honest while preserving the existing run schema.
     """
     article_keys = [key for key in stats if key.startswith("article_") and not key.endswith("_errors")]
     found = sum(int(stats.get(key) or 0) for key in article_keys)
     published = int(stats.get("article_published") or 0)
-    rejected = int(stats.get("article_invalid") or 0)
+    rejected = int(stats.get("article_invalid") or 0) + int(stats.get("article_rejected") or 0)
     return found, published, rejected
 
 
@@ -154,14 +153,34 @@ def main():
     stats = {}
     prepared_archive = None
 
-    # Validate the complete public audit chronology *before* incremental ingestion.
-    # This is a fail-closed data-integrity boundary. If two materially different
-    # versions of the same stable article ID claim the same explicit timestamp, file
-    # naming cannot safely decide which one is current. Stopping here prevents a bad
-    # agent/audit record from partially advancing Supabase before reconciliation.
+    # Validate the complete allow-listed public audit archive before incremental
+    # ingestion. This single preflight now covers both publication evidence integrity
+    # and chronology ambiguity, preventing reconciliation from becoming a bypass path.
     try:
         prepared_archive = prepare_public_archive()
         stats["archive_preflight_articles"] = len(prepared_archive)
+    except PublicationQualityError as exc:
+        stats["archive_preflight_errors"] = 1
+        stats["article_rejected"] = len(exc.rejections)
+        print(f"PUBLICATION QUALITY REJECTION: {exc}", file=sys.stderr)
+
+        # Rejected payloads belong only in trusted diagnostics. The existing
+        # rejected_candidates table is RLS-private with no anonymous read policy.
+        # Persistence failure must never weaken the gate: the sync still exits before
+        # any public article/source/version/topic mutation.
+        try:
+            stats["rejections_persisted"] = persist_quality_rejections(client, exc)
+        except Exception as persist_exc:
+            stats["rejection_persist_errors"] = 1
+            print(
+                f"REJECTION AUDIT WARNING: could not persist rejected candidate diagnostics: {persist_exc}",
+                file=sys.stderr,
+            )
+        try:
+            _finish_run(client, run_id, 1, stats)
+        except Exception as audit_exc:
+            print(f"SYNC AUDIT WARNING: could not finalize agent_runs record: {audit_exc}", file=sys.stderr)
+        raise SystemExit(1)
     except Exception as exc:
         stats["archive_preflight_errors"] = 1
         print(f"ARCHIVE PREFLIGHT ERROR: {exc}", file=sys.stderr)
@@ -192,7 +211,7 @@ def main():
     # ignores that shortcut and rebuilds the derived Supabase state from the GitHub
     # audit archive, making partial failures self-healing and repeated runs convergent.
     # Reusing the preflight snapshot also guarantees reconciliation writes exactly the
-    # archive state that passed chronology validation at the beginning of this job.
+    # archive state that passed quality/chronology validation at the beginning.
     try:
         reconcile_stats = reconcile_public_archive(client, prepared_archive=prepared_archive)
         stats.update(reconcile_stats)

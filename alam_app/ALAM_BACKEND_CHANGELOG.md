@@ -2,6 +2,20 @@
 
 This file supplements `ALAM_CONTINUOUS_ROADMAP.md` with concise backend iteration handoffs. The shared roadmap remains the source for overall priority and product sequencing.
 
+## 2026-09-03 — Fail-closed v5 evidence publication gate
+
+- Agent: Backend Architect / Reliability.
+- Problem found: repository validation checked source URLs and FACT references when present, but a modern v5 article with an empty source list could still pass validation and the trusted Supabase mirror. `_source_rows()` also intentionally skips unusable source objects, so a structurally accepted candidate could reach `articles` with no normalized evidence.
+- Root cause: the research protocol described evidence-quality expectations, but there was no shared executable minimum publication contract across repository validation and the trusted archive preflight. Reconciliation would also have been able to mirror the same weak audit record unless the gate ran before both incremental ingestion and reconciliation.
+- Decision: enforce only hard v5 truthfulness/data-integrity invariants before public mutation: at least one usable HTTP(S) source, valid source objects/URLs, list-shaped claims, valid 1-based source references, and a valid source reference for every FACT. Treat one-source coverage and lack of an official/primary source as structured warnings rather than automatic rejection because the research protocol allows legitimate unique-source announcements with calibrated uncertainty. Preserve pre-v5 audit compatibility.
+- Implementation: added pure `alam_publication_quality.py`; `prepare_public_archive()` now quality-checks the complete four-directory public allow-list before chronology grouping or any database content mutation; the trusted sync catches `PublicationQualityError`, records rejected-story counts, and best-effort persists structured diagnostics to the existing RLS-private `rejected_candidates` table before exiting non-zero. `validate_alam_data.py` consumes the same blocking contract so CI cannot accept an article production sync would reject. Repeated rejection persistence resolves the existing `(agent_id, candidate_key)` candidate first and updates it rather than intentionally adding one row per retry.
+- Files/schema affected: `alam_app/alam_publication_quality.py`, `alam_app/alam_supabase_reconcile.py`, `alam_app/alam_supabase_sync_job.py`, `alam_app/validate_alam_data.py`, `alam_app/test_alam_publication_quality.py`, `.github/workflows/alam-checks.yml`, this changelog, and the shared roadmap. No new migration or RLS change is required because `rejected_candidates` already exists in migrations 001/002 and intentionally has no public read policy.
+- Security/rollback: rejected candidate payloads stay service-role-only; generic public sync health still receives no raw rejection text. Revert these code/test/documentation changes to restore prior behavior; no database rollback is required.
+- Validation intent: deterministic tests cover valid official+secondary evidence, no-source rejection, malformed URL rejection, unsourced FACT rejection, out-of-range refs, non-blocking one-secondary-source warnings, legacy compatibility, archive-level fail-closed behavior, and idempotent private rejection persistence. The full ALAM pull-request workflow remains the authoritative integration gate.
+- Remaining risk: this gate proves evidence is minimally usable and mapped; it does not prove publisher independence, factual correctness, or that a second source was practically obtainable. Those remain research-quality judgments and should not be converted into fake certainty scores.
+- Recommended next Backend action: add stale/outdated lifecycle checks with explicit safe aging rules, then consider admin diagnostics for unresolved rejections and stale stories.
+- Recommended Product action: no immediate UI change is required. Evidence presentation can continue using normalized source/claim data; do not surface private rejected candidates in the public app.
+
 ## 2026-09-03 — Multi-table partial-write recovery proof
 
 - Agent: Backend Architect / Reliability.
