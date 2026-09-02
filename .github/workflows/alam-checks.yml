@@ -63,6 +63,10 @@ jobs:
         run: python alam_app/test_alam_article_scope.py
       - name: Accessibility contract regression test
         run: python alam_app/test_alam_accessibility.py
+      - name: Verified audit overlay regression test
+        run: python alam_app/test_alam_hybrid_feed.py
+      - name: Compact mobile shell regression test
+        run: python alam_app/test_alam_mobile_shell.py
       - name: Python syntax check
         run: >-
           python -m py_compile
@@ -98,6 +102,9 @@ jobs:
           alam_app/alam_supabase_reconcile.py
           alam_app/alam_supabase_sync_job.py
           alam_app/alam_supabase_views.py
+          alam_app/alam_hybrid_feed.py
+          alam_app/alam_mobile_shell.py
+          alam_app/alam_runtime_safety.py
           alam_app/test_alam_supabase_reconcile.py
           alam_app/test_alam_multitable_recovery.py
           alam_app/test_alam_source_sync.py
@@ -111,6 +118,8 @@ jobs:
           alam_app/test_alam_comment_scope.py
           alam_app/test_alam_article_scope.py
           alam_app/test_alam_accessibility.py
+          alam_app/test_alam_hybrid_feed.py
+          alam_app/test_alam_mobile_shell.py
           alam_app/test_article_image_render.py
           alam_app/test_reliable_image_renderer.py
           alam_app/validate_alam_data.py
