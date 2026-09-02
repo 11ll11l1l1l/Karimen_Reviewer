@@ -47,6 +47,8 @@ jobs:
         run: python alam_app/test_alam_topic_sync.py
       - name: Publication evidence quality gate test
         run: python alam_app/test_alam_publication_quality.py
+      - name: Story lifecycle reactivation safety test
+        run: python alam_app/test_alam_lifecycle.py
       - name: Supabase readiness regression test
         run: python alam_app/test_alam_supabase_health.py
       - name: Product readiness presentation regression test
@@ -68,6 +70,7 @@ jobs:
           alam_app/alam_core.py
           alam_app/alam_article_scope.py
           alam_app/alam_comment_scope.py
+          alam_app/alam_lifecycle.py
           alam_app/alam_personas.py
           alam_app/alam_views.py
           alam_app/alam_mobile_views.py
@@ -100,6 +103,7 @@ jobs:
           alam_app/test_alam_source_sync.py
           alam_app/test_alam_topic_sync.py
           alam_app/test_alam_publication_quality.py
+          alam_app/test_alam_lifecycle.py
           alam_app/test_alam_supabase_health.py
           alam_app/test_alam_readiness_views.py
           alam_app/test_alam_evidence_views.py
