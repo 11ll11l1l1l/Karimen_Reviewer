@@ -15,6 +15,7 @@ from __future__ import annotations
 import streamlit as st
 
 import alam_intelligence as intelligence
+import alam_local_state as localstate
 import alam_mobile_views as mobile
 from alam_core import (
     age_label,
@@ -23,7 +24,6 @@ from alam_core import (
     is_followed,
     source_quality,
     summarize_so_what,
-    toggle_follow,
     type_label,
 )
 from alam_views import _render_claims, _render_pr_vs_reality, _render_sources, _render_timeline
@@ -44,6 +44,7 @@ STORY_PAGE_CSS = r"""
 .story-change-arrow{color:#98A2B3;font-weight:900;padding-top:17px}
 .story-change-why{border-top:1px solid rgba(89,104,242,.12);margin-top:9px;padding-top:9px;font-size:.82rem;line-height:1.45;color:#344054}
 .story-disagreement-note{border:1px solid #F5D995;background:#FFF7E8;border-radius:14px;padding:9px 11px;margin:8px 0 12px;font-size:.80rem;line-height:1.42;color:#6B4D16}
+.story-saved-update{border:1px solid rgba(89,104,242,.17);background:#EEF0FF;color:#4854C8;border-radius:14px;padding:9px 11px;margin:8px 0;font-size:.79rem;line-height:1.42}
 .story-view-label{font-size:.70rem;font-weight:900;color:#667085;margin:12px 0 6px}
 @media(max-width:760px){.story-answer-grid{grid-template-columns:1fr}.story-answer-card{min-height:auto}.story-change-grid{grid-template-columns:1fr}.story-change-arrow{transform:rotate(90deg);text-align:center;padding:0}.story-view-label{margin-top:10px}}
 </style>
@@ -178,9 +179,19 @@ def render_story_page(all_records, record, comments, manager=None):
         unsafe_allow_html=True,
     )
 
+    if localstate.saved_has_update(record):
+        st.markdown(
+            "<div class='story-saved-update'><strong>Updated since you saved this.</strong> "
+            "This stable story ID now points to a newer ALAM version than the one captured when you saved it.</div>",
+            unsafe_allow_html=True,
+        )
+
     label = "✓ Binabantayan" if is_followed(record["id"]) else "+ Bantayan"
     if st.button(label, key=f"detail_follow_story_{record['id']}", use_container_width=True):
-        toggle_follow(record["id"], manager)
+        # Save through the local-profile wrapper so ALAM records which exact material
+        # version existed at save time. The legacy followed-ID cookie remains intact,
+        # preserving backward compatibility with existing Saved sync codes.
+        localstate.toggle_saved(record, manager)
         st.rerun()
 
     _render_answer_grid(record, all_records)
