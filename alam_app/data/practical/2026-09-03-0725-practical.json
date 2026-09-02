@@ -1,0 +1,111 @@
+{
+  "id": "japan-2026-zeh-order-home-subsidy-deadline",
+  "agent": "practical",
+  "created_at": "2026-09-03T07:25:00+09:00",
+  "type": "household_benefit",
+  "title": "ZEH custom-home subsidy has a September 30 application cutoff",
+  "summary": "Kung nagpapagawa ka ng ZEH-level custom home, September 30 ang final application cutoff under Mirai Eco Housing 2026, unless the budget limit is reached earlier. Reservation受付 already ended August 17, pero direct grant applications can still be submitted by the registered builder.",
+  "why_it_matters": "For eligible child-rearing or young-couple households, the ZEH-level subsidy is ¥400,000 per home in colder Regions 1–4 and ¥350,000 in Regions 5–8. Missing the application window can therefore mean losing a six-figure benefit.",
+  "importance": 86,
+  "confidence": 98,
+  "tags": ["Japan", "Housing", "Subsidy", "ZEH", "Deadline"],
+  "geography": ["Japan"],
+  "status": "NEW",
+  "sources": [
+    {
+      "publisher": "住宅省エネ2026キャンペーン / 国土交通省等",
+      "title": "住宅省エネ2026キャンペーン — 新築について",
+      "url": "https://jutaku-shoene2026.mlit.go.jp/about/new-house.html",
+      "published_at": "2026-09-02",
+      "source_type": "official"
+    },
+    {
+      "publisher": "みらいエコ住宅2026事業 / 国土交通省等",
+      "title": "※重要※注文住宅の新築（ZEH水準住宅）の交付申請の予約の受付を終了しました。",
+      "url": "https://mirai-eco2026.mlit.go.jp/news/2026081802.html",
+      "published_at": "2026-08-18",
+      "source_type": "official"
+    },
+    {
+      "publisher": "住宅省エネ2026キャンペーン / 国土交通省等",
+      "title": "住宅省エネ2026キャンペーン",
+      "url": "https://jutaku-shoene2026.mlit.go.jp/",
+      "published_at": "2026-09-02",
+      "source_type": "official"
+    }
+  ],
+  "claims": [
+    {
+      "kind": "FACT",
+      "text": "For ZEH-level custom-built homes, grant applications close no later than September 30, 2026, or earlier if the applicable budget ceiling is reached.",
+      "source_refs": [1, 2],
+      "basis": "Official campaign application schedule"
+    },
+    {
+      "kind": "FACT",
+      "text": "Reservation applications for ZEH-level custom homes ended on August 17, 2026, but grant applications may still be submitted through September 30 subject to the budget ceiling.",
+      "source_refs": [2],
+      "basis": "Official August 18 notice"
+    },
+    {
+      "kind": "FACT",
+      "text": "Eligible ZEH-level new homes receive ¥400,000 per dwelling in Regions 1–4 and ¥350,000 in Regions 5–8; eligibility for this category is limited to child-rearing households or young-couple households.",
+      "source_refs": [1],
+      "basis": "Official subsidy table"
+    },
+    {
+      "kind": "FACT",
+      "text": "Consumers do not submit the application themselves; a registered housing-energy-support business submits it.",
+      "source_refs": [1],
+      "basis": "Official campaign process"
+    },
+    {
+      "kind": "INFERENCE",
+      "text": "An eligible household with an unfinished application should contact its builder now rather than treat September 30 as a safe day to start paperwork, because missing documents or an earlier budget closure could eliminate the subsidy.",
+      "source_refs": [1, 2, 3],
+      "basis": "Deadline and early-closure mechanics"
+    }
+  ],
+  "editorial_visual": {
+    "style": "editorial",
+    "motif": "home",
+    "secondary_motif": "document",
+    "scene": "an energy-efficient Japanese house beside a large calendar page marked late September, with a builder carrying an application folder toward a closing submission window",
+    "caption": "The house may qualify, but the paperwork window closes first",
+    "silliness": 18,
+    "exaggeration": 62
+  },
+  "content": {
+    "key_message": "If your ZEH-level custom home is eligible and the builder has not filed yet, ask for application status now; September 30 is the hard outer deadline.",
+    "who_is_affected": "Child-rearing households or young-couple households building an eligible ZEH-level custom home under Mirai Eco Housing 2026. Other new-home categories have different eligibility and deadlines.",
+    "when": "ZEH custom-home reservation受付 ended August 17; direct grant applications remain possible until September 30, 2026, unless the budget ceiling is reached earlier.",
+    "financial_impact": "Official benefit: ¥400,000 per eligible ZEH-level dwelling in Regions 1–4 or ¥350,000 in Regions 5–8. This is the subsidy amount, not a guaranteed net saving after construction costs.",
+    "risk_if_ignored": "If an otherwise eligible application is not submitted in time, the household can lose the ¥350,000–¥400,000 subsidy opportunity.",
+    "action": "DO NOW",
+    "deadline": "2026-09-30, or earlier if the applicable budget ceiling is reached.",
+    "effort": "Low for the household: contact the builder or seller and ask whether the grant application has actually been submitted and whether any documents are still missing. The registered business files the application.",
+    "potential_benefit": "Preserve eligibility for a ¥350,000–¥400,000 subsidy if all program requirements are satisfied.",
+    "downside": "Do not upgrade or redesign a house solely to chase this subsidy. Eligibility depends on household category, building performance, location, construction timing and other program rules, and the subsidy may already be reflected in the contract economics.",
+    "what_would_change_mind": "An official extension, early budget exhaustion, or confirmation that the specific home/household does not satisfy ZEH program eligibility would change the action.",
+    "usefulness": 95,
+    "novelty": 82,
+    "impact": {
+      "money": "HIGH",
+      "family": "MED",
+      "career": "LOW",
+      "japan": "LOW",
+      "urgency": "HIGH"
+    },
+    "connection_tags": ["housing-subsidy", "zeh", "application-deadline"],
+    "reading_levels": {
+      "30 sec": {
+        "what_happened": "ZEH-level custom-home grant applications close September 30; reservations already closed August 17.",
+        "why_it_matters": "Eligible households can receive ¥350,000–¥400,000 per home.",
+        "what_to_do_watch": "Ask your registered builder now whether the actual grant application is submitted and complete.",
+        "bottom_line": "If eligible, do not leave this paperwork until late September."
+      },
+      "2_min": "The 2026 Housing Energy-Saving Campaign sets an earlier deadline for ZEH-level custom homes than for several other new-home categories. Reservations ended August 17, but the builder can still submit the grant application through September 30, unless the budget ceiling is reached first. Eligible child-rearing or young-couple households can receive ¥400,000 in Regions 1–4 or ¥350,000 in Regions 5–8. The household does not file directly, so the useful action is to confirm submission status with the registered builder now rather than assume the contractor will handle it automatically by month-end."
+    },
+    "bottom_line": "Eligible ZEH custom-home households should verify the builder's filing status now; the potential ¥350,000–¥400,000 benefit is too large to risk on late paperwork."
+  }
+}
