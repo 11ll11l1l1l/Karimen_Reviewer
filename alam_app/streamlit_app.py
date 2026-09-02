@@ -12,6 +12,7 @@ from alam_core import (
 import alam_mobile_views as views
 import alam_extras as extras
 import alam_intelligence as intelligence
+import alam_identity as identity
 import alam_local_state as localstate
 import alam_reader_views as reader
 import alam_story_page as story_page
@@ -161,6 +162,13 @@ portraits.install(views)
 time_theme.install_time_theme()
 accessibility.install_accessibility()
 
+# First visit is intentionally resolved before any article/Supabase feed hydration.
+# This keeps onboarding fast, avoids collecting behavioral events before a name is
+# supplied, and makes the random device identity the single root for future state.
+if not identity.render_onboarding(manager):
+    st.stop()
+identity.log_session_open_once()
+
 # Resolve the current feed before history hydration. A selected article only needs
 # its own Before/Now timeline; fetching every article_versions row first made the
 # latency-sensitive mobile detail route pay for unrelated history. Feed/list routes
@@ -201,6 +209,7 @@ comment_ids = comment_scope_ids(current_records, selected.get("id") if selected 
 comments = load_comments(comment_ids)
 
 views.render_brand(records)
+identity.render_returning_greeting()
 # Make the active persistence mode visible. A healthy-looking header should never
 # imply "database live" while ALAM is deliberately serving the GitHub audit fallback.
 readiness.render_runtime_status()
@@ -210,6 +219,9 @@ time_headers.render_time_header()
 extras.render_wisdom_strip()
 
 if selected:
+    if st.session_state.get("alam_last_article_open_logged") != str(selected.get("id")):
+        identity.log_story_open(selected)
+        st.session_state["alam_last_article_open_logged"] = str(selected.get("id"))
     # The page-level reader now puts the four decision questions ahead of the depth
     # selector: why it matters, what to do, what changed, and how strong the evidence
     # is. Panel/Evidence/Deep still reuse the mature renderers underneath.
@@ -228,6 +240,7 @@ else:
         width="stretch",
         bind="query-params",
     )
+    identity.log_navigation(page)
 
     if page == "Today":
         # Today now owns one decision hierarchy instead of stacking a second urgent
@@ -248,6 +261,7 @@ else:
             label_visibility="collapsed",
             width="stretch",
         )
+        identity.log_navigation(secondary, section="more")
         if secondary == "Weekly":
             intelligence.render_weekly(records, all_records)
             dbviews.render_connect_the_dots(records)
@@ -289,5 +303,6 @@ else:
         else:
             views.render_category(records, "trend", manager, comments)
 
+identity.track_widget_changes()
 mark_visit(manager)
 views.render_footer(all_records, records, comments)
