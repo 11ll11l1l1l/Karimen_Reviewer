@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import streamlit as st
 
+import alam_evidence_views as evidence_views
 import alam_intelligence as intelligence
 import alam_local_state as localstate
 import alam_mobile_views as mobile
@@ -26,7 +27,7 @@ from alam_core import (
     summarize_so_what,
     type_label,
 )
-from alam_views import _render_claims, _render_pr_vs_reality, _render_sources, _render_timeline
+from alam_views import _render_claims, _render_pr_vs_reality, _render_timeline
 
 
 STORY_PAGE_CSS = r"""
@@ -213,10 +214,17 @@ def render_story_page(all_records, record, comments, manager=None):
         # into shallow one-line cards.
         mobile._render_panel(record, comments)
     elif mode == "🧾 Evidence":
-        _render_pr_vs_reality(record)
-        _render_claims(record)
-        _render_timeline(all_records, record)
-        _render_sources(record)
+        # Evidence now starts with a trust/coverage summary before the mature PR,
+        # claim, timeline, and source detail. The summary is entirely derived from
+        # existing record metadata and explicitly avoids equating source diversity
+        # with independent confirmation.
+        evidence_views.render_evidence(
+            record,
+            all_records,
+            _render_pr_vs_reality,
+            _render_claims,
+            _render_timeline,
+        )
     elif mode == "🧠 Deep":
         mobile._render_deep(record, all_records, comments)
     else:
