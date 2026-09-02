@@ -1,0 +1,44 @@
+name: ALAM Supabase sync
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'alam_app/data/discover/**'
+      - 'alam_app/data/practical/**'
+      - 'alam_app/data/reflection/**'
+      - 'alam_app/data/trend/**'
+      - 'alam_app/data/comments/**'
+      - 'alam_app/data/wisdom/**'
+
+concurrency:
+  group: alam-supabase-sync
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Validate ALAM audit data
+        run: python alam_app/validate_alam_data.py
+
+      - name: Install Supabase client
+        run: pip install -r alam_app/requirements.txt
+
+      - name: Sync verified ALAM records to Supabase
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python alam_app/alam_supabase_ingest.py
