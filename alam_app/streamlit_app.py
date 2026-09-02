@@ -11,6 +11,7 @@ from alam_core import (
     mark_visit,
 )
 import alam_mobile_views as views
+import alam_extras as extras
 from alam_market_views import is_market_record, render_market
 from alam_personas import load_comments
 from alam_visual_system import BRAND_CSS, install_visual_system
@@ -60,35 +61,30 @@ st.set_page_config(
 st.markdown(CSS, unsafe_allow_html=True)
 st.markdown(views.MOBILE_CSS, unsafe_allow_html=True)
 st.markdown(BRAND_CSS, unsafe_allow_html=True)
+extras.install_extras_css()
 install_visual_system(views)
 
 all_records = load_all_records()
 records = latest_by_story(all_records)
-# Keep legacy philosophical Reflection records in history, but remove them from the
-# current live feed now that Agent 3 has been repurposed. New Agent 3 records use
-# explicit market_* types and remain visible under Market.
+# Preserve legacy philosophical Reflection records in history but keep the current
+# public feed focused on Agent 3's explicit market_* records.
 records = [r for r in records if r.get("_category") != "reflection" or is_market_record(r)]
 comments = load_comments()
 manager = init_browser_state()
 
 views.render_brand(records)
-
-if records and all(r.get("demo") for r in records):
-    st.markdown(
-        '<div class="demo-banner"><strong>Prototype mode:</strong> '
-        'Sample content muna ito. Live agent records automatically appear as GitHub updates arrive.</div>',
-        unsafe_allow_html=True,
-    )
+extras.render_wisdom_strip()
 
 selected_id = st.session_state.get("selected_story")
 selected = next((r for r in records if str(r.get("id")) == str(selected_id)), None)
 
 if selected:
     views.render_detail(all_records, selected, comments, manager)
+    extras.render_share_tools(selected)
 else:
     page = st.pills(
         "Navigation",
-        ["Today", "Discover", "Action", "Market", "Trends", "More"],
+        ["Today", "Discover", "Action", "Market", "More"],
         default="Today",
         required=True,
         label_visibility="collapsed",
@@ -105,21 +101,25 @@ else:
         views.render_action_center(records, manager, comments)
     elif page == "Market":
         render_market(records, manager, comments, views)
-    elif page == "Trends":
-        views.render_category(records, "trend", manager, comments)
     else:
         secondary = st.segmented_control(
             "More",
-            ["Predictions", "Following"],
-            default="Predictions",
+            ["Trends", "Search", "Saved", "Predictions", "Settings"],
+            default="Trends",
             key="more_nav",
             label_visibility="collapsed",
             width="stretch",
         )
-        if secondary == "Following":
-            views.render_following(records, manager, comments)
-        else:
+        if secondary == "Search":
+            extras.render_search(records, comments, manager, views)
+        elif secondary == "Saved":
+            extras.render_saved(records, manager, comments, views)
+        elif secondary == "Predictions":
             views.render_prediction_lab(records)
+        elif secondary == "Settings":
+            extras.render_settings()
+        else:
+            views.render_category(records, "trend", manager, comments)
 
 mark_visit(manager)
 views.render_footer(all_records, records, comments)
