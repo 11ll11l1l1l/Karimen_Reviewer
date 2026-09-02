@@ -1,0 +1,116 @@
+{
+  "id": "practical-japan-dcard-2026-reward-cut-refund",
+  "agent": "practical",
+  "created_at": "2026-09-02T13:26:07+09:00",
+  "type": "household_cost",
+  "title": "d-card base reward halves in 2027; eligible GOLD/PLATINUM users can claim prorated annual-fee refunds",
+  "summary": "FACT: Inanunsyo ng NTT Docomo noong September 1 na ang ordinary d-card base reward ay bababa from 1.0% to 0.5% starting January 2027. Separately, eligible d-card PLATINUM users and GOLD users on specified Docomo poikatsu plans can get a prorated annual-fee refund if they downgrade/cancel and complete the special entry by December 31, 2026. Practical move: check your card type now instead of letting the downgrade in value happen automatically.",
+  "why_it_matters": "This is a recurring household-cost change, not a one-off promo. A user putting ¥600,000/year of otherwise eligible ordinary spending on a standard d-card would earn about ¥3,000 less per year after the base-rate cut. For some PLATINUM/GOLD users who decide the revised benefits are no longer worth the annual fee, the refund window can recover thousands to tens of thousands of yen depending on remaining months.",
+  "importance": 88,
+  "confidence": 98,
+  "tags": ["Japan", "d-card", "Docomo", "credit card", "points", "annual fee", "household costs"],
+  "geography": ["Japan"],
+  "status": "new",
+  "sources": [
+    {
+      "publisher": "NTT Docomo",
+      "title": "【重要】「ドコモポイ活プラン」「dカード PLATINUM」dポイント進呈条件および「dカード」dポイント進呈率・年会費改定のお知らせ",
+      "url": "https://www.docomo.ne.jp/info/notice/page/260901_00.html",
+      "published_at": "2026-09-01",
+      "source_type": "official"
+    },
+    {
+      "publisher": "dカード / NTT Docomo",
+      "title": "サービス変更に伴う年会費返金のご案内",
+      "url": "https://dcard.docomo.ne.jp/st/dcard_platinum_return/index.html",
+      "published_at": "2026-09-01",
+      "source_type": "official"
+    },
+    {
+      "publisher": "ケータイ Watch",
+      "title": "ドコモ、「dカード GOLD／PLATINUM」で年会費返金の受付開始",
+      "url": "https://k-tai.watch.impress.co.jp/docs/news/2137336.html",
+      "published_at": "2026-09-01",
+      "source_type": "news"
+    },
+    {
+      "publisher": "ケータイ Watch",
+      "title": "ドコモ「dカード」還元率が0.5％へ半減、使わないと年会費1650円に",
+      "url": "https://k-tai.watch.impress.co.jp/docs/news/2137201.html",
+      "published_at": "2026-09-01",
+      "source_type": "news"
+    }
+  ],
+  "claims": [
+    {
+      "kind": "FACT",
+      "text": "For the ordinary d-card excluding GOLD U, GOLD and PLATINUM, the standard reward rate changes from 1 point per ¥100 to 1 point per ¥200 for usage from January 2027, equivalent to 1.0% to 0.5% on eligible spending.",
+      "source_refs": [1, 4],
+      "basis": "Docomo official revision notice cross-checked by K-tai Watch"
+    },
+    {
+      "kind": "FACT",
+      "text": "From 2027 the ordinary d-card remains free in the first year and normally free thereafter, but a ¥1,650 annual fee can apply when there was no qualifying card use in the previous year; the first such billing is scheduled from February 2028 based on use from January 2027 onward.",
+      "source_refs": [1, 4],
+      "basis": "Docomo official fee revision and independent reporting"
+    },
+    {
+      "kind": "FACT",
+      "text": "Eligible d-card PLATINUM main members who joined by September 30, 2026, and eligible d-card GOLD main members on specified Docomo poikatsu plans, can request a prorated annual-fee refund if they both enter the refund program and complete cancellation or downgrade by December 31, 2026.",
+      "source_refs": [2, 3],
+      "basis": "Official refund terms cross-checked by K-tai Watch"
+    },
+    {
+      "kind": "FACT",
+      "text": "The official refund formula is the previously paid annual fee divided by 12 multiplied by the number of remaining months from the month after downgrade/cancellation to the next annual-fee billing month. Docomo's example gives ¥12,380 back for a PLATINUM member with a ¥29,700 annual fee, five months remaining, and an October cancellation.",
+      "source_refs": [2],
+      "basis": "Official d-card refund page and worked example"
+    },
+    {
+      "kind": "ESTIMATE",
+      "text": "A standard d-card user with ¥600,000/year of otherwise eligible ordinary card spending would lose about ¥3,000/year in base rewards after the rate cut: ¥600,000 × (1.0% - 0.5%) = ¥3,000.",
+      "source_refs": [1],
+      "basis": "Arithmetic using the officially announced 0.5 percentage-point reward reduction; actual loss depends on eligible spend mix and use of d払い or qualifying smartphone tap payments"
+    },
+    {
+      "kind": "INFERENCE",
+      "text": "For ordinary d-card users who primarily use the physical card or ordinary card-number payment, the card becomes materially less competitive unless they shift eligible transactions to payment methods that retain a 1% combined return or another card with a better net return.",
+      "source_refs": [1, 4],
+      "basis": "Value comparison inference from the announced base-rate reduction and exceptions"
+    },
+    {
+      "kind": "ASSUMPTION",
+      "text": "The ¥600,000 annual-spend example is illustrative only and does not assume the user's actual card spending.",
+      "source_refs": [],
+      "basis": "Explicit scenario assumption for recurring-value calculation"
+    }
+  ],
+  "content": {
+    "reading_levels": {
+      "30_sec": "DO NOW: if you use d-card, identify which version you have. Ordinary d-card base rewards fall from 1% to 0.5% in January 2027. If you have eligible GOLD/PLATINUM and the revised benefits no longer justify the fee, Docomo has opened a prorated annual-fee refund route—but entry plus downgrade/cancellation must be completed by Dec. 31, 2026.",
+      "2_min": "Ordinary d-card is the broad-impact change: base reward goes from 1 point/¥100 to 1 point/¥200 in January 2027. At ¥600,000/year of eligible ordinary spend, that's roughly ¥3,000/year fewer points. Docomo preserves better returns in some payment paths, including d払い funded by d-card, and certain newer d-card smartphone tap transactions from May 2027, so don't cancel blindly—compare how you actually pay. For PLATINUM and qualifying GOLD users, a separate refund program lets people who downgrade/cancel recover the unused portion of the annual fee. The official PLATINUM example is ¥12,380 refunded when five months remain on a ¥29,700 annual fee.",
+      "deep": "The practical issue is switching friction versus recurring reward loss. A standard-card user spending little may not care about a 0.5-point reduction; a household routing ¥1.2 million/year through ordinary eligible card payments would forgo about ¥6,000/year versus the old base rate. However, Docomo is steering users toward its broader ecosystem: d払い tied to d-card retains a combined 1% rate, and specified new-number d-cards can earn 1% on smartphone tap payments from May 2027. That means the best action is not automatically 'leave Docomo'; it is to compare the payment method you actually use. For fee cards, the refund offer reduces the sunk-cost barrier to downgrading, but eligibility and deadline conditions are strict."
+    },
+    "who_is_affected": "Ordinary d-card holders using standard card payments; d-card PLATINUM main members; and d-card GOLD main members who meet the specified Docomo poikatsu-plan condition for the refund program.",
+    "when": "PLATINUM d-card Green electricity reward changes begin with October 2026 usage; several PLATINUM/poikatsu changes begin with December 2026 usage; ordinary d-card base rewards fall from January 2027 usage. Refund-program entry and downgrade/cancellation must be completed by December 31, 2026.",
+    "financial_impact": "Ordinary d-card: the base reward falls by 0.5 percentage point. Example: ¥600,000/year eligible ordinary spend × 0.5% = about ¥3,000/year less. Refund program: amount varies by remaining months and prior annual fee; Docomo's official example is ¥12,380 returned for five remaining months of a ¥29,700 PLATINUM fee.",
+    "risk_if_ignored": "You can quietly lose recurring points from January 2027, or miss the special refund window if you already plan to leave/downgrade an eligible GOLD/PLATINUM card. An unused ordinary d-card can also eventually trigger a ¥1,650 annual fee under the new inactivity rule.",
+    "action": "DO NOW",
+    "deadline": "December 31, 2026 for the special GOLD/PLATINUM refund entry plus completed downgrade/cancellation. Ordinary d-card reward cut starts with January 2027 usage.",
+    "effort": "LOW",
+    "potential_benefit": "Avoid roughly ¥3,000/year of reward erosion at ¥600,000 annual eligible spend by changing payment strategy/card, and potentially recover a prorated annual fee worth thousands to tens of thousands of yen if you are an eligible fee-card holder who already wants to downgrade or cancel.",
+    "downside": "Do not downgrade solely for the refund without valuing lost insurance, lounge, phone, annual-spend and other card benefits. Also, some d-card payment methods retain better rewards, so switching cards may be unnecessary for users willing to change how they pay.",
+    "what_would_change_mind": "Downgrade urgency if Docomo reverses the 0.5% ordinary-card cut, extends the refund deadline, or materially improves equivalent no-fee benefits before January. Increase urgency if the user's actual eligible ordinary spend is high, they do not use the payment methods that preserve 1%, or their fee-card benefits are worth less than the annual fee after the announced changes.",
+    "usefulness": 95,
+    "novelty": 94,
+    "pr_vs_reality": {
+      "official_claim": "Docomo frames the revisions within a broader effort to make its integrated d-point, banking, payments and telecom ecosystem more convenient and rewarding.",
+      "evidence_says": [
+        "The ordinary d-card base reward is objectively being cut in half from 1.0% to 0.5% on standard eligible spending from January 2027.",
+        "Docomo is preserving or introducing higher returns for selected ecosystem payment paths rather than maintaining the old universal base rate.",
+        "The company is offering eligible GOLD/PLATINUM users a special prorated annual-fee refund if they choose to downgrade/cancel within the specified window."
+      ],
+      "verdict": "For passive ordinary-card users, this is a real value cut. For active Docomo-ecosystem users, the impact can be partly avoided by payment-method changes. Fee-card holders should calculate benefits versus fee before deciding, but the refund window makes that review time-sensitive."
+    }
+  }
+}
