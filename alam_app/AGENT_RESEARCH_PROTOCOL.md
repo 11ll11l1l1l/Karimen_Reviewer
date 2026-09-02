@@ -1,6 +1,6 @@
-# ALAM Agent Deep Research Protocol
+# ALAM Deep Research Protocol
 
-All ALAM research agents should use this protocol on every scheduled run. The goal is to maximize useful research work, not output length.
+All ALAM research passes should use this protocol on every scheduled run. The goal is to maximize useful research work, not output length.
 
 ## 1. Archive-first state check
 - Read the latest meaningful records in all relevant ALAM folders before searching the web.
@@ -61,7 +61,7 @@ Before publishing, internally score the candidate on:
 One deeply verified item is better than several shallow items. Zero publication is valid.
 
 ## 9. No-dead-run fallback
-If no new article clears the quality gate, do useful maintenance instead of manufacturing content. Depending on agent mission:
+If no new article clears the quality gate, do useful maintenance instead of manufacturing content. Depending on the section mission:
 - revisit the most important open WATCH item;
 - check whether a deadline, price, policy, recall, job, market regime, or forecast changed;
 - search for contradictory evidence against an existing ALAM conclusion;
@@ -73,10 +73,59 @@ Do not create a visible article solely to prove the run did work.
 ## 10. Research-effort policy
 Use available model/tool effort on evidence gathering, verification, contradiction searches, calculations, and cross-source synthesis rather than verbose prose. There is no requirement to make the final article long. Continue research while another credible source or cross-check has a realistic chance of changing the conclusion; stop when additional searching is mostly repetitive.
 
-## 11. Image metadata
-The app already renders a branded fallback visual for every article. If a stable, directly usable image from an official/primary source is available and appropriate, an agent may add `image_url`, `image_alt`, and `image_credit`. Do not invent image URLs, scrape unstable thumbnails, or use an image merely to decorate the story. If no suitable real image exists, omit it and let ALAM use its built-in editorial fallback.
+## 11. Reader clarity — 10-second comprehension rule
+Research can be deep; the article must be easy to pick up. A reader should understand the main point within about 10 seconds.
 
-## 12. Final self-audit before write
+### Headline
+- Use plain language and one main idea.
+- Prefer roughly 8–16 words when possible.
+- Avoid jargon, acronym chains, multiple semicolons, or titles that try to contain the whole article.
+- If a technical term is necessary, explain it immediately in ordinary language.
+
+### Summary
+Use no more than two short sentences:
+1. **What changed?** State the new fact or movement directly.
+2. **Why it matters?** State the consequence in normal language.
+Do not open with background history.
+
+### Scan-first article structure
+Put the following ideas near the top, using these fields when the schema permits:
+- `key_message` — one sentence; the single thing to remember.
+- `what_changed` or the section-specific equivalent — 1–3 short sentences or 2–4 bullets.
+- `why_it_matters` — 1–3 short sentences.
+- `what_to_do_or_watch` — one clear action, watch item, or interpretation boundary.
+- `bottom_line` — one sentence.
+- `confidence_reason` — one short line explaining why confidence is high/medium/low.
+
+### 30-second reading level
+The `reading_levels["30 sec"]` version should normally contain only four compact points:
+- **What happened**
+- **Why it matters**
+- **What to do/watch**
+- **Bottom line**
+It should not repeat the full article or claim ledger.
+
+### Writing discipline
+- Prefer short paragraphs of 1–3 sentences.
+- Prefer concrete nouns and verbs over abstract phrases.
+- Define abbreviations on first use: e.g. “Purchasing Managers’ Index (PMI)”.
+- Put the most decision-useful number first; do not dump every number from a source.
+- If a number lacks an obvious baseline, explain the comparison.
+- Separate “we know” from “we think this means.”
+- When uncertainty is material, express it in one clear sentence rather than burying it in caveats.
+- Avoid repeating the same idea in summary, why-it-matters, recommendation and bottom line.
+- Natural educated Taglish is welcome, but clarity beats clever phrasing.
+
+### Section-specific clarity
+- **Discover:** “What is new, and why should I care?”
+- **Practical:** “Am I affected, and what exactly should I do?”
+- **Market:** “What moved, why, and what should I watch next?”
+- **Trend:** “What pattern is forming, how strong is the evidence, and what would disprove it?”
+
+## 12. Image metadata
+The app renders a repository-hosted editorial fallback visual for every article. If a stable, directly usable image from an official/primary source is available and appropriate, a research pass may add `image_url`, `image_alt`, and `image_credit`. Do not invent image URLs, scrape unstable thumbnails, or use an image merely to decorate the story. If no suitable real image exists, omit it and let ALAM use its built-in editorial fallback.
+
+## 13. Final self-audit before write
 Confirm:
 - no duplicate/superseded story;
 - timestamps and dates are correct;
@@ -84,6 +133,8 @@ Confirm:
 - strongest contrary evidence is represented;
 - claims are correctly classified;
 - conclusion is proportional to evidence;
+- headline and first two sentences are understandable without specialist knowledge;
+- 30-second version gives a clear message rather than a compressed data dump;
 - sources are usable;
 - JSON is valid;
 - written file is fetched back and verified after GitHub write.
