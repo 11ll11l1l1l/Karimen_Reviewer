@@ -82,6 +82,7 @@ st.markdown(intelligence.INTEL_CSS, unsafe_allow_html=True)
 st.markdown(reader.READER_CSS, unsafe_allow_html=True)
 st.markdown(story_page.STORY_PAGE_CSS, unsafe_allow_html=True)
 st.markdown(panel_views.PANEL_CSS, unsafe_allow_html=True)
+st.markdown(readiness.RUNTIME_STATUS_CSS, unsafe_allow_html=True)
 st.markdown(polish.POLISH_CSS, unsafe_allow_html=True)
 st.markdown(portraits.PORTRAIT_CSS, unsafe_allow_html=True)
 
@@ -167,6 +168,9 @@ records = [r for r in current_records if not localstate.is_muted(r)]
 comments = load_comments([r.get("id") for r in current_records])
 
 views.render_brand(records)
+# Make the active persistence mode visible. A healthy-looking header should never
+# imply "database live" while ALAM is deliberately serving the GitHub audit fallback.
+readiness.render_runtime_status()
 # A six-scene Japan-time header makes the daypart immediately visible; the continuous
 # palette/sun-position theme underneath still changes smoothly between these scenes.
 time_headers.render_time_header()
