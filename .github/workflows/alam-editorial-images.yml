@@ -1,0 +1,82 @@
+name: ALAM editorial image generation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'alam_app/data/discover/*.json'
+      - 'alam_app/data/reflection/*.json'
+      - 'alam_app/data/practical/*.json'
+      - 'alam_app/data/trend/*.json'
+      - 'alam_app/alam_image_generation.py'
+      - 'alam_app/alam_generated_images.py'
+      - '.github/workflows/alam-editorial-images.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: alam-editorial-images-main
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    if: github.event_name == 'workflow_dispatch' || !startsWith(github.event.head_commit.message, 'ALAM editorial image:')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Check image-generation credential
+        id: image_key
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        shell: bash
+        run: |
+          if [ -n "$OPENAI_API_KEY" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+            echo "OPENAI_API_KEY is available."
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::OPENAI_API_KEY is not configured; AI editorial image generation is skipped and ALAM will keep using the SVG emergency fallback."
+          fi
+
+      - name: Install image-generation dependency
+        if: steps.image_key.outputs.available == 'true'
+        run: pip install 'openai>=1.0'
+
+      - name: Generate persistent editorial images
+        if: steps.image_key.outputs.available == 'true'
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ALAM_IMAGE_MODEL: gpt-image-2
+          ALAM_IMAGE_SIZE: 1536x864
+          ALAM_IMAGE_QUALITY: medium
+          ALAM_IMAGE_COMPRESSION: '82'
+        run: python alam_app/alam_image_generation.py --changed-since HEAD^ --latest-if-empty
+
+      - name: Validate updated ALAM data
+        if: steps.image_key.outputs.available == 'true'
+        run: python alam_app/validate_alam_data.py
+
+      - name: Commit generated assets
+        if: steps.image_key.outputs.available == 'true'
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add alam_app/assets/editorial/generated alam_app/data
+          if git diff --cached --quiet; then
+            echo "No new generated editorial assets to commit."
+            exit 0
+          fi
+          git commit -m "ALAM editorial image: generate persistent assets"
+          git pull --rebase origin main
+          git push origin HEAD:main
