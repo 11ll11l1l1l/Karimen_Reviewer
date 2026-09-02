@@ -145,6 +145,53 @@ def _source_rows(record):
     return rows
 
 
+def _sync_sources(client, record, dry_run=False):
+    """Converge normalized evidence rows without deleting the last known-good set first.
+
+    Source rows are part of ALAM's trust surface, not decorative metadata. The previous
+    incremental path deleted every source before inserting the replacement set. A
+    transient PostgREST failure could therefore leave a newly published article with
+    zero evidence until archive reconciliation happened to repair it later.
+
+    Desired sources are now upserted first using the schema's ``(article_id, url)``
+    uniqueness boundary. Stale rows are removed only after every desired source write
+    succeeds. A failed upsert may leave an additive partial new set, but it cannot
+    intentionally erase the previous good evidence set; a retry naturally converges.
+    """
+    sources = _source_rows(record)
+    if dry_run:
+        return len(sources)
+
+    article_id = str(record["id"])
+    desired_urls = {row["url"] for row in sources}
+
+    # Write one row at a time so a deterministic failure can never be mistaken for a
+    # successful batch. Cleanup begins only after all desired evidence rows are known
+    # to have been accepted by Supabase.
+    for source in sources:
+        client.table("article_sources").upsert(
+            source,
+            on_conflict="article_id,url",
+        ).execute()
+
+    existing_rows = (
+        client.table("article_sources")
+        .select("id,url")
+        .eq("article_id", article_id)
+        .execute()
+        .data
+        or []
+    )
+    stale_ids = [
+        str(row["id"])
+        for row in existing_rows
+        if row.get("id") is not None and row.get("url") not in desired_urls
+    ]
+    for source_id in stale_ids:
+        client.table("article_sources").delete().eq("id", source_id).execute()
+    return len(sources)
+
+
 def _next_version(client, article_id):
     response = (
         client.table("article_versions")
@@ -320,6 +367,7 @@ def sync_article(client, record, category, dry_run=False):
             return "unchanged"
 
     if dry_run:
+        _sync_sources(client, record, dry_run=True)
         _sync_topics(client, record, dry_run=True)
         _sync_prediction(client, record, category, dry_run=True)
         return "would_publish"
@@ -339,11 +387,7 @@ def sync_article(client, record, category, dry_run=False):
         "created_at": record.get("created_at"),
     }).execute()
 
-    client.table("article_sources").delete().eq("article_id", article_id).execute()
-    sources = _source_rows(record)
-    if sources:
-        client.table("article_sources").insert(sources).execute()
-
+    _sync_sources(client, record)
     _sync_topics(client, record)
     _sync_prediction(client, record, category)
     return "published"

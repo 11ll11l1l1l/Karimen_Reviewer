@@ -33,6 +33,7 @@ Permanent constraints:
 - Self-healing reconciliation deterministically converges current articles, numbered history, sources, topics, and predictions from the GitHub audit archive.
 - Reconciliation repairs partial-write cases where the current article advances but derived tables fail.
 - Source reconciliation uses upsert-before-delete to avoid deliberately erasing the prior good evidence set before desired rows are accepted.
+- Incremental article-source synchronization now upserts every desired evidence row before deleting stale rows, so transient source-write failures preserve the previous good evidence set until retry/reconciliation.
 - Incremental topic synchronization now resolves/upserts desired topics and links before deleting stale links, so transient failures do not deliberately erase the prior topic set.
 - Exact duplicate audit payloads are removed before deterministic version numbering.
 - Fail-closed chronology preflight rejects materially different versions of one stable article ID sharing the same explicit `created_at` before public content writes.
@@ -41,7 +42,7 @@ Permanent constraints:
 - A public-safe sync-health RPC contract exists in migration `005_public_sync_health.sql`; direct public reads of `agent_runs` remain blocked by RLS.
 - Backend readiness classification distinguishes disconnected, diagnostics unavailable, never synchronized, running, failed, partial, stale sync, local fallback, synchronized-empty, unknown status, and ready.
 - Settings renders one calm Data status verdict from that classifier and keeps raw private workflow/error metadata out of the public UI.
-- CI gates reconciliation/chronology, topic failure safety, Evidence, backend readiness, product readiness, Saved material-update review state, accessibility, syntax, production data, image behavior, dependency installation, and Streamlit startup health.
+- CI gates reconciliation/chronology, source/topic failure safety, Evidence, backend readiness, product readiness, Saved material-update review state, accessibility, syntax, production data, image behavior, dependency installation, and Streamlit startup health.
 
 ## B. In progress / requires production verification
 
@@ -68,11 +69,10 @@ Required evidence before declaring cutover complete:
 ### P0 — Reliability / data integrity
 
 1. Apply/verify migration `005_public_sync_health.sql` in production, run a real trusted sync, and verify Settings readiness.
-2. Add database-level failure-injection coverage for article-row success followed by version/source failure.
-3. Harden the incremental article-source path so it no longer relies on delete-before-insert before reconciliation repairs it.
-4. Add stronger source/evidence quality gates before publication with structured rejection reasons.
-5. Add stale/outdated lifecycle checks and safe story-expiration rules.
-6. Consider a separately reviewed policy for orphan Supabase rows absent from GitHub; do not delete broadly by default.
+2. Add database-level or higher-fidelity failure-injection coverage for article-row success followed by version/derived-table failure.
+3. Add stronger source/evidence quality gates before publication with structured rejection reasons.
+4. Add stale/outdated lifecycle checks and safe story-expiration rules.
+5. Consider a separately reviewed policy for orphan Supabase rows absent from GitHub; do not delete broadly by default.
 
 ### P1 — Core reader/product quality
 
@@ -144,7 +144,7 @@ These require external credentials/consoles and must not be falsely marked compl
 - Historical audit records may lack current v5 fields. The chronology preflight deliberately does not treat missing `created_at` as an explicit timestamp conflict.
 - Same explicit timestamp + different payload now fails trusted sync before content writes. Correct the GitHub audit timestamp/payload rather than bypassing this guard.
 - Reconciliation does not delete unrelated Supabase articles absent from GitHub; broad orphan cleanup requires a separate reviewed policy.
-- Incremental article-source synchronization still has a delete-before-insert window even though archive reconciliation later repairs the mirror; this remains a backend priority.
+- Article/current-version/source/topic writes remain separate database operations. Incremental source/topic helpers and archive reconciliation are failure-safe/convergent, but a process can still advance `articles` and fail before a later derived-table write; higher-fidelity multi-table failure injection remains a backend priority.
 - Supabase reconciliation is service-role-only; missing trusted credentials stop repair before database content writes.
 - Evidence source-group diversity cannot establish editorial independence.
 - Public sync-health intentionally exposes no raw errors/workflow metadata; operator diagnosis belongs in trusted logs/admin tooling.
@@ -219,7 +219,7 @@ These require external credentials/consoles and must not be falsely marked compl
 - Problem found: incremental topic sync deleted every existing article-topic link before resolving the replacement set, creating a partial-failure window where a published story could temporarily lose all topic relationships.
 - Decision: resolve/upsert all desired topics and links first, then delete only stale links after the replacement set is known-good.
 - Validation performed: deterministic failure-injection coverage proves old links survive mid-sync failure, stale deletion does not happen early, retries converge, explicit empty tags remove old links, and case/duplicate tags normalize safely.
-- Remaining backend risk: incremental article-source synchronization still has a delete-before-insert window even though reconciliation later repairs it.
+- Remaining backend risk at that checkpoint: incremental article-source synchronization still had a delete-before-insert window; the following backend iteration removed it.
 
 ### 2026-09-03 — Cross-cutting mobile accessibility contract
 
@@ -234,6 +234,19 @@ These require external credentials/consoles and must not be falsely marked compl
 - Remaining limitation/risk: CSS safeguards do not substitute for a real keyboard, screen-reader, contrast, and touch audit on actual devices; Streamlit markup can change between framework releases.
 - Recommended Backend action: none required. Continue the incremental article-source failure-safety work independently.
 - Recommended Product action: next measure query/render performance or perform a focused real-device/manual accessibility audit before adding more visual polish.
+
+### 2026-09-03 — Failure-safe incremental article-source synchronization
+
+- Agent: Backend Architect.
+- Problem found: first-pass `sync_article()` deleted all normalized evidence rows before inserting replacements, creating a user-visible trust regression if Supabase failed after deletion.
+- Root cause: incremental ingestion had not adopted the convergent source ordering already used by archive reconciliation.
+- Decision: add one `_sync_sources()` boundary that upserts every desired source first and removes stale rows only after all desired writes succeed. Preserve explicit empty-source cleanup and dry-run compatibility.
+- Implementation: `alam_supabase_ingest.py` now routes source writes through `_sync_sources()`; `test_alam_source_sync.py` injects a later-source failure and proves the prior evidence remains, no cleanup happens early, retry converges, and claim/source normalization remains intact; ALAM CI gates the new test.
+- Files/schema affected: `alam_app/alam_supabase_ingest.py`, `alam_app/test_alam_source_sync.py`, `.github/workflows/alam-checks.yml`, `alam_app/ALAM_BACKEND_CHANGELOG.md`, and this roadmap. No migration or RLS change.
+- Validation performed: deterministic failure-injection test plus the full repository ALAM workflow before merge to `main`.
+- Remaining limitation/risk: current-article, version, source, topic, and prediction writes are still separate transactions. Reconciliation repairs partial mirrors, but higher-fidelity multi-table failure injection remains open.
+- Recommended Backend action: test article-row success followed by version/derived failure, then add structured evidence-quality rejection gates.
+- Recommended Product action: no UI change is required; preserve the existing Evidence trust surface.
 
 ## H. Agent handoff template
 
