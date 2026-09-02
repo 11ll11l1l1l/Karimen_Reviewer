@@ -26,7 +26,7 @@ jobs:
       - name: Install ALAM dependencies
         run: pip install -r alam_app/requirements.txt
       - name: Python syntax check
-        run: python -m py_compile alam_app/streamlit_app.py alam_app/alam_core.py alam_app/alam_personas.py alam_app/alam_views.py alam_app/alam_mobile_views.py alam_app/alam_market_views.py alam_app/alam_visual_system.py alam_app/alam_extras.py alam_app/alam_intelligence.py alam_app/alam_local_state.py alam_app/alam_reader_views.py alam_app/validate_alam_data.py
+        run: python -m py_compile alam_app/streamlit_app.py alam_app/alam_core.py alam_app/alam_personas.py alam_app/alam_views.py alam_app/alam_mobile_views.py alam_app/alam_market_views.py alam_app/alam_visual_system.py alam_app/alam_editorial_visual.py alam_app/alam_extras.py alam_app/alam_intelligence.py alam_app/alam_local_state.py alam_app/alam_reader_views.py alam_app/validate_alam_data.py
       - name: Start ALAM Streamlit server
         shell: bash
         run: |
