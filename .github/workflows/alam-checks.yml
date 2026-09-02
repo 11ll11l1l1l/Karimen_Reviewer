@@ -45,6 +45,8 @@ jobs:
         run: python alam_app/test_alam_readiness_views.py
       - name: Evidence trust-view regression test
         run: python alam_app/test_alam_evidence_views.py
+      - name: Saved material-update review regression test
+        run: python alam_app/test_alam_saved_update_flow.py
       - name: Python syntax check
         run: >-
           python -m py_compile
@@ -54,6 +56,7 @@ jobs:
           alam_app/alam_views.py
           alam_app/alam_mobile_views.py
           alam_app/alam_story_page.py
+          alam_app/alam_saved_views.py
           alam_app/alam_evidence_views.py
           alam_app/alam_market_views.py
           alam_app/alam_visual_system.py
@@ -78,6 +81,7 @@ jobs:
           alam_app/test_alam_supabase_health.py
           alam_app/test_alam_readiness_views.py
           alam_app/test_alam_evidence_views.py
+          alam_app/test_alam_saved_update_flow.py
           alam_app/test_article_image_render.py
           alam_app/test_reliable_image_renderer.py
           alam_app/validate_alam_data.py
