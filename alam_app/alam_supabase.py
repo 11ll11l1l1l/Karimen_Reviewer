@@ -128,6 +128,23 @@ def _history_row_to_record(row):
     return record
 
 
+def _source_scope_ids(records, source_article_ids=None):
+    """Resolve which current stories need normalized ``article_sources`` rows.
+
+    ``None`` intentionally means the established full-feed behavior. An explicit
+    iterable means "hydrate only these IDs" and an empty iterable means no normalized
+    source query. This distinction lets the mobile detail route use the article JSON
+    payload as a cheap selection probe, then request normalized evidence only for the
+    selected story. Feed/list routes still receive source rows for every visible story,
+    so card evidence counts and trust cues are not weakened for performance.
+    """
+    record_ids = [str(record.get("id")) for record in records if record.get("id")]
+    if source_article_ids is None:
+        return record_ids
+    requested = {str(article_id).strip() for article_id in source_article_ids if str(article_id).strip()}
+    return [article_id for article_id in record_ids if article_id in requested]
+
+
 @st.cache_data(ttl=45, show_spinner=False)
 def load_article_sources(article_ids):
     """Return public source rows grouped by article id."""
@@ -152,11 +169,15 @@ def load_article_sources(article_ids):
 
 
 @st.cache_data(ttl=45, show_spinner=False)
-def load_published_articles(limit=500):
-    """Read and hydrate current published ALAM articles from Supabase.
+def load_published_articles(limit=500, source_article_ids=None):
+    """Read current published ALAM articles and hydrate route-relevant sources.
 
-    Returns ``(records, error)``. Empty records with no error means the schema is
-    healthy but not yet populated, allowing the app's migration fallback to remain.
+    ``source_article_ids=None`` preserves the established feed/list contract and
+    hydrates normalized evidence for every returned story. Detail routes may pass a
+    stable-ID iterable to hydrate only those stories; the underlying article ``record``
+    JSON remains intact for all rows, so selection and fallback behavior do not depend
+    on the normalized-source query. Empty records with no error still means the schema
+    is healthy but not populated, allowing the local migration fallback to remain.
     """
     try:
         client = get_supabase_public()
@@ -178,8 +199,9 @@ def load_published_articles(limit=500):
             if record:
                 records.append(record)
 
-        if records:
-            sources, source_error = load_article_sources([r.get("id") for r in records])
+        source_ids = _source_scope_ids(records, source_article_ids)
+        if source_ids:
+            sources, source_error = load_article_sources(source_ids)
             if source_error is None:
                 for record in records:
                     db_sources = sources.get(str(record.get("id")), [])

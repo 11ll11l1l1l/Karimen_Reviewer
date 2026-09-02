@@ -1,5 +1,20 @@
 # ALAM Product Builder Handoff
 
+## 2026-09-03 — Selected-story source hydration
+
+- User problem found: after selected-story history was scoped, opening one Supabase-backed article still queried normalized `article_sources` rows for the entire current feed during the detail-selection probe. That network payload was unrelated to the story the reader tapped.
+- Root cause: `load_published_articles()` always hydrated normalized sources for every returned article, even when the route needed the current article rows only to validate one selected stable ID.
+- Product/design decision: keep the established full-source hydration contract on Today/Discover/Action/Market/Search/Saved and other list routes because their cards use evidence cues. When a valid detail selection is already present, narrow only the normalized `article_sources` query to that selected ID. Keep all current article JSON rows available so deep-link validation and Connect-the-Dots lookup remain unchanged.
+- Implementation summary: `load_published_articles()` now accepts an explicit source scope with conservative semantics: `None` = all current stories, a stable-ID iterable = only those stories, empty iterable = no normalized source query. `alam_article_scope.py` derives a one-story scope from `selected_story`; stale selections fall back to the existing fully hydrated feed path after validation fails.
+- Files/components affected: `alam_app/alam_supabase.py`, `alam_app/alam_article_scope.py`, `alam_app/test_alam_article_scope.py`, and this handoff note. No schema, RLS, ingestion, personalization, comments, navigation, or Job Radar path changed.
+- Mobile behavior: tapping a story preserves the same headline, Why it matters, action guidance, Before/Now history, Evidence, Panel, Deep view, source links, related stories, save/share controls, and deep-link state while reducing normalized evidence hydration from up to the whole current feed to one story.
+- Zero/one/many behavior: no active selection keeps full-feed source hydration; one selected story requests one normalized source scope; a stale/missing selection requests no matching source rows during the cheap probe and then falls back to the mature full-feed loader; Supabase unavailable/local migration fallback is unchanged.
+- Trust/error behavior: the original v5 article `record` JSON remains intact for every row, so route scoping does not erase embedded evidence or make selection depend on the normalized-source query. Feed/list evidence cues continue receiving full normalized source hydration.
+- Validation: deterministic regression coverage now asserts full-feed, selected-story, empty and stale/missing source-scope semantics alongside the existing selected-history and de-duplication contract. The existing ALAM CI gate already executes this test plus syntax, production-data and Streamlit health checks.
+- Remaining limitation: article current-row payloads still include the full v5 `record` JSON, which may itself contain sources. This pass removes the extra normalized `article_sources` rows from unrelated detail-route stories; it does not claim a complete payload benchmark or redesign the article-row contract.
+- Recommended Agent A next step: proceed with stale/outdated lifecycle rules. If a future compact trust aggregate is added to current article rows, it could enable further list-route source payload reduction without weakening evidence cues.
+- Recommended Agent B next step: measure current-row JSON payload size and route-specific relationship/prediction hydration before making another performance change; preserve trust information ahead of micro-optimizations.
+
 ## 2026-09-03 — Selected-story history hydration
 
 - User problem found: opening one article detail page on the Supabase-backed app hydrated `article_versions` for every current story before rendering the selected story. This added unrelated network payload and parsing to the most latency-sensitive mobile navigation path.
