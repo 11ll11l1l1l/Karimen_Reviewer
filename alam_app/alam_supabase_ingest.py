@@ -158,27 +158,95 @@ def _next_version(client, article_id):
     return int(rows[0]["version_no"]) + 1 if rows else 1
 
 
-def _sync_topics(client, record, dry_run=False):
+def _topic_tags(record):
+    """Return at most 30 unique normalized article tags in stable source order.
+
+    Deduplication is by slug rather than ``(slug, label)`` because the database has
+    one unique topic row per slug. Two display labels that normalize to the same slug
+    must not cause repeated joins or make reconciliation depend on capitalization.
+    """
     tags = []
+    seen_slugs = set()
     for value in record.get("tags") or []:
         label = str(value).strip()
         slug = _slugify(label)
-        if slug and (slug, label) not in tags:
-            tags.append((slug, label))
+        if not slug or slug in seen_slugs:
+            continue
+        seen_slugs.add(slug)
+        tags.append((slug, label))
+        if len(tags) >= 30:
+            break
+    return tags
+
+
+def _sync_topics(client, record, dry_run=False):
+    """Converge article-topic links without a delete-before-insert outage window.
+
+    The previous implementation deleted every existing link before resolving and
+    inserting the desired topics. A transient failure after that delete could leave a
+    published article with no topic relationships until a later reconciliation run.
+
+    This implementation resolves and upserts *all* desired topics/joins first. Only
+    after every desired link has been accepted do we read the current join set and
+    remove stale links. If topic resolution or an upsert fails, the exception bubbles
+    up while the previous good links remain available. This mirrors the evidence/source
+    reconciliation safety rule and makes retry behavior naturally convergent.
+    """
+    tags = _topic_tags(record)
     if dry_run:
         return len(tags)
 
     article_id = str(record["id"])
-    client.table("article_topics").delete().eq("article_id", article_id).execute()
-    for slug, label in tags[:30]:
-        client.table("topics").upsert({"slug": slug, "label": label}, on_conflict="slug").execute()
-        topic = client.table("topics").select("id").eq("slug", slug).limit(1).execute().data
-        if topic:
-            client.table("article_topics").upsert({
+    desired_topic_ids = set()
+
+    for slug, label in tags:
+        client.table("topics").upsert(
+            {"slug": slug, "label": label},
+            on_conflict="slug",
+        ).execute()
+        topic_rows = (
+            client.table("topics")
+            .select("id")
+            .eq("slug", slug)
+            .limit(1)
+            .execute()
+            .data
+            or []
+        )
+        if not topic_rows or not topic_rows[0].get("id"):
+            # Failing closed is important here. Treating an unresolved desired topic
+            # as optional and continuing to cleanup could erase the previous join even
+            # though Supabase never confirmed its replacement.
+            raise RuntimeError(f"Supabase did not return an id for ALAM topic slug {slug!r}")
+
+        topic_id = str(topic_rows[0]["id"])
+        desired_topic_ids.add(topic_id)
+        client.table("article_topics").upsert(
+            {
                 "article_id": article_id,
-                "topic_id": topic[0]["id"],
+                "topic_id": topic_id,
                 "weight": 1,
-            }).execute()
+            },
+            on_conflict="article_id,topic_id",
+        ).execute()
+
+    existing_rows = (
+        client.table("article_topics")
+        .select("topic_id")
+        .eq("article_id", article_id)
+        .execute()
+        .data
+        or []
+    )
+    stale_topic_ids = [
+        str(row["topic_id"])
+        for row in existing_rows
+        if row.get("topic_id") is not None and str(row["topic_id"]) not in desired_topic_ids
+    ]
+    for topic_id in stale_topic_ids:
+        client.table("article_topics").delete().eq("article_id", article_id).eq(
+            "topic_id", topic_id
+        ).execute()
     return len(tags)
 
 
