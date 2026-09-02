@@ -87,7 +87,11 @@ extras.install_extras_css()
 
 # Real/official image remains first. If none exists, use the persistent AI-generated
 # editorial asset created after publishing; only then fall back to deterministic SVG.
+# Install the fail-safe CSS-background renderer BEFORE the visual-system closures are
+# created. This prevents any import-order or stale monkey-patch path from falling back
+# to the legacy <img> renderer, which can expose broken-image alt text on mobile.
 visual_system._svg_data_uri = generated_or_editorial_data_uri
+visual_system.article_image_html = polish.article_image_html
 visual_system.install_visual_system(views)
 polish.install(views, reader)
 # Replace the old generic sprite with the fixed generated character portraits.
