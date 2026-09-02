@@ -85,7 +85,12 @@ def _change_preview(record, all_records):
     return _compact(change[0]), _compact(change[1])
 
 
-def render_saved(records, all_records, manager, comments, views):
+def render_saved(records, manager, comments, views, all_records=None):
+    # Keep the mature four-argument call contract so older page orchestration cannot
+    # break during rolling deploys. When complete history is not supplied, explicit
+    # v5 `content.change_summary` still powers previews; inferred history previews
+    # simply degrade away rather than fabricating a change.
+    all_records = all_records or records
     saved = [record for record in records if is_followed(record.get("id"))]
     updated = [record for record in saved if localstate.saved_has_update(record)]
 
