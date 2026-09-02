@@ -25,6 +25,7 @@ Permanent constraints:
 - Evidence view with source count, official/primary count, publisher/domain diversity, classified-claim coverage, and source-to-claim support. Diversity is explicitly not treated as proof of editorial independence.
 - Cross-cutting accessibility contract installed after feature/theme styles: visible `:focus-visible` keyboard focus, minimum 44px desktop interaction targets, 48px mobile targets, operating-system reduced-motion support, and non-colour link affordance for evidence-bearing links.
 - Selected article detail now scopes cross-agent comment hydration to that one current story; feed/list views retain the full current-story comment scope, reducing unnecessary Supabase payload without weakening the detailed Panel contract.
+- Selected article detail now also scopes Supabase `article_versions` hydration to that one validated stable story ID while preserving its complete Before/Now timeline; stale selections fail back to the established feed path and local migration fallback remains compatible.
 - Supabase-first public article loading with local JSON migration fallback.
 - Supabase hydration for sources, history, comments, wisdom, predictions, relationships, and database health.
 - Core v5 Supabase schema with RLS plus non-destructive compatibility bridge for the earlier UUID schema.
@@ -44,7 +45,7 @@ Permanent constraints:
 - A public-safe sync-health RPC contract exists in migration `005_public_sync_health.sql`; direct public reads of `agent_runs` remain blocked by RLS.
 - Backend readiness classification distinguishes disconnected, diagnostics unavailable, never synchronized, running, failed, partial, stale sync, local fallback, synchronized-empty, unknown status, and ready.
 - Settings renders one calm Data status verdict from that classifier and keeps raw private workflow/error metadata out of the public UI.
-- CI gates reconciliation/chronology, multi-table partial-write recovery, source/topic failure safety, Evidence, backend readiness, product readiness, Saved material-update review state, comment-hydration scope, accessibility, syntax, production data, image behavior, dependency installation, and Streamlit startup health.
+- CI gates reconciliation/chronology, multi-table partial-write recovery, source/topic failure safety, Evidence, backend readiness, product readiness, Saved material-update review state, comment/history hydration scope, accessibility, syntax, production data, image behavior, dependency installation, and Streamlit startup health.
 
 ## B. In progress / requires production verification
 
@@ -100,7 +101,7 @@ Required evidence before declaring cutover complete:
 
 ### P2 — Performance / accessibility
 
-- Continue auditing Supabase query/cache boundaries. Selected article comment hydration is now scoped, but article history/source hydration and route-specific query counts should be measured before broader lazy-loading changes.
+- Continue auditing Supabase query/cache boundaries. Selected article comment and version-history hydration are now scoped; next measure normalized source payload/call counts before changing source hydration or broader feed history behavior.
 - Perform a real-device keyboard/screen-reader/manual mobile accessibility audit; the CSS contract is a safeguard, not a claim of full WCAG conformance.
 - Consolidate conflicting CSS only with regression coverage.
 - Continue reviewing labels, contrast, mobile density, and semantic behavior as Streamlit widgets evolve.
@@ -151,7 +152,9 @@ These require external credentials/consoles and must not be falsely marked compl
 - Public sync-health intentionally exposes no raw errors/workflow metadata; operator diagnosis belongs in trusted logs/admin tooling.
 - Accessibility CSS improves baseline interaction behavior but does not by itself prove screen-reader semantics or full WCAG conformance; Streamlit-generated markup must be manually audited periodically.
 - Feed/list pages still request comments across all current story IDs because those surfaces can render discussion across multiple stories. Further narrowing should be route-aware and measured rather than assuming every list view can drop comment bodies.
-- Local JSON comment fallback remains compatible but still scans its local comment archive; this iteration specifically reduces Supabase payload on selected article detail pages.
+- Local JSON comment fallback remains compatible but still scans its local comment archive; this specifically reduces Supabase payload on selected article detail pages.
+- Local JSON article fallback also remains intentionally full-history; the new selected-story version scoping applies to Supabase network hydration, where it removes unrelated query payload without inventing a second local audit-file contract.
+- Current Supabase article loading still hydrates normalized source rows across the current feed because cards display evidence/source counts. Future source scoping should first provide or measure a compact count/quality contract rather than silently weakening card trust cues.
 
 ## G. Verification evidence / development log
 
@@ -277,6 +280,21 @@ These require external credentials/consoles and must not be falsely marked compl
 - Remaining limitation/risk: local JSON fallback still scans its local comment archive. Broader route-aware lazy hydration for history/sources/comments should be measured before changing list behavior.
 - Recommended Backend action: none required for this view boundary; continue source-quality gates. If future cards need only comment counts, expose compact counts separately instead of forcing full comment-body hydration.
 - Recommended Product action: next measure article history/source hydration and route-specific query counts; avoid broader lazy loading until Saved, Weekly, and history behavior are proven safe.
+
+### 2026-09-03 — View-scoped selected article history hydration
+
+- Agent: Product Builder.
+- Problem found: selected article detail still hydrated `article_versions` for every current story before the selected story could render, even after comment hydration had already been scoped.
+- Root cause: `extras.load_article_records()` combined current Supabase rows with the entire history set before `selected_story` was validated.
+- Decision: load current rows first, validate detail selection against the current feed, then request version history for exactly that stable story ID. Keep non-detail routes on the established full-history contract until their actual history dependencies are measured. Preserve full local-file fallback rather than inventing a second migration contract.
+- Implementation: added `alam_article_scope.py` with current-only read selection, one-ID detail history scope and current/history de-duplication; integrated the boundary in `streamlit_app.py`; added deterministic `test_alam_article_scope.py` coverage and CI gating.
+- Files/schema affected: `alam_app/alam_article_scope.py`, `alam_app/streamlit_app.py`, `alam_app/test_alam_article_scope.py`, `.github/workflows/alam-checks.yml`, `alam_app/ALAM_PRODUCT_CHANGELOG.md`, and this roadmap. No database migration, RLS, ingestion, trusted-sync, credential, or Job Radar change.
+- Mobile behavior: opening a valid article keeps the same 30-sec, Panel, Evidence, Deep, Before/Now, related-story, save and share experience while its Supabase version-history query contains one article ID instead of all current article IDs. Stale browser selection safely returns to the mature feed path.
+- Zero/one/many/fallback behavior: empty selection does not widen a detail query; one valid selection requests one ID; feed/list many-story history behavior is unchanged; Supabase failure/local migration fallback keeps the existing local record scan. A history-query failure leaves the current story readable and surfaces the existing sanitized history diagnostic.
+- Validation performed: deterministic scope/dedup regression test plus CI inclusion and Python syntax coverage; full workflow result must be green before merge.
+- Remaining limitation/risk: current article reads still hydrate normalized sources across all current stories because article cards expose evidence counts. Source scoping should be measured and backed by a compact trust/count contract before changing that behavior.
+- Recommended Backend action: continue source/evidence publication quality gates. If a future safe aggregate contract exposes source count/primary count on current rows, Product can reduce list-source payload without weakening trust cues.
+- Recommended Product action: measure source payload and route-specific query counts next; do not broaden lazy-loading changes speculatively.
 
 ## H. Agent handoff template
 
