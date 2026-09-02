@@ -133,7 +133,11 @@ def prepare_public_archive():
 
     Returns a mapping of stable article ID to deterministic version tuples.
     """
-    items = _article_inputs()
+    # Materialize exactly once. `_article_inputs()` currently returns a list, but
+    # keeping this boundary iterator-safe prevents the quality pass from consuming a
+    # generator and leaving chronology/reconciliation with an empty archive. It also
+    # guarantees every preflight stage examines the same immutable in-process snapshot.
+    items = list(_article_inputs())
 
     # Evidence quality is checked against the complete allow-listed public archive
     # before invalid shapes are filtered for chronology grouping. Otherwise a v5 row
