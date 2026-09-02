@@ -92,8 +92,7 @@ def _render_terms(terms: list[Any]) -> None:
             continue
         line = f"**{term}** — {meaning}" if term else meaning
         if why:
-            line += f"  
-*Bakit relevant dito:* {why}"
+            line += f"  \n*Bakit relevant dito:* {why}"
         st.markdown(f"- {line}")
 
 
