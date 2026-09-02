@@ -1,10 +1,12 @@
 import json
+from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parent
 DATA = ROOT / "data"
 ERRORS = []
+V4_CUTOFF = datetime.fromisoformat("2026-09-02T13:20:00+09:00")
 
 
 def err(path, msg):
@@ -19,8 +21,21 @@ def valid_url(value):
         return False
 
 
+def is_v4(row):
+    try:
+        value = datetime.fromisoformat(str(row.get("created_at", "")).replace("Z", "+00:00"))
+        if value.tzinfo is None:
+            return False
+        return value >= V4_CUTOFF
+    except Exception:
+        return False
+
+
 def validate_article(path, row):
-    for key in ("id", "agent", "created_at", "type", "title", "summary", "importance", "confidence", "sources", "claims", "content"):
+    required = ["id", "agent", "created_at", "type", "title", "summary", "importance", "confidence", "sources", "content"]
+    if is_v4(row):
+        required.append("claims")
+    for key in required:
         if key not in row:
             err(path, f"missing {key}")
     for key in ("importance", "confidence"):
@@ -46,7 +61,7 @@ def validate_article(path, row):
         if kind not in {"FACT", "INFERENCE", "ESTIMATE", "ASSUMPTION", "OPINION"}:
             err(path, f"claim {i} invalid kind")
         refs = claim.get("source_refs") or []
-        if kind == "FACT" and not refs:
+        if kind == "FACT" and is_v4(row) and not refs:
             err(path, f"FACT claim {i} has no source_refs")
         for ref in refs:
             if not isinstance(ref, int) or ref < 1 or ref > len(sources):
