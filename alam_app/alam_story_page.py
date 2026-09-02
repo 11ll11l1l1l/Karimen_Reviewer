@@ -16,6 +16,7 @@ import streamlit as st
 
 import alam_evidence_views as evidence_views
 import alam_intelligence as intelligence
+import alam_learning_views as learning_views
 import alam_local_state as localstate
 import alam_mobile_views as mobile
 from alam_core import (
@@ -199,7 +200,12 @@ def render_story_page(all_records, record, comments, manager=None):
     _render_change(record, all_records)
     _render_disagreement_signal(record, comments)
 
-    st.markdown("<div class='story-view-label'>Choose how deep you want to go</div>", unsafe_allow_html=True)
+    # The card/hero summary deliberately stays short. Opening the story is the signal
+    # to switch into teacher mode: explain unfamiliar terms and mechanics, then end in
+    # memorable takeaways or a concrete checklist. Old records degrade gracefully.
+    learning_views.render_learning_section(record)
+
+    st.markdown("<div class='story-view-label'>More ways to explore this story</div>", unsafe_allow_html=True)
     mode = st.segmented_control(
         "View",
         ["⚡ 30 sec", "🗣 Panel", "🧾 Evidence", "🧠 Deep"],
