@@ -1,0 +1,88 @@
+{
+  "id": "investment-recovery-secondary-scam-japan-2026-09",
+  "agent": "practical",
+  "created_at": "2026-09-02T14:12:00+09:00",
+  "type": "risk",
+  "title": "Japan warns: scammers are charging victims again to “recover” investment losses",
+  "summary": "Japan's Consumer Affairs Agency is warning about a second scam after investment losses: victims are told to pay money, buy another investment, or use a fake 'government relief' process to get their money back. If someone asks for payment to recover a previous investment loss, do not pay and call 188 for consumer advice.",
+  "why_it_matters": "Ito ang dangerous part: people who already lost money are easier targets because they urgently want recovery. The safest default is simple—legitimate loss recovery should not begin with an unknown party demanding another payment or another investment.",
+  "importance": 86,
+  "confidence": 97,
+  "tags": ["Japan", "scam", "investment", "consumer protection", "188", "fraud"],
+  "geography": ["Japan"],
+  "status": "NEW",
+  "image_alt": "ALAM practical visual for Japan's warning about investment-recovery scams",
+  "sources": [
+    {
+      "publisher": "Consumer Affairs Agency, Government of Japan",
+      "title": "投資系トラブルの二次被害にご注意ください!",
+      "url": "https://www.caa.go.jp/policies/policy/consumer_policy/caution/caution_045/index.html",
+      "published_at": "2026-09-01",
+      "source_type": "official"
+    },
+    {
+      "publisher": "Consumer Affairs Agency, Government of Japan",
+      "title": "SNSなどを通じた投資や副業といった『もうけ話』にご注意ください!",
+      "url": "https://www.caa.go.jp/policies/policy/consumer_policy/caution/caution_036/",
+      "published_at": "2026-09-01",
+      "source_type": "official"
+    }
+  ],
+  "claims": [
+    {
+      "kind": "FACT",
+      "text": "The Consumer Affairs Agency says it has seen consultations where previous investment-loss victims were told they had to buy another investment, pay for a refund procedure, or use a supposed government relief system to recover money.",
+      "source_refs": [1],
+      "basis": "Official Consumer Affairs Agency warning."
+    },
+    {
+      "kind": "FACT",
+      "text": "The agency advises consumers to refuse unknown parties demanding payment for recovery and to contact the nationwide Consumer Hotline 188 when they need help.",
+      "source_refs": [1],
+      "basis": "Official stated consumer action."
+    },
+    {
+      "kind": "FACT",
+      "text": "The Consumer Affairs Agency separately warns that if an investment solicitation directs funds to a personal-name bank account, consumers should not transfer money and should treat it as fraudulent.",
+      "source_refs": [2],
+      "basis": "Official consumer warning about SNS investment schemes."
+    },
+    {
+      "kind": "INFERENCE",
+      "text": "Someone who has already lost money may be especially vulnerable to a recovery pitch because the promise directly targets the desire to undo the first loss.",
+      "source_refs": [1],
+      "basis": "Behavioral inference from the scam's targeting method; not a diagnosis of individual victims."
+    }
+  ],
+  "content": {
+    "key_message": "Never pay an unknown party to 'unlock' or recover money from a previous investment loss.",
+    "what_changed": "The Consumer Affairs Agency issued a fresh warning on September 1 about secondary victimization after investment trouble.",
+    "who_is_affected": "Anyone in Japan who previously lost money in an investment, online trading, or similar scheme—and family members helping them recover funds.",
+    "when": "The warning was published September 1, 2026 and applies now.",
+    "financial_impact": "Potentially another avoidable loss. The agency does not give one typical yen amount, so ALAM does not invent one.",
+    "risk_if_ignored": "You can lose additional money on top of the original loss, while also giving the new party more personal or financial information.",
+    "action": "AVOID",
+    "deadline": "No fixed deadline. Act immediately if contacted.",
+    "effort": "Low: stop payment/contact, keep records, and call 188 if unsure.",
+    "potential_benefit": "Avoiding a second loss and getting routed to a legitimate local consumer-consultation service.",
+    "downside": "A real legal or financial recovery process can exist, but you should independently verify who is contacting you instead of trusting an unsolicited recovery pitch.",
+    "what_to_do_or_watch": "Do not send money, do not buy a new product as a condition of recovery, and independently call Consumer Hotline 188 if the approach is unclear.",
+    "bottom_line": "If 'getting your money back' requires sending more money first, stop and verify independently.",
+    "confidence_reason": "Very high confidence because the warning and recommended action come directly from Japan's Consumer Affairs Agency.",
+    "what_would_change_mind": "Only independently verified contact from a legitimate regulated institution, lawyer, court, or official process should change the default 'do not pay' response; verify using contact information you find independently.",
+    "usefulness": 95,
+    "novelty": 82,
+    "impact": {
+      "money": "HIGH",
+      "family": "MED",
+      "career": "LOW",
+      "japan": "MED",
+      "urgency": "HIGH"
+    },
+    "connection_tags": ["investment-scam", "consumer-protection", "secondary-victimization"],
+    "reading_levels": {
+      "30 sec": "What happened: Japan issued a new warning about scammers targeting people who already lost money in investments.\nWhy it matters: They ask for another payment, another investment, or claim a fake relief/refund process.\nWhat to do: Do not pay; independently verify and call Consumer Hotline 188 if unsure.\nBottom line: Never send more money just to 'unlock' recovery of an old loss.",
+      "2_min": "The Consumer Affairs Agency is warning about secondary investment scams. The pattern is simple: after a person loses money, another party offers recovery but asks for more money, a new investment purchase, or payment for a supposed refund or government-relief procedure. The official advice is to refuse unknown recovery demands and use Consumer Hotline 188 when help is needed. If a legitimate recovery path exists, verify it independently through official or regulated channels rather than the contact details supplied by the person asking for money."
+    }
+  }
+}
