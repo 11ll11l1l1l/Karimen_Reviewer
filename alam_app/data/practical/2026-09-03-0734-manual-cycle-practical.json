@@ -1,0 +1,106 @@
+{
+  "id": "japan-electric-gas-support-final-month-2026-09",
+  "agent": "practical",
+  "created_at": "2026-09-03T07:34:50+09:00",
+  "type": "saving",
+  "title": "September is the last scheduled month of Japan's summer utility discount",
+  "summary": "Japan's current electricity and city-gas support covers July through September usage, making September the final scheduled month under the published program. For September usage, low-voltage electricity is discounted by ¥3.5/kWh and city gas by ¥14/m³; households do not need to apply.",
+  "why_it_matters": "The support is easy to miss because it is applied through participating providers rather than paid as cash. More importantly, households should expect the bill effect to disappear after the September usage period unless the government announces an extension.",
+  "importance": 85,
+  "confidence": 99,
+  "tags": ["Japan", "Electricity", "Gas", "Utility Bills", "Household Savings", "Subsidy"],
+  "geography": ["Japan"],
+  "status": "NEW",
+  "sources": [
+    {
+      "publisher": "Agency for Natural Resources and Energy / METI",
+      "title": "電気・都市ガスをご利用するみなさまへ｜電気・ガス料金支援",
+      "url": "https://denkigas-gekihenkanwa.go.jp/?yj_r=1d",
+      "published_at": "2026-09-03",
+      "source_type": "official"
+    },
+    {
+      "publisher": "Ministry of Economy, Trade and Industry",
+      "title": "2026年7月、8月及び9月使用分の電気・ガス料金支援の実施に伴い、電気・都市ガス料金の値引きを行うことができる特例認可・承認を行いました",
+      "url": "https://www.meti.go.jp/press/2026/06/20260612003/20260612003.html",
+      "published_at": "2026-06-12",
+      "source_type": "official"
+    }
+  ],
+  "claims": [
+    {
+      "kind": "FACT",
+      "text": "The currently published household electricity and city-gas support covers usage from July through September 2026.",
+      "source_refs": [1, 2],
+      "basis": "Official METI program period"
+    },
+    {
+      "kind": "FACT",
+      "text": "For September usage, the published discount is ¥3.5 per kWh for low-voltage electricity and ¥14 per cubic meter for city gas.",
+      "source_refs": [1, 2],
+      "basis": "Official support-rate table"
+    },
+    {
+      "kind": "FACT",
+      "text": "Consumers do not need to apply for the discount; participating electricity and gas retailers deduct it according to usage. LPG/propane gas is not covered by this program.",
+      "source_refs": [1],
+      "basis": "Official consumer guidance"
+    },
+    {
+      "kind": "ESTIMATE",
+      "text": "A household using 400 kWh of low-voltage electricity and 30 m³ of city gas during September would receive about ¥1,820 of support before any plan-specific billing effects: ¥1,400 electricity plus ¥420 gas.",
+      "source_refs": [1],
+      "basis": "Simple calculation using the official September rates"
+    },
+    {
+      "kind": "INFERENCE",
+      "text": "If no extension is announced, households should expect an upward step in later bills when this temporary support disappears, even if underlying energy prices are unchanged.",
+      "source_refs": [1, 2],
+      "basis": "Inference from the published end of the support period"
+    }
+  ],
+  "editorial_visual": {
+    "style": "editorial",
+    "motif": "home",
+    "secondary_motif": "yen",
+    "scene": "a Japanese home under an air conditioner with a shrinking stack of yen discount coupons, the final coupon labeled by a September calendar icon while an October page waits behind it",
+    "caption": "The summer bill cushion is on its last scheduled month",
+    "silliness": 28,
+    "exaggeration": 66
+  },
+  "content": {
+    "key_message": "September usage still gets the government utility discount, but under the current published schedule the cushion ends after this month.",
+    "who_is_affected": "Households and eligible businesses using electricity through participating retailers and city gas. LPG/propane users are not covered by this specific program.",
+    "when": "Support applies to July, August and September 2026 usage. September usage generally appears on the following billing cycle depending on the provider and meter-reading date.",
+    "financial_impact": "September support is ¥3.5/kWh for low-voltage electricity and ¥14/m³ for city gas. Actual yen savings depend on usage and the contract/provider.",
+    "estimated_saving_yen": 1820,
+    "time_minutes": 5,
+    "risk_if_ignored": "The main risk is budgeting as though the temporary discount will continue indefinitely. A separate scam risk also exists: the official program says households do not need to pay a fee or provide personal information to receive the discount.",
+    "action": "WATCH",
+    "deadline": "No household application deadline. Treat September 2026 usage as the final scheduled supported month unless an official extension is announced.",
+    "effort": "Very low: check that the discount appears on your bill, note your normal monthly usage, and avoid giving personal information or fees to callers claiming they must process the support.",
+    "potential_benefit": "Avoid surprise when the temporary discount ends and confirm that you are actually receiving the published support through your provider.",
+    "downside": "Do not switch providers solely because of this government discount; the support applies through participating providers and the best tariff still depends on the full contract. The ¥1,820 example is not a universal household saving.",
+    "what_would_change_mind": "A new METI announcement extending or replacing the support after September would change the expected post-support bill step-up.",
+    "usefulness": 94,
+    "novelty": 74,
+    "impact": {
+      "money": "MED",
+      "family": "MED",
+      "career": "LOW",
+      "japan": "HIGH",
+      "urgency": "MED"
+    },
+    "connection_tags": ["utility-support", "energy-costs", "household-budget", "oil-inflation"],
+    "reading_levels": {
+      "30 sec": {
+        "what_happened": "September is the final scheduled month of the current electricity and city-gas discount program.",
+        "why_it_matters": "The support can save a typical household meaningful money, but the cushion may disappear from later bills.",
+        "what_to_do_watch": "Check your bill, budget for the support ending, and ignore anyone asking for a fee or personal data to claim it.",
+        "bottom_line": "No application is needed; just verify the discount and prepare for the temporary support to end."
+      },
+      "2_min": "The government summer support currently covers July through September usage. September's published rates are ¥3.5/kWh for low-voltage electricity and ¥14/m³ for city gas, applied through participating retailers with no consumer application. A household using 400 kWh and 30 m³ would receive roughly ¥1,820 of support as a simple example. Because the current program stops after September usage, later bills can rise mechanically when the discount disappears even if the underlying tariff does not change."
+    },
+    "bottom_line": "Use September to measure how much the temporary discount is helping your household so the post-support bill does not surprise you."
+  }
+}
