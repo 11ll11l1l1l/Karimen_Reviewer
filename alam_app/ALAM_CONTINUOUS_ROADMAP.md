@@ -40,12 +40,14 @@ Permanent constraints:
 - Incremental topic synchronization now resolves/upserts desired topics and links before deleting stale links, so transient failures do not deliberately erase the prior topic set.
 - Exact duplicate audit payloads are removed before deterministic version numbering.
 - Fail-closed chronology preflight rejects materially different versions of one stable article ID sharing the same explicit `created_at` before public content writes.
+- Fail-closed v5 publication-quality preflight now rejects modern audit records with no usable HTTP(S) evidence, malformed source entries, invalid claim/source mappings, or unsourced FACT claims before public Supabase mutation; one-source/no-primary cases remain warnings rather than invented certainty rules.
+- Structured publication rejections are persisted best-effort to the existing RLS-private `rejected_candidates` table, while public sync-health continues to exclude raw rejected payloads/reasons.
 - Legacy records with no explicit `created_at` remain compatible; path ordering is retained only as a deterministic fallback for those historical shapes.
 - Reconciliation is scoped to the four public ALAM article directories, so private Job Radar data is unreachable by construction.
 - A public-safe sync-health RPC contract exists in migration `005_public_sync_health.sql`; direct public reads of `agent_runs` remain blocked by RLS.
 - Backend readiness classification distinguishes disconnected, diagnostics unavailable, never synchronized, running, failed, partial, stale sync, local fallback, synchronized-empty, unknown status, and ready.
 - Settings renders one calm Data status verdict from that classifier and keeps raw private workflow/error metadata out of the public UI.
-- CI gates reconciliation/chronology, multi-table partial-write recovery, source/topic failure safety, Evidence, backend readiness, product readiness, Saved material-update review state, comment/history hydration scope, accessibility, syntax, production data, image behavior, dependency installation, and Streamlit startup health.
+- CI gates reconciliation/chronology, multi-table partial-write recovery, source/topic failure safety, publication evidence quality, Evidence, backend readiness, product readiness, Saved material-update review state, comment/history hydration scope, accessibility, syntax, production data, image behavior, dependency installation, and Streamlit startup health.
 
 ## B. In progress / requires production verification
 
@@ -72,9 +74,8 @@ Required evidence before declaring cutover complete:
 ### P0 — Reliability / data integrity
 
 1. Apply/verify migration `005_public_sync_health.sql` in production, run a real trusted sync, and verify Settings readiness.
-2. Add stronger source/evidence quality gates before publication with structured rejection reasons.
-3. Add stale/outdated lifecycle checks and safe story-expiration rules.
-4. Consider a separately reviewed policy for orphan Supabase rows absent from GitHub; do not delete broadly by default.
+2. Add stale/outdated lifecycle checks and safe story-expiration rules.
+3. Consider a separately reviewed policy for orphan Supabase rows absent from GitHub; do not delete broadly by default.
 
 ### P1 — Core reader/product quality
 
@@ -143,8 +144,10 @@ These require external credentials/consoles and must not be falsely marked compl
 - Local JSON fallback protects cutover but can eventually mask stale database synchronization; narrow it only after Supabase stability is proven.
 - Production migration 005 plus a real trusted sync are still required before repository readiness logic proves live cutover.
 - The six-hour threshold is operational sync freshness, not a claim that article facts expire after six hours.
-- Historical audit records may lack current v5 fields. The chronology preflight deliberately does not treat missing `created_at` as an explicit timestamp conflict.
+- Historical audit records may lack current v5 fields. The chronology and evidence preflights preserve pre-v5 rebuild compatibility rather than retroactively applying modern source requirements to old records.
 - Same explicit timestamp + different payload now fails trusted sync before content writes. Correct the GitHub audit timestamp/payload rather than bypassing this guard.
+- Modern v5 evidence failures now fail trusted sync before public mutation. Repair the audit record/source mapping; do not bypass the gate. One-source/no-primary warnings do not prove weak reporting, and passing the gate does not prove factual correctness or source independence.
+- `rejected_candidates` is intentionally private under RLS and may contain the original rejected public-candidate payload for trusted diagnosis; never expose that table through public app credentials or a broad RPC.
 - Reconciliation does not delete unrelated Supabase articles absent from GitHub; broad orphan cleanup requires a separate reviewed policy.
 - Article/current-version/source/topic writes remain separate database operations. Deterministic CI now proves recovery for the highest-risk current-row-success/version-failure/equal-timestamp-retry sequence, while source/topic helpers and archive reconciliation remain convergent. A destructive live-database/network chaos test is still intentionally absent.
 - Supabase reconciliation is service-role-only; missing trusted credentials stop repair before database content writes.
@@ -295,6 +298,20 @@ These require external credentials/consoles and must not be falsely marked compl
 - Remaining limitation/risk: current article reads still hydrate normalized sources across all current stories because article cards expose evidence counts. Source scoping should be measured and backed by a compact trust/count contract before changing that behavior.
 - Recommended Backend action: continue source/evidence publication quality gates. If a future safe aggregate contract exposes source count/primary count on current rows, Product can reduce list-source payload without weakening trust cues.
 - Recommended Product action: measure source payload and route-specific query counts next; do not broaden lazy-loading changes speculatively.
+
+### 2026-09-03 — Fail-closed v5 evidence publication gate
+
+- Agent: Backend Architect.
+- Problem found: modern article files could satisfy the previous structural validator while providing no usable source rows, and trusted reconciliation had no independent evidence minimum before public publication.
+- Root cause: evidence-quality expectations lived mainly in research guidance; validation checked URL/ref correctness when values existed but did not require a usable evidence set. Without one shared preflight, incremental ingestion and reconciliation could diverge or a weak record could become public.
+- Decision: enforce the smallest defensible v5 publication contract before any public Supabase mutation: at least one usable HTTP(S) source, valid source objects/URLs, list-shaped claims, resolvable 1-based refs, and sourced FACT claims. Preserve historical pre-v5 rebuilds. Keep one-source/no-primary conditions as warnings, not hard failures, because the research protocol explicitly permits a unique source when uncertainty is calibrated.
+- Implementation: added `alam_publication_quality.py`; repository validation and `prepare_public_archive()` share it; the trusted wrapper catches structured `PublicationQualityError`, reports rejection counts, and best-effort persists candidate/reason/check metrics into the existing RLS-private `rejected_candidates` table before exiting non-zero. Reconciliation receives only the already quality-validated snapshot, so it cannot bypass the gate.
+- Files/schema affected: `alam_app/alam_publication_quality.py`, `alam_app/alam_supabase_reconcile.py`, `alam_app/alam_supabase_sync_job.py`, `alam_app/validate_alam_data.py`, `alam_app/test_alam_publication_quality.py`, `.github/workflows/alam-checks.yml`, `alam_app/ALAM_BACKEND_CHANGELOG.md`, and this roadmap. No new migration, public credential, Streamlit, or Job Radar path.
+- Validation performed: deterministic publication-quality tests are CI-gated together with production-data validation, backend recovery regressions, syntax compilation, dependencies, and Streamlit health. Merge remains conditional on the full ALAM workflow being green.
+- Current CI/deployment status: latest pre-change `main` ALAM workflow was green; branch/PR validation must be green before merge. Production migration `005_public_sync_health.sql` remains a separate manual cutover action.
+- Remaining limitation/risk: minimum usable evidence is not proof of truth, publisher independence, or cross-check availability. Private rejected-candidate persistence depends on the already-defined migrations 001/002 table; if private diagnostic persistence fails, publication still fails closed rather than weakening the boundary.
+- Recommended Backend action: implement explicit stale/outdated lifecycle checks and safe aging/expiration rules next.
+- Recommended Product action: do not expose rejected candidates publicly. Continue measuring normalized source payload before any source-hydration optimization.
 
 ## H. Agent handoff template
 
