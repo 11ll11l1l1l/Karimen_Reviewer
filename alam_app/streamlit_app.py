@@ -14,6 +14,7 @@ import alam_extras as extras
 import alam_intelligence as intelligence
 import alam_local_state as localstate
 import alam_reader_views as reader
+import alam_story_page as story_page
 import alam_polish as polish
 import alam_image_renderer as image_renderer
 import alam_portraits as portraits
@@ -78,6 +79,7 @@ st.markdown(views.MOBILE_CSS, unsafe_allow_html=True)
 st.markdown(visual_system.BRAND_CSS, unsafe_allow_html=True)
 st.markdown(intelligence.INTEL_CSS, unsafe_allow_html=True)
 st.markdown(reader.READER_CSS, unsafe_allow_html=True)
+st.markdown(story_page.STORY_PAGE_CSS, unsafe_allow_html=True)
 st.markdown(polish.POLISH_CSS, unsafe_allow_html=True)
 st.markdown(portraits.PORTRAIT_CSS, unsafe_allow_html=True)
 
@@ -170,10 +172,10 @@ selected_id = st.session_state.get("selected_story")
 selected = next((r for r in current_records if str(r.get("id")) == str(selected_id)), None)
 
 if selected:
-    views.render_detail(all_records, selected, comments, manager)
-    dbviews.render_change_summary(selected)
-    dbviews.render_disagreement(selected, comments)
-    intelligence.render_story_snapshot(selected, all_records, records, comments)
+    # The page-level reader now puts the four decision questions ahead of the depth
+    # selector: why it matters, what to do, what changed, and how strong the evidence
+    # is. Panel/Evidence/Deep still reuse the mature renderers underneath.
+    story_page.render_story_page(all_records, selected, comments, manager)
     dbviews.render_story_connections(selected, current_records)
     reader.render_detail_reader_controls(selected, manager)
     extras.render_share_tools(selected)
