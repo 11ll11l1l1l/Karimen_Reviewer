@@ -13,13 +13,15 @@ to the Streamlit application.
 
 from __future__ import annotations
 
+import html
 import json
 from datetime import datetime, timezone
 
 import streamlit as st
 
 from alam_core import DATA_DIR
-from alam_supabase import get_supabase_public
+from alam_supabase import check_supabase_connection, get_supabase_public
+from alam_supabase_health import classify_supabase_readiness, load_public_sync_health
 
 ARTICLE_FOLDERS = ("discover", "practical", "reflection", "trend")
 
@@ -29,7 +31,15 @@ RUNTIME_STATUS_CSS = r"""
 .alam-runtime-status.live{background:rgba(8,125,91,.08);border:1px solid rgba(8,125,91,.13);color:#087454}
 .alam-runtime-status.fallback{background:#FFF7E8;border:1px solid #F5D995;color:#815900}
 .alam-runtime-dot{width:7px;height:7px;border-radius:50%;margin-top:.29rem;flex:none;background:currentColor}
-@media(max-width:760px){.alam-runtime-status{font-size:.68rem;padding:8px 9px;margin-bottom:8px}}
+.alam-readiness-card{border:1px solid rgba(23,32,42,.10);border-radius:16px;padding:13px 14px;margin:6px 0 10px;background:rgba(255,255,255,.68)}
+.alam-readiness-card.success{border-color:rgba(8,125,91,.20);background:rgba(8,125,91,.055)}
+.alam-readiness-card.info{border-color:rgba(47,111,176,.20);background:rgba(47,111,176,.055)}
+.alam-readiness-card.warning{border-color:rgba(176,117,20,.24);background:rgba(255,247,232,.78)}
+.alam-readiness-card.error{border-color:rgba(184,55,55,.20);background:rgba(184,55,55,.045)}
+.alam-readiness-head{display:flex;align-items:flex-start;gap:9px}.alam-readiness-indicator{width:9px;height:9px;border-radius:50%;margin-top:.34rem;flex:none;background:#667085}
+.alam-readiness-card.success .alam-readiness-indicator{background:#087454}.alam-readiness-card.info .alam-readiness-indicator{background:#2F6FB0}.alam-readiness-card.warning .alam-readiness-indicator{background:#B07514}.alam-readiness-card.error .alam-readiness-indicator{background:#B83737}
+.alam-readiness-title{font-size:.85rem;font-weight:850;color:#273142;line-height:1.25}.alam-readiness-copy{font-size:.75rem;color:#5D6675;line-height:1.45;margin-top:3px}.alam-readiness-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:9px}.alam-readiness-pill{font-size:.65rem;font-weight:760;padding:4px 7px;border-radius:999px;background:rgba(23,32,42,.055);color:#667085}
+@media(max-width:760px){.alam-runtime-status{font-size:.68rem;padding:8px 9px;margin-bottom:8px}.alam-readiness-card{padding:11px 12px}.alam-readiness-title{font-size:.80rem}.alam-readiness-copy{font-size:.71rem}.alam-readiness-meta{gap:6px}.alam-readiness-pill{font-size:.62rem}}
 </style>
 """
 
@@ -153,6 +163,48 @@ def _freshness_text(value):
     return f"{seconds // 86400} d ago"
 
 
+def _sync_freshness_label(age_hours):
+    """Turn operational sync age into compact copy without implying story freshness."""
+    if age_hours is None:
+        return None
+    try:
+        age = max(0.0, float(age_hours))
+    except (TypeError, ValueError):
+        return None
+    if age < (2 / 60):
+        return "Sync: just now"
+    if age < 1:
+        return f"Sync: {max(1, int(round(age * 60)))} min ago"
+    if age < 24:
+        return f"Sync: {age:.1f} h ago"
+    return f"Sync: {age / 24:.1f} d ago"
+
+
+def _readiness_product_copy(code):
+    """Map backend readiness codes to calm reader-facing titles and next actions.
+
+    Backend owns state classification; Product owns presentation. Keeping this mapping
+    separate prevents UI wording changes from accidentally changing reliability
+    semantics and makes it explicit that a stale *sync* is not the same thing as a
+    factually stale article.
+    """
+    copy = {
+        "ready": ("Live at synchronized ang ALAM data.", "Current stories are being read from Supabase, and the latest trusted mirror completed successfully."),
+        "synchronized_empty": ("Healthy ang database; wala pang published story.", "The trusted mirror is working. ALAM will populate when verified public stories are published."),
+        "sync_running": ("Nag-u-update ang ALAM data ngayon.", "A trusted synchronization is in progress. The current feed stays usable while the mirror finishes."),
+        "local_fallback": ("Safe fallback ang ginagamit ngayon.", "The trusted mirror is healthy, but this session is reading the verified GitHub audit copy instead of Supabase. Some cross-device database features may be incomplete."),
+        "sync_stale": ("Hindi recent ang huling database sync.", "The last trusted sync succeeded, but no recent synchronization has been confirmed. This is a sync-freshness warning, not a claim that every visible story is factually outdated."),
+        "sync_partial": ("Incomplete ang huling database update.", "Some mirror work completed, but ALAM will not label the database fully healthy until reconciliation or a retry finishes cleanly."),
+        "sync_failed": ("Failed ang huling database update.", "The readable app can continue using existing or fallback data, but the latest trusted mirror attempt needs operator attention."),
+        "never_synchronized": ("Hindi pa confirmed ang first trusted sync.", "The Supabase schema is reachable, but ALAM has not recorded a completed trusted mirror yet."),
+        "sync_health_unavailable": ("Pending ang trusted-sync diagnostics.", "Supabase is reachable, but the public-safe sync-health function is not available yet. Apply the readiness migration before treating cutover as verified."),
+        "sync_health_empty": ("Hindi ma-confirm ang sync state.", "Supabase is reachable, but ALAM received no trusted synchronization snapshot, so it will not assume the mirror is healthy."),
+        "sync_unknown_status": ("May unknown database sync state.", "ALAM received an unrecognized trusted-sync status and is deliberately refusing to guess that the mirror is healthy."),
+        "disconnected": ("Hindi ma-reach ang Supabase ngayon.", "ALAM cannot confirm the durable database connection with the public app credential. Verified local fallback data may still remain usable."),
+    }
+    return copy.get(str(code), ("Hindi pa fully confirmed ang data status.", "ALAM is keeping the current feed usable while deployment health is verified."))
+
+
 def render_runtime_status():
     """Show the current feed source without making an extra database request.
 
@@ -176,9 +228,72 @@ def render_runtime_status():
         )
 
 
+def render_sync_readiness():
+    """Render one trustworthy operational answer before detailed database metrics.
+
+    This deliberately lives in Settings rather than the global header. The header's
+    feed-source indicator is free because the source is already known; querying the
+    sanitized sync-health RPC on every ordinary page would add avoidable latency for
+    information primarily needed during deployment/diagnosis. Settings is where users
+    and operators expect this deeper state.
+    """
+    st.markdown("#### Data status")
+    connected, _ = check_supabase_connection()
+    health = {}
+    health_error = None
+    if connected:
+        health, health_error = load_public_sync_health()
+
+    state = classify_supabase_readiness(
+        connected=connected,
+        content_source=st.session_state.get("alam_content_source"),
+        sync_health=health,
+        sync_health_error=health_error,
+    )
+    title, body = _readiness_product_copy(state.code)
+
+    meta = []
+    freshness = _sync_freshness_label(state.sync_age_hours)
+    if freshness:
+        meta.append(freshness)
+    if state.published_articles is not None:
+        count = int(state.published_articles)
+        meta.append(f"{count} published stor{'y' if count == 1 else 'ies'}")
+    source = st.session_state.get("alam_content_source")
+    if source == "supabase":
+        meta.append("Feed: Supabase")
+    elif source == "local_fallback":
+        meta.append("Feed: safe fallback")
+
+    pills = "".join(
+        f'<span class="alam-readiness-pill">{html.escape(item)}</span>' for item in meta
+    )
+    st.markdown(
+        f'<div class="alam-readiness-card {html.escape(state.level)}">'
+        '<div class="alam-readiness-head"><span class="alam-readiness-indicator"></span><div>'
+        f'<div class="alam-readiness-title">{html.escape(title)}</div>'
+        f'<div class="alam-readiness-copy">{html.escape(body)}</div>'
+        f'</div></div><div class="alam-readiness-meta">{pills}</div></div>',
+        unsafe_allow_html=True,
+    )
+
+    # The RPC error is intentionally not printed. Even though the backend sanitizer
+    # redacts credential-shaped values, ordinary Settings should communicate the
+    # actionable deployment state rather than exposing vendor/PostgREST diagnostics.
+    # Detailed mirror coverage remains available immediately below this card.
+    if state.code == "sync_health_unavailable":
+        st.caption("Operator action: apply `supabase/migrations/005_public_sync_health.sql`, then rerun the trusted sync check.")
+    elif state.code in {"sync_failed", "sync_partial"}:
+        st.caption("Operator action: inspect the trusted ALAM Supabase sync workflow and rerun it after the cause is corrected.")
+    elif state.code == "local_fallback":
+        st.caption("Operator action: verify published-article reads and mirror coverage before declaring the Supabase cutover complete.")
+
+    return state
+
+
 def render_cutover_readiness():
     """Render an operator-focused readiness panel inside ALAM Settings."""
-    st.markdown("#### Production readiness")
+    st.markdown("#### Mirror details")
     report, error = cutover_report()
     content_source = st.session_state.get("alam_content_source", "unknown")
 
@@ -224,6 +339,6 @@ def render_cutover_readiness():
             st.code("\n".join(report["extra_ids"]), language=None)
 
     st.caption(
-        "Connectivity, mirror coverage and feed cutover are checked separately. "
-        "This prevents a healthy database connection from hiding a failed or stale ingestion pipeline."
+        "Connectivity, trusted-sync state, mirror coverage and feed cutover are checked separately. "
+        "This prevents a healthy database connection from hiding a failed, partial or stale ingestion pipeline."
     )
