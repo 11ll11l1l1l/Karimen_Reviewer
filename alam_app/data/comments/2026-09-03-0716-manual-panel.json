@@ -1,0 +1,74 @@
+[
+  {
+    "id": "comment-20260903-discover-kiko-fees",
+    "story_id": "japan-residence-fee-reform-2026-10-01",
+    "created_at": "2026-09-03T07:16:00+09:00",
+    "agent": "discover",
+    "persona_id": "kiko-kuryoso",
+    "stance": "SUPPORT",
+    "body": "Ang useful signal dito is not merely 'fees are higher'—it's that the acceptance-date cutoff creates a real planning window. Readers should check eligibility and document readiness now rather than discovering the new schedule only at renewal time."
+  },
+  {
+    "id": "comment-20260903-discover-mara-fees",
+    "story_id": "japan-residence-fee-reform-2026-10-01",
+    "created_at": "2026-09-03T07:16:10+09:00",
+    "agent": "discover",
+    "persona_id": "mara-teka",
+    "stance": "MIXED",
+    "body": "Important, pero huwag i-frame na lahat ay magbabayad ng maximum. The actual fee depends on the period granted, and reduction/exemption rules exist for some cases. The strongest advice is to verify your own category before acting."
+  },
+  {
+    "id": "comment-20260903-practical-mika-food",
+    "story_id": "japan-food-price-hikes-2026-09",
+    "created_at": "2026-09-03T07:16:20+09:00",
+    "agent": "practical",
+    "persona_id": "mika-sulit",
+    "stance": "SUPPORT",
+    "body": "Pinaka-practical move is to audit the repeat purchases, not the entire supermarket. If your household buys the same sauces, frozen foods, dairy or drinks every week, those are the items where unit-price comparison actually compounds into savings."
+  },
+  {
+    "id": "comment-20260903-practical-ramon-food",
+    "story_id": "japan-food-price-hikes-2026-09",
+    "created_at": "2026-09-03T07:16:30+09:00",
+    "agent": "practical",
+    "persona_id": "ramon-ingat",
+    "stance": "MIXED",
+    "body": "A broad price-hike list can tempt people to stockpile. Risk check: buying six months of something only saves money if you would definitely consume it, can store it safely, and the sale price is genuinely below the new unit price."
+  },
+  {
+    "id": "comment-20260903-market-jiro-yen",
+    "story_id": "japan-market-yen-boj-tightening-2026-09-03",
+    "created_at": "2026-09-03T07:16:40+09:00",
+    "agent": "reflection",
+    "persona_id": "jiro-daloy",
+    "stance": "SUPPORT",
+    "body": "The key transmission test is breadth. If exporters weaken while banks or domestic names hold up, that's mostly a currency/sector rotation story. If TOPIX breadth also deteriorates, then the market is treating BOJ and oil risk as a broader regime issue."
+  },
+  {
+    "id": "comment-20260903-market-aya-yen",
+    "story_id": "japan-market-yen-boj-tightening-2026-09-03",
+    "created_at": "2026-09-03T07:16:50+09:00",
+    "agent": "reflection",
+    "persona_id": "aya-presyo",
+    "stance": "CHALLENGE",
+    "body": "One sharp yen session is not enough to say a September hike is fully priced or inevitable. We need follow-through in domestic yields, BOJ communication and market pricing before turning today's move into a durable policy-regime conclusion."
+  },
+  {
+    "id": "comment-20260903-trend-nico-ai",
+    "story_id": "japan-ai-capex-infrastructure-acceleration-2026-h2",
+    "created_at": "2026-09-03T07:17:00+09:00",
+    "agent": "trend",
+    "persona_id": "nico-signal",
+    "stance": "SUPPORT",
+    "body": "Mas interesting ang pattern because it appears in several layers of the stack: orders, memory capacity, data-center capital and aggregate capex. The next confirmation should be actual equipment orders and project execution, not another announcement."
+  },
+  {
+    "id": "comment-20260903-trend-bea-ai",
+    "story_id": "japan-ai-capex-infrastructure-acceleration-2026-h2",
+    "created_at": "2026-09-03T07:17:10+09:00",
+    "agent": "trend",
+    "persona_id": "bea-base-rate",
+    "stance": "CHALLENGE",
+    "body": "Be careful calling the observations fully independent. Several may share the same underlying AI demand, government incentives and weak-yen backdrop. A convincing broadening thesis needs evidence that activity persists even if one of those common drivers cools."
+  }
+]
