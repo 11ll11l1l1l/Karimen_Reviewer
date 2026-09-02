@@ -122,8 +122,28 @@ It should not repeat the full article or claim ledger.
 - **Market:** “What moved, why, and what should I watch next?”
 - **Trend:** “What pattern is forming, how strong is the evidence, and what would disprove it?”
 
-## 12. Image metadata
-The app renders a repository-hosted editorial fallback visual for every article. If a stable, directly usable image from an official/primary source is available and appropriate, a research pass may add `image_url`, `image_alt`, and `image_credit`. Do not invent image URLs, scrape unstable thumbnails, or use an image merely to decorate the story. If no suitable real image exists, omit it and let ALAM use its built-in editorial fallback.
+## 12. Image policy — real image first, editorial fallback second
+For every article, try to find a stable, directly usable image from an official/primary source when it genuinely represents the story. If one is available and appropriate, add `image_url`, `image_alt`, and `image_credit`. Do not invent image URLs, scrape unstable thumbnails, hotlink questionable assets, or use a photo merely as decoration.
+
+If no suitable real image exists, the publishing agent MUST add `editorial_visual` and art-direct a topic-specific ALAM editorial illustration. Use this shape:
+
+```json
+"editorial_visual": {
+  "style": "editorial",
+  "motif": "chip",
+  "secondary_motif": "factory",
+  "scene": "oversized chip looming over a tiny factory",
+  "caption": "AI demand feels larger than the factory floor",
+  "silliness": 28,
+  "exaggeration": 64
+}
+```
+
+Allowed motifs are `yen`, `chip`, `robot`, `factory`, `train`, `family`, `shield`, `document`, `market`, `policy`, `home`, `earthquake`, `car`, `weather`, `globe`, and `battery`. `motif` is required for the fallback; `secondary_motif` is optional. `silliness` and `exaggeration` are integers from 0–100 and are chosen by the publishing agent to fit the story.
+
+Serious safety, disaster, death, legal, medical, or human-harm stories should normally keep silliness low. Lighter consumer, technology, market, or absurd-policy stories may use more playful exaggeration when it improves comprehension. The illustration is not evidence: it must not depict an unverified factual detail, fabricate a real photograph, imply an unverified action by a named person, or visually turn an inference into a fact. Prefer a clear metaphor over fake realism.
+
+Existing legacy records that lack both a real image and `editorial_visual` are still supported: the app infers a restrained topic motif automatically.
 
 ## 13. Final self-audit before write
 Confirm:
@@ -136,5 +156,6 @@ Confirm:
 - headline and first two sentences are understandable without specialist knowledge;
 - 30-second version gives a clear message rather than a compressed data dump;
 - sources are usable;
+- a verified real image is supplied OR `editorial_visual` is present;
 - JSON is valid;
 - written file is fetched back and verified after GitHub write.
