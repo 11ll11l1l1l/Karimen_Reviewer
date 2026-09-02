@@ -4,6 +4,7 @@ from pathlib import Path
 import streamlit as st
 
 from alam_core import DATA_DIR, parse_dt
+from alam_supabase import load_agent_comments
 
 COMMENTS_DIR = DATA_DIR / "comments"
 
@@ -114,8 +115,7 @@ PERSONA_BY_ID = {
 }
 
 
-@st.cache_data(ttl=60)
-def load_comments():
+def _load_local_comments():
     comments = []
     if not COMMENTS_DIR.exists():
         return comments
@@ -133,10 +133,37 @@ def load_comments():
                 copy = dict(item)
                 copy["_path"] = str(path.relative_to(DATA_DIR))
                 copy["_record_key"] = f"{copy['_path']}::{idx}"
+                copy["_storage"] = "local"
                 comments.append(copy)
         except Exception:
             continue
     return sorted(comments, key=lambda c: parse_dt(c.get("created_at")))
+
+
+@st.cache_data(ttl=45)
+def load_comments(article_ids=None):
+    """Prefer Supabase perspectives when the article feed is database-backed."""
+    ids = [str(x) for x in (article_ids or []) if x]
+    if ids and st.session_state.get("alam_content_source") == "supabase":
+        grouped, error = load_agent_comments(ids)
+        if not error:
+            comments = []
+            for story_id, rows in grouped.items():
+                for row in rows:
+                    comments.append({
+                        "id": str(row.get("id")),
+                        "story_id": story_id,
+                        "persona_id": row.get("agent_id"),
+                        "persona_name": row.get("agent_id") or "ALAM Agent",
+                        "persona_role": row.get("stance") or "Agent perspective",
+                        "body": row.get("comment") or "",
+                        "stance": row.get("stance"),
+                        "created_at": row.get("created_at"),
+                        "_record_key": f"supabase-comment::{row.get('id')}",
+                        "_storage": "supabase",
+                    })
+            return sorted(comments, key=lambda c: parse_dt(c.get("created_at")))
+    return _load_local_comments()
 
 
 def comments_for_story(comments, story_id):
