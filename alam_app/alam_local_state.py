@@ -95,18 +95,25 @@ def _apply_settings(profile):
             st.session_state[target] = settings[key]
 
 
+def _native_profile_cookie():
+    """Read the profile from Streamlit's synchronous initial-request cookie view."""
+    try:
+        return st.context.cookies.get(COOKIE_NAME)
+    except Exception:
+        return None
+
+
 def init_local_profile(manager=None):
     st.session_state.setdefault("alam_local_profile", _default_profile())
     if st.session_state.get("alam_local_profile_loaded"):
         return
     loaded = None
-    if manager:
-        try:
-            raw = manager.get(cookie=COOKIE_NAME)
-            if raw:
-                loaded = _decode(raw)
-        except Exception:
-            loaded = None
+    try:
+        raw = _native_profile_cookie()
+        if raw:
+            loaded = _decode(raw)
+    except Exception:
+        loaded = None
     if loaded:
         st.session_state["alam_local_profile"] = _trim(loaded)
         _apply_settings(st.session_state["alam_local_profile"])
