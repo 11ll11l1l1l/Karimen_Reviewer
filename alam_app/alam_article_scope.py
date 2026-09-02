@@ -1,9 +1,9 @@
 """Route-aware article loading for latency-sensitive ALAM detail pages.
 
 The public feed needs current articles immediately, while a selected story needs only
-that story's version history. Keeping this boundary outside rendering prevents a
-single mobile tap from hydrating every historical version in Supabase before the
-reader can see the article.
+that story's version history and normalized evidence rows. Keeping these boundaries
+outside rendering prevents a single mobile tap from hydrating every historical version
+or every ``article_sources`` row before the reader can see the selected article.
 
 Local/GitHub fallback intentionally keeps its existing full-record behavior. The
 fallback is a migration/recovery path backed by local files, so narrowing its scan
@@ -30,6 +30,19 @@ def selected_history_ids(article_id):
     return [story_id] if story_id else []
 
 
+def selected_source_scope(article_id):
+    """Return the normalized-evidence scope for the current route.
+
+    ``None`` means no active detail selection and deliberately preserves full-feed
+    source hydration. A stable selected ID becomes a one-item tuple so Streamlit's
+    cached Supabase loader has a deterministic, hashable route key. A stale ID is
+    still scoped during the cheap selection probe; if it proves invalid, the caller
+    falls back to the established fully hydrated feed path.
+    """
+    story_id = str(article_id or "").strip()
+    return (story_id,) if story_id else None
+
+
 def _dedupe_current_from_history(current_records, history_records):
     """Combine current rows with history without duplicating the current version.
 
@@ -50,13 +63,19 @@ def _dedupe_current_from_history(current_records, history_records):
 
 
 def load_current_article_records():
-    """Load current Supabase articles without hydrating version history.
+    """Load current Supabase articles with route-appropriate source hydration.
 
-    ``load_published_articles`` is already cached by the data layer, so this wrapper
-    deliberately remains uncached: its session-state side effects must run on every
-    Streamlit rerun so runtime status cannot lose the active persistence mode.
+    On ordinary feed/list routes, normalized sources are hydrated for every current
+    story exactly as before. When ``selected_story`` is already present on a rerun,
+    only that stable ID requests normalized ``article_sources`` rows; the current
+    article JSON payload is still loaded for all stories so selection validation and
+    related-story lookup remain intact.
+
+    ``load_published_articles`` is cached by the data layer, while this wrapper stays
+    uncached because its session-state side effects must run on every Streamlit rerun.
     """
-    supabase_records, supabase_error = load_published_articles()
+    source_scope = selected_source_scope(st.session_state.get("selected_story"))
+    supabase_records, supabase_error = load_published_articles(source_article_ids=source_scope)
     if supabase_records:
         st.session_state["alam_content_source"] = "supabase"
         st.session_state.pop("alam_supabase_content_error", None)
