@@ -14,6 +14,7 @@ on:
       # Sync/validation changes must exercise the real trusted mirror immediately.
       # Otherwise a broken ingestion change could sit on main until the next article
       # arrives, making deployment failures unnecessarily hard to discover.
+      - 'alam_app/alam_lifecycle.py'
       - 'alam_app/alam_supabase_ingest.py'
       - 'alam_app/alam_supabase_reconcile.py'
       - 'alam_app/alam_supabase_sync_job.py'
