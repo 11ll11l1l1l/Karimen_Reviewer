@@ -140,18 +140,20 @@ Use this agent-owned shape:
   "style": "editorial",
   "motif": "chip",
   "secondary_motif": "factory",
-  "scene": "oversized chip looming over a tiny factory",
+  "scene": "an oversized chip swaggering through a tiny factory line while the machines scramble to keep up",
   "caption": "AI demand feels larger than the factory floor",
-  "silliness": 28,
-  "exaggeration": 64
+  "silliness": 44,
+  "exaggeration": 74
 }
 ```
 
 Allowed motifs are `yen`, `chip`, `robot`, `factory`, `train`, `family`, `shield`, `document`, `market`, `policy`, `home`, `earthquake`, `car`, `weather`, `globe`, and `battery`. `motif` is required for the fallback; `secondary_motif` is optional. `silliness` and `exaggeration` are integers from 0–100 and are chosen by the publishing agent to fit the story.
 
+**ALAM house style should lean slightly playful by default.** For ordinary non-serious technology, engineering, consumer, market, trend and policy stories, normally target roughly `silliness: 35–55` and `exaggeration: 60–80`. Use witty scale, object personality, visual irony, improbable-but-clear metaphors, and expressive composition so the feed feels alive rather than corporate. Especially absurd policy, consumer behavior or technology stories may go to roughly `silliness: 55–70` and `exaggeration: 70–90` when the joke clarifies the idea rather than distracting from it. Do not make every illustration comedic; vary the device and preserve visual sophistication.
+
 The generated image should behave like a magazine/newspaper editorial illustration, not like fabricated evidence. Prefer one clear metaphor over a collage. Do not request visible headlines, captions, logos, trademarks, watermarks, fake charts with readable labels, or fake UI inside the image. Do not depict an unverified event as documentary photography or imply an unverified action by a named person.
 
-Serious safety, disaster, death, legal, medical, war, crime, scam, recall or human-harm stories should use restrained respectful imagery and very low silliness. Lighter consumer, technology, market, engineering or absurd-policy stories may use more playful exaggeration when it improves comprehension.
+Serious safety, disaster, death, legal, medical, war, crime, scam, recall or human-harm stories are the exception: use restrained respectful imagery, normally `silliness: 0–8` and `exaggeration: 20–45`. Humor must never target victims, vulnerable people or real-world harm. A serious story may still be visually strong through symbolism, scale and composition without being playful.
 
 When generation succeeds, system-managed metadata looks like:
 
