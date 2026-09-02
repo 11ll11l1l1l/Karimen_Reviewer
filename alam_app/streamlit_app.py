@@ -18,6 +18,11 @@ import alam_polish as polish
 from alam_market_views import is_market_record, render_market
 from alam_personas import load_comments
 from alam_visual_system import BRAND_CSS, install_visual_system
+from alam_runtime_safety import install_runtime_safety
+
+# Harden ranking against loose score fields in newly generated records before any
+# feed sorting happens. A malformed usefulness/novelty label must never crash ALAM.
+install_runtime_safety()
 
 # The legacy `reflection` storage key now powers the Market section.
 CATEGORY_META["reflection"].update({
