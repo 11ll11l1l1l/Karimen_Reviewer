@@ -85,6 +85,42 @@ localstate.init_local_profile(manager)
 intelligence.init_preferences()
 extras.install_extras_css()
 
+
+def _sanitize_preference_state():
+    """Repair stale/invalid browser preference values before Streamlit builds widgets."""
+    prefs = st.session_state.get("alam_interest_preferences")
+    if not isinstance(prefs, dict):
+        st.session_state["alam_interest_preferences"] = dict(intelligence.DEFAULT_INTERESTS)
+    else:
+        cleaned = dict(intelligence.DEFAULT_INTERESTS)
+        for name in cleaned:
+            if name in prefs:
+                cleaned[name] = bool(prefs[name])
+        st.session_state["alam_interest_preferences"] = cleaned
+
+    try:
+        minimum = int(st.session_state.get("alam_alert_min_importance", 85))
+    except (TypeError, ValueError):
+        minimum = 85
+    minimum = max(50, min(100, minimum))
+    # The slider uses increments of five; normalize old values to a valid step.
+    minimum = int(round(minimum / 5) * 5)
+    st.session_state["alam_alert_min_importance"] = minimum
+    st.session_state["alam_alert_only_actionable"] = bool(
+        st.session_state.get("alam_alert_only_actionable", False)
+    )
+    st.session_state["alam_alert_material_change"] = bool(
+        st.session_state.get("alam_alert_material_change", True)
+    )
+
+    # Streamlit widget keys can survive reruns in a malformed state after an older
+    # app version. Remove only values with the wrong type so the widgets recreate.
+    for i in range(len(intelligence.DEFAULT_INTERESTS)):
+        key = f"interest_{i}"
+        if key in st.session_state and not isinstance(st.session_state[key], bool):
+            del st.session_state[key]
+
+
 # Real/official image remains first. If none exists, use the persistent AI-generated
 # editorial asset created after publishing; only then fall back to deterministic SVG.
 # Install the fail-safe CSS-background renderer BEFORE the visual-system closures are
@@ -172,7 +208,17 @@ else:
             views.render_prediction_lab(records)
         elif secondary == "Settings":
             extras.render_settings()
-            intelligence.render_preferences(manager)
+            _sanitize_preference_state()
+            try:
+                intelligence.render_preferences(manager)
+            except Exception:
+                # Settings must never take down the whole ALAM app. The database
+                # status above remains usable even if a local preference widget fails.
+                st.warning("Personal relevance controls were reset because the saved browser state was invalid. Reload Settings once.")
+                st.session_state["alam_interest_preferences"] = dict(intelligence.DEFAULT_INTERESTS)
+                st.session_state["alam_alert_min_importance"] = 85
+                st.session_state["alam_alert_only_actionable"] = False
+                st.session_state["alam_alert_material_change"] = True
             st.divider()
             reader.render_local_profile(current_records, manager)
             st.divider()
