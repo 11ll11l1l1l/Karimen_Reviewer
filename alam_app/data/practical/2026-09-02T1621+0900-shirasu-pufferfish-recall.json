@@ -1,0 +1,85 @@
+{
+  "id": "shirasu-pufferfish-haneda-recall-2026",
+  "agent": "practical",
+  "created_at": "2026-09-02T16:21:10+09:00",
+  "type": "food_safety",
+  "title": "Haneda shirasu recall: pufferfish contamination, only one pack recovered",
+  "summary": "May Class I food recall sa 食品館あおば本羽田店: dalawang '甘口しらす干' products sold August 22-28 may possible pufferfish contamination. Sa official filing, 441 packs/units were sold and only 1 had been recovered when the recall status was filed, so worth checking immediately if you shopped there.",
+  "why_it_matters": "Pufferfish contamination can cause serious poisoning. Narrow ang affected store, pero very high ang consequence if an affected pack is still at home.",
+  "importance": 76,
+  "confidence": 96,
+  "tags": ["Japan", "food safety", "recall", "Tokyo", "Haneda", "pufferfish"],
+  "geography": ["Japan", "Tokyo"],
+  "status": "NEW",
+  "sources": [
+    {
+      "publisher": "厚生労働省 食品衛生申請等システム",
+      "title": "公開回収事案詳細 RCL202602154",
+      "url": "https://i2fas.mhlw.go.jp/faspub/_link.do?i=IO_S020502&p=RCL202602154",
+      "published_at": "2026-08-31",
+      "source_type": "official"
+    },
+    {
+      "publisher": "消費者庁 リコール情報サイト",
+      "title": "旬「甘口しらす干（生食用）」（食品館あおば本羽田店で販売） - 返金／回収",
+      "url": "https://www.recall.caa.go.jp/result/detail.php?rcl=00000035766&screenkbn=06",
+      "published_at": "2026-09-02",
+      "source_type": "official"
+    }
+  ],
+  "claims": [
+    {
+      "kind": "FACT",
+      "text": "The recall covers 甘口しらす干 products sold at 食品館あおば本羽田店 from August 22 through August 28, 2026, with best-before dates from August 27 through September 2.",
+      "source_refs": [1, 2],
+      "basis": "MHLW recall filing and Consumer Affairs Agency recall listing"
+    },
+    {
+      "kind": "FACT",
+      "text": "The official filing states that 227 fixed 150 g packs and 214 variable-weight packs were sold, while the recorded recovered quantity was 1 at the time of filing.",
+      "source_refs": [1],
+      "basis": "Official MHLW recall filing"
+    },
+    {
+      "kind": "FACT",
+      "text": "The filing classifies the health risk as CLASS I because accidental consumption of pufferfish can cause pufferfish poisoning; no health damage had been reported at filing time.",
+      "source_refs": [1],
+      "basis": "Official MHLW recall filing"
+    },
+    {
+      "kind": "INFERENCE",
+      "text": "Because the recorded recovery count was very low relative to sales, affected product may still remain in households even though the best-before window is ending.",
+      "source_refs": [1],
+      "basis": "Comparison of official sales and recovery figures"
+    }
+  ],
+  "content": {
+    "key_message": "If you bought shirasu at 食品館あおば本羽田店 on August 22-28, check the pack now and do not eat a recalled product.",
+    "who_is_affected": "Customers who bought 甘口しらす干 at 食品館あおば本羽田店 in Ota-ku, Tokyo, from August 22-28, 2026.",
+    "when": "Recall started August 28; MHLW filing was published August 31 and the CAA recall listing surfaced September 2.",
+    "financial_impact": "Refund is available at the selling store. No defensible household yen saving is stated because purchase prices vary and the main issue is safety, not money.",
+    "risk_if_ignored": "Potential pufferfish poisoning. The official filing assigns CLASS I, its highest-risk recall class used for hazards that can cause serious health consequences.",
+    "action": "DO NOW",
+    "deadline": "No formal refund deadline is stated in the official filing; act immediately if you have an affected pack.",
+    "effort": "Check the product name, JAN and best-before date; if matched, do not eat it and return it to the store for a refund. Official inquiry number: 03-6423-2518, 10:00-17:30.",
+    "potential_benefit": "Avoids a low-frequency but potentially severe food-poisoning hazard and recovers the purchase price through the stated refund process.",
+    "downside": "Very narrow scope: this is not a nationwide shirasu warning. It applies to the specified products sold at the specified Haneda store.",
+    "what_would_change_mind": "A completed recall with substantially higher recovery, or an official finding that the contamination did not affect the listed products, would reduce the urgency.",
+    "usefulness": "High for affected shoppers; low for everyone else.",
+    "novelty": "Newly registered national recall information with a high official hazard classification.",
+    "impact": {
+      "money": "LOW",
+      "family": "HIGH",
+      "career": "LOW",
+      "japan": "LOW",
+      "urgency": "HIGH"
+    },
+    "connection_tags": ["food-recall", "consumer-safety", "tokyo"],
+    "reading_levels": {
+      "30_sec": "WHAT HAPPENED: A Haneda supermarket shirasu recall was filed after pufferfish contamination; 441 units were sold and the filing recorded only 1 recovered. WHY IT MATTERS: MHLW classifies the hazard as CLASS I. WHAT TO DO: If you bought 甘口しらす干 at 食品館あおば本羽田店 on Aug 22-28, don't eat a matching pack; return it for refund. BOTTOM LINE: Narrow recall, serious consequence for the small group affected.",
+      "2_min": "FACT: The affected products are 甘口しらす干, including 150 g and variable-weight packs, sold at 食品館あおば本羽田店 from Aug 22-28. Best-before dates run Aug 27-Sep 2. JANs listed by MHLW are 2027205205809 and 2027205203300. FACT: 227 fixed packs plus 214 variable-weight packs were sold; the filing recorded 1 recovered. FACT: No health injury had been reported, but MHLW rates the hazard CLASS I because pufferfish ingestion can cause poisoning. ACTION: Do not eat a matching product; return it to the selling store for refund. This is a store-specific recall, not a general warning about shirasu in Japan."
+    },
+    "bottom_line": "Narrow audience, but DO NOW if affected: check, don't eat, and return the recalled shirasu.",
+    "confidence_reason": "Two government sources agree on the product and contamination; detailed quantities and risk classification come from the MHLW filing."
+  }
+}
