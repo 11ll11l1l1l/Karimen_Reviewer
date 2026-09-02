@@ -33,6 +33,7 @@ Permanent constraints:
 - GitHub Actions serializes Supabase sync jobs to avoid ordinary overlapping dispatches.
 - Self-healing reconciliation deterministically converges current articles, numbered history, sources, topics, and predictions from the GitHub audit archive.
 - Reconciliation repairs partial-write cases where the current article advances but derived tables fail.
+- CI now directly proves the multi-table failure sequence where `articles` succeeds, `article_versions` fails, an equal-timestamp incremental retry remains unchanged, and reconciliation restores history plus normalized evidence without duplicate versions.
 - Source reconciliation uses upsert-before-delete to avoid deliberately erasing the prior good evidence set before desired rows are accepted.
 - Incremental article-source synchronization now upserts every desired evidence row before deleting stale rows, so transient source-write failures preserve the previous good evidence set until retry/reconciliation.
 - Incremental topic synchronization now resolves/upserts desired topics and links before deleting stale links, so transient failures do not deliberately erase the prior topic set.
@@ -43,7 +44,7 @@ Permanent constraints:
 - A public-safe sync-health RPC contract exists in migration `005_public_sync_health.sql`; direct public reads of `agent_runs` remain blocked by RLS.
 - Backend readiness classification distinguishes disconnected, diagnostics unavailable, never synchronized, running, failed, partial, stale sync, local fallback, synchronized-empty, unknown status, and ready.
 - Settings renders one calm Data status verdict from that classifier and keeps raw private workflow/error metadata out of the public UI.
-- CI gates reconciliation/chronology, source/topic failure safety, Evidence, backend readiness, product readiness, Saved material-update review state, comment-hydration scope, accessibility, syntax, production data, image behavior, dependency installation, and Streamlit startup health.
+- CI gates reconciliation/chronology, multi-table partial-write recovery, source/topic failure safety, Evidence, backend readiness, product readiness, Saved material-update review state, comment-hydration scope, accessibility, syntax, production data, image behavior, dependency installation, and Streamlit startup health.
 
 ## B. In progress / requires production verification
 
@@ -70,10 +71,9 @@ Required evidence before declaring cutover complete:
 ### P0 — Reliability / data integrity
 
 1. Apply/verify migration `005_public_sync_health.sql` in production, run a real trusted sync, and verify Settings readiness.
-2. Add database-level or higher-fidelity failure-injection coverage for article-row success followed by version/derived-table failure.
-3. Add stronger source/evidence quality gates before publication with structured rejection reasons.
-4. Add stale/outdated lifecycle checks and safe story-expiration rules.
-5. Consider a separately reviewed policy for orphan Supabase rows absent from GitHub; do not delete broadly by default.
+2. Add stronger source/evidence quality gates before publication with structured rejection reasons.
+3. Add stale/outdated lifecycle checks and safe story-expiration rules.
+4. Consider a separately reviewed policy for orphan Supabase rows absent from GitHub; do not delete broadly by default.
 
 ### P1 — Core reader/product quality
 
@@ -145,7 +145,7 @@ These require external credentials/consoles and must not be falsely marked compl
 - Historical audit records may lack current v5 fields. The chronology preflight deliberately does not treat missing `created_at` as an explicit timestamp conflict.
 - Same explicit timestamp + different payload now fails trusted sync before content writes. Correct the GitHub audit timestamp/payload rather than bypassing this guard.
 - Reconciliation does not delete unrelated Supabase articles absent from GitHub; broad orphan cleanup requires a separate reviewed policy.
-- Article/current-version/source/topic writes remain separate database operations. Incremental source/topic helpers and archive reconciliation are failure-safe/convergent, but a process can still advance `articles` and fail before a later derived-table write; higher-fidelity multi-table failure injection remains a backend priority.
+- Article/current-version/source/topic writes remain separate database operations. Deterministic CI now proves recovery for the highest-risk current-row-success/version-failure/equal-timestamp-retry sequence, while source/topic helpers and archive reconciliation remain convergent. A destructive live-database/network chaos test is still intentionally absent.
 - Supabase reconciliation is service-role-only; missing trusted credentials stop repair before database content writes.
 - Evidence source-group diversity cannot establish editorial independence.
 - Public sync-health intentionally exposes no raw errors/workflow metadata; operator diagnosis belongs in trusted logs/admin tooling.
@@ -171,7 +171,7 @@ These require external credentials/consoles and must not be falsely marked compl
 - Problem: partial incremental writes could leave derived Supabase state incomplete on equal-timestamp retry.
 - Change: deterministic reconciliation from GitHub audit archive after normal ingestion.
 - Security: public article directories are allow-listed; Job Radar is unreachable.
-- Remaining risk: database-level partial-write failure injection remains open.
+- Remaining risk at that checkpoint: higher-fidelity partial-write failure injection had not yet been added.
 
 ### 2026-09-03 — Evidence trust experience
 
@@ -199,8 +199,8 @@ These require external credentials/consoles and must not be falsely marked compl
 - Implementation: `ArchiveConflictError`, explicit timestamp normalization, `_validate_archive_chronology()`, and `prepare_public_archive()` in `alam_supabase_reconcile.py`. `alam_supabase_sync_job.py` now preflights the complete public archive before incremental ingestion and reuses the validated snapshot for reconciliation.
 - Files/schema affected: `alam_app/alam_supabase_reconcile.py`, `alam_app/alam_supabase_sync_job.py`, `alam_app/test_alam_supabase_reconcile.py`, and this roadmap. No database migration or RLS change.
 - Validation performed: deterministic regression tests cover exact duplicates, normal chronology, explicit equal-time conflict rejection through both helper and public preflight entry point, and backward compatibility for missing timestamps.
-- Remaining limitation/risk: malformed explicit timestamp strings still use the existing parser fallback semantics; stronger schema validation can be considered with source-quality gates. Database-level partial-write failure injection remains open.
-- Recommended next action: Backend should move to database-level failure injection or pre-publication source/rejection quality gates.
+- Remaining limitation/risk: malformed explicit timestamp strings still use the existing parser fallback semantics; stronger schema validation can be considered with source-quality gates.
+- Recommended next action: Backend should move to pre-publication source/rejection quality gates after proving partial-write recovery.
 
 ### 2026-09-03 — Saved material-update review queue
 
@@ -247,9 +247,22 @@ These require external credentials/consoles and must not be falsely marked compl
 - Implementation: `alam_supabase_ingest.py` now routes source writes through `_sync_sources()`; `test_alam_source_sync.py` injects a later-source failure and proves the prior evidence remains, no cleanup happens early, retry converges, and claim/source normalization remains intact; ALAM CI gates the new test.
 - Files/schema affected: `alam_app/alam_supabase_ingest.py`, `alam_app/test_alam_source_sync.py`, `.github/workflows/alam-checks.yml`, `alam_app/ALAM_BACKEND_CHANGELOG.md`, and this roadmap. No migration or RLS change.
 - Validation performed: deterministic failure-injection test plus the full repository ALAM workflow before merge to `main`.
-- Remaining limitation/risk: current-article, version, source, topic, and prediction writes are still separate transactions. Reconciliation repairs partial mirrors, but higher-fidelity multi-table failure injection remains open.
-- Recommended Backend action: test article-row success followed by version/derived failure, then add structured evidence-quality rejection gates.
+- Remaining limitation/risk at that checkpoint: current-article, version, source, topic, and prediction writes were separate transactions without an integration-level partial-write proof.
+- Recommended Backend action at that checkpoint: test article-row success followed by version/derived failure, then add structured evidence-quality rejection gates.
 - Recommended Product action: no UI change is required; preserve the existing Evidence trust surface.
+
+### 2026-09-03 — Multi-table partial-write recovery proof
+
+- Agent: Backend Architect.
+- Problem found: the trusted-sync architecture depended on reconciliation repairing a run where `articles` had advanced but `article_versions` and later derived rows had not, yet no CI test exercised that complete sequence.
+- Root cause: helper tests proved pieces independently but did not connect production `sync_article()` behavior to equal-timestamp retry and archive reconciliation.
+- Decision: preserve the existing architecture and make the recovery invariant executable. A production-code rewrite or transaction emulation would add complexity without improving the GitHub-audit-source-of-truth model.
+- Implementation: `test_alam_multitable_recovery.py` injects failure on the first version insert after the current article upsert, confirms the next incremental retry returns `unchanged`, then runs `reconcile_public_archive()` against the validated prepared snapshot and proves deterministic history plus claim-linked normalized source recovery. A second reconciliation proves no duplicate history slot is manufactured. CI runs and syntax-compiles the test.
+- Files/schema affected: `alam_app/test_alam_multitable_recovery.py`, `.github/workflows/alam-checks.yml`, `alam_app/ALAM_BACKEND_CHANGELOG.md`, and this roadmap. No production code, migration, RLS, credential, Streamlit, or Job Radar change.
+- Validation performed: deterministic fake-PostgREST integration test plus the complete ALAM pull-request workflow before merge.
+- Remaining limitation/risk: this does not deliberately interrupt a live production Supabase network connection. The deterministic contract protects recovery semantics while real service outages remain handled by trusted-job retry/reconciliation and operational diagnostics.
+- Recommended Backend action: source/evidence publication quality gates with structured rejection reasons, then stale/outdated lifecycle handling.
+- Recommended Product action: no frontend change required; continue route-specific history/source query measurement.
 
 ### 2026-09-03 — View-scoped article comment hydration
 
@@ -262,7 +275,7 @@ These require external credentials/consoles and must not be falsely marked compl
 - Mobile behavior: article detail preserves the same content, detailed agent comments, stance/reply relationships, deep-link/session selection, and controls while narrowing the Supabase comment query from all current story IDs to the selected story ID. Feed/list pages remain behaviorally unchanged.
 - Validation performed: deterministic tests cover selected/feed/stale/empty scopes. ALAM app checks for code/CI commit `ee223610ecd37991fcab8eb4c7b58bb004e77750` completed successfully, including the new scope test, production-data validation, source/topic/reconciliation/readiness/Evidence/Saved/accessibility regressions, Python compilation, dependency installation, and Streamlit startup health.
 - Remaining limitation/risk: local JSON fallback still scans its local comment archive. Broader route-aware lazy hydration for history/sources/comments should be measured before changing list behavior.
-- Recommended Backend action: none required for this view boundary; continue multi-table failure injection and source-quality gates. If future cards need only comment counts, expose compact counts separately instead of forcing full comment-body hydration.
+- Recommended Backend action: none required for this view boundary; continue source-quality gates. If future cards need only comment counts, expose compact counts separately instead of forcing full comment-body hydration.
 - Recommended Product action: next measure article history/source hydration and route-specific query counts; avoid broader lazy loading until Saved, Weekly, and history behavior are proven safe.
 
 ## H. Agent handoff template
