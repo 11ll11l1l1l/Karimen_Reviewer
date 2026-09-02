@@ -15,6 +15,7 @@ import alam_intelligence as intelligence
 import alam_local_state as localstate
 import alam_reader_views as reader
 import alam_polish as polish
+import alam_portraits as portraits
 from alam_market_views import is_market_record, render_market
 from alam_personas import load_comments
 from alam_visual_system import BRAND_CSS, install_visual_system
@@ -72,6 +73,7 @@ st.markdown(BRAND_CSS, unsafe_allow_html=True)
 st.markdown(intelligence.INTEL_CSS, unsafe_allow_html=True)
 st.markdown(reader.READER_CSS, unsafe_allow_html=True)
 st.markdown(polish.POLISH_CSS, unsafe_allow_html=True)
+st.markdown(portraits.PORTRAIT_CSS, unsafe_allow_html=True)
 
 # Load browser-local state before display-specific CSS so persisted dark mode and
 # preferences can take effect on the first useful render without a backend.
@@ -81,6 +83,8 @@ intelligence.init_preferences()
 extras.install_extras_css()
 install_visual_system(views)
 polish.install(views, reader)
+# Replace the old generic sprite with the fixed generated character portraits.
+portraits.install(views)
 
 # Article loading is intentionally limited to the four article directories so
 # growing discussion/wisdom archives do not slow the main feed scan.
