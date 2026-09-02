@@ -1,9 +1,10 @@
 import re
-from collections import Counter, defaultdict
+from collections import Counter
 from datetime import datetime, timedelta, timezone
 
 import streamlit as st
 
+import alam_local_state as localstate
 from alam_core import feed_score, parse_dt, source_quality, story_versions
 from alam_personas import comments_for_story
 
@@ -34,7 +35,9 @@ KEYWORDS = {
 
 def _text(record):
     parts = [
-        record.get("title", ""), record.get("summary", ""), record.get("why_it_matters", ""),
+        record.get("title", ""),
+        record.get("summary", ""),
+        record.get("why_it_matters", ""),
         " ".join(str(x) for x in record.get("tags", []) or []),
         " ".join(str(x) for x in record.get("geography", []) or []),
         str(record.get("content") or {}),
@@ -61,14 +64,17 @@ def interest_hits(record):
 def personal_relevance(record):
     init_preferences()
     prefs = st.session_state.get("alam_interest_preferences", DEFAULT_INTERESTS)
+    all_hits = interest_hits(record)
     enabled = [name for name, value in prefs.items() if value]
-    hits = [name for name in interest_hits(record) if prefs.get(name)]
+    hits = [name for name in all_hits if prefs.get(name)]
     if not enabled:
-        return int(min(100, max(0, float(record.get("importance", 50) or 50))))
-    base = 25 + min(45, len(hits) * 13)
-    base += 0.20 * float(record.get("importance", 50) or 50)
-    if str((record.get("content") or {}).get("action", "")).upper() in {"DO NOW", "APPLY", "PREPARE", "AVOID"}:
-        base += 8
+        base = float(record.get("importance", 50) or 50)
+    else:
+        base = 25 + min(45, len(hits) * 13)
+        base += 0.20 * float(record.get("importance", 50) or 50)
+        if str((record.get("content") or {}).get("action", "")).upper() in {"DO NOW", "APPLY", "PREPARE", "AVOID"}:
+            base += 8
+    base += localstate.adaptive_boost(record, all_hits)
     return int(max(0, min(100, base)))
 
 
@@ -141,8 +147,24 @@ def change_snapshot(record, all_records):
 def impact_matrix(record):
     text = _text(record)
     c = record.get("content") or {}
+    explicit = c.get("impact")
+    labels = {
+        "money": "💴 Money",
+        "family": "👨‍👩‍👧 Family",
+        "career": "💼 Career",
+        "japan": "🇯🇵 Japan",
+        "urgency": "⏱ Urgency",
+    }
+    if isinstance(explicit, dict):
+        result = {}
+        for key, label in labels.items():
+            value = str(explicit.get(key, "LOW")).upper()
+            result[label] = value if value in {"LOW", "MED", "HIGH"} else "LOW"
+        return result
+
     def level(score):
         return "HIGH" if score >= 3 else "MED" if score >= 1 else "LOW"
+
     money = sum(x in text for x in ("price", "cost", "yen", "saving", "tax", "fee", "salary", "fuel", "utility"))
     family = sum(x in text for x in ("family", "child", "spouse", "dependent", "school", "household", "childcare"))
     career = sum(x in text for x in ("job", "career", "engineer", "employer", "salary", "semiconductor", "immigration", "visa"))
@@ -160,26 +182,37 @@ def impact_matrix(record):
 def disagreement_signal(record, comments):
     thread = comments_for_story(comments or [], record.get("id"))
     agents = {str(c.get("agent", "")) for c in thread}
+    explicit_challenges = sum(str(c.get("stance", "")).upper() == "CHALLENGE" for c in thread)
+    explicit_mixed = sum(str(c.get("stance", "")).upper() == "MIXED" for c in thread)
     challenge_words = ("pero", "but ", "caution", "challenge", "not justified", "weak", "risk", "hype", "uncertain", "overfit", "false", "however")
-    challenging = sum(any(w in (" " + str(c.get("body", "")).lower() + " ") for w in challenge_words) for c in thread)
+    inferred = sum(
+        not c.get("stance") and any(w in (" " + str(c.get("body", "")).lower() + " ") for w in challenge_words)
+        for c in thread
+    )
+    challenging = explicit_challenges + explicit_mixed + inferred
     if len(agents) >= 3 and challenging >= 2:
-        return "HIGH", f"{len(agents)} lenses · {challenging} explicit challenges"
+        return "HIGH", f"{len(agents)} lenses · {challenging} challenge/mixed views"
     if len(agents) >= 2 and challenging >= 1:
         return "USEFUL", f"{len(agents)} lenses are not fully aligned"
     return None
 
 
+def _connection_tokens(record):
+    c = record.get("content") or {}
+    explicit = {str(x).lower() for x in (c.get("connection_tags") or []) if x}
+    tags = {str(x).lower() for x in (record.get("tags") or []) if x}
+    if explicit or tags:
+        return explicit | tags
+    return set(re.findall(r"[a-zA-Z]{5,}", record.get("title", "").lower()))
+
+
 def connected_stories(record, records, limit=3):
-    base = set(str(x).lower() for x in (record.get("tags") or []) if x)
-    if not base:
-        words = set(re.findall(r"[a-zA-Z]{5,}", record.get("title", "").lower()))
-        base = words
+    base = _connection_tokens(record)
     scored = []
     for other in records:
         if str(other.get("id")) == str(record.get("id")):
             continue
-        tags = set(str(x).lower() for x in (other.get("tags") or []) if x)
-        overlap = base & tags
+        overlap = base & _connection_tokens(other)
         if overlap:
             scored.append((len(overlap), feed_score(other), other, sorted(overlap)))
     scored.sort(key=lambda x: (x[0], x[1]), reverse=True)
@@ -265,9 +298,16 @@ def render_story_snapshot(record, all_records, records, comments):
     st.caption(evidence)
     st.markdown(" ".join(f"**{k}:** {v}" for k, v in impacts.items()))
     if change:
-        st.markdown(f"<div class='intel-change'><div><strong>Before</strong><br>{change[0]}</div><div class='intel-arrow'>→</div><div><strong>Now</strong><br>{change[1]}</div></div>", unsafe_allow_html=True)
+        st.markdown(
+            f"<div class='intel-change'><div><strong>Before</strong><br>{change[0]}</div>"
+            f"<div class='intel-arrow'>→</div><div><strong>Now</strong><br>{change[1]}</div></div>",
+            unsafe_allow_html=True,
+        )
     if disagreement:
-        st.markdown(f"<div class='intel-disagree'>⚡ <strong>ALAM disagreement: {disagreement[0]}</strong> — {disagreement[1]}</div>", unsafe_allow_html=True)
+        st.markdown(
+            f"<div class='intel-disagree'>⚡ <strong>ALAM disagreement: {disagreement[0]}</strong> — {disagreement[1]}</div>",
+            unsafe_allow_html=True,
+        )
     connected = connected_stories(record, records)
     if connected:
         with st.expander("Connect the dots"):
@@ -278,7 +318,12 @@ def render_story_snapshot(record, all_records, records, comments):
 def render_weekly(records, all_records):
     cutoff = datetime.now(timezone.utc) - timedelta(days=7)
     recent = [r for r in records if parse_dt(r.get("created_at")).astimezone(timezone.utc) >= cutoff]
-    st.markdown("<div class='hero mobile-hero'><div class='hero-kicker'>📅 WEEKLY INTELLIGENCE</div><div class='hero-title'>What actually mattered?</div><div class='hero-copy'>A rolling seven-day accountability view. Sunday Trend reports can add deeper synthesis.</div></div>", unsafe_allow_html=True)
+    st.markdown(
+        "<div class='hero mobile-hero'><div class='hero-kicker'>📅 WEEKLY INTELLIGENCE</div>"
+        "<div class='hero-title'>What actually mattered?</div>"
+        "<div class='hero-copy'>A rolling seven-day accountability view. Sunday Trend reports can add deeper synthesis.</div></div>",
+        unsafe_allow_html=True,
+    )
     if not recent:
         st.info("Not enough recent records yet.")
         return
@@ -306,10 +351,10 @@ def render_weekly(records, all_records):
             st.markdown(f"- **{status or 'OPEN'}:** {r.get('title','')}")
 
 
-def render_preferences():
+def render_preferences(manager=None):
     init_preferences()
     st.markdown("#### Personal relevance")
-    st.caption("Used to rank and label stories; it never hides high-importance general intelligence.")
+    st.caption("Used to rank and label stories; it never changes factual content or hides high-importance general intelligence.")
     prefs = dict(st.session_state.get("alam_interest_preferences", DEFAULT_INTERESTS))
     cols = st.columns(2)
     for i, name in enumerate(DEFAULT_INTERESTS):
@@ -317,10 +362,17 @@ def render_preferences():
             prefs[name] = st.toggle(name, value=bool(prefs.get(name, True)), key=f"interest_{i}")
     st.session_state["alam_interest_preferences"] = prefs
     st.markdown("#### Alert rules")
-    st.session_state["alam_alert_min_importance"] = st.slider("Minimum importance", 50, 100, int(st.session_state.get("alam_alert_min_importance", 85)), 5)
-    st.session_state["alam_alert_only_actionable"] = st.toggle("Only actionable stories", value=bool(st.session_state.get("alam_alert_only_actionable", False)))
-    st.session_state["alam_alert_material_change"] = st.toggle("Prioritize new/material changes", value=bool(st.session_state.get("alam_alert_material_change", True)))
+    st.session_state["alam_alert_min_importance"] = st.slider(
+        "Minimum importance", 50, 100, int(st.session_state.get("alam_alert_min_importance", 85)), 5
+    )
+    st.session_state["alam_alert_only_actionable"] = st.toggle(
+        "Only actionable stories", value=bool(st.session_state.get("alam_alert_only_actionable", False))
+    )
+    st.session_state["alam_alert_material_change"] = st.toggle(
+        "Prioritize new/material changes", value=bool(st.session_state.get("alam_alert_material_change", True))
+    )
     st.caption("These are in-app rules. They do not create phone push notifications.")
+    localstate.persist_settings(manager)
 
 
 INTEL_CSS = r"""

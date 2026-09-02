@@ -12,6 +12,8 @@ from alam_core import (
 import alam_mobile_views as views
 import alam_extras as extras
 import alam_intelligence as intelligence
+import alam_local_state as localstate
+import alam_reader_views as reader
 from alam_market_views import is_market_record, render_market
 from alam_personas import load_comments
 from alam_visual_system import BRAND_CSS, install_visual_system
@@ -63,29 +65,40 @@ st.markdown(CSS, unsafe_allow_html=True)
 st.markdown(views.MOBILE_CSS, unsafe_allow_html=True)
 st.markdown(BRAND_CSS, unsafe_allow_html=True)
 st.markdown(intelligence.INTEL_CSS, unsafe_allow_html=True)
+st.markdown(reader.READER_CSS, unsafe_allow_html=True)
+
+# Load browser-local state before display-specific CSS so persisted dark mode and
+# preferences can take effect on the first useful render without a backend.
+manager = init_browser_state()
+localstate.init_local_profile(manager)
+intelligence.init_preferences()
 extras.install_extras_css()
 install_visual_system(views)
-intelligence.init_preferences()
 
 # Article loading is intentionally limited to the four article directories so
 # growing comment/wisdom archives do not slow the main feed scan.
 all_records = extras.load_article_records()
-records = latest_by_story(all_records)
+current_records = latest_by_story(all_records)
 # Preserve legacy philosophical Reflection records in history but keep the current
 # public feed focused on Agent 3's explicit market_* records.
-records = [r for r in records if r.get("_category") != "reflection" or is_market_record(r)]
+current_records = [r for r in current_records if r.get("_category") != "reflection" or is_market_record(r)]
+# Muting is local to the reader. It hides future feed appearances without changing
+# or deleting shared ALAM intelligence.
+records = [r for r in current_records if not localstate.is_muted(r)]
 comments = load_comments()
-manager = init_browser_state()
 
 views.render_brand(records)
 extras.render_wisdom_strip()
 
 selected_id = st.session_state.get("selected_story")
-selected = next((r for r in records if str(r.get("id")) == str(selected_id)), None)
+# Allow a muted story that is already open to remain accessible so it can be
+# unmuted from its detail page.
+selected = next((r for r in current_records if str(r.get("id")) == str(selected_id)), None)
 
 if selected:
     views.render_detail(all_records, selected, comments, manager)
     intelligence.render_story_snapshot(selected, all_records, records, comments)
+    reader.render_detail_reader_controls(selected, manager)
     extras.render_share_tools(selected)
 else:
     page = st.pills(
@@ -102,6 +115,7 @@ else:
     if page == "Today":
         intelligence.render_alert_ribbon(records, all_records)
         intelligence.render_daily_brief(records, all_records)
+        reader.render_inbox(records, all_records, manager)
         views.render_today(all_records, records, comments, manager)
     elif page == "Discover":
         views.render_category(records, "discover", manager, comments)
@@ -120,6 +134,8 @@ else:
         )
         if secondary == "Weekly":
             intelligence.render_weekly(records, all_records)
+            st.divider()
+            reader.render_agent_audit(records, all_records, comments)
         elif secondary == "Search":
             extras.render_search(records, comments, manager, views)
         elif secondary == "Saved":
@@ -128,7 +144,11 @@ else:
             views.render_prediction_lab(records)
         elif secondary == "Settings":
             extras.render_settings()
-            intelligence.render_preferences()
+            intelligence.render_preferences(manager)
+            st.divider()
+            reader.render_local_profile(current_records, manager)
+            st.divider()
+            reader.render_offline_pack(records, all_records)
         else:
             views.render_category(records, "trend", manager, comments)
 
