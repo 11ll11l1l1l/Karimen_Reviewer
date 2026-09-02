@@ -45,7 +45,7 @@ def main():
         assert identity._valid_device_id(native_id) == native_id
 
         writer = FakeManager()
-        assert identity._cookie_set(writer, native_id) is True
+        assert identity._cookie_set(writer, native_id, key="confirm_alam_device_id") is True
         assert len(writer.calls) == 1
         args, kwargs = writer.calls[0]
         assert args[0] == identity.DEVICE_COOKIE
@@ -53,6 +53,7 @@ def main():
         assert kwargs["path"] == "/"
         assert kwargs["same_site"] == "lax"
         assert kwargs["max_age"] == identity.COOKIE_MAX_AGE
+        assert kwargs["key"] == "confirm_alam_device_id"
         assert identity.COOKIE_DAYS >= 365
 
         print("ALAM identity persistence regression checks passed")
