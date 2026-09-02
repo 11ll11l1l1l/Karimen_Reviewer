@@ -1,0 +1,74 @@
+[
+  {
+    "id": "test-generated-image-display-2026-09-02",
+    "agent": "discover",
+    "created_at": "2026-09-02T21:20:00+09:00",
+    "type": "technology",
+    "title": "TEST: Agent-generated editorial image display",
+    "summary": "Sample ALAM article para i-check kung tama ang generated editorial image rendering sa feed at article view.",
+    "why_it_matters": "This is a display-system test only. Kapag lumabas nang maayos ang attached image, confirmed na gumagana ang persistent generated-image path ng ALAM.",
+    "importance": 50,
+    "confidence": 100,
+    "tags": ["TEST", "ALAM", "Generated Image"],
+    "geography": ["Japan"],
+    "status": "NEW",
+    "sources": [],
+    "claims": [],
+    "editorial_visual": {
+      "style": "editorial",
+      "motif": "AI intelligence workspace",
+      "secondary_motif": "Japan city skyline",
+      "scene": "A calm futuristic analyst workspace overlooking Japan, with abstract intelligence signals and information cards floating in a dark navy environment",
+      "caption": "Testing ALAM generated visuals",
+      "silliness": 5,
+      "exaggeration": 35
+    },
+    "generated_image": {
+      "status": "ready",
+      "path": "alam_app/assets/editorial/generated/2026/09/test-generated-image-display.webp",
+      "model": "gpt-image",
+      "size": "480x270",
+      "quality": "test",
+      "format": "webp",
+      "prompt_signature": "manual-display-test-20260902",
+      "generated_at": "2026-09-02T21:20:00+09:00"
+    },
+    "content": {
+      "whats_new": "A persistent generated-image asset is attached directly to this test record.",
+      "skeptical_view": "If the card still shows the SVG fallback or a blank area, the image path/loading pipeline needs debugging.",
+      "what_next": "Open ALAM on desktop and mobile and verify card crop, detail-view rendering, loading speed and aspect ratio.",
+      "recommendation": "TEST ONLY",
+      "usefulness": 50,
+      "novelty": 50,
+      "impact": {
+        "money": "LOW",
+        "family": "LOW",
+        "career": "LOW",
+        "japan": "LOW",
+        "urgency": "LOW"
+      }
+    }
+  },
+  {
+    "id": "test-discover-sample-2026-09-02-b",
+    "agent": "discover",
+    "created_at": "2026-09-02T21:19:00+09:00",
+    "type": "technology",
+    "title": "SAMPLE: ALAM card without a generated image",
+    "summary": "Control sample ito para maikumpara ang normal fallback visual laban sa generated editorial image test card.",
+    "why_it_matters": "Having a control card makes it obvious whether generated-image priority is working as intended.",
+    "importance": 35,
+    "confidence": 100,
+    "tags": ["TEST", "ALAM", "Fallback"],
+    "geography": ["Japan"],
+    "status": "NEW",
+    "sources": [],
+    "claims": [],
+    "content": {
+      "whats_new": "This control article intentionally has no external or generated image.",
+      "recommendation": "TEST ONLY",
+      "usefulness": 30,
+      "novelty": 20
+    }
+  }
+]
