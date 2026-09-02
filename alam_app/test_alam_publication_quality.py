@@ -82,12 +82,20 @@ def test_any_supplied_ref_must_resolve():
 
 
 def test_single_secondary_source_warns_but_does_not_block():
-    one = article(sources=[{
-        "publisher": "Newsroom",
-        "title": "Only available report",
-        "url": "https://news.example/only",
-        "source_type": "news",
-    }])
+    one = article(
+        sources=[{
+            "publisher": "Newsroom",
+            "title": "Only available report",
+            "url": "https://news.example/only",
+            "source_type": "news",
+        }],
+        # Keep every supplied reference valid so this test isolates the policy that
+        # source-count/source-type concerns are warnings rather than publication blocks.
+        claims=[
+            {"kind": "FACT", "text": "The newsroom reported it.", "source_refs": [1]},
+            {"kind": "INFERENCE", "text": "This may affect readers.", "source_refs": [1]},
+        ],
+    )
     assessment = assess_article(one)
     assert assessment["publishable"], assessment
     assert "single_source_only" in assessment["warnings"]
