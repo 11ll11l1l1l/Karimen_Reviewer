@@ -19,6 +19,7 @@ import sys
 from contextlib import redirect_stdout
 from datetime import datetime, timezone
 
+from alam_lifecycle import lifecycle_rejections
 from alam_publication_quality import PublicationQualityError, persist_quality_rejections
 from alam_supabase_ingest import _client, run as run_ingestion
 from alam_supabase_reconcile import prepare_public_archive, reconcile_public_archive
@@ -154,10 +155,15 @@ def main():
     prepared_archive = None
 
     # Validate the complete allow-listed public audit archive before incremental
-    # ingestion. This single preflight now covers both publication evidence integrity
-    # and chronology ambiguity, preventing reconciliation from becoming a bypass path.
+    # ingestion. This single preflight covers evidence integrity, chronology ambiguity,
+    # and lifecycle resurrection. A retired story may legitimately become active again,
+    # but the audit record must say why; otherwise a stale agent retry could make an
+    # already-settled item look newly actionable without any public-write rollback path.
     try:
         prepared_archive = prepare_public_archive()
+        lifecycle_failures = lifecycle_rejections(prepared_archive)
+        if lifecycle_failures:
+            raise PublicationQualityError(lifecycle_failures)
         stats["archive_preflight_articles"] = len(prepared_archive)
     except PublicationQualityError as exc:
         stats["archive_preflight_errors"] = 1
@@ -211,7 +217,7 @@ def main():
     # ignores that shortcut and rebuilds the derived Supabase state from the GitHub
     # audit archive, making partial failures self-healing and repeated runs convergent.
     # Reusing the preflight snapshot also guarantees reconciliation writes exactly the
-    # archive state that passed quality/chronology validation at the beginning.
+    # archive state that passed quality/chronology/lifecycle validation at the beginning.
     try:
         reconcile_stats = reconcile_public_archive(client, prepared_archive=prepared_archive)
         stats.update(reconcile_stats)
