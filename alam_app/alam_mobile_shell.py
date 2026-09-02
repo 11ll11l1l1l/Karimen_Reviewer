@@ -205,6 +205,11 @@ def install_mobile_shell():
     st.markdown(MOBILE_SHELL_CSS, unsafe_allow_html=True)
 
 
+def _fallback_details(copy):
+    with st.expander("Why is fallback active?", expanded=False):
+        st.caption(copy)
+
+
 def render_runtime_status():
     """Render a small feed-source chip; keep fallback explanation collapsed."""
     source = st.session_state.get("alam_content_source")
@@ -214,15 +219,28 @@ def render_runtime_status():
             '<div><strong>Supabase live</strong> · current feed</div></div>',
             unsafe_allow_html=True,
         )
+    elif source == "hybrid_fallback":
+        count = int(st.session_state.get("alam_audit_overlay_versions", 0) or 0)
+        suffix = f" · {count} pending version{'s' if count != 1 else ''}" if count else ""
+        st.markdown(
+            '<div class="alam-runtime-status fallback"><span class="alam-runtime-dot"></span>'
+            f'<div><strong>Sync lag</strong> · verified audit overlay{suffix}</div></div>',
+            unsafe_allow_html=True,
+        )
+        _fallback_details(
+            "Supabase is reachable and remains the primary database, but one or more "
+            "newer verified GitHub audit versions have not been mirrored yet. ALAM is "
+            "temporarily overlaying only those missing versions so hourly agent output "
+            "does not disappear while trusted synchronization catches up."
+        )
     elif source == "local_fallback":
         st.markdown(
             '<div class="alam-runtime-status fallback"><span class="alam-runtime-dot"></span>'
             '<div><strong>Safe fallback</strong> · verified GitHub copy</div></div>',
             unsafe_allow_html=True,
         )
-        with st.expander("Why is fallback active?", expanded=False):
-            st.caption(
-                "ALAM could not use a current populated Supabase feed for this session, "
-                "so it is serving the verified GitHub audit copy. Reading remains safe, "
-                "but database-backed cross-device features may be incomplete until sync recovers."
-            )
+        _fallback_details(
+            "ALAM could not use a current populated Supabase feed for this session, so "
+            "it is serving the verified GitHub audit copy. Reading remains safe, but "
+            "database-backed cross-device features may be incomplete until sync recovers."
+        )
