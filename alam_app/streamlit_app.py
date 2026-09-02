@@ -11,6 +11,7 @@ from alam_core import (
 )
 import alam_mobile_views as views
 import alam_extras as extras
+import alam_intelligence as intelligence
 from alam_market_views import is_market_record, render_market
 from alam_personas import load_comments
 from alam_visual_system import BRAND_CSS, install_visual_system
@@ -29,6 +30,7 @@ TYPE_LABELS.update({
     "market_recap": "🏁 MARKET CLOSE",
     "market_risk": "⚠️ MARKET RISK",
     "market_regime": "🧭 MARKET REGIME",
+    "weekly_intelligence": "📅 WEEKLY INTELLIGENCE",
 })
 FIELD_LABELS.update({
     "session": "Session",
@@ -60,8 +62,10 @@ st.set_page_config(
 st.markdown(CSS, unsafe_allow_html=True)
 st.markdown(views.MOBILE_CSS, unsafe_allow_html=True)
 st.markdown(BRAND_CSS, unsafe_allow_html=True)
+st.markdown(intelligence.INTEL_CSS, unsafe_allow_html=True)
 extras.install_extras_css()
 install_visual_system(views)
+intelligence.init_preferences()
 
 # Article loading is intentionally limited to the four article directories so
 # growing comment/wisdom archives do not slow the main feed scan.
@@ -81,6 +85,7 @@ selected = next((r for r in records if str(r.get("id")) == str(selected_id)), No
 
 if selected:
     views.render_detail(all_records, selected, comments, manager)
+    intelligence.render_story_snapshot(selected, all_records, records, comments)
     extras.render_share_tools(selected)
 else:
     page = st.pills(
@@ -95,6 +100,8 @@ else:
     )
 
     if page == "Today":
+        intelligence.render_alert_ribbon(records, all_records)
+        intelligence.render_daily_brief(records, all_records)
         views.render_today(all_records, records, comments, manager)
     elif page == "Discover":
         views.render_category(records, "discover", manager, comments)
@@ -105,13 +112,15 @@ else:
     else:
         secondary = st.segmented_control(
             "More",
-            ["Trends", "Search", "Saved", "Predictions", "Settings"],
+            ["Trends", "Weekly", "Search", "Saved", "Predictions", "Settings"],
             default="Trends",
             key="more_nav",
             label_visibility="collapsed",
             width="stretch",
         )
-        if secondary == "Search":
+        if secondary == "Weekly":
+            intelligence.render_weekly(records, all_records)
+        elif secondary == "Search":
             extras.render_search(records, comments, manager, views)
         elif secondary == "Saved":
             extras.render_saved(records, manager, comments, views)
@@ -119,6 +128,7 @@ else:
             views.render_prediction_lab(records)
         elif secondary == "Settings":
             extras.render_settings()
+            intelligence.render_preferences()
         else:
             views.render_category(records, "trend", manager, comments)
 
