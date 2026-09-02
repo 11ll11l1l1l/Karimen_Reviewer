@@ -14,12 +14,12 @@ import alam_extras as extras
 import alam_intelligence as intelligence
 import alam_local_state as localstate
 import alam_reader_views as reader
+import alam_polish as polish
 from alam_market_views import is_market_record, render_market
 from alam_personas import load_comments
 from alam_visual_system import BRAND_CSS, install_visual_system
 
-# Agent 3 keeps the internal `reflection` category key for backward compatibility,
-# but the live product role is now Japan Market Intelligence.
+# The legacy `reflection` storage key now powers the Market section.
 CATEGORY_META["reflection"].update({
     "emoji": "📊",
     "label": "Market",
@@ -66,6 +66,7 @@ st.markdown(views.MOBILE_CSS, unsafe_allow_html=True)
 st.markdown(BRAND_CSS, unsafe_allow_html=True)
 st.markdown(intelligence.INTEL_CSS, unsafe_allow_html=True)
 st.markdown(reader.READER_CSS, unsafe_allow_html=True)
+st.markdown(polish.POLISH_CSS, unsafe_allow_html=True)
 
 # Load browser-local state before display-specific CSS so persisted dark mode and
 # preferences can take effect on the first useful render without a backend.
@@ -74,13 +75,14 @@ localstate.init_local_profile(manager)
 intelligence.init_preferences()
 extras.install_extras_css()
 install_visual_system(views)
+polish.install(views, reader)
 
 # Article loading is intentionally limited to the four article directories so
-# growing comment/wisdom archives do not slow the main feed scan.
+# growing discussion/wisdom archives do not slow the main feed scan.
 all_records = extras.load_article_records()
 current_records = latest_by_story(all_records)
-# Preserve legacy philosophical Reflection records in history but keep the current
-# public feed focused on Agent 3's explicit market_* records.
+# Preserve older philosophical records in history while the current public section
+# shows only explicit market_* records from this storage slot.
 current_records = [r for r in current_records if r.get("_category") != "reflection" or is_market_record(r)]
 # Muting is local to the reader. It hides future feed appearances without changing
 # or deleting shared ALAM intelligence.
