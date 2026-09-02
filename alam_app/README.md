@@ -96,6 +96,14 @@ Supabase is the preferred application read source once it contains published ALA
 
 Historical Supabase article versions are folded back into ALAM's existing v5 history contract so Before/Now timelines survive the cutover.
 
+### Production cutover status — verified September 3, 2026
+
+Production Project2 (`zecztyabmmoqzjumhxxf`) is populated and serving the durable ALAM data model. The verified live state at cutover contained 9 published real stories, 29 normalized source rows, 9 article versions, 11 agent perspectives, 25 topics / 30 article-topic links, one daily wisdom entry, and recorded agent-run history.
+
+The derived intelligence layer is also active: current Market forecasts are persisted in the prediction ledger, shared-signal relationships feed Connect the Dots, and a global daily briefing is persisted from already-validated story IDs. Supabase Cron refreshes those deterministic derived records hourly at minute 07. This maintenance job does not perform research and does not invent new factual claims.
+
+Public Data API access is least-privilege: shared intelligence is read-only to public application roles, personal tables require authenticated ownership under RLS, and operator tables remain inaccessible to public clients.
+
 ## Trusted GitHub -> Supabase synchronization
 
 Workflow: `.github/workflows/alam-supabase-sync.yml`
@@ -109,13 +117,9 @@ GitHub Actions requires:
 
 The service-role key is used only by trusted GitHub Actions ingestion. It bypasses RLS by design and must never be copied into public Streamlit configuration.
 
-The sync wrapper records sanitized run provenance/statistics in `agent_runs` when credentials and the table are available.
+The sync wrapper records sanitized run provenance/statistics in `agent_runs` when credentials and the table are available. If the GitHub Actions trusted mirror path is used, those repository secrets must still be configured; the live application itself uses only the publishable key and RLS-protected reads.
 
-### Current manual cutover blocker
-
-The database schema has been applied, but the first trusted GitHub Actions mirror attempt on 2026-09-02 failed because both Actions environment values were empty. Until the repository owner adds the two Actions secrets above, Supabase synchronization cannot authenticate and ALAM safely remains on the local audit fallback.
-
-Do **not** weaken RLS or expose the service key as a workaround.
+Do **not** weaken RLS or expose the service key as a workaround for synchronization problems.
 
 ## Supabase schema
 
@@ -126,6 +130,13 @@ Primary one-shot setup:
 For an earlier UUID-based ALAM Supabase schema, run first:
 
 - `supabase/ALAM_EXISTING_DB_PATCH.sql`
+
+Incremental production migrations include:
+
+- `supabase/migrations/005_public_sync_health.sql`
+- `supabase/migrations/006_anonymous_visitor_identity.sql`
+- `supabase/migrations/007_harden_alam_data_api_grants.sql`
+- `supabase/migrations/008_continuous_intelligence_refresh.sql`
 
 The compatibility bridge preserves old UUID-era tables as `*_legacy_20260902` rather than destructively converting their primary/foreign keys.
 
@@ -144,7 +155,7 @@ See:
 - `ALAM_CONTINUOUS_ROADMAP.md`
 - `DEVELOPMENT_AGENT_PROTOCOL.md`
 
-Two staggered development agents share the roadmap: backend/reliability at the hour and product/UX at half past, producing one development iteration every 30 minutes overall. Every run must inspect latest `main` and CI first, preserve newer manual/agent work, validate before committing, and leave a roadmap handoff.
+Development iterations must inspect latest `main` and CI first, preserve newer manual/agent work, validate before committing, and leave a roadmap handoff. Database-native hourly derived-intelligence refresh is separate from research/development agents and remains safe even when those agents are paused.
 
 ## Production rules
 
