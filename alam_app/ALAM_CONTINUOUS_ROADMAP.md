@@ -22,8 +22,7 @@ Permanent constraints:
 - Decision-first Today hierarchy and decision-first article-page orchestration are on `main`.
 - Saved-story version awareness is on `main`, including updated-since-saved behavior where version state is available.
 - Detailed ALAM Panel/cross-agent comment presentation preserves substantive SUPPORT/CHALLENGE/MIXED reasoning rather than reducing comments to one-line reactions.
-- Evidence view now surfaces attached-source count, primary/official count, publisher/domain diversity, classified-claim coverage, and source-to-claim support before the long source list. It explicitly treats source-group diversity as a heuristic rather than proof of independent confirmation.
-- Evidence source cards identify source type, primary/official status, diversity group, mapped claim count, reliability metadata when supplied, and the exact classified claims supported by each source. Mobile layout collapses the summary to a 2x2 grid and stacks source badges cleanly.
+- Evidence view surfaces attached-source count, primary/official count, publisher/domain diversity, classified-claim coverage, and source-to-claim support before the long source list. Source-group diversity is explicitly a heuristic, not proof of independent confirmation.
 - Supabase public-client module and Supabase-first article loading with local JSON migration fallback.
 - Supabase source hydration, public article history, public cross-agent comments, daily wisdom, predictions, article relationships, and database-health reads.
 - Core v5 Supabase schema with RLS, article/source/history/comment/run/topic/media/user-state/briefing/prediction/relationship/event tables.
@@ -31,13 +30,15 @@ Permanent constraints:
 - Trusted GitHub JSON -> Supabase incremental ingestion for public Discover, Practical, Market/reflection, Trend, comments, wisdom, sources, topics, predictions, versions, and explicit shared-signal relationships.
 - Trusted sync wrapper records sanitized GitHub run provenance and ingestion totals in `agent_runs`; service credentials remain server-side.
 - GitHub Actions serializes ALAM Supabase synchronization with a concurrency group so ordinary workflow dispatches do not overlap.
-- **Self-healing reconciliation layer** (`alam_supabase_reconcile.py`) added on 2026-09-03. After incremental ingestion it deterministically converges public current articles, numbered article history, normalized current sources, topics, and predictions from the GitHub audit archive.
-- Reconciliation specifically repairs the partial-write failure mode where `articles` was updated but later version/source/topic writes failed and a retry would otherwise incorrectly skip the record as unchanged.
-- Source reconciliation uses upsert-before-delete so a transient failure does not intentionally erase the previous good evidence set before desired sources are accepted.
+- Self-healing reconciliation (`alam_supabase_reconcile.py`) deterministically converges public current articles, numbered article history, normalized current sources, topics, and predictions from the GitHub audit archive after incremental ingestion.
+- Reconciliation repairs the partial-write failure where `articles` advances but history/sources/topics fail and an equal-timestamp retry would otherwise skip the record.
+- Source reconciliation uses upsert-before-delete to avoid intentionally erasing the previous good evidence set before desired sources are accepted.
 - Exact duplicate audit payloads are deduplicated before deterministic version numbering; equal timestamps use archive path ordering as a stable tie-breaker.
 - Reconciliation is scoped only to the four public ALAM article directories, preventing private Job Radar ingestion by construction.
-- Pure helper regression tests cover canonical payload identity, duplicate removal, chronological ordering, and deterministic equal-time ordering.
-- ALAM CI now runs reconciliation and Evidence trust-view regression tests and compiles the new trusted-sync/evidence modules.
+- Pure helper regression tests cover canonical payload identity, duplicate removal, chronological ordering, deterministic equal-time ordering, Evidence calculations, and Supabase-readiness classification.
+- A public-safe synchronization health contract now exists in repository code: migration `005_public_sync_health.sql` exposes only sanitized aggregate trusted-sync status through `alam_public_sync_health()`, while direct anonymous access to `agent_runs` remains blocked by RLS.
+- `alam_supabase_health.py` converts connection, sanitized sync status, freshness, article count, and actual feed source into explicit readiness states rather than treating “Supabase connected” as equivalent to “cutover healthy.”
+- ALAM CI gates reconciliation, Evidence, and Supabase-readiness regression tests and compiles the trusted-sync/readiness modules.
 
 ## B. In progress / requires production verification
 
@@ -50,7 +51,8 @@ Required evidence:
 - `articles` has published stable text IDs.
 - `article_sources`, `article_versions`, `agent_comments`, `wisdom_entries`, predictions, and relationships have expected mirrored rows where applicable.
 - A trusted `agent_runs` entry shows a successful synchronization and contains reconciliation totals.
-- ALAM Settings reports the live feed as Supabase, not local fallback.
+- Migration `005_public_sync_health.sql` has been applied to production so the public app can read sanitized trusted-sync health without opening `agent_runs` RLS.
+- ALAM Settings reports the live feed as Supabase, not local fallback, and uses the readiness classifier once Product Agent integration is complete.
 - Article evidence/history still render correctly after cutover.
 - No private Job Radar data is present in public ALAM tables.
 
@@ -64,9 +66,9 @@ Required evidence:
 
 ### P0 — Reliability / data integrity
 
-1. Complete explicit cutover/readiness diagnostics that distinguish: connected, schema ready, synchronized, live-on-Supabase, local fallback, stale sync, history unavailable, comments unavailable, and trusted-sync failure.
-2. Verify a real successful `agent_runs` sync entry in production. Repository support is implemented; external workflow credentials/execution still determine whether this is live.
-3. Extend reconciliation/idempotency tests to failure-injection cases for article-row success followed by version/source failure. Current deterministic helpers are tested; database-level failure simulation is not yet implemented.
+1. Product Agent: integrate `load_public_sync_health()` + `classify_supabase_readiness()` into Settings/operational-state presentation without exposing private diagnostics.
+2. Apply and verify migration `005_public_sync_health.sql` in production, then verify a real successful trusted sync and readiness output.
+3. Extend reconciliation/idempotency tests to database-level failure injection for article-row success followed by version/source failure.
 4. Harden same-story/same-timestamp-but-different-payload conflict handling so agent bugs cannot silently create ambiguous chronological versions.
 5. Add stronger source/evidence quality gates before publication and structured rejection reasons.
 6. Add stale/outdated lifecycle checks and safe story-expiration rules.
@@ -76,7 +78,7 @@ Required evidence:
 1. Keep Today hierarchy decision-first and prevent secondary modules from making the page feel endless.
 2. Preserve detailed cross-agent reasoning, uncertainty, implication, and disagreement; group stance only when it improves comprehension without duplicating the full thread.
 3. Continue refining material-change notices for saved stories and history.
-4. Improve partial-data/loading/fallback/stale-data states so operational truth is visible without overwhelming ordinary readers.
+4. Improve partial-data/loading/fallback/stale-data states using the backend readiness contract, without overwhelming ordinary readers.
 5. Refine Evidence only where new backend metadata materially improves trust; do not imply source independence from publisher/domain diversity alone.
 
 ### P1 — Persistent user state
@@ -112,6 +114,7 @@ Required evidence:
 
 These require credentials or external consoles and must never be falsely marked complete from repository changes alone:
 
+- Run `supabase/migrations/005_public_sync_health.sql` in the production Supabase SQL editor. It is additive/idempotent and does not weaken `agent_runs` RLS.
 - Supabase SQL execution when future migrations require it.
 - GitHub Actions secret creation/rotation for `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`.
 - Streamlit Cloud secret creation/rotation for `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY`.
@@ -133,14 +136,15 @@ These require credentials or external consoles and must never be falsely marked 
 - Multiple visual/CSS modules remain layered in install order. Avoid endless override chains; consolidate only after regression checks.
 - Browser-local Saved/preferences remain primary user state until auth synchronization is implemented.
 - Local JSON fallback is intentionally protective during cutover but can eventually mask stale database synchronization. Decide whether it becomes explicit disaster recovery or is narrowed after production Supabase stability is proven.
-- A healthy public Supabase connection does not prove ingestion is current. Trusted run status and freshness must become part of readiness diagnostics.
+- A healthy public Supabase connection does not prove ingestion is current. The new readiness contract solves the classification layer, but the production RPC migration and Product Settings integration remain pending.
+- The six-hour stale threshold in `alam_supabase_health.py` is a conservative operational default, not a claim that article content itself becomes factually stale after six hours. Product UI should phrase it as sync freshness.
 - Existing audit records may contain historical shapes; maintain translation compatibility until archive normalization is safe.
-- Reconciliation intentionally treats GitHub JSON as authoritative for known public article IDs. It does not delete unrelated Supabase articles that are absent from the GitHub archive; broad orphan cleanup requires a separately reviewed policy.
-- Deterministic reconciliation can repair derived version slots, including deleting trailing duplicate version numbers not justified by the GitHub audit. The GitHub audit itself is never deleted by this process.
-- Topic reconciliation currently uses the existing small delete/rebuild helper. It is retryable but does not yet use the safer upsert-before-delete pattern implemented for sources.
-- Supabase reconciliation is server-side only and relies on service-role workflow credentials. A missing credential stops the trusted job before database repair can begin.
-- Evidence source-group diversity is intentionally conservative but cannot establish editorial independence or prove that separate outlets did not repeat the same upstream report.
-- Supabase article hydration preserves v5 claim `source_refs`; normalized source fields such as `reliability` are available when populated. If future ingestion adds stronger provenance/independence metadata, the Evidence UI should consume it without inventing a score.
+- Reconciliation intentionally treats GitHub JSON as authoritative for known public article IDs. It does not delete unrelated Supabase articles absent from the GitHub archive; broad orphan cleanup requires a separately reviewed policy.
+- Deterministic reconciliation can repair derived version slots, including deleting trailing duplicate version numbers not justified by the GitHub audit. The GitHub audit itself is never deleted.
+- Topic reconciliation currently uses the existing small delete/rebuild helper. It is retryable but does not yet use the safer upsert-before-delete source pattern.
+- Supabase reconciliation is server-side only and relies on service-role workflow credentials. Missing credentials stop trusted repair before database changes begin.
+- Evidence source-group diversity cannot establish editorial independence or prove separate outlets did not repeat the same upstream report.
+- The public sync-health RPC deliberately exposes no raw error text or workflow metadata. Operator-level diagnosis still belongs in trusted GitHub Actions logs/admin tooling.
 
 ## G. Verification evidence / development log
 
@@ -153,39 +157,46 @@ These require credentials or external consoles and must never be falsely marked 
 
 ### 2026-09-02 — Decision-first product passes
 
-- Article page orchestration moved the immediate decision context ahead of deep reading modes while retaining full 30-sec/Panel/Evidence/Deep content.
+- Article page orchestration moved immediate decision context ahead of deep reading modes while retaining full 30-sec/Panel/Evidence/Deep content.
 - Today was tightened around decision-first sections.
-- Saved view became update-aware.
+- Saved became update-aware.
 - Panel/comment presentation was expanded for substantive reasoning and stance rather than shallow reactions.
-- These changes were committed on main before the 2026-09-03 backend iteration and were not overwritten by the backend reconciliation work.
 
 ### 2026-09-03 — Backend self-healing mirror
 
 - Agent: Backend Architect.
-- Problem found: incremental ingestion could partially succeed by updating the current article row, then fail while writing history/sources/topics. On retry, equal `created_at` caused `sync_article` to return `unchanged`, leaving Supabase permanently incomplete unless manually repaired.
-- Root cause: idempotency was implemented as a timestamp shortcut, but the database write sequence is not transactional across all derived tables.
-- Decision: retain fast incremental ingestion, then run a deterministic convergence pass from the GitHub audit archive. This avoids invasive schema changes and makes retries repair state.
-- Implementation: added `alam_supabase_reconcile.py`; wired it into `alam_supabase_sync_job.py`; added a deterministic helper regression test; added reconciliation module/test to ALAM CI; added the reconcile module to trusted-sync workflow path triggers.
-- Files affected: `alam_app/alam_supabase_reconcile.py`, `alam_app/alam_supabase_sync_job.py`, `alam_app/test_alam_supabase_reconcile.py`, `.github/workflows/alam-checks.yml`, `.github/workflows/alam-supabase-sync.yml`, this roadmap.
-- Security: reconciliation only reads the allow-listed public article directories and runs behind the existing service-role boundary. No public credential scope changed and no private Job Radar path was added.
-- Rollback: GitHub JSON remains untouched. Derived Supabase rows can be regenerated from it. No new database migration was required.
-- Validation performed: deterministic helper test added to CI; syntax gate expanded; Streamlit health/data/image gates remain in the same ALAM workflow. Final workflow conclusions must be checked after the roadmap commit before this iteration is considered fully green.
-- Remaining risk: no database-level failure-injection test yet; topic repair still uses delete/rebuild; production cutover still requires a successful trusted workflow with valid secrets.
-- Recommended next backend action: finish cutover/freshness diagnostics and expose only sanitized trusted-sync health to the public Settings/admin experience. Recommended product action: continue Evidence/source-quality presentation without changing the backend contract.
+- Problem found: incremental ingestion could update the current article row, then fail while writing history/sources/topics; an equal-timestamp retry would return unchanged and preserve incomplete derived state.
+- Root cause: timestamp idempotency shortcut covered the current row but the multi-table write sequence is not transactional.
+- Decision: keep fast incremental ingestion, then deterministically converge derived state from the GitHub audit archive.
+- Implementation: `alam_supabase_reconcile.py`, sync-job integration, deterministic helper tests, CI gates, workflow triggers.
+- Security: only public ALAM archive directories are allow-listed; no Job Radar path is reachable.
+- Rollback: GitHub JSON remains untouched and is the rebuild source.
+- Validation: reconciliation helper tests, syntax gate, data/image gates, and Streamlit health remain in ALAM CI.
+- Remaining risk: no database-level failure injection yet; topic reconciliation is still delete/rebuild.
 
 ### 2026-09-03 — Evidence trust experience
 
 - Agent: Product Builder.
-- Problem found: Evidence exposed claims and a flat source list, but readers still had to infer whether citations were primary/official, whether apparent source diversity was real, and which claims each source actually supported.
-- Root cause: the v5 contract already contained `source_type`, publisher, reliability metadata, and 1-based claim `source_refs`, but the reader did not synthesize those fields into a trust-oriented view.
-- Decision: improve Evidence entirely at the presentation/derived-metric layer. No schema or article-contract change was needed. Source-group diversity is labelled as a publisher/domain heuristic and never presented as proof of independent corroboration.
-- Implementation: added `alam_evidence_views.py` with a four-metric Evidence Health summary, conservative publisher/domain grouping, claim-coverage calculation, source-to-claim mapping, mobile-responsive source badges, and explicit limited-diversity warnings. Story Evidence now delegates to this module while retaining the existing PR-vs-Reality, classified-claims, and story-timeline renderers.
-- Files affected: `alam_app/alam_evidence_views.py`, `alam_app/alam_story_page.py`, `alam_app/streamlit_app.py`, `alam_app/test_alam_evidence_views.py`, `.github/workflows/alam-checks.yml`, this roadmap. No database schema changed.
-- Mobile behavior: the four Evidence Health metrics collapse to a 2x2 phone grid; source metadata/badges stack below the source title instead of squeezing into a desktop row.
-- Validation performed: deterministic evidence tests cover primary counts, publisher-group deduplication, claim coverage, invalid source refs, numeric string refs, and zero-evidence behavior without fake precision. The ALAM workflow for commit `eb3a674` completed successfully, including production-data validation, image tests, evidence/reconciliation regression tests, syntax compilation, dependency installation, and Streamlit health startup.
-- Current CI/deployment status: repository validation for the Evidence implementation is green. Production deployment remains subject to the existing Streamlit/Supabase external configuration and cutover verification described above.
-- Remaining limitation/risk: publisher/domain diversity cannot prove true editorial independence or unique upstream evidence. The UI deliberately says so. Historical records with no classified claims show claim coverage as unavailable rather than a misleading 0%/100% score.
-- Recommended next backend action: if defensible provenance metadata becomes available during source normalization, expose it consistently to the public hydration contract rather than deriving independence in the UI. Recommended next product action: improve partial-data/stale/fallback states or saved-story change clarity without expanding the first-screen article density.
+- Problem found: Evidence was a flat source/claim presentation that forced readers to infer source quality and mapping.
+- Root cause: existing v5 metadata was not synthesized into a trust-oriented reader view.
+- Decision: derive conservative presentation metrics only; do not invent independence/provenance scores.
+- Implementation: `alam_evidence_views.py`, article Evidence integration, deterministic tests, mobile-responsive Evidence Health/source cards.
+- Validation: Evidence implementation workflow passed production-data validation, image tests, evidence/reconciliation regression tests, syntax compilation, dependency installation, and Streamlit health startup.
+- Remaining risk: publisher/domain diversity cannot prove editorial independence.
+
+### 2026-09-03 — Sanitized Supabase readiness contract
+
+- Agent: Backend Architect.
+- Problem found: the app can report “Supabase connected” when the trusted mirror has never synchronized, the latest sync failed/was partial, the sync is operationally stale, or the reader is still on local fallback.
+- Root cause: connection health and table counts were available publicly, while `agent_runs` correctly remained private under RLS; there was no sanitized bridge between trusted sync telemetry and public readiness presentation.
+- Decision: keep `agent_runs` private and add a narrow SECURITY DEFINER RPC returning only approved aggregate fields. Put readiness rules in a pure Python classifier so Product/UI code does not duplicate backend semantics.
+- Implementation: added `supabase/migrations/005_public_sync_health.sql`, `alam_supabase_health.py`, `test_alam_supabase_health.py`, and ALAM CI gates. States cover disconnected, diagnostics unavailable, never synchronized, running, failed, partial, stale, local fallback, synchronized-empty, unknown status, and ready.
+- Files/schema affected: one additive SQL function/grant migration plus the new backend health module/test and `.github/workflows/alam-checks.yml`. Existing table/RLS policies were not loosened.
+- Security: direct public reads of `agent_runs` remain prohibited. RPC output excludes metadata, raw error messages, workflow/private-repository identifiers, credentials, and Job Radar state. The function grants execution only to `anon` and `authenticated` after revoking default PUBLIC execution.
+- Rollback: dropping `public.alam_public_sync_health()` removes the public diagnostic surface without touching content or trusted run records. The Python module already treats a missing RPC as diagnostics-unavailable rather than healthy.
+- Validation performed: deterministic tests cover PostgREST list normalization, disconnected precedence, missing migration, never-synced, failed, partial, stale, fallback, synchronized-empty, and fully-ready states. ALAM CI was triggered by the implementation; final conclusion must be checked after this roadmap commit.
+- Remaining limitation/risk: production Supabase still needs migration 005 applied; Settings has not yet been wired to the classifier; six-hour freshness is an operational sync threshold and should not be presented as article factual freshness.
+- Recommended next action: Product Builder should render the readiness contract in Settings and any compact operational state using calm user-facing language. Next Backend pass should add failure-injection coverage or same-timestamp conflict hardening after production cutover health is observable.
 
 ## H. Agent handoff template
 
