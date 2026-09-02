@@ -39,7 +39,9 @@ Permanent constraints:
 - Core Supabase v5 schema, RLS policies, article history, comments/wisdom support, media storage foundation, predictions, relationships, user-state tables, and analytics tables.
 - Non-destructive compatibility bridge for the earlier UUID-based ALAM Supabase schema. Legacy tables are preserved as `*_legacy_20260902` rather than destructively converted.
 - User confirmed the compatibility/setup SQL was successfully run in Supabase on 2026-09-02.
-- CI was previously observed passing after the initial Supabase integration changes. Every future iteration must re-check current CI rather than relying on this historical status.
+- Decision-first article page orchestration: article readers now see Why it matters, What to do, Evidence health/lifecycle/relevance, material Before -> Now changes, and a disagreement signal before choosing 30 sec / Panel / Evidence / Deep. The existing full panel thread remains available so substantive comments and reply relationships are not reduced to one-line reactions.
+- The decision-first reader is isolated in `alam_story_page.py` rather than adding more feed-rendering overrides to `alam_mobile_views.py`, and is included in the ALAM syntax gate.
+- CI run for commit `860184f10b2eeba361b89b3b77beb2933c5a9151` passed production-data validation, editorial-image self-test, both image regression tests, Python syntax compilation including the new story-page module, and Streamlit startup/health check on 2026-09-02.
 
 ## B. In progress
 
@@ -65,7 +67,7 @@ Required verification:
 
 ### P0 — Reliability / data integrity
 
-1. Add explicit Supabase cutover/readiness diagnostics that distinguish: connected, schema ready, data synchronized, live-on-Supabase, local fallback, history unavailable, comments unavailable, and stale synchronization.
+1. Complete explicit Supabase cutover/readiness diagnostics that distinguish: connected, schema ready, data synchronized, live-on-Supabase, local fallback, history unavailable, comments unavailable, and stale synchronization.
 2. Record trusted ingestion runs in `agent_runs`/sync-health data so the app/admin view can answer when the database last synchronized and whether failures occurred.
 3. Make synchronization idempotency and update/version logic robust against duplicate workflow execution and out-of-order records.
 4. Add stronger source/evidence quality checks before publication and explicit rejection reasons for bad candidates.
@@ -74,9 +76,9 @@ Required verification:
 ### P1 — Core reader/product quality
 
 1. Tighten Today/Home hierarchy around: Today in 3 Lines -> Do Now -> Prepare -> Avoid -> Watch -> Discover.
-2. Improve article detail ordering and scannability: summary -> why it matters -> what changed -> what to do -> primary analysis -> other-agent perspectives -> disagreement -> evidence -> timeline -> related stories.
-3. Ensure cross-agent perspectives support substantive reasoning, evidence, uncertainty, implication, and disagreement rather than shallow one-line reactions.
-4. Surface evidence strength and source type in a compact, understandable way.
+2. Refine article-page secondary ordering after the now-verified decision-first header: related stories, reader tuning, sharing, and any future saved-state update notice should remain useful without making the page feel endless.
+3. Ensure cross-agent perspectives continue to support substantive reasoning, evidence, uncertainty, implication, and disagreement rather than shallow one-line reactions; add stronger stance grouping only when it improves comprehension without duplicating the full thread.
+4. Surface source type/primary-vs-independent quality more clearly inside the Evidence view while keeping the first-screen Evidence card compact.
 5. Add clearer `Updated since you saved this`/material-change behavior using version timestamps.
 
 ### P1 — Persistent user state
@@ -133,11 +135,12 @@ When blocked, provide exact instructions and leave the repository in a safe stat
 
 ## F. Known risks / technical debt
 
-- The application currently contains several visual/CSS modules layered in install order. Future work should avoid creating endless override chains and should consolidate carefully after regression checks.
+- The application currently contains several visual/CSS modules layered in install order. Future work should avoid creating endless override chains and should consolidate carefully after regression checks. `alam_story_page.py` intentionally keeps article-page-specific CSS isolated rather than adding overrides to the feed CSS.
 - Browser-local Saved/preferences remain the current primary user-state mechanism until authentication/account synchronization is completed.
 - Supabase-first loading intentionally keeps local JSON as a temporary fallback. Once cutover is stable, decide whether fallback should remain as disaster recovery or be narrowed so stale local content cannot silently mask a failed sync.
 - GitHub-to-Supabase synchronization depends on trusted secrets and workflow execution. A healthy public Supabase connection alone does not prove that ingestion is current.
 - Existing ALAM data may contain multiple historical record shapes. Maintain translation compatibility until the audit archive is normalized.
+- The new story-page orchestrator deliberately reuses private rendering helpers from `alam_mobile_views.py` so behavior stays identical during the transition. If those helpers are later refactored, promote the shared 30-sec/Panel/Deep renderers into a public reader-component module rather than duplicating them.
 
 ## G. Verification evidence / CI log
 
@@ -149,6 +152,18 @@ Agents should append concise dated entries here after material iterations.
 - Root cause: `CREATE TABLE IF NOT EXISTS` does not migrate an existing table shape, and the old ALAM article PK was UUID while v5 uses stable text IDs.
 - Non-destructive legacy bridge added and user confirmed SQL setup completed.
 - Supabase-first application/data-access and ingestion foundation committed.
+
+### 2026-09-02 — Agent B decision-first reader
+
+- Problem found: the article page had substantial intelligence features, but the first-screen reading order was fragmented. Impact, action, material change, evidence health, disagreement, related stories, and reader controls were rendered in separate layers after the depth selector.
+- Root cause: product features had been added incrementally to `streamlit_app.py`, `alam_mobile_views.py`, `alam_intelligence.py`, and Supabase-enhanced views without a page-level information-architecture owner.
+- Decision: create a dedicated article-page orchestrator while reusing the existing mature 30-sec, Panel, Evidence, and Deep renderers. Do not duplicate or weaken the full cross-agent thread.
+- Implementation: added `alam_story_page.py`, integrated it into the selected-story path, removed duplicate post-reader snapshot/change/disagreement blocks from that path, and added the new module to the CI syntax gate.
+- Mobile behavior: the decision summary is three columns on wider screens and a one-column stack on phones; Before/Now also collapses vertically on phones. Missing history or disagreement simply removes those enhancements.
+- Validation: ALAM production-data validation passed; editorial image self-test passed; article image fallback and reliable layered renderer regression tests passed; Python syntax gate passed; Streamlit server started and health endpoint passed.
+- Current CI/deployment status: repository main is deployable at the validated reader commit. Streamlit Cloud production rollout remains governed by the connected deployment configuration outside this repository check.
+- Remaining limitation/risk: related-story controls, Tune ALAM, and share tools still render after the chosen reading mode; future product work should refine secondary-page length without reintroducing duplicate intelligence summaries.
+- Recommended next action: Agent A should continue Supabase cutover/readiness and sync-health work. Agent B should next improve Today/Home action hierarchy or saved-story material-change visibility, whichever remains the highest-value product gap after inspecting the newest main branch.
 
 ## H. Agent handoff template
 
