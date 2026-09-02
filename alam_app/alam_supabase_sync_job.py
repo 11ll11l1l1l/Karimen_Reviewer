@@ -20,7 +20,7 @@ from contextlib import redirect_stdout
 from datetime import datetime, timezone
 
 from alam_supabase_ingest import _client, run as run_ingestion
-from alam_supabase_reconcile import reconcile_public_archive
+from alam_supabase_reconcile import prepare_public_archive, reconcile_public_archive
 
 SYNC_AGENT_ID = "alam_supabase_sync"
 
@@ -151,6 +151,26 @@ def main():
         # remains more important than telemetry during migrations or recovery.
         print(f"SYNC AUDIT WARNING: could not create agent_runs record: {exc}", file=sys.stderr)
 
+    stats = {}
+    prepared_archive = None
+
+    # Validate the complete public audit chronology *before* incremental ingestion.
+    # This is a fail-closed data-integrity boundary. If two materially different
+    # versions of the same stable article ID claim the same explicit timestamp, file
+    # naming cannot safely decide which one is current. Stopping here prevents a bad
+    # agent/audit record from partially advancing Supabase before reconciliation.
+    try:
+        prepared_archive = prepare_public_archive()
+        stats["archive_preflight_articles"] = len(prepared_archive)
+    except Exception as exc:
+        stats["archive_preflight_errors"] = 1
+        print(f"ARCHIVE PREFLIGHT ERROR: {exc}", file=sys.stderr)
+        try:
+            _finish_run(client, run_id, 1, stats)
+        except Exception as audit_exc:
+            print(f"SYNC AUDIT WARNING: could not finalize agent_runs record: {audit_exc}", file=sys.stderr)
+        raise SystemExit(1)
+
     captured = io.StringIO()
     try:
         with redirect_stdout(captured):
@@ -164,15 +184,17 @@ def main():
         # Replay ingestion statistics to Actions so existing operational behavior and
         # searchable logs are preserved despite capturing stdout for structured use.
         print(output, end="" if output.endswith("\n") else "\n")
-    stats = _parse_stats(output)
+    stats.update(_parse_stats(output))
 
     # Incremental ingestion can fail after writing the query-facing article row but
     # before history/sources/topics are complete. A later incremental retry would see
     # an equal timestamp and call that record unchanged. Reconciliation deliberately
     # ignores that shortcut and rebuilds the derived Supabase state from the GitHub
     # audit archive, making partial failures self-healing and repeated runs convergent.
+    # Reusing the preflight snapshot also guarantees reconciliation writes exactly the
+    # archive state that passed chronology validation at the beginning of this job.
     try:
-        reconcile_stats = reconcile_public_archive(client)
+        reconcile_stats = reconcile_public_archive(client, prepared_archive=prepared_archive)
         stats.update(reconcile_stats)
         if reconcile_stats:
             print("ALAM reconciliation:")
