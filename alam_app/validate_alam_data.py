@@ -102,7 +102,7 @@ def validate_comment(path, row):
     for key in ("id", "story_id", "created_at", "agent", "persona_id", "body"):
         if not row.get(key):
             err(path, f"missing {key}")
-    if row.get("stance") and str(row.get("stance")).upper() not in {"SUPPORT", "CHALLENGE", "MIXED"}:
+    if is_v5(row) and row.get("stance") and str(row.get("stance")).upper() not in {"SUPPORT", "CHALLENGE", "MIXED"}:
         err(path, "stance must be SUPPORT/CHALLENGE/MIXED")
 
 
