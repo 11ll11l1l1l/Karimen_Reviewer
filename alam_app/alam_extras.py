@@ -9,6 +9,7 @@ from alam_core import DATA_DIR, feed_score, is_followed, normalize_category, par
 from alam_supabase import (
     check_supabase_connection,
     database_public_health,
+    load_article_history,
     load_latest_wisdom_from_db,
     load_published_articles,
 )
@@ -82,15 +83,34 @@ def _load_local_article_records():
 def load_article_records():
     """Prefer Supabase; keep local JSON only as a safe migration fallback.
 
-    A healthy but empty Supabase table deliberately falls back for now so deployment
-    does not blank the production app before the first real articles are migrated.
-    Once Supabase has any published records, it becomes the sole feed source.
+    Supabase current rows and read-only version rows are combined so ALAM's existing
+    story timeline continues to work. `latest_by_story` still picks only the newest
+    version for the public feed.
     """
     supabase_records, supabase_error = load_published_articles()
     if supabase_records:
         st.session_state["alam_content_source"] = "supabase"
         st.session_state.pop("alam_supabase_content_error", None)
-        return sorted(supabase_records, key=lambda r: parse_dt(r.get("published_at") or r.get("created_at")), reverse=True)
+
+        history, history_error = load_article_history([r.get("id") for r in supabase_records])
+        if history_error:
+            st.session_state["alam_supabase_history_error"] = history_error
+            history = []
+        else:
+            st.session_state.pop("alam_supabase_history_error", None)
+
+        # Ingestion stores the current record in article_versions too. Remove the
+        # exact duplicate so counts/timelines remain clean while retaining all older versions.
+        current_keys = {
+            (str(r.get("id")), parse_dt(r.get("created_at")).isoformat())
+            for r in supabase_records
+        }
+        older = [
+            r for r in history
+            if (str(r.get("id")), parse_dt(r.get("created_at")).isoformat()) not in current_keys
+        ]
+        combined = older + supabase_records
+        return sorted(combined, key=lambda r: parse_dt(r.get("created_at")), reverse=True)
 
     if supabase_error:
         st.session_state["alam_supabase_content_error"] = supabase_error
@@ -268,6 +288,9 @@ def render_settings():
         if content_error:
             st.warning("Supabase article storage is not ready yet. Local fallback remains active.")
             st.caption(content_error)
+        history_error = st.session_state.get("alam_supabase_history_error")
+        if history_error and source == "supabase":
+            st.caption("Current feed is live, but story-history migration still needs the history policy migration.")
     else:
         st.error("Supabase connection failed")
         st.caption(detail)
@@ -276,6 +299,7 @@ def render_settings():
         check_supabase_connection.clear()
         database_public_health.clear()
         load_published_articles.clear()
+        load_article_history.clear()
         load_latest_wisdom_from_db.clear()
         load_article_records.clear()
         load_latest_wisdom.clear()
