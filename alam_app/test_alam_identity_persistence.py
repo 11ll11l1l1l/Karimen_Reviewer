@@ -1,12 +1,13 @@
 """Regression checks for ALAM browser/device recognition.
 
 This test stays network-free. It proves the identity layer prefers Streamlit's native
-initial-request cookie, validates device IDs, and writes a long-lived browser cookie
-with the expected persistence options.
+initial-request cookie, validates device IDs, writes a long-lived browser cookie, and
+reuses one CookieManager instance per Streamlit session.
 """
 
 from types import SimpleNamespace
 
+import alam_core as core
 import alam_identity as identity
 
 
@@ -26,8 +27,20 @@ class FakeManager:
         self.calls.append((args, kwargs))
 
 
+class FakeStx:
+    def __init__(self):
+        self.created = 0
+        self.manager = FakeManager()
+
+    def CookieManager(self, key):
+        self.created += 1
+        return self.manager
+
+
 def main():
-    original_st = identity.st
+    original_identity_st = identity.st
+    original_core_st = core.st
+    original_core_stx = core.stx
     try:
         native_id = "805b1bcf-943e-4e07-9c3f-5bef33ac18b8"
         fallback_id = "15ca5b5f-5ddb-49f1-a793-636f5f5e91c4"
@@ -56,9 +69,23 @@ def main():
         assert kwargs["key"] == "confirm_alam_device_id"
         assert identity.COOKIE_DAYS >= 365
 
+        fake_stx = FakeStx()
+        fake_state = {}
+        core.st = SimpleNamespace(
+            session_state=fake_state,
+            context=SimpleNamespace(cookies=FakeCookies()),
+        )
+        core.stx = fake_stx
+        first = core.init_browser_state()
+        second = core.init_browser_state()
+        assert first is second is fake_stx.manager
+        assert fake_stx.created == 1, "CookieManager must be created once per Streamlit session."
+
         print("ALAM identity persistence regression checks passed")
     finally:
-        identity.st = original_st
+        identity.st = original_identity_st
+        core.st = original_core_st
+        core.stx = original_core_stx
 
 
 if __name__ == "__main__":
