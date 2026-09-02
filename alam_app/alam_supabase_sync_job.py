@@ -1,0 +1,178 @@
+"""Observable trusted Supabase synchronization job for ALAM.ph.
+
+The low-level ingestion module intentionally focuses on deterministic data mirroring.
+This wrapper owns *operational* concerns: recording when a sync started, whether it
+finished cleanly, which Git commit produced it, and the ingestion statistics emitted
+by the underlying job. Keeping those responsibilities separate makes the ingestion
+functions reusable for local/admin tooling while giving production automation a
+persistent audit trail in ``agent_runs``.
+
+This file must run only with a Supabase service-role/secret credential. It is never
+imported by the public Streamlit app.
+"""
+
+from __future__ import annotations
+
+import io
+import json
+import os
+import sys
+from contextlib import redirect_stdout
+from datetime import datetime, timezone
+
+from alam_supabase_ingest import _client, run as run_ingestion
+
+SYNC_AGENT_ID = "alam_supabase_sync"
+
+
+def _utc_now():
+    """Return an ISO-8601 UTC timestamp accepted by Supabase/Postgres."""
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _workflow_metadata():
+    """Capture deployment provenance without persisting secrets or environment dumps.
+
+    GitHub exposes many environment variables to Actions. Only stable, non-secret
+    identifiers are copied to the database so an operator can trace a failed sync to
+    the exact commit/run without risking accidental credential disclosure.
+    """
+    keys = {
+        "github_sha": "GITHUB_SHA",
+        "github_ref": "GITHUB_REF",
+        "github_run_id": "GITHUB_RUN_ID",
+        "github_run_number": "GITHUB_RUN_NUMBER",
+        "github_workflow": "GITHUB_WORKFLOW",
+        "github_actor": "GITHUB_ACTOR",
+    }
+    return {label: os.environ.get(env_name) for label, env_name in keys.items() if os.environ.get(env_name)}
+
+
+def _parse_stats(output):
+    """Parse the final JSON statistics printed by ``alam_supabase_ingest.run``.
+
+    The ingestion command currently writes one formatted JSON object to stdout.
+    Parsing it here avoids coupling the trusted wrapper to internal counters while
+    still allowing the run record to expose useful totals. If future diagnostic text
+    is added before/after that object, failure to parse remains non-fatal: the sync's
+    exit code is still authoritative and the raw console output is replayed to CI.
+    """
+    text = (output or "").strip()
+    if not text:
+        return {}
+    try:
+        parsed = json.loads(text)
+        return parsed if isinstance(parsed, dict) else {}
+    except json.JSONDecodeError:
+        return {}
+
+
+def _story_counts(stats):
+    """Translate ingestion counters into the generic ``agent_runs`` story columns.
+
+    ``stories_found`` represents valid/invalid article records encountered during
+    this job. ``stories_published`` counts only rows that actually advanced the live
+    article state; unchanged historical inputs are intentionally excluded. Invalid
+    records are treated as rejected for operational visibility, while hard database
+    errors remain represented by the run status and metadata.
+    """
+    article_keys = [key for key in stats if key.startswith("article_") and not key.endswith("_errors")]
+    found = sum(int(stats.get(key) or 0) for key in article_keys)
+    published = int(stats.get("article_published") or 0)
+    rejected = int(stats.get("article_invalid") or 0)
+    return found, published, rejected
+
+
+def _insert_run(client):
+    metadata = _workflow_metadata()
+    metadata["job_kind"] = "github_json_to_supabase"
+    response = client.table("agent_runs").insert({
+        "agent_id": SYNC_AGENT_ID,
+        "started_at": _utc_now(),
+        "status": "running",
+        "metadata": metadata,
+    }).execute()
+    rows = list(response.data or [])
+    return rows[0].get("id") if rows else None
+
+
+def _finish_run(client, run_id, exit_code, stats):
+    if not run_id:
+        return
+
+    found, published, rejected = _story_counts(stats)
+    error_count = sum(
+        int(value or 0)
+        for key, value in stats.items()
+        if key.endswith("_errors")
+    )
+
+    # A run with some successful processing plus one or more isolated failures is
+    # marked ``partial`` rather than ``failed``. This distinction is important for
+    # overnight development: agents should repair the failed subset without assuming
+    # that the entire Supabase mirror is unusable.
+    if exit_code == 0:
+        status = "success"
+    elif found > 0 or published > 0:
+        status = "partial"
+    else:
+        status = "failed"
+
+    metadata = _workflow_metadata()
+    metadata.update({
+        "job_kind": "github_json_to_supabase",
+        "ingestion_stats": stats,
+        "error_count": error_count,
+    })
+
+    client.table("agent_runs").update({
+        "finished_at": _utc_now(),
+        "status": status,
+        "stories_found": found,
+        "stories_published": published,
+        "stories_rejected": rejected,
+        # Do not persist exception strings from third-party clients here because
+        # they can occasionally include request details. CI logs retain the precise
+        # diagnostics; the database stores only a safe operator-facing summary.
+        "error_message": None if exit_code == 0 else "ALAM Supabase sync reported errors; inspect the matching GitHub Actions run.",
+        "metadata": metadata,
+    }).eq("id", run_id).execute()
+
+
+def main():
+    client = _client()
+    run_id = None
+
+    try:
+        run_id = _insert_run(client)
+    except Exception as exc:
+        # Observability must never prevent the actual mirror from running. A missing
+        #/outdated agent_runs table should be visible in CI, but ALAM's content sync
+        # remains more important than telemetry during migrations or recovery.
+        print(f"SYNC AUDIT WARNING: could not create agent_runs record: {exc}", file=sys.stderr)
+
+    captured = io.StringIO()
+    try:
+        with redirect_stdout(captured):
+            exit_code = int(run_ingestion(dry_run=False))
+    except Exception as exc:
+        exit_code = 1
+        print(f"SYNC FATAL ERROR: {exc}", file=sys.stderr)
+
+    output = captured.getvalue()
+    if output:
+        # Replay ingestion statistics to Actions so existing operational behavior and
+        # searchable logs are preserved despite capturing stdout for structured use.
+        print(output, end="" if output.endswith("\n") else "\n")
+    stats = _parse_stats(output)
+
+    try:
+        _finish_run(client, run_id, exit_code, stats)
+    except Exception as exc:
+        print(f"SYNC AUDIT WARNING: could not finalize agent_runs record: {exc}", file=sys.stderr)
+
+    raise SystemExit(exit_code)
+
+
+if __name__ == "__main__":
+    main()
