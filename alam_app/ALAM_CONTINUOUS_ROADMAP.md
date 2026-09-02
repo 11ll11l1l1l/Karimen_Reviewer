@@ -24,6 +24,7 @@ Permanent constraints:
 - Detailed ALAM Panel presentation preserving substantive SUPPORT/CHALLENGE/MIXED reasoning.
 - Evidence view with source count, official/primary count, publisher/domain diversity, classified-claim coverage, and source-to-claim support. Diversity is explicitly not treated as proof of editorial independence.
 - Cross-cutting accessibility contract installed after feature/theme styles: visible `:focus-visible` keyboard focus, minimum 44px desktop interaction targets, 48px mobile targets, operating-system reduced-motion support, and non-colour link affordance for evidence-bearing links.
+- Selected article detail now scopes cross-agent comment hydration to that one current story; feed/list views retain the full current-story comment scope, reducing unnecessary Supabase payload without weakening the detailed Panel contract.
 - Supabase-first public article loading with local JSON migration fallback.
 - Supabase hydration for sources, history, comments, wisdom, predictions, relationships, and database health.
 - Core v5 Supabase schema with RLS plus non-destructive compatibility bridge for the earlier UUID schema.
@@ -42,7 +43,7 @@ Permanent constraints:
 - A public-safe sync-health RPC contract exists in migration `005_public_sync_health.sql`; direct public reads of `agent_runs` remain blocked by RLS.
 - Backend readiness classification distinguishes disconnected, diagnostics unavailable, never synchronized, running, failed, partial, stale sync, local fallback, synchronized-empty, unknown status, and ready.
 - Settings renders one calm Data status verdict from that classifier and keeps raw private workflow/error metadata out of the public UI.
-- CI gates reconciliation/chronology, source/topic failure safety, Evidence, backend readiness, product readiness, Saved material-update review state, accessibility, syntax, production data, image behavior, dependency installation, and Streamlit startup health.
+- CI gates reconciliation/chronology, source/topic failure safety, Evidence, backend readiness, product readiness, Saved material-update review state, comment-hydration scope, accessibility, syntax, production data, image behavior, dependency installation, and Streamlit startup health.
 
 ## B. In progress / requires production verification
 
@@ -99,7 +100,7 @@ Required evidence before declaring cutover complete:
 
 ### P2 — Performance / accessibility
 
-- Audit Supabase query count/cache boundaries and avoid repeated hydration queries or oversized rerenders.
+- Continue auditing Supabase query/cache boundaries. Selected article comment hydration is now scoped, but article history/source hydration and route-specific query counts should be measured before broader lazy-loading changes.
 - Perform a real-device keyboard/screen-reader/manual mobile accessibility audit; the CSS contract is a safeguard, not a claim of full WCAG conformance.
 - Consolidate conflicting CSS only with regression coverage.
 - Continue reviewing labels, contrast, mobile density, and semantic behavior as Streamlit widgets evolve.
@@ -149,6 +150,8 @@ These require external credentials/consoles and must not be falsely marked compl
 - Evidence source-group diversity cannot establish editorial independence.
 - Public sync-health intentionally exposes no raw errors/workflow metadata; operator diagnosis belongs in trusted logs/admin tooling.
 - Accessibility CSS improves baseline interaction behavior but does not by itself prove screen-reader semantics or full WCAG conformance; Streamlit-generated markup must be manually audited periodically.
+- Feed/list pages still request comments across all current story IDs because those surfaces can render discussion across multiple stories. Further narrowing should be route-aware and measured rather than assuming every list view can drop comment bodies.
+- Local JSON comment fallback remains compatible but still scans its local comment archive; this iteration specifically reduces Supabase payload on selected article detail pages.
 
 ## G. Verification evidence / development log
 
@@ -247,6 +250,20 @@ These require external credentials/consoles and must not be falsely marked compl
 - Remaining limitation/risk: current-article, version, source, topic, and prediction writes are still separate transactions. Reconciliation repairs partial mirrors, but higher-fidelity multi-table failure injection remains open.
 - Recommended Backend action: test article-row success followed by version/derived failure, then add structured evidence-quality rejection gates.
 - Recommended Product action: no UI change is required; preserve the existing Evidence trust surface.
+
+### 2026-09-03 — View-scoped article comment hydration
+
+- Agent: Product Builder.
+- Problem found: selected article pages hydrated published cross-agent comments for every current story before selection was resolved, adding unrelated Supabase payload and parsing to mobile detail navigation.
+- Root cause: `load_comments()` ran before `selected_story` lookup in the Streamlit entry point, so the data layer had no view scope.
+- Decision: resolve the selected story first; request one story's comments for a valid detail page, preserve full current-feed comment scope for feed/list views, and fail safe to feed scope for stale browser selection state.
+- Implementation: added pure `comment_scope_ids()` in `alam_comment_scope.py`, integrated it before comment hydration in `streamlit_app.py`, and added deterministic regression coverage plus CI gating.
+- Files/schema affected: `alam_app/alam_comment_scope.py`, `alam_app/streamlit_app.py`, `alam_app/test_alam_comment_scope.py`, `.github/workflows/alam-checks.yml`, and this roadmap. No database/schema/RLS change and no new database calls.
+- Mobile behavior: article detail preserves the same content, detailed agent comments, stance/reply relationships, deep-link/session selection, and controls while narrowing the Supabase comment query from all current story IDs to the selected story ID. Feed/list pages remain behaviorally unchanged.
+- Validation performed: deterministic tests cover selected/feed/stale/empty scopes. ALAM app checks for code/CI commit `ee223610ecd37991fcab8eb4c7b58bb004e77750` completed successfully, including the new scope test, production-data validation, source/topic/reconciliation/readiness/Evidence/Saved/accessibility regressions, Python compilation, dependency installation, and Streamlit startup health.
+- Remaining limitation/risk: local JSON fallback still scans its local comment archive. Broader route-aware lazy hydration for history/sources/comments should be measured before changing list behavior.
+- Recommended Backend action: none required for this view boundary; continue multi-table failure injection and source-quality gates. If future cards need only comment counts, expose compact counts separately instead of forcing full comment-body hydration.
+- Recommended Product action: next measure article history/source hydration and route-specific query counts; avoid broader lazy loading until Saved, Weekly, and history behavior are proven safe.
 
 ## H. Agent handoff template
 
