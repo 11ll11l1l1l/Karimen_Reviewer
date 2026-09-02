@@ -6,6 +6,7 @@ from zoneinfo import ZoneInfo
 import streamlit as st
 
 from alam_core import DATA_DIR, feed_score, is_followed, normalize_category, parse_dt
+from alam_supabase import check_supabase_connection
 
 WISDOM_DIR = DATA_DIR / "wisdom"
 ARTICLE_DIRS = [DATA_DIR / name for name in ("discover", "practical", "reflection", "trend")]
@@ -197,6 +198,20 @@ def render_settings():
         st.session_state["alam_dark_mode"] = enabled
         st.rerun()
     st.caption("Dark mode is stored for this current app session.")
+
+    st.divider()
+    st.markdown("#### Database")
+    connected, detail = check_supabase_connection()
+    if connected:
+        st.success("Supabase connected")
+        st.caption("ALAM can read the Supabase database using the configured publishable key.")
+    else:
+        st.error("Supabase connection failed")
+        st.caption(detail)
+
+    if st.button("Test Supabase again", key="test_supabase_connection", use_container_width=True):
+        check_supabase_connection.clear()
+        st.rerun()
 
 
 def render_share_tools(record):
