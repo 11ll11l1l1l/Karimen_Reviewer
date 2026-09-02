@@ -8,6 +8,9 @@ import alam_hybrid_feed
 import alam_mobile_shell
 
 
+EXPECTED_SUPABASE_PROJECT_REF = "zecztyabmmoqzjumhxxf"
+
+
 def numeric_score(value, default=50.0):
     """Convert loose ALAM score fields into a safe 0-100 number.
 
@@ -64,6 +67,58 @@ def safe_feed_score(record):
         + 10
         + min(8, source_count * 2)
     )
+
+
+def _is_expected_supabase_url(url):
+    """True only for ALAM's production Project2 host.
+
+    The account also contains an older Supabase project. A valid publishable key for
+    that older project can make a shallow connection check look healthy while ALAM
+    silently reads the wrong empty schema. Pinning only the project host prevents that
+    class of deployment drift without exposing or hard-coding any private credential.
+    """
+    text = str(url or "").strip().lower()
+    text = re.sub(r"^https?://", "", text)
+    host = text.split("/", 1)[0].split(":", 1)[0]
+    return host == f"{EXPECTED_SUPABASE_PROJECT_REF}.supabase.co"
+
+
+def _install_supabase_project_guard():
+    """Refuse a silently wrong Supabase project while preserving normal secret errors."""
+    supabase_module = sys.modules.get("alam_supabase")
+    if supabase_module is None:
+        return
+    current = getattr(supabase_module, "get_supabase_public", None)
+    if current is None or getattr(current, "_alam_project_guard", False):
+        return
+
+    original = current
+
+    def guarded_get_supabase_public(*args, **kwargs):
+        try:
+            configured_url = st.secrets["SUPABASE_URL"]
+        except Exception:
+            # Let the original helper produce its existing sanitized missing-secret
+            # message. The project guard exists only to catch a *present but wrong* URL.
+            return original(*args, **kwargs)
+        if not _is_expected_supabase_url(configured_url):
+            raise RuntimeError(
+                "ALAM Supabase configuration points to an unexpected project. "
+                "Use the production ALAM Project2 deployment."
+            )
+        return original(*args, **kwargs)
+
+    guarded_get_supabase_public._alam_project_guard = True
+    supabase_module.get_supabase_public = guarded_get_supabase_public
+
+    # Some modules import the helper directly before this startup installer runs.
+    # Replace only references that still point to the exact original callable so
+    # readiness/diagnostic paths cannot bypass the same production-project guard.
+    for name, module in list(sys.modules.items()):
+        if not name.startswith("alam_") or module is None:
+            continue
+        if getattr(module, "get_supabase_public", None) is original:
+            setattr(module, "get_supabase_public", guarded_get_supabase_public)
 
 
 def _install_cookie_layout_guard():
@@ -166,7 +221,7 @@ def _install_mobile_shell_hooks():
 
 
 def install_runtime_safety():
-    """Install score hardening, sync continuity and startup-safe mobile shell guards.
+    """Install score hardening, project pinning, sync continuity and mobile guards.
 
     This installer intentionally patches existing call sites instead of duplicating
     business logic in ``streamlit_app.py``. The public data contracts therefore remain
@@ -179,6 +234,7 @@ def install_runtime_safety():
         if hasattr(module, "feed_score"):
             setattr(module, "feed_score", safe_feed_score)
 
+    _install_supabase_project_guard()
     _install_cookie_layout_guard()
     _install_hybrid_feed_hooks()
     _install_mobile_shell_hooks()
