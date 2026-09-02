@@ -63,14 +63,23 @@ POLISH_CSS = f"""
 .panel-thread-item .panel-face{{width:42px;height:42px;min-width:42px}}
 .alam-disclaimer{{margin:26px 0 8px;border-top:1px solid rgba(23,32,42,.10);padding:17px 3px 4px;color:#7b8491;font-size:.70rem;line-height:1.55}}
 .alam-disclaimer strong{{color:#59616d}}
-.article-visual{{background:#e9eef5}}
-.article-visual img{{background:#e9eef5}}
+.article-visual{{background-color:#e9eef5;background-position:center;background-size:cover;background-repeat:no-repeat}}
 @media(max-width:760px){{.panel-grid{{grid-template-columns:1fr}}.panel-card{{padding:13px}}.panel-face{{width:46px;height:46px;min-width:46px}}}}
 </style>
 """
 
 
 def _fallback(record):
+    # `streamlit_app.py` replaces visual._svg_data_uri with the current image
+    # resolver. That resolver prefers a persistent generated WebP, then creates a
+    # topic-specific editorial visual. Keep the old category SVG only as the final
+    # emergency fallback if the resolver itself returns nothing.
+    try:
+        current = visual._svg_data_uri(record)
+    except Exception:
+        current = ""
+    if current:
+        return current
     return FALLBACK_IMAGES.get(str(record.get("_category") or "discover"), FALLBACK_IMAGES["discover"])
 
 
@@ -96,18 +105,38 @@ def _image_credit(record):
     return next((str(v) for v in values if v), "")
 
 
+def _css_image_url(value):
+    # HTML entities are decoded before the style declaration is parsed, so this
+    # safely preserves URL query strings while preventing a quote from escaping
+    # the CSS url() value.
+    return str(value or "").replace("\\", "\\\\").replace('"', '\\"')
+
+
 def article_image_html(record, hero=False, show_credit=False):
     fallback = _fallback(record)
     external = _external_image(record)
-    source = external or fallback
     credit = _image_credit(record) if external and show_credit else ""
     alt = record.get("image_alt") or f"Visual for {record.get('title', 'ALAM story')}"
     hero_class = " hero" if hero else ""
     credit_html = f'<div class="image-credit">{esc(credit)}</div>' if credit else ""
+
+    # CSS backgrounds are deliberately used instead of <img>. Streamlit/browser
+    # combinations were showing a broken-image icon for data-URI article art on
+    # mobile. Multiple background layers also give us a real fallback: if an
+    # external/official image 404s, the generated/editorial image underneath is
+    # still rendered rather than exposing broken alt text to the reader.
+    layers = []
+    if external:
+        layers.append(f'url("{_css_image_url(external)}")')
+    layers.append(f'url("{_css_image_url(fallback)}")')
+    background_image = ",".join(layers)
+    style = (
+        f"background-image:{background_image};"
+        + ("background-size:cover,cover;background-position:center,center;" if external else "background-size:cover;background-position:center;")
+    )
     return (
-        f'<div class="article-visual{hero_class}">'
-        f'<img src="{esc(source)}" alt="{esc(alt)}" loading="lazy" '
-        f'onerror="this.onerror=null;this.src=\'{fallback}\';">{credit_html}</div>'
+        f'<div class="article-visual{hero_class}" role="img" aria-label="{esc(alt)}" '
+        f'style="{esc(style)}">{credit_html}</div>'
     )
 
 
