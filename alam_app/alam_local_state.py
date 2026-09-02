@@ -6,13 +6,17 @@ from datetime import datetime, timedelta
 
 import streamlit as st
 
-from alam_core import parse_dt
+from alam_core import is_followed, parse_dt, toggle_follow
 
 COOKIE_NAME = "alam_profile_v2"
-COOKIE_VERSION = 2
+# Version 3 adds `b` (bookmark/save snapshots) while keeping the cookie name stable.
+# The decoder is intentionally additive so existing v2 browser profiles migrate
+# silently instead of making users re-import/reset their local personalization.
+COOKIE_VERSION = 3
 MAX_READ = 48
 MAX_FEEDBACK = 30
 MAX_MUTED = 24
+MAX_SAVED_SNAPSHOTS = 48
 
 VOTE_WEIGHT = {
     "MORE": 6,
@@ -27,7 +31,10 @@ def _sid(story_id):
 
 
 def _default_profile():
-    return {"v": COOKIE_VERSION, "r": {}, "m": [], "f": {}, "s": {}}
+    # `b` stores the article-version minute observed when a story was saved. It is
+    # separate from the existing followed-story ID cookie because the latter remains
+    # intentionally human-portable/backward-compatible across old ALAM versions.
+    return {"v": COOKIE_VERSION, "r": {}, "m": [], "f": {}, "s": {}, "b": {}}
 
 
 def _encode(profile):
@@ -46,7 +53,7 @@ def _decode(code):
     if not isinstance(decoded, dict):
         raise ValueError("Profile must be an object")
     profile = _default_profile()
-    for key in ("r", "m", "f", "s"):
+    for key in ("r", "m", "f", "s", "b"):
         if key in decoded and isinstance(decoded[key], type(profile[key])):
             profile[key] = decoded[key]
     return profile
@@ -64,6 +71,12 @@ def _trim(profile):
     feedback = profile.get("f") or {}
     if isinstance(feedback, dict):
         out["f"] = dict(list(feedback.items())[-MAX_FEEDBACK:])
+    bookmarks = profile.get("b") or {}
+    if isinstance(bookmarks, dict):
+        newest_bookmarks = sorted(
+            bookmarks.items(), key=lambda item: int(item[1] or 0), reverse=True
+        )[:MAX_SAVED_SNAPSHOTS]
+        out["b"] = {str(key): int(value or 0) for key, value in newest_bookmarks}
     return out
 
 
@@ -217,6 +230,45 @@ def adaptive_boost(record, topics=None):
     return int(max(-18, min(18, round(score))))
 
 
+def toggle_saved(record, manager=None):
+    """Toggle the existing Followed/Saved state and snapshot the current version.
+
+    The legacy followed-story cookie remains the source of truth for whether a story
+    is saved, so this is backward-compatible with old browsers and existing sync
+    codes. The local profile stores only the version observed at save time. When the
+    same stable story ID gets a newer material record, Saved can therefore flag the
+    change without requiring login or a backend write.
+    """
+    was_saved = is_followed(record.get("id"))
+    toggle_follow(record.get("id"), manager)
+    sid = _sid(record.get("id"))
+    bookmarks = _profile().setdefault("b", {})
+    if was_saved:
+        bookmarks.pop(sid, None)
+    else:
+        bookmarks.pop(sid, None)
+        bookmarks[sid] = _version_minute(record)
+    _save(manager)
+    return not was_saved
+
+
+def saved_has_update(record):
+    """True only when a locally-snapshotted saved story has a newer version."""
+    if not is_followed(record.get("id")):
+        return False
+    saved_version = int((_profile().get("b") or {}).get(_sid(record.get("id")), 0) or 0)
+    if saved_version <= 0:
+        # Existing saves from pre-v3 profiles have no trustworthy save-time version.
+        # Do not falsely label them updated; the next unsave/save action establishes
+        # a baseline and future material versions will be detectable.
+        return False
+    return _version_minute(record) > saved_version
+
+
+def saved_snapshot_count():
+    return len(_profile().get("b") or {})
+
+
 def render_story_controls(record, topics, manager=None):
     current = feedback_for(record)
     st.markdown("#### Tune ALAM")
@@ -263,13 +315,17 @@ def profile_counts():
         "read": len(profile.get("r") or {}),
         "muted": len(profile.get("m") or []),
         "feedback": len(profile.get("f") or {}),
+        "saved_snapshots": len(profile.get("b") or {}),
     }
 
 
 def render_profile_tools(manager=None):
     counts = profile_counts()
     st.markdown("#### Portable browser profile")
-    st.caption(f"{counts['read']} read · {counts['muted']} muted · {counts['feedback']} feedback signals. No account or Supabase required.")
+    st.caption(
+        f"{counts['read']} read · {counts['muted']} muted · {counts['feedback']} feedback signals · "
+        f"{counts['saved_snapshots']} saved-version snapshots. No account or Supabase write required."
+    )
     st.code(export_code(), language=None)
     incoming = st.text_input("Import ALAM profile code", key="alam_profile_import")
     if st.button("Import profile", disabled=not incoming.strip(), use_container_width=True):
@@ -280,7 +336,7 @@ def render_profile_tools(manager=None):
         except Exception:
             st.error("Invalid ALAM profile code.")
     with st.expander("Reset local profile"):
-        st.warning("This clears local read, mute and feedback history on this browser.")
+        st.warning("This clears local read, mute, feedback and saved-version history on this browser. The separate Saved list is not deleted here.")
         if st.button("Reset local profile", key="reset_local_profile", use_container_width=True):
             reset_profile(manager)
             st.rerun()
