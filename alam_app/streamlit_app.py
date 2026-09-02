@@ -26,6 +26,7 @@ import alam_time_theme as time_theme
 import alam_time_headers as time_headers
 import alam_supabase_views as dbviews
 import alam_readiness as readiness
+import alam_evidence_views as evidence_views
 from alam_generated_images import generated_or_editorial_data_uri
 from alam_market_views import is_market_record, render_market
 from alam_personas import load_comments
@@ -87,6 +88,7 @@ st.markdown(panel_views.PANEL_CSS, unsafe_allow_html=True)
 st.markdown(saved_views.SAVED_CSS, unsafe_allow_html=True)
 st.markdown(today_page.TODAY_CSS, unsafe_allow_html=True)
 st.markdown(readiness.RUNTIME_STATUS_CSS, unsafe_allow_html=True)
+st.markdown(evidence_views.EVIDENCE_CSS, unsafe_allow_html=True)
 st.markdown(polish.POLISH_CSS, unsafe_allow_html=True)
 st.markdown(portraits.PORTRAIT_CSS, unsafe_allow_html=True)
 
