@@ -16,9 +16,10 @@ import alam_local_state as localstate
 import alam_reader_views as reader
 import alam_polish as polish
 import alam_portraits as portraits
+import alam_visual_system as visual_system
+from alam_editorial_visual import editorial_data_uri
 from alam_market_views import is_market_record, render_market
 from alam_personas import load_comments
-from alam_visual_system import BRAND_CSS, install_visual_system
 from alam_runtime_safety import install_runtime_safety
 
 # Harden ranking against loose score fields in newly generated records before any
@@ -69,7 +70,7 @@ st.set_page_config(
 )
 st.markdown(CSS, unsafe_allow_html=True)
 st.markdown(views.MOBILE_CSS, unsafe_allow_html=True)
-st.markdown(BRAND_CSS, unsafe_allow_html=True)
+st.markdown(visual_system.BRAND_CSS, unsafe_allow_html=True)
 st.markdown(intelligence.INTEL_CSS, unsafe_allow_html=True)
 st.markdown(reader.READER_CSS, unsafe_allow_html=True)
 st.markdown(polish.POLISH_CSS, unsafe_allow_html=True)
@@ -81,7 +82,11 @@ manager = init_browser_state()
 localstate.init_local_profile(manager)
 intelligence.init_preferences()
 extras.install_extras_css()
-install_visual_system(views)
+
+# Keep the existing real-image lookup first. When no usable real image exists,
+# render the publishing agent's topic-specific editorial art direction locally.
+visual_system._svg_data_uri = editorial_data_uri
+visual_system.install_visual_system(views)
 polish.install(views, reader)
 # Replace the old generic sprite with the fixed generated character portraits.
 portraits.install(views)
