@@ -27,6 +27,7 @@ import alam_time_headers as time_headers
 import alam_supabase_views as dbviews
 import alam_readiness as readiness
 import alam_evidence_views as evidence_views
+import alam_accessibility as accessibility
 from alam_generated_images import generated_or_editorial_data_uri
 from alam_market_views import is_market_record, render_market
 from alam_personas import load_comments
@@ -153,9 +154,10 @@ visual_system.article_image_html = image_renderer.article_image_html
 panel_views.install(views)
 # Replace the old generic sprite with the fixed generated character portraits.
 portraits.install(views)
-# Apply this last so the moving sun/moon atmosphere tints the full app without
-# replacing category/story identity colors. It uses Japan local time on rerun.
+# The Japan-time theme remains presentation-only. Accessibility is installed after
+# it so motion/focus/touch safeguards cannot be silently undone by a later theme.
 time_theme.install_time_theme()
+accessibility.install_accessibility()
 
 # Supabase is now the preferred source of truth. During migration the loader keeps
 # the existing local article folders as a safe fallback until published DB content
