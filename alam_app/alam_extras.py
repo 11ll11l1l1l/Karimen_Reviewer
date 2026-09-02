@@ -6,7 +6,7 @@ from zoneinfo import ZoneInfo
 import streamlit as st
 
 from alam_core import DATA_DIR, feed_score, is_followed, normalize_category, parse_dt
-from alam_supabase import check_supabase_connection
+from alam_supabase import check_supabase_connection, load_published_articles
 
 WISDOM_DIR = DATA_DIR / "wisdom"
 ARTICLE_DIRS = [DATA_DIR / name for name in ("discover", "practical", "reflection", "trend")]
@@ -46,9 +46,8 @@ def install_extras_css():
         st.markdown(DARK_CSS, unsafe_allow_html=True)
 
 
-@st.cache_data(ttl=60)
-def load_article_records():
-    """Load only article folders, avoiding comments/wisdom scans on every refresh."""
+def _load_local_article_records():
+    """Temporary GitHub/local fallback during the Supabase content migration."""
     records = []
     for folder in ARTICLE_DIRS:
         if not folder.exists():
@@ -66,10 +65,33 @@ def load_article_records():
                     copy["_path"] = str(path.relative_to(DATA_DIR.parent))
                     copy["_category"] = normalize_category(copy)
                     copy["_record_key"] = f"{copy['_path']}::{idx}"
+                    copy["_storage"] = "local"
                     records.append(copy)
             except Exception:
                 continue
     return sorted(records, key=lambda r: parse_dt(r.get("created_at")), reverse=True)
+
+
+@st.cache_data(ttl=45)
+def load_article_records():
+    """Prefer Supabase; keep local JSON only as a safe migration fallback.
+
+    A healthy but empty Supabase table deliberately falls back for now so deployment
+    does not blank the production app before the first real articles are migrated.
+    Once Supabase has any published records, it becomes the sole feed source.
+    """
+    supabase_records, supabase_error = load_published_articles()
+    if supabase_records:
+        st.session_state["alam_content_source"] = "supabase"
+        st.session_state.pop("alam_supabase_content_error", None)
+        return sorted(supabase_records, key=lambda r: parse_dt(r.get("published_at") or r.get("created_at")), reverse=True)
+
+    if supabase_error:
+        st.session_state["alam_supabase_content_error"] = supabase_error
+    else:
+        st.session_state.pop("alam_supabase_content_error", None)
+    st.session_state["alam_content_source"] = "local_fallback"
+    return _load_local_article_records()
 
 
 @st.cache_data(ttl=60)
@@ -204,13 +226,25 @@ def render_settings():
     connected, detail = check_supabase_connection()
     if connected:
         st.success("Supabase connected")
-        st.caption("ALAM can read the Supabase database using the configured publishable key.")
+        source = st.session_state.get("alam_content_source")
+        if source == "supabase":
+            st.caption("Live article feed: Supabase")
+        elif source == "local_fallback":
+            st.caption("Database connection is healthy, but the feed is temporarily using local migration fallback data.")
+        else:
+            st.caption("ALAM can read the Supabase database using the configured publishable key.")
+        content_error = st.session_state.get("alam_supabase_content_error")
+        if content_error:
+            st.warning("Supabase article storage is not ready yet. Local fallback remains active.")
+            st.caption(content_error)
     else:
         st.error("Supabase connection failed")
         st.caption(detail)
 
     if st.button("Test Supabase again", key="test_supabase_connection", use_container_width=True):
         check_supabase_connection.clear()
+        load_published_articles.clear()
+        load_article_records.clear()
         st.rerun()
 
 
