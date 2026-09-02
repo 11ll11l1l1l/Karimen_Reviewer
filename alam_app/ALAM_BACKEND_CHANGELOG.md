@@ -2,6 +2,20 @@
 
 This file supplements `ALAM_CONTINUOUS_ROADMAP.md` with concise backend iteration handoffs. The shared roadmap remains the source for overall priority and product sequencing.
 
+## 2026-09-03 — Multi-table partial-write recovery proof
+
+- Agent: Backend Architect / Reliability.
+- Problem found: ALAM's trusted sync intentionally allows the query-facing `articles` row to be written before `article_versions`, sources, topics, and prediction state. If the process fails after that first write, a later incremental retry sees the same `created_at` and returns `unchanged`; repository documentation said reconciliation repairs this, but CI did not directly prove the complete failure sequence.
+- Root cause: existing tests validated reconciliation helpers and individual source/topic failure ordering separately, not the integration boundary connecting `sync_article()` partial mutation, equal-timestamp retry behavior, and `reconcile_public_archive()` recovery.
+- Decision: preserve the current incremental/reconciliation architecture and turn its recovery guarantee into an executable contract instead of adding duplicate write logic or weakening the equal-timestamp guard.
+- Implementation: added `test_alam_multitable_recovery.py` with an in-memory fake PostgREST client. It injects a failure on the first `article_versions` insert after the `articles` upsert, proves the next incremental retry remains `unchanged`, then proves archive reconciliation reconstructs deterministic version history and normalized claim-linked source evidence without creating duplicate history on a second reconciliation. CI now executes and syntax-compiles this test.
+- Files/schema affected: `alam_app/test_alam_multitable_recovery.py`, `.github/workflows/alam-checks.yml`, this changelog, and the shared roadmap. No runtime schema, migration, RLS, public credential, Streamlit behavior, or Job Radar path is changed.
+- Validation intent: the full ALAM pull-request workflow remains the authoritative gate, including production-data validation, all existing backend/product regressions, dependency install, Python compilation, and Streamlit startup health.
+- Rollback: revert the test/workflow/documentation commits. No database rollback is required because production code and schema are unchanged.
+- Remaining risk: this is high-fidelity deterministic PostgREST simulation, not a destructive test against production Supabase. Network-level transaction interruption and service outage behavior remain covered operationally by retry plus reconciliation rather than by a live database chaos test.
+- Recommended next Backend action: move to structured pre-publication source/evidence quality gates with persisted rejection reasons, then stale/outdated lifecycle handling.
+- Recommended Product action: no UI change is required. Continue measuring article history/source hydration before broader lazy-loading work.
+
 ## 2026-09-03 — Failure-safe incremental article-source convergence
 
 - Agent: Backend Architect / Reliability.
