@@ -7,7 +7,6 @@ from alam_core import (
     CSS,
     init_browser_state,
     latest_by_story,
-    load_all_records,
     mark_visit,
 )
 import alam_mobile_views as views
@@ -64,7 +63,9 @@ st.markdown(BRAND_CSS, unsafe_allow_html=True)
 extras.install_extras_css()
 install_visual_system(views)
 
-all_records = load_all_records()
+# Article loading is intentionally limited to the four article directories so
+# growing comment/wisdom archives do not slow the main feed scan.
+all_records = extras.load_article_records()
 records = latest_by_story(all_records)
 # Preserve legacy philosophical Reflection records in history but keep the current
 # public feed focused on Agent 3's explicit market_* records.
