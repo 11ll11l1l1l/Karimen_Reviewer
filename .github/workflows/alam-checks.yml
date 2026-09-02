@@ -67,62 +67,8 @@ jobs:
         run: python alam_app/test_alam_hybrid_feed.py
       - name: Compact mobile shell regression test
         run: python alam_app/test_alam_mobile_shell.py
-      - name: Python syntax check
-        run: >-
-          python -m py_compile
-          alam_app/streamlit_app.py
-          alam_app/alam_core.py
-          alam_app/alam_article_scope.py
-          alam_app/alam_comment_scope.py
-          alam_app/alam_lifecycle.py
-          alam_app/alam_personas.py
-          alam_app/alam_views.py
-          alam_app/alam_mobile_views.py
-          alam_app/alam_story_page.py
-          alam_app/alam_saved_views.py
-          alam_app/alam_evidence_views.py
-          alam_app/alam_accessibility.py
-          alam_app/alam_market_views.py
-          alam_app/alam_visual_system.py
-          alam_app/alam_editorial_visual.py
-          alam_app/alam_generated_images.py
-          alam_app/alam_image_generation.py
-          alam_app/alam_image_renderer.py
-          alam_app/alam_time_theme.py
-          alam_app/alam_time_headers.py
-          alam_app/alam_extras.py
-          alam_app/alam_intelligence.py
-          alam_app/alam_local_state.py
-          alam_app/alam_reader_views.py
-          alam_app/alam_readiness.py
-          alam_app/alam_publication_quality.py
-          alam_app/alam_supabase.py
-          alam_app/alam_supabase_health.py
-          alam_app/alam_supabase_ingest.py
-          alam_app/alam_supabase_reconcile.py
-          alam_app/alam_supabase_sync_job.py
-          alam_app/alam_supabase_views.py
-          alam_app/alam_hybrid_feed.py
-          alam_app/alam_mobile_shell.py
-          alam_app/alam_runtime_safety.py
-          alam_app/test_alam_supabase_reconcile.py
-          alam_app/test_alam_multitable_recovery.py
-          alam_app/test_alam_source_sync.py
-          alam_app/test_alam_topic_sync.py
-          alam_app/test_alam_publication_quality.py
-          alam_app/test_alam_lifecycle.py
-          alam_app/test_alam_supabase_health.py
-          alam_app/test_alam_readiness_views.py
-          alam_app/test_alam_evidence_views.py
-          alam_app/test_alam_saved_update_flow.py
-          alam_app/test_alam_comment_scope.py
-          alam_app/test_alam_article_scope.py
-          alam_app/test_alam_accessibility.py
-          alam_app/test_alam_hybrid_feed.py
-          alam_app/test_alam_mobile_shell.py
-          alam_app/test_article_image_render.py
-          alam_app/test_reliable_image_renderer.py
-          alam_app/validate_alam_data.py
+      - name: Python syntax check — every ALAM module
+        run: python -m compileall -q alam_app
       - name: Start ALAM Streamlit server
         shell: bash
         run: |
