@@ -22,6 +22,8 @@ Permanent constraints:
 - Decision-first Today hierarchy and decision-first article-page orchestration are on `main`.
 - Saved-story version awareness is on `main`, including updated-since-saved behavior where version state is available.
 - Detailed ALAM Panel/cross-agent comment presentation preserves substantive SUPPORT/CHALLENGE/MIXED reasoning rather than reducing comments to one-line reactions.
+- Evidence view now surfaces attached-source count, primary/official count, publisher/domain diversity, classified-claim coverage, and source-to-claim support before the long source list. It explicitly treats source-group diversity as a heuristic rather than proof of independent confirmation.
+- Evidence source cards identify source type, primary/official status, diversity group, mapped claim count, reliability metadata when supplied, and the exact classified claims supported by each source. Mobile layout collapses the summary to a 2x2 grid and stacks source badges cleanly.
 - Supabase public-client module and Supabase-first article loading with local JSON migration fallback.
 - Supabase source hydration, public article history, public cross-agent comments, daily wisdom, predictions, article relationships, and database-health reads.
 - Core v5 Supabase schema with RLS, article/source/history/comment/run/topic/media/user-state/briefing/prediction/relationship/event tables.
@@ -35,7 +37,7 @@ Permanent constraints:
 - Exact duplicate audit payloads are deduplicated before deterministic version numbering; equal timestamps use archive path ordering as a stable tie-breaker.
 - Reconciliation is scoped only to the four public ALAM article directories, preventing private Job Radar ingestion by construction.
 - Pure helper regression tests cover canonical payload identity, duplicate removal, chronological ordering, and deterministic equal-time ordering.
-- ALAM CI now runs the reconciliation regression test and compiles `alam_supabase_reconcile.py` plus the trusted sync wrapper.
+- ALAM CI now runs reconciliation and Evidence trust-view regression tests and compiles the new trusted-sync/evidence modules.
 
 ## B. In progress / requires production verification
 
@@ -72,10 +74,10 @@ Required evidence:
 ### P1 — Core reader/product quality
 
 1. Keep Today hierarchy decision-first and prevent secondary modules from making the page feel endless.
-2. Surface source type, primary/official status, source independence, and claim support more clearly inside Evidence while keeping the first-screen health card compact.
-3. Preserve detailed cross-agent reasoning, uncertainty, implication, and disagreement; group stance only when it improves comprehension without duplicating the full thread.
-4. Continue refining material-change notices for saved stories and history.
-5. Improve partial-data/loading/fallback/stale-data states so operational truth is visible without overwhelming ordinary readers.
+2. Preserve detailed cross-agent reasoning, uncertainty, implication, and disagreement; group stance only when it improves comprehension without duplicating the full thread.
+3. Continue refining material-change notices for saved stories and history.
+4. Improve partial-data/loading/fallback/stale-data states so operational truth is visible without overwhelming ordinary readers.
+5. Refine Evidence only where new backend metadata materially improves trust; do not imply source independence from publisher/domain diversity alone.
 
 ### P1 — Persistent user state
 
@@ -137,6 +139,8 @@ These require credentials or external consoles and must never be falsely marked 
 - Deterministic reconciliation can repair derived version slots, including deleting trailing duplicate version numbers not justified by the GitHub audit. The GitHub audit itself is never deleted by this process.
 - Topic reconciliation currently uses the existing small delete/rebuild helper. It is retryable but does not yet use the safer upsert-before-delete pattern implemented for sources.
 - Supabase reconciliation is server-side only and relies on service-role workflow credentials. A missing credential stops the trusted job before database repair can begin.
+- Evidence source-group diversity is intentionally conservative but cannot establish editorial independence or prove that separate outlets did not repeat the same upstream report.
+- Supabase article hydration preserves v5 claim `source_refs`; normalized source fields such as `reliability` are available when populated. If future ingestion adds stronger provenance/independence metadata, the Evidence UI should consume it without inventing a score.
 
 ## G. Verification evidence / development log
 
@@ -168,6 +172,20 @@ These require credentials or external consoles and must never be falsely marked 
 - Validation performed: deterministic helper test added to CI; syntax gate expanded; Streamlit health/data/image gates remain in the same ALAM workflow. Final workflow conclusions must be checked after the roadmap commit before this iteration is considered fully green.
 - Remaining risk: no database-level failure-injection test yet; topic repair still uses delete/rebuild; production cutover still requires a successful trusted workflow with valid secrets.
 - Recommended next backend action: finish cutover/freshness diagnostics and expose only sanitized trusted-sync health to the public Settings/admin experience. Recommended product action: continue Evidence/source-quality presentation without changing the backend contract.
+
+### 2026-09-03 — Evidence trust experience
+
+- Agent: Product Builder.
+- Problem found: Evidence exposed claims and a flat source list, but readers still had to infer whether citations were primary/official, whether apparent source diversity was real, and which claims each source actually supported.
+- Root cause: the v5 contract already contained `source_type`, publisher, reliability metadata, and 1-based claim `source_refs`, but the reader did not synthesize those fields into a trust-oriented view.
+- Decision: improve Evidence entirely at the presentation/derived-metric layer. No schema or article-contract change was needed. Source-group diversity is labelled as a publisher/domain heuristic and never presented as proof of independent corroboration.
+- Implementation: added `alam_evidence_views.py` with a four-metric Evidence Health summary, conservative publisher/domain grouping, claim-coverage calculation, source-to-claim mapping, mobile-responsive source badges, and explicit limited-diversity warnings. Story Evidence now delegates to this module while retaining the existing PR-vs-Reality, classified-claims, and story-timeline renderers.
+- Files affected: `alam_app/alam_evidence_views.py`, `alam_app/alam_story_page.py`, `alam_app/streamlit_app.py`, `alam_app/test_alam_evidence_views.py`, `.github/workflows/alam-checks.yml`, this roadmap. No database schema changed.
+- Mobile behavior: the four Evidence Health metrics collapse to a 2x2 phone grid; source metadata/badges stack below the source title instead of squeezing into a desktop row.
+- Validation performed: deterministic evidence tests cover primary counts, publisher-group deduplication, claim coverage, invalid source refs, numeric string refs, and zero-evidence behavior without fake precision. The ALAM workflow for commit `eb3a674` completed successfully, including production-data validation, image tests, evidence/reconciliation regression tests, syntax compilation, dependency installation, and Streamlit health startup.
+- Current CI/deployment status: repository validation for the Evidence implementation is green. Production deployment remains subject to the existing Streamlit/Supabase external configuration and cutover verification described above.
+- Remaining limitation/risk: publisher/domain diversity cannot prove true editorial independence or unique upstream evidence. The UI deliberately says so. Historical records with no classified claims show claim coverage as unavailable rather than a misleading 0%/100% score.
+- Recommended next backend action: if defensible provenance metadata becomes available during source normalization, expose it consistently to the public hydration contract rather than deriving independence in the UI. Recommended next product action: improve partial-data/stale/fallback states or saved-story change clarity without expanding the first-screen article density.
 
 ## H. Agent handoff template
 
