@@ -1,9 +1,9 @@
 """Regression checks for ALAM browser/device recognition.
 
-This test stays network-free. It proves the identity layer reads device identity from
-Streamlit's native request cookies, never uses a component read fallback, writes the
-long-lived cookie only when explicitly asked, and reuses one CookieManager instance per
-Streamlit session.
+This test stays network-free. It proves identity and local-profile startup reads use
+Streamlit's native request cookies, never depend on asynchronous component reads,
+writes the long-lived device cookie only when explicitly asked, and reuses one
+CookieManager instance per Streamlit session.
 """
 
 import inspect
@@ -11,6 +11,7 @@ from types import SimpleNamespace
 
 import alam_core as core
 import alam_identity as identity
+import alam_local_state as localstate
 
 
 class FakeCookies(dict):
@@ -45,6 +46,7 @@ def main():
     original_identity_st = identity.st
     original_core_st = core.st
     original_core_stx = core.stx
+    original_local_st = localstate.st
     try:
         native_id = "805b1bcf-943e-4e07-9c3f-5bef33ac18b8"
         legacy_component_id = "15ca5b5f-5ddb-49f1-a793-636f5f5e91c4"
@@ -81,6 +83,20 @@ def main():
             "Returning visitors must not rewrite the device cookie on every render."
         )
 
+        profile = localstate._default_profile()
+        profile["s"]["dark"] = True
+        profile_cookie = localstate._encode(profile)
+        local_manager = FakeManager("component-value-must-not-be-read")
+        local_state = {}
+        localstate.st = SimpleNamespace(
+            session_state=local_state,
+            context=SimpleNamespace(cookies=FakeCookies({localstate.COOKIE_NAME: profile_cookie})),
+        )
+        localstate.init_local_profile(local_manager)
+        assert local_manager.get_calls == [], "Profile hydration must use native request cookies."
+        assert local_state["alam_dark_mode"] is True
+        assert local_state["alam_local_profile_loaded"] is True
+
         fake_stx = FakeStx()
         fake_state = {}
         core.st = SimpleNamespace(
@@ -98,6 +114,7 @@ def main():
         identity.st = original_identity_st
         core.st = original_core_st
         core.stx = original_core_stx
+        localstate.st = original_local_st
 
 
 if __name__ == "__main__":
