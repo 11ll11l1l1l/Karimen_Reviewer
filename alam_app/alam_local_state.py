@@ -230,6 +230,24 @@ def adaptive_boost(record, topics=None):
     return int(max(-18, min(18, round(score))))
 
 
+def _advance_saved_snapshot(profile, story_id, version):
+    """Advance a saved-story review baseline monotonically.
+
+    This small pure helper is deliberately separate from Streamlit/cookie writes so
+    regression tests can prove that acknowledging an older rerun can never move the
+    bookmark baseline backwards and resurrect an already-reviewed update badge.
+    """
+    sid = _sid(story_id)
+    bookmarks = profile.setdefault("b", {})
+    current = int(bookmarks.get(sid, 0) or 0)
+    version = int(version or 0)
+    if version <= current:
+        return False
+    bookmarks.pop(sid, None)
+    bookmarks[sid] = version
+    return True
+
+
 def toggle_saved(record, manager=None):
     """Toggle the existing Followed/Saved state and snapshot the current version.
 
@@ -263,6 +281,22 @@ def saved_has_update(record):
         # a baseline and future material versions will be detectable.
         return False
     return _version_minute(record) > saved_version
+
+
+def acknowledge_saved_update(record, manager=None):
+    """Mark the current material version as reviewed without unsaving the story.
+
+    Saved used to have a one-way alert: once a story changed, the update badge stayed
+    forever unless the reader removed and re-added the bookmark. Acknowledgement
+    advances only the local version baseline. The stable followed-story ID remains
+    untouched, so old Saved sync codes and anonymous browser behavior keep working.
+    """
+    if not is_followed(record.get("id")):
+        return False
+    changed = _advance_saved_snapshot(_profile(), record.get("id"), _version_minute(record))
+    if changed:
+        _save(manager)
+    return changed
 
 
 def saved_snapshot_count():
