@@ -79,9 +79,11 @@ def render_saved(records, manager, comments, views):
     )
 
     if updated:
+        noun = "story has" if len(updated) == 1 else "stories have"
         st.markdown(
             '<div class="saved-update-summary"><strong>'
-            f'{len(updated)} saved stor{"y has" if len(updated) == 1 else "ies have"} a newer ALAM version.'</n            'strong> Updated stories are shown first so material changes do not disappear inside the bookmark list.</div>',
+            f'{len(updated)} saved {noun} a newer ALAM version.</strong> '
+            'Updated stories are shown first so material changes do not disappear inside the bookmark list.</div>',
             unsafe_allow_html=True,
         )
 
