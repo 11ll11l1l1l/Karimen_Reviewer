@@ -23,6 +23,7 @@ Permanent constraints:
 - Saved-story version awareness with updated-since-saved detection, updated-first ordering, compact Before/Now preview when defensible, and explicit review acknowledgement that clears the current update without unsaving the story.
 - Detailed ALAM Panel presentation preserving substantive SUPPORT/CHALLENGE/MIXED reasoning.
 - Evidence view with source count, official/primary count, publisher/domain diversity, classified-claim coverage, and source-to-claim support. Diversity is explicitly not treated as proof of editorial independence.
+- Cross-cutting accessibility contract installed after feature/theme styles: visible `:focus-visible` keyboard focus, minimum 44px desktop interaction targets, 48px mobile targets, operating-system reduced-motion support, and non-colour link affordance for evidence-bearing links.
 - Supabase-first public article loading with local JSON migration fallback.
 - Supabase hydration for sources, history, comments, wisdom, predictions, relationships, and database health.
 - Core v5 Supabase schema with RLS plus non-destructive compatibility bridge for the earlier UUID schema.
@@ -32,6 +33,7 @@ Permanent constraints:
 - Self-healing reconciliation deterministically converges current articles, numbered history, sources, topics, and predictions from the GitHub audit archive.
 - Reconciliation repairs partial-write cases where the current article advances but derived tables fail.
 - Source reconciliation uses upsert-before-delete to avoid deliberately erasing the prior good evidence set before desired rows are accepted.
+- Incremental topic synchronization now resolves/upserts desired topics and links before deleting stale links, so transient failures do not deliberately erase the prior topic set.
 - Exact duplicate audit payloads are removed before deterministic version numbering.
 - Fail-closed chronology preflight rejects materially different versions of one stable article ID sharing the same explicit `created_at` before public content writes.
 - Legacy records with no explicit `created_at` remain compatible; path ordering is retained only as a deterministic fallback for those historical shapes.
@@ -39,7 +41,7 @@ Permanent constraints:
 - A public-safe sync-health RPC contract exists in migration `005_public_sync_health.sql`; direct public reads of `agent_runs` remain blocked by RLS.
 - Backend readiness classification distinguishes disconnected, diagnostics unavailable, never synchronized, running, failed, partial, stale sync, local fallback, synchronized-empty, unknown status, and ready.
 - Settings renders one calm Data status verdict from that classifier and keeps raw private workflow/error metadata out of the public UI.
-- CI gates reconciliation/chronology, Evidence, backend readiness, product readiness, Saved material-update review state, syntax, production data, image behavior, dependency installation, and Streamlit startup health.
+- CI gates reconciliation/chronology, topic failure safety, Evidence, backend readiness, product readiness, Saved material-update review state, accessibility, syntax, production data, image behavior, dependency installation, and Streamlit startup health.
 
 ## B. In progress / requires production verification
 
@@ -67,9 +69,10 @@ Required evidence before declaring cutover complete:
 
 1. Apply/verify migration `005_public_sync_health.sql` in production, run a real trusted sync, and verify Settings readiness.
 2. Add database-level failure-injection coverage for article-row success followed by version/source failure.
-3. Add stronger source/evidence quality gates before publication with structured rejection reasons.
-4. Add stale/outdated lifecycle checks and safe story-expiration rules.
-5. Consider a separately reviewed policy for orphan Supabase rows absent from GitHub; do not delete broadly by default.
+3. Harden the incremental article-source path so it no longer relies on delete-before-insert before reconciliation repairs it.
+4. Add stronger source/evidence quality gates before publication with structured rejection reasons.
+5. Add stale/outdated lifecycle checks and safe story-expiration rules.
+6. Consider a separately reviewed policy for orphan Supabase rows absent from GitHub; do not delete broadly by default.
 
 ### P1 — Core reader/product quality
 
@@ -96,10 +99,10 @@ Required evidence before declaring cutover complete:
 
 ### P2 — Performance / accessibility
 
-- Audit Supabase query count/cache boundaries.
-- Avoid repeated hydration queries and oversized rerenders.
+- Audit Supabase query count/cache boundaries and avoid repeated hydration queries or oversized rerenders.
+- Perform a real-device keyboard/screen-reader/manual mobile accessibility audit; the CSS contract is a safeguard, not a claim of full WCAG conformance.
 - Consolidate conflicting CSS only with regression coverage.
-- Improve touch targets, labels, contrast, mobile density, and keyboard behavior.
+- Continue reviewing labels, contrast, mobile density, and semantic behavior as Streamlit widgets evolve.
 
 ### P3 — Admin / operations
 
@@ -131,7 +134,7 @@ These require external credentials/consoles and must not be falsely marked compl
 
 ## F. Known risks / technical debt
 
-- Multiple visual/CSS modules remain layered in install order.
+- Multiple visual/CSS modules remain layered in install order; `alam_accessibility.py` is intentionally installed last to protect focus/motion/target rules, but future code must preserve that ordering.
 - Browser-local Saved/preferences remain primary user state until auth synchronization exists.
 - Saved update acknowledgement is intentionally browser-local; cross-device review state requires future authenticated persistence.
 - The current four-argument Saved renderer remains backward-compatible. Explicit v5 `content.change_summary` can render Before/Now without hydrated history; legacy records without explicit change summaries safely omit the preview.
@@ -141,10 +144,11 @@ These require external credentials/consoles and must not be falsely marked compl
 - Historical audit records may lack current v5 fields. The chronology preflight deliberately does not treat missing `created_at` as an explicit timestamp conflict.
 - Same explicit timestamp + different payload now fails trusted sync before content writes. Correct the GitHub audit timestamp/payload rather than bypassing this guard.
 - Reconciliation does not delete unrelated Supabase articles absent from GitHub; broad orphan cleanup requires a separate reviewed policy.
-- Topic reconciliation still uses delete/rebuild rather than source-style upsert-before-delete.
+- Incremental article-source synchronization still has a delete-before-insert window even though archive reconciliation later repairs the mirror; this remains a backend priority.
 - Supabase reconciliation is service-role-only; missing trusted credentials stop repair before database content writes.
 - Evidence source-group diversity cannot establish editorial independence.
 - Public sync-health intentionally exposes no raw errors/workflow metadata; operator diagnosis belongs in trusted logs/admin tooling.
+- Accessibility CSS improves baseline interaction behavior but does not by itself prove screen-reader semantics or full WCAG conformance; Streamlit-generated markup must be manually audited periodically.
 
 ## G. Verification evidence / development log
 
@@ -164,7 +168,7 @@ These require external credentials/consoles and must not be falsely marked compl
 - Problem: partial incremental writes could leave derived Supabase state incomplete on equal-timestamp retry.
 - Change: deterministic reconciliation from GitHub audit archive after normal ingestion.
 - Security: public article directories are allow-listed; Job Radar is unreachable.
-- Remaining risk: no DB-level failure injection yet; topics still delete/rebuild.
+- Remaining risk: database-level partial-write failure injection remains open.
 
 ### 2026-09-03 — Evidence trust experience
 
@@ -208,6 +212,28 @@ These require external credentials/consoles and must not be falsely marked compl
 - Remaining limitation/risk: acknowledgement is anonymous browser-local state today. Imported legacy Saved ID codes intentionally do not invent historical review baselines. Full cross-device review persistence belongs with future authenticated state.
 - Recommended Backend action: no backend change is required for this flow. When authenticated persistence is designed, include the saved-story reviewed-version baseline under per-user RLS rather than deriving it from generic read history.
 - Recommended Product action: next prioritize accessibility/performance or another reader friction with measurable utility; do not auto-clear a Saved update merely because a story page was opened.
+
+### 2026-09-03 — Failure-safe incremental topic synchronization
+
+- Agent: Backend Architect.
+- Problem found: incremental topic sync deleted every existing article-topic link before resolving the replacement set, creating a partial-failure window where a published story could temporarily lose all topic relationships.
+- Decision: resolve/upsert all desired topics and links first, then delete only stale links after the replacement set is known-good.
+- Validation performed: deterministic failure-injection coverage proves old links survive mid-sync failure, stale deletion does not happen early, retries converge, explicit empty tags remove old links, and case/duplicate tags normalize safely.
+- Remaining backend risk: incremental article-source synchronization still has a delete-before-insert window even though reconciliation later repairs it.
+
+### 2026-09-03 — Cross-cutting mobile accessibility contract
+
+- Agent: Product Builder.
+- Problem found: ALAM had generally good mobile sizing, but keyboard focus, reduced-motion behavior, evidence-link affordance, and minimum interaction targets were distributed across independent CSS layers. A later theme/feature style could silently undo one safeguard.
+- Root cause: feature-specific visual modules evolved independently and install order had no explicit accessibility boundary.
+- Decision: create one rendering-only accessibility contract and install it after all visual/theme layers. It must not read Supabase, session data, or alter product state.
+- Implementation: added `alam_accessibility.py`; visible `:focus-visible` treatment for native and semantic controls; 44px desktop and 48px mobile minimum targets; `prefers-reduced-motion` handling; underlined evidence/detail links as a non-colour affordance; explicit late installation in `streamlit_app.py`; deterministic contract test and CI gate.
+- Files/schema affected: `alam_app/alam_accessibility.py`, `alam_app/streamlit_app.py`, `alam_app/test_alam_accessibility.py`, `.github/workflows/alam-checks.yml`, and this roadmap. No database/schema/RLS change and no additional runtime database queries.
+- Mobile behavior: navigation, segmented controls, buttons and semantic interactive roles receive a 48px minimum target at <=760px. Reduced-motion users keep the same content/information hierarchy while decorative animation/transitions collapse to effectively instant behavior.
+- Validation performed: ALAM app checks run for code/CI commit `3431a17b84becc4a417a745b2115638e882d2ec5` completed successfully, including the new accessibility regression test, the existing data/backend/product tests, syntax compilation, dependencies, and Streamlit health gate.
+- Remaining limitation/risk: CSS safeguards do not substitute for a real keyboard, screen-reader, contrast, and touch audit on actual devices; Streamlit markup can change between framework releases.
+- Recommended Backend action: none required. Continue the incremental article-source failure-safety work independently.
+- Recommended Product action: next measure query/render performance or perform a focused real-device/manual accessibility audit before adding more visual polish.
 
 ## H. Agent handoff template
 
