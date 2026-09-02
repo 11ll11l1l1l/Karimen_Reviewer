@@ -21,6 +21,7 @@ import alam_visual_system as visual_system
 import alam_time_theme as time_theme
 import alam_time_headers as time_headers
 import alam_supabase_views as dbviews
+import alam_readiness as readiness
 from alam_generated_images import generated_or_editorial_data_uri
 from alam_market_views import is_market_record, render_market
 from alam_personas import load_comments
@@ -221,6 +222,11 @@ else:
             dbviews.render_prediction_lab(records, views.render_prediction_lab)
         elif secondary == "Settings":
             extras.render_settings()
+            # Connectivity and feed-source labels are useful but insufficient during
+            # migration. The readiness panel independently compares the committed
+            # GitHub audit archive with public Supabase rows so a failed/stale mirror
+            # cannot be mistaken for a successful production cutover.
+            readiness.render_cutover_readiness()
             _sanitize_preference_state()
             try:
                 intelligence.render_preferences(manager)
