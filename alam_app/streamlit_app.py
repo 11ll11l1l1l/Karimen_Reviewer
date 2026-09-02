@@ -15,6 +15,7 @@ import alam_intelligence as intelligence
 import alam_local_state as localstate
 import alam_reader_views as reader
 import alam_story_page as story_page
+import alam_panel_views as panel_views
 import alam_polish as polish
 import alam_image_renderer as image_renderer
 import alam_portraits as portraits
@@ -80,6 +81,7 @@ st.markdown(visual_system.BRAND_CSS, unsafe_allow_html=True)
 st.markdown(intelligence.INTEL_CSS, unsafe_allow_html=True)
 st.markdown(reader.READER_CSS, unsafe_allow_html=True)
 st.markdown(story_page.STORY_PAGE_CSS, unsafe_allow_html=True)
+st.markdown(panel_views.PANEL_CSS, unsafe_allow_html=True)
 st.markdown(polish.POLISH_CSS, unsafe_allow_html=True)
 st.markdown(portraits.PORTRAIT_CSS, unsafe_allow_html=True)
 
@@ -138,6 +140,10 @@ polish.install(views, reader)
 # Reassert the reliable renderer after plugin installation so future install-order
 # changes cannot silently restore the old CSS-background implementation.
 visual_system.article_image_html = image_renderer.article_image_html
+# The detailed panel is installed over the original compact renderer instead of
+# duplicating panel call sites. Story page, Deep view, and any future caller all get
+# the same stance/reply/evidence-aware discussion behavior automatically.
+panel_views.install(views)
 # Replace the old generic sprite with the fixed generated character portraits.
 portraits.install(views)
 # Apply this last so the moving sun/moon atmosphere tints the full app without
