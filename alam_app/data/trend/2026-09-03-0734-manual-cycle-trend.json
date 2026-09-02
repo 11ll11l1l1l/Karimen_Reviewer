@@ -1,0 +1,139 @@
+{
+  "id": "japan-food-price-reacceleration-2026-h2",
+  "agent": "trend",
+  "created_at": "2026-09-03T07:34:50+09:00",
+  "type": "trend",
+  "title": "Japan's food-price wave reaccelerated sharply into the second half",
+  "summary": "Japan's packaged-food price hikes slowed dramatically in May, then accelerated again: Teikoku Databank counted 2,566 affected items in July and 4,923 in September, the largest monthly wave of 2026. The pattern points to a renewed second-half cost push rather than a smooth, continuous rise every month.",
+  "why_it_matters": "For households, the key risk is repeated repricing across everyday categories rather than one temporary spike. For markets and policy, the renewed wave adds another channel through which oil, materials, logistics and currency costs can keep consumer inflation sticky.",
+  "importance": 88,
+  "confidence": 96,
+  "tags": ["Japan", "Inflation", "Food Prices", "Households", "Oil", "Logistics"],
+  "geography": ["Japan"],
+  "status": "DEVELOPING",
+  "sources": [
+    {
+      "publisher": "Teikoku Databank",
+      "title": "食品主要195社 価格改定動向調査 — 2026年4月",
+      "url": "https://www.tdb.co.jp/report/economic/neage26y03/",
+      "published_at": "2026-03-31",
+      "source_type": "research"
+    },
+    {
+      "publisher": "Teikoku Databank",
+      "title": "食品主要195社 価格改定動向調査 — 2026年5月",
+      "url": "https://www.tdb.co.jp/report/economic/20260430-neage26y05/",
+      "published_at": "2026-04-30",
+      "source_type": "research"
+    },
+    {
+      "publisher": "Teikoku Databank",
+      "title": "食品主要195社 価格改定動向調査 — 2026年7月",
+      "url": "https://www.tdb.co.jp/report/economic/20260630-neage26y07/",
+      "published_at": "2026-06-30",
+      "source_type": "research"
+    },
+    {
+      "publisher": "Teikoku Databank",
+      "title": "食品主要195社 価格改定動向調査 — 2026年9月",
+      "url": "https://www.tdb.co.jp/report/economic/pricepass-on202608/",
+      "published_at": "2026-08-31",
+      "source_type": "research"
+    }
+  ],
+  "claims": [
+    {
+      "kind": "FACT",
+      "text": "Teikoku Databank counted 2,798 food and beverage items with April 2026 price increases among 195 major food companies.",
+      "source_refs": [1],
+      "basis": "Teikoku Databank April survey"
+    },
+    {
+      "kind": "FACT",
+      "text": "The same survey series counted only 70 affected items in May, showing that the 2026 price-hike wave temporarily slowed sharply after April.",
+      "source_refs": [2],
+      "basis": "Teikoku Databank May survey"
+    },
+    {
+      "kind": "FACT",
+      "text": "The count then rose to 2,566 items in July and 4,923 items in September; September is the largest monthly total of 2026 in the survey.",
+      "source_refs": [3, 4],
+      "basis": "Teikoku Databank July and September surveys"
+    },
+    {
+      "kind": "FACT",
+      "text": "Teikoku Databank attributed the later-2026 increase partly to raw-material, packaging, logistics and energy costs, including effects from higher oil and naphtha prices linked to Middle East conditions.",
+      "source_refs": [3, 4],
+      "basis": "Survey discussion of reported price-hike drivers"
+    },
+    {
+      "kind": "INFERENCE",
+      "text": "The sequence is best described as a second-half reacceleration in announced food-price hikes, not as evidence that the inflation rate increased every single month.",
+      "source_refs": [1, 2, 3, 4],
+      "basis": "Longitudinal synthesis of the monthly survey sequence"
+    }
+  ],
+  "editorial_visual": {
+    "style": "editorial",
+    "motif": "family",
+    "secondary_motif": "market",
+    "scene": "a grocery-cart roller coaster dips almost flat in May, then climbs steeply through July toward a giant September wall of price tags, with pantry staples riding in the cart",
+    "caption": "The food-price wave paused, then came back much stronger",
+    "silliness": 45,
+    "exaggeration": 80
+  },
+  "content": {
+    "key_message": "The 2026 food-price story is not a steady climb; it is a renewed second-half wave after a brief spring lull.",
+    "current_strength": 87,
+    "previous_strength": 55,
+    "direction": "ACCELERATING",
+    "evidence_for": [
+      "April already showed a large 2,798-item price-hike wave.",
+      "May fell to only 70 items, providing a real temporary lull rather than a continuously rising series.",
+      "July rebounded to 2,566 items.",
+      "September jumped to 4,923 items, the largest monthly wave of 2026.",
+      "The survey increasingly cites raw materials, packaging, logistics and energy costs as pressure points."
+    ],
+    "evidence_against": [
+      "The dataset tracks announced product repricing by major manufacturers, not a complete consumer-price index for all food purchased in Japan.",
+      "Products raised more than once in a year can be counted more than once, so item counts are not the same as the number of unique products affected.",
+      "Retail promotions, private-label competition and household substitution can reduce the actual budget impact versus announced manufacturer price changes."
+    ],
+    "connection": "The reacceleration lines up with a broader 2026 environment of higher oil/material costs and renewed household cost pressure. It connects the Practical grocery story with the Market oil-and-rates story without implying that one variable alone caused every price change.",
+    "alternative_explanation": "Part of the rebound may reflect companies clustering scheduled annual price revisions in July and September rather than a continuously worsening underlying cost trend. Survey methodology and timing effects matter.",
+    "watch_next": [
+      "October's currently announced price-hike count",
+      "Whether oil and packaging-material costs ease or stay elevated",
+      "Retail food CPI versus manufacturer announcement counts",
+      "Whether wage growth offsets household purchasing-power pressure"
+    ],
+    "what_would_change_mind": "A sustained fall in monthly manufacturer price revisions together with easing food CPI, cheaper energy/material inputs and stronger real household purchasing power would weaken the reacceleration thesis.",
+    "implications": "Households should expect uneven but persistent pressure across recurring grocery categories. For policymakers and markets, a broad second-half cost wave makes a quick return to low food inflation less certain even if one monthly headline improves.",
+    "history": [
+      "March 31 report: 2,798 April price revisions were scheduled.",
+      "April 30 report: May dropped to only 70 affected items.",
+      "June 30 report: July rebounded to 2,566 items.",
+      "August 31 report: September reached 4,923 items, the largest monthly total of 2026."
+    ],
+    "usefulness": 94,
+    "novelty": 83,
+    "impact": {
+      "money": "HIGH",
+      "family": "HIGH",
+      "career": "LOW",
+      "japan": "HIGH",
+      "urgency": "MED"
+    },
+    "connection_tags": ["food-inflation", "household-costs", "oil-inflation", "logistics-costs", "second-half-reacceleration"],
+    "reading_levels": {
+      "30 sec": {
+        "what_happened": "Food-price revisions slowed sharply in May, then surged again through July and September.",
+        "why_it_matters": "That means household food-cost pressure has reaccelerated rather than simply fading after spring.",
+        "what_to_do_watch": "Watch October revisions, food CPI, oil/material costs and real wages.",
+        "bottom_line": "The second-half food-price wave is real, but it is uneven and should not be confused with a smooth month-by-month inflation climb."
+      },
+      "2_min": "Teikoku Databank's monthly manufacturer survey gives a useful longitudinal picture: April had 2,798 announced price increases, May collapsed to 70, July rebounded to 2,566 and September jumped to 4,923. The later reports increasingly point to material, packaging, logistics and energy pressure. The main caveat is methodology: this is not CPI, repeated revisions can be counted more than once, and retailers can absorb or offset some increases."
+    },
+    "bottom_line": "Japan's food-cost pressure paused briefly, then reaccelerated hard into the second half; the next test is whether October and official food inflation confirm persistence."
+  }
+}
