@@ -11,6 +11,13 @@ on:
       - 'alam_app/data/trend/**'
       - 'alam_app/data/comments/**'
       - 'alam_app/data/wisdom/**'
+      # Sync/validation changes must exercise the real trusted mirror immediately.
+      # Otherwise a broken ingestion change could sit on main until the next article
+      # arrives, making deployment failures unnecessarily hard to discover.
+      - 'alam_app/alam_supabase_ingest.py'
+      - 'alam_app/alam_supabase_sync_job.py'
+      - 'alam_app/validate_alam_data.py'
+      - '.github/workflows/alam-supabase-sync.yml'
 
 concurrency:
   group: alam-supabase-sync
@@ -41,4 +48,8 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: python alam_app/alam_supabase_ingest.py
+        # The wrapper runs the deterministic ingestion module and records a sanitized
+        # agent_runs audit row containing commit/run provenance and ingestion totals.
+        # This gives ALAM operations a durable answer to "did the DB actually sync?"
+        # without exposing the service-role credential to the public application.
+        run: python alam_app/alam_supabase_sync_job.py
