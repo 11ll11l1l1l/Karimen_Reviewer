@@ -2,6 +2,8 @@
 
 All ALAM research passes should use this protocol on every scheduled run. The goal is to maximize useful research work, not output length.
 
+**Mandatory opened-article standard:** on every run, also read and obey `alam_app/ARTICLE_LEARNING_STANDARD.md`. Feed summaries stay concise, but newly published material stories must teach from zero when opened and actionable stories must provide executable preparation/checklist detail rather than vague advice.
+
 ## 1. Archive-first state check
 - Read the latest meaningful records in all relevant ALAM folders before searching the web.
 - Identify what is already known, what is still uncertain, what is being watched, and what would constitute a material update.
@@ -122,6 +124,11 @@ It should not repeat the full article or claim ledger.
 - **Market:** “What moved, why, and what should I watch next?”
 - **Trend:** “What pattern is forming, how strong is the evidence, and what would disprove it?”
 
+### Opened article = teacher mode
+The concise feed layer must not be inflated to teach the whole subject. When the reader opens a story, use `content.learning` from `ARTICLE_LEARNING_STANDARD.md` to start from the minimum necessary background, define unfamiliar terms, explain the mechanism or process, give one concrete example when useful, and end with 3–5 memorable takeaways. The reader should not need an earlier ALAM article or specialist background to follow the explanation.
+
+For actionable records, use `content.action_plan` from `ARTICLE_LEARNING_STANDARD.md`. “Apply,” “prepare,” “avoid,” or “watch” is not enough on its own: specify who should act, what to prepare, the exact ordered steps, how to know each step is complete, common mistakes, decision rules, and follow-up. Never invent procedural requirements.
+
 ## 12. Image policy — real image first, generated editorial image second, SVG emergency fallback third
 Every published article should have a useful visual path, but the visual must never weaken evidence quality.
 
@@ -185,6 +192,8 @@ Confirm:
 - conclusion is proportional to evidence;
 - headline and first two sentences are understandable without specialist knowledge;
 - 30-second version gives a clear message rather than a compressed data dump;
+- opened-story learning can be followed without assumed specialist knowledge;
+- actionable stories contain enough verified preparation/procedure detail to execute without guessing;
 - sources are usable;
 - a verified real image is supplied OR `editorial_visual` is present so the generated-image pipeline can run;
 - serious-story image direction is respectful and non-sensational;
