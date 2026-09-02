@@ -4,7 +4,7 @@
   "created_at": "2026-09-02T12:26:39+09:00",
   "type": "household_cost",
   "title": "Government funds gasoline support through October: around ¥170/L target stays for now",
-  "summary": "FACT: Noong September 1, nagdesisyon ang Cabinet na gumamit ng FY2026 Middle East contingency reserve; reporting from TBS/FNN says ¥6,136 billion goes to keep the gasoline-support fund alive and METI plans to maintain the current support level through end-October. Practical effect: huwag mag-panic fill-up dahil sa fear na biglang mawawala ang subsidy this month, pero WATCH November dahil hindi pa ito permanent price protection.",
+  "summary": "FACT: Noong September 1, nagdesisyon ang Cabinet na gumamit ng FY2026 Middle East contingency reserve; reporting from TBS/FNN says ¥613.6 billion goes to keep the gasoline-support fund alive and METI plans to maintain the current support level through end-October. Practical effect: huwag mag-panic fill-up dahil sa fear na biglang mawawala ang subsidy this month, pero WATCH November dahil hindi pa ito permanent price protection.",
   "why_it_matters": "Fuel is a recurring household cost and also flows into delivery, food and service prices. The new funding materially lowers the near-term risk of an abrupt subsidy cliff in September/October, but it does not guarantee that station prices everywhere will be exactly ¥170/L and it does not settle policy after October.",
   "importance": 91,
   "confidence": 95,
@@ -12,84 +12,20 @@
   "geography": ["Japan"],
   "status": "new",
   "sources": [
-    {
-      "publisher": "Prime Minister's Office of Japan",
-      "title": "令和8年9月1日（火）定例閣議案件",
-      "url": "https://www.kantei.go.jp/jp/kakugi/2026/kakugi-2026090101.html",
-      "published_at": "2026-09-01",
-      "source_type": "official"
-    },
-    {
-      "publisher": "TBS NEWS DIG",
-      "title": "ガソリン補助金『10月末までは現在の水準を維持』 経済産業省 引き続きガソリン全国平均価格を1リットル＝170円程度に抑え込む方針",
-      "url": "https://newsdig.tbs.co.jp/articles/-/2913275",
-      "published_at": "2026-09-01",
-      "source_type": "news"
-    },
-    {
-      "publisher": "FNN Prime Online",
-      "title": "ガソリン170円維持へ予備費6160億円支出を閣議決定 『国民の命と暮らしを守り、経済活動に支障を生じさせない』",
-      "url": "https://www.fnn.jp/articles/-/1105425",
-      "published_at": "2026-09-01",
-      "source_type": "news"
-    },
-    {
-      "publisher": "Agency for Natural Resources and Energy / METI",
-      "title": "日本のガソリン価格は世界と比べて安い？高い？中東情勢を踏まえた燃料油の『緊急的激変緩和措置』",
-      "url": "https://www.enecho.meti.go.jp/about/special/johoteikyo/fuel_price_shien_2026.html",
-      "published_at": "2026-05-15",
-      "source_type": "official"
-    }
+    {"publisher":"Prime Minister's Office of Japan","title":"令和8年9月1日（火）定例閣議案件","url":"https://www.kantei.go.jp/jp/kakugi/2026/kakugi-2026090101.html","published_at":"2026-09-01","source_type":"official"},
+    {"publisher":"TBS NEWS DIG","title":"ガソリン補助金『10月末までは現在の水準を維持』 経済産業省 引き続きガソリン全国平均価格を1リットル＝170円程度に抑え込む方針","url":"https://newsdig.tbs.co.jp/articles/-/2913275","published_at":"2026-09-01","source_type":"news"},
+    {"publisher":"FNN Prime Online","title":"ガソリン170円維持へ予備費6160億円支出を閣議決定 『国民の命と暮らしを守り、経済活動に支障を生じさせない』","url":"https://www.fnn.jp/articles/-/1105425","published_at":"2026-09-01","source_type":"news"},
+    {"publisher":"Agency for Natural Resources and Energy / METI","title":"日本のガソリン価格は世界と比べて安い？高い？中東情勢を踏まえた燃料油の『緊急的激変緩和措置』","url":"https://www.enecho.meti.go.jp/about/special/johoteikyo/fuel_price_shien_2026.html","published_at":"2026-05-15","source_type":"official"}
   ],
   "claims": [
-    {
-      "kind": "FACT",
-      "text": "The Cabinet decided on September 1 to use FY2026 Middle East contingency reserve funds for two general-account measures.",
-      "source_refs": [1],
-      "basis": "Prime Minister's Office Cabinet agenda"
-    },
-    {
-      "kind": "FACT",
-      "text": "TBS and FNN reported that about ¥613.6 billion is being added to the fuel-support fund, within a ¥616.0 billion reserve-fund package, to continue suppressing gasoline prices around a national average of ¥170 per liter.",
-      "source_refs": [2, 3],
-      "basis": "Independent Japanese broadcast-news reports on the September 1 Cabinet decision"
-    },
-    {
-      "kind": "FACT",
-      "text": "METI plans to maintain the current gasoline-support level through the end of October 2026.",
-      "source_refs": [2],
-      "basis": "TBS report quoting METI policy for the current support level"
-    },
-    {
-      "kind": "FACT",
-      "text": "The 2026 emergency fuel measure targets gasoline, diesel, heavy oil, kerosene and aviation fuel; the gasoline mechanism is designed to subsidize the amount needed when the projected national average retail price would exceed roughly ¥170 per liter.",
-      "source_refs": [4],
-      "basis": "Agency for Natural Resources and Energy official explanation of the scheme"
-    },
-    {
-      "kind": "FACT",
-      "text": "As a historical check on magnitude, METI reported that the national regular-gasoline average was ¥190.8/L immediately before the March support began and ¥169.5/L on June 1 after the measure was operating.",
-      "source_refs": [4],
-      "basis": "Official METI price comparison; this is historical evidence, not a current counterfactual"
-    },
-    {
-      "kind": "ESTIMATE",
-      "text": "Using the historical March-to-June gap only as an order-of-magnitude illustration, 50 liters of fuel corresponds to about ¥1,065 difference (¥21.3/L × 50 L). This is NOT a claim that today's subsidy saves exactly ¥1,065 per 50 liters because the unsubsidized current price changes with crude oil, exchange rates and wholesale margins.",
-      "source_refs": [4],
-      "basis": "Arithmetic from ¥190.8/L minus ¥169.5/L = ¥21.3/L, then × 50 L; explicitly illustrative rather than current savings"
-    },
-    {
-      "kind": "INFERENCE",
-      "text": "The September 1 funding decision materially reduces the near-term risk of a sudden subsidy cliff during September and October, but leaves a new policy-risk point around November unless support is extended or market fuel costs fall enough to make the subsidy unnecessary.",
-      "source_refs": [1, 2, 3, 4],
-      "basis": "Inference from newly funded continuation plus the stated end-October horizon"
-    },
-    {
-      "kind": "ASSUMPTION",
-      "text": "Household impact varies widely by driving distance, vehicle efficiency, station pricing and whether the national-average target translates fully into local pump prices.",
-      "source_refs": [],
-      "basis": "Scope limitation for household-cost interpretation"
-    }
+    {"kind":"FACT","text":"The Cabinet decided on September 1 to use FY2026 Middle East contingency reserve funds for two general-account measures.","source_refs":[1],"basis":"Prime Minister's Office Cabinet agenda"},
+    {"kind":"FACT","text":"TBS and FNN reported that about ¥613.6 billion is being added to the fuel-support fund, within a ¥616.0 billion reserve-fund package, to continue suppressing gasoline prices around a national average of ¥170 per liter.","source_refs":[2,3],"basis":"Independent Japanese broadcast-news reports on the September 1 Cabinet decision"},
+    {"kind":"FACT","text":"METI plans to maintain the current gasoline-support level through the end of October 2026.","source_refs":[2],"basis":"TBS report quoting METI policy for the current support level"},
+    {"kind":"FACT","text":"The 2026 emergency fuel measure targets gasoline, diesel, heavy oil, kerosene and aviation fuel; the gasoline mechanism is designed to subsidize the amount needed when the projected national average retail price would exceed roughly ¥170 per liter.","source_refs":[4],"basis":"Agency for Natural Resources and Energy official explanation of the scheme"},
+    {"kind":"FACT","text":"As a historical check on magnitude, METI reported that the national regular-gasoline average was ¥190.8/L immediately before the March support began and ¥169.5/L on June 1 after the measure was operating.","source_refs":[4],"basis":"Official METI price comparison; this is historical evidence, not a current counterfactual"},
+    {"kind":"ESTIMATE","text":"Using the historical March-to-June gap only as an order-of-magnitude illustration, 50 liters of fuel corresponds to about ¥1,065 difference (¥21.3/L × 50 L). This is NOT a claim that today's subsidy saves exactly ¥1,065 per 50 liters because the unsubsidized current price changes with crude oil, exchange rates and wholesale margins.","source_refs":[4],"basis":"Arithmetic from ¥190.8/L minus ¥169.5/L = ¥21.3/L, then × 50 L; explicitly illustrative rather than current savings"},
+    {"kind":"INFERENCE","text":"The September 1 funding decision materially reduces the near-term risk of a sudden subsidy cliff during September and October, but leaves a new policy-risk point around November unless support is extended or market fuel costs fall enough to make the subsidy unnecessary.","source_refs":[1,2,3,4],"basis":"Inference from newly funded continuation plus the stated end-October horizon"},
+    {"kind":"ASSUMPTION","text":"Household impact varies widely by driving distance, vehicle efficiency, station pricing and whether the national-average target translates fully into local pump prices.","source_refs":[],"basis":"Scope limitation for household-cost interpretation"}
   ],
   "content": {
     "reading_levels": {
@@ -111,11 +47,7 @@
     "novelty": 88,
     "pr_vs_reality": {
       "official_claim": "The government frames the reserve spending as necessary to protect lives, livelihoods and economic activity by continuing to suppress fuel-price spikes.",
-      "evidence_says": [
-        "The Cabinet did approve new contingency-reserve use, and multiple Japanese reports put the fuel-fund top-up at about ¥613.6 billion.",
-        "METI's earlier official data show the emergency measure coincided with a large fall from the pre-support March gasoline price to roughly the ¥170 target by June.",
-        "The policy is not a permanent price cap and the current support-level horizon is only through end-October, so November remains unresolved."
-      ],
+      "evidence_says": ["The Cabinet did approve new contingency-reserve use, and multiple Japanese reports put the fuel-fund top-up at about ¥613.6 billion.","METI's earlier official data show the emergency measure coincided with a large fall from the pre-support March gasoline price to roughly the ¥170 target by June.","The policy is not a permanent price cap and the current support-level horizon is only through end-October, so November remains unresolved."],
       "verdict": "Real near-term household protection, but temporary. Treat it as a two-month cost buffer, not as a new normal gasoline price."
     }
   }
