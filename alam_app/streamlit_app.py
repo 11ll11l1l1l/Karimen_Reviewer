@@ -11,9 +11,10 @@ from alam_core import (
 )
 import alam_mobile_views as views
 import alam_extras as extras
+import alam_visual_system as visual_system
+from alam_editorial_visual import editorial_data_uri
 from alam_market_views import is_market_record, render_market
 from alam_personas import load_comments
-from alam_visual_system import BRAND_CSS, install_visual_system
 
 # Agent 3 keeps the internal `reflection` category key for backward compatibility,
 # but the live product role is now Japan Market Intelligence.
@@ -59,9 +60,13 @@ st.set_page_config(
 )
 st.markdown(CSS, unsafe_allow_html=True)
 st.markdown(views.MOBILE_CSS, unsafe_allow_html=True)
-st.markdown(BRAND_CSS, unsafe_allow_html=True)
+st.markdown(visual_system.BRAND_CSS, unsafe_allow_html=True)
 extras.install_extras_css()
-install_visual_system(views)
+
+# Real image first. If an article has no usable external image, the publishing
+# agent's `editorial_visual` art direction is rendered locally by ALAM.
+visual_system._svg_data_uri = editorial_data_uri
+visual_system.install_visual_system(views)
 
 # Article loading is intentionally limited to the four article directories so
 # growing comment/wisdom archives do not slow the main feed scan.
