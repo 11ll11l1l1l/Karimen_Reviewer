@@ -1,0 +1,106 @@
+{
+  "id": "japan-food-price-hikes-2026-09",
+  "agent": "practical",
+  "created_at": "2026-09-03T07:10:00+09:00",
+  "type": "cost_of_living",
+  "title": "September brings Japan's biggest food-price hike wave of 2026",
+  "summary": "Ayon sa Teikoku Databank, 4,923 food and beverage items are being raised in price this September, the largest monthly wave of 2026, with an average announced increase of 11%. Condiments and processed foods make up most of the affected items.",
+  "why_it_matters": "Hindi ito isolated na isang brand lang: maraming everyday pantry items ang sabay-sabay na tataas. The practical risk is quiet grocery-budget drift, especially for households that keep buying the same basket without checking unit prices or alternatives.",
+  "importance": 88,
+  "confidence": 97,
+  "tags": ["Japan", "Cost of Living", "Food Prices", "Groceries", "Household Budget"],
+  "geography": ["Japan"],
+  "status": "NEW",
+  "sources": [
+    {
+      "publisher": "Teikoku Databank",
+      "title": "Price revision trends among 195 major food companies — September 2026",
+      "url": "https://www.tdb.co.jp/report/economic/pricepass-on202608/",
+      "published_at": "2026-08-31",
+      "source_type": "research"
+    },
+    {
+      "publisher": "FNN Prime Online",
+      "title": "4,923 food items to rise in September, the biggest price-hike rush of 2026",
+      "url": "https://www.fnn.jp/articles/-/1104503",
+      "published_at": "2026-08-31",
+      "source_type": "news"
+    },
+    {
+      "publisher": "Nippon.com",
+      "title": "September food-price hikes reach 4,923 items",
+      "url": "https://www.nippon.com/ja/japan-data/h02876/",
+      "published_at": "2026-09-01",
+      "source_type": "news"
+    }
+  ],
+  "claims": [
+    {
+      "kind": "FACT",
+      "text": "Teikoku Databank counted 4,923 food and beverage items scheduled for price increases in September 2026 among 195 major manufacturers, the highest monthly total of 2026.",
+      "source_refs": [1, 2, 3],
+      "basis": "Teikoku Databank survey and independent reporting"
+    },
+    {
+      "kind": "FACT",
+      "text": "The survey's average announced price increase for September is 11%.",
+      "source_refs": [1],
+      "basis": "Teikoku Databank September survey"
+    },
+    {
+      "kind": "FACT",
+      "text": "Condiments account for 1,959 affected items and processed foods for 1,848, making them the two largest categories in the survey.",
+      "source_refs": [1, 3],
+      "basis": "Survey category breakdown"
+    },
+    {
+      "kind": "INFERENCE",
+      "text": "Households can reduce the impact mainly through substitution, unit-price comparison and selective stocking of non-perishable items they already use; the dataset does not support a single yen saving estimate for every household.",
+      "source_refs": [1, 2],
+      "basis": "Practical inference from a broad but product-specific price-hike list"
+    }
+  ],
+  "editorial_visual": {
+    "style": "editorial",
+    "motif": "family",
+    "secondary_motif": "yen",
+    "scene": "a family grocery basket being stretched upward by dozens of tiny price tags while bottles of soy sauce and frozen-food boxes peek over the rim",
+    "caption": "The grocery basket is getting heavier without adding more food",
+    "silliness": 38,
+    "exaggeration": 76
+  },
+  "content": {
+    "key_message": "September's grocery inflation is unusually broad, so check the basket rather than waiting for one obvious expensive item.",
+    "who_is_affected": "Households buying packaged foods, condiments, dairy, drinks, snacks and frozen/processed foods in Japan.",
+    "when": "Price revisions are concentrated in September 2026, with many starting from September 1 shipments or retail resets.",
+    "financial_impact": "The survey gives product-level price increases, not one household total. Impact depends on each family's basket, brand choices and retailer timing.",
+    "time_minutes": 15,
+    "risk_if_ignored": "A household can absorb repeated small increases across many categories without noticing how much its normal grocery basket changed.",
+    "action": "DO NOW",
+    "deadline": "No formal deadline; review your normal grocery list during September before automatically repurchasing the same brands.",
+    "effort": "Low: compare unit prices for your top 10 recurring items and switch or stock only when the alternative is genuinely cheaper.",
+    "potential_benefit": "Lower grocery-budget drift and better visibility into which recurring items are actually driving your household's increase.",
+    "downside": "Bulk-buying just because a category is rising can waste money through spoilage, storage limits or buying products you would not normally use.",
+    "what_would_change_mind": "Retail promotions, private-label competition or later manufacturer reversals could offset some announced increases; the survey is not a guarantee that every store raises every shelf price by the same amount.",
+    "usefulness": 93,
+    "novelty": 84,
+    "impact": {
+      "money": "HIGH",
+      "family": "HIGH",
+      "career": "LOW",
+      "japan": "HIGH",
+      "urgency": "MED"
+    },
+    "connection_tags": ["food-inflation", "household-costs", "yen-import-costs"],
+    "reading_levels": {
+      "30 sec": {
+        "what_happened": "4,923 food and beverage items are scheduled for September price increases, the most in any month this year.",
+        "why_it_matters": "The hikes are concentrated in everyday categories such as condiments and processed foods.",
+        "what_to_do_watch": "Check unit prices on the recurring items you buy most and substitute selectively.",
+        "bottom_line": "Avoid panic buying; focus on the few items that actually matter to your household budget."
+      },
+      "2_min": "Teikoku Databank's survey of 195 major food companies counted 4,923 September price increases with an average announced increase of 11%. Condiments and processed foods dominate the list. The practical response is not to stock everything, but to identify which recurring products in your own basket changed and compare unit prices, store brands and alternatives."
+    },
+    "bottom_line": "Treat September as a grocery-basket audit month, not a panic-buying month."
+  }
+}
