@@ -1,10 +1,12 @@
 """Regression checks for ALAM browser/device recognition.
 
-This test stays network-free. It proves the identity layer prefers Streamlit's native
-initial-request cookie, validates device IDs, writes a long-lived browser cookie, and
-reuses one CookieManager instance per Streamlit session.
+This test stays network-free. It proves the identity layer reads device identity from
+Streamlit's native request cookies, never uses a component read fallback, writes the
+long-lived cookie only when explicitly asked, and reuses one CookieManager instance per
+Streamlit session.
 """
 
+import inspect
 from types import SimpleNamespace
 
 import alam_core as core
@@ -19,8 +21,10 @@ class FakeManager:
     def __init__(self, value=None):
         self.value = value
         self.calls = []
+        self.get_calls = []
 
     def get(self, cookie):
+        self.get_calls.append(cookie)
         return self.value
 
     def set(self, *args, **kwargs):
@@ -43,16 +47,18 @@ def main():
     original_core_stx = core.stx
     try:
         native_id = "805b1bcf-943e-4e07-9c3f-5bef33ac18b8"
-        fallback_id = "15ca5b5f-5ddb-49f1-a793-636f5f5e91c4"
+        legacy_component_id = "15ca5b5f-5ddb-49f1-a793-636f5f5e91c4"
 
         identity.st = SimpleNamespace(
             context=SimpleNamespace(cookies=FakeCookies({identity.DEVICE_COOKIE: native_id}))
         )
-        manager = FakeManager(fallback_id)
-        assert identity._cookie_get(manager) == native_id, "Native request cookie must win over component fallback."
+        manager = FakeManager(legacy_component_id)
+        assert identity._cookie_get(manager) == native_id
+        assert manager.get_calls == [], "Device recognition must not depend on an async component read."
 
         identity.st = SimpleNamespace(context=SimpleNamespace(cookies=FakeCookies()))
-        assert identity._cookie_get(manager) == fallback_id, "CookieManager fallback should remain available."
+        assert identity._cookie_get(manager) is None
+        assert manager.get_calls == [], "Missing native cookies must not trigger a component read/rerun."
 
         assert identity._valid_device_id("not-a-uuid") is None
         assert identity._valid_device_id(native_id) == native_id
@@ -68,6 +74,12 @@ def main():
         assert kwargs["max_age"] == identity.COOKIE_MAX_AGE
         assert kwargs["key"] == "confirm_alam_device_id"
         assert identity.COOKIE_DAYS >= 365
+
+        onboarding_source = inspect.getsource(identity.render_onboarding)
+        assert "refresh_alam_device_id" not in onboarding_source
+        assert onboarding_source.count("_cookie_set(") == 1, (
+            "Returning visitors must not rewrite the device cookie on every render."
+        )
 
         fake_stx = FakeStx()
         fake_state = {}
