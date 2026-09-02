@@ -17,6 +17,7 @@ import alam_reader_views as reader
 import alam_story_page as story_page
 import alam_panel_views as panel_views
 import alam_saved_views as saved_views
+import alam_today_page as today_page
 import alam_polish as polish
 import alam_image_renderer as image_renderer
 import alam_portraits as portraits
@@ -84,6 +85,7 @@ st.markdown(reader.READER_CSS, unsafe_allow_html=True)
 st.markdown(story_page.STORY_PAGE_CSS, unsafe_allow_html=True)
 st.markdown(panel_views.PANEL_CSS, unsafe_allow_html=True)
 st.markdown(saved_views.SAVED_CSS, unsafe_allow_html=True)
+st.markdown(today_page.TODAY_CSS, unsafe_allow_html=True)
 st.markdown(readiness.RUNTIME_STATUS_CSS, unsafe_allow_html=True)
 st.markdown(polish.POLISH_CSS, unsafe_allow_html=True)
 st.markdown(portraits.PORTRAIT_CSS, unsafe_allow_html=True)
@@ -204,10 +206,9 @@ else:
     )
 
     if page == "Today":
-        intelligence.render_alert_ribbon(records, all_records)
-        intelligence.render_daily_brief(records, all_records)
-        reader.render_inbox(records, all_records, manager)
-        views.render_today(all_records, records, comments, manager)
+        # Today now owns one decision hierarchy instead of stacking a second urgent
+        # strip/top-story/briefing after the existing 3-line brief and inbox.
+        today_page.render_today(records, all_records, comments, manager, views, reader)
     elif page == "Discover":
         views.render_category(records, "discover", manager, comments)
     elif page == "Action":
