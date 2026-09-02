@@ -45,6 +45,7 @@ jobs:
           alam_app/alam_personas.py
           alam_app/alam_views.py
           alam_app/alam_mobile_views.py
+          alam_app/alam_story_page.py
           alam_app/alam_market_views.py
           alam_app/alam_visual_system.py
           alam_app/alam_editorial_visual.py
