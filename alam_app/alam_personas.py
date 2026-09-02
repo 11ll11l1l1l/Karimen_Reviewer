@@ -150,15 +150,17 @@ def load_comments(article_ids=None):
             comments = []
             for story_id, rows in grouped.items():
                 for row in rows:
+                    raw = row.get("record") if isinstance(row.get("record"), dict) else {}
                     comments.append({
+                        **raw,
                         "id": str(row.get("id")),
                         "story_id": story_id,
-                        "persona_id": row.get("agent_id"),
-                        "persona_name": row.get("agent_id") or "ALAM Agent",
-                        "persona_role": row.get("stance") or "Agent perspective",
-                        "body": row.get("comment") or "",
-                        "stance": row.get("stance"),
-                        "created_at": row.get("created_at"),
+                        "agent": row.get("agent_id") or raw.get("agent"),
+                        "persona_id": row.get("persona_id") or raw.get("persona_id"),
+                        "reply_to": row.get("reply_to") or raw.get("reply_to"),
+                        "body": row.get("comment") or raw.get("body") or "",
+                        "stance": row.get("stance") or raw.get("stance"),
+                        "created_at": row.get("created_at") or raw.get("created_at"),
                         "_record_key": f"supabase-comment::{row.get('id')}",
                         "_storage": "supabase",
                     })
