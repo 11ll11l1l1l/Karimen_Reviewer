@@ -11,9 +11,6 @@ on:
       - 'alam_app/data/trend/**'
       - 'alam_app/data/comments/**'
       - 'alam_app/data/wisdom/**'
-      # Sync/validation changes must exercise the real trusted mirror immediately.
-      # Otherwise a broken ingestion change could sit on main until the next article
-      # arrives, making deployment failures unnecessarily hard to discover.
       - 'alam_app/alam_lifecycle.py'
       - 'alam_app/alam_supabase_ingest.py'
       - 'alam_app/alam_supabase_reconcile.py'
@@ -43,16 +40,38 @@ jobs:
       - name: Validate ALAM audit data
         run: python alam_app/validate_alam_data.py
 
-      - name: Install Supabase client
-        run: pip install -r alam_app/requirements.txt
-
-      - name: Sync verified ALAM records to Supabase
+      - name: Check trusted Supabase credentials
+        id: supabase-creds
+        shell: bash
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        # The wrapper runs incremental ingestion, then deterministic reconciliation,
-        # and records a sanitized agent_runs audit row containing commit/run
-        # provenance plus both ingestion and repair totals. This gives operations a
-        # durable answer to "did the DB actually sync?" without exposing the
-        # service-role credential to the public application.
+        run: |
+          if [[ -n "$SUPABASE_URL" && -n "$SUPABASE_SERVICE_ROLE_KEY" ]]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+            echo "Trusted Supabase credentials are configured; database mirror will run."
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Trusted Supabase GitHub secrets are not configured. Audit data is valid; database publication is skipped rather than reported as a failed sync."
+          fi
+
+      - name: Install Supabase client
+        if: steps.supabase-creds.outputs.available == 'true'
+        run: pip install -r alam_app/requirements.txt
+
+      - name: Sync verified ALAM records to Supabase
+        if: steps.supabase-creds.outputs.available == 'true'
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        # With trusted credentials, run the full incremental mirror plus deterministic
+        # reconciliation. Missing credentials are handled above as validation-only mode;
+        # they must never be mistaken for either a successful database write or a CI failure.
         run: python alam_app/alam_supabase_sync_job.py
+
+      - name: Validation-only mode
+        if: steps.supabase-creds.outputs.available != 'true'
+        run: |
+          echo "ALAM audit data validated successfully."
+          echo "GitHub-to-Supabase trusted mirror skipped because repository secrets are unavailable."
+          echo "The connected ALAM agent/reconciliation path may publish the same validated payload directly to Supabase."
