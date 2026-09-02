@@ -3,12 +3,19 @@
 import re
 
 import streamlit as st
-from supabase import create_client
+
+try:
+    from supabase import create_client
+except ModuleNotFoundError:
+    create_client = None
 
 
 @st.cache_resource
 def get_supabase_public():
     """Return ALAM's public Supabase client using Streamlit Secrets."""
+    if create_client is None:
+        raise RuntimeError("Supabase Python package is not installed in this deployment yet.")
+
     try:
         url = st.secrets["SUPABASE_URL"]
         key = st.secrets["SUPABASE_PUBLISHABLE_KEY"]
