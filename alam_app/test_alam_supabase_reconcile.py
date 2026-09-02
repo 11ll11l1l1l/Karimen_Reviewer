@@ -6,6 +6,7 @@ payload deduplication, and fail-closed chronology rules that make retry repair s
 
 from pathlib import Path
 
+import alam_supabase_reconcile as reconcile
 from alam_supabase_reconcile import (
     ArchiveConflictError,
     _canonical_record,
@@ -79,6 +80,21 @@ def main():
         assert "same explicit created_at" in message
     else:
         raise AssertionError("same-timestamp different-payload conflict was not rejected")
+
+    # Exercise the same public-archive preflight used by the trusted sync wrapper.
+    # Monkeypatching only the local archive iterator keeps this deterministic and
+    # proves the job-facing entry point fails before a database client is involved.
+    original_inputs = reconcile._article_inputs
+    try:
+        reconcile._article_inputs = lambda: iter(tie_rows)
+        try:
+            reconcile.prepare_public_archive()
+        except ArchiveConflictError:
+            pass
+        else:
+            raise AssertionError("public archive preflight accepted an ambiguous chronology")
+    finally:
+        reconcile._article_inputs = original_inputs
 
     # Historical archive shapes without created_at remain compatible. The epoch used
     # internally for sorting must not be mistaken for a real timestamp asserted by the
