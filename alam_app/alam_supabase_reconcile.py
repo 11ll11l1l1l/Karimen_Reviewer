@@ -27,6 +27,18 @@ from alam_supabase_ingest import (
 )
 
 
+class ArchiveConflictError(ValueError):
+    """Raised when the GitHub audit trail cannot define one safe story chronology.
+
+    A stable article ID may legitimately have many versions, but two *different*
+    payloads carrying the exact same explicit ``created_at`` timestamp are ambiguous:
+    neither version can be proven to be later. Silently resolving that ambiguity by
+    file-name ordering would make a repository-layout accident decide the production
+    current article. Trusted synchronization therefore fails closed before content
+    writes and requires the audit record itself to be corrected.
+    """
+
+
 def _canonical_record(record):
     """Return a stable representation used to identify duplicate archive versions.
 
@@ -39,7 +51,13 @@ def _canonical_record(record):
 
 
 def _dedupe_archive_records(items):
-    """Sort archive records chronologically and remove exact duplicate payloads."""
+    """Sort archive records chronologically and remove exact duplicate payloads.
+
+    Path ordering remains a deterministic tie-breaker for legacy records whose old
+    shapes do not contain ``created_at``. Explicit equal timestamps with different
+    payloads are rejected separately by ``_validate_archive_chronology`` because a
+    path name is not legitimate evidence that one material story version is newer.
+    """
     ordered = sorted(
         items,
         key=lambda item: (
@@ -56,6 +74,78 @@ def _dedupe_archive_records(items):
         seen.add(fingerprint)
         unique.append((category, path, record))
     return unique
+
+
+def _explicit_timestamp(record):
+    """Return a normalized explicit version timestamp, or ``None`` for legacy rows.
+
+    Missing timestamps are intentionally not treated as ``1970-01-01`` conflicts.
+    ``_parse_dt`` uses that epoch as a sorting fallback for historical compatibility,
+    but converting the fallback into a conflict signal would suddenly invalidate old
+    audit data that predates the current v5 chronology contract.
+    """
+    value = record.get("created_at") if isinstance(record, dict) else None
+    if value is None or not str(value).strip():
+        return None
+    return _parse_dt(value).isoformat()
+
+
+def _validate_archive_chronology(article_id, records):
+    """Reject explicit equal-time, different-payload story versions.
+
+    Exact duplicate payloads are harmless and have already been collapsed. What
+    remains here is a true chronology conflict: multiple materially different records
+    claim the same exact version time. We intentionally report only article ID,
+    normalized timestamp, and archive paths; article contents stay in the private
+    repository/log context and are not copied into public diagnostics.
+    """
+    by_timestamp = defaultdict(list)
+    for category, path, record in records:
+        timestamp = _explicit_timestamp(record)
+        if timestamp is not None:
+            by_timestamp[timestamp].append((category, path, record))
+
+    conflicts = []
+    for timestamp, items in sorted(by_timestamp.items()):
+        fingerprints = {_canonical_record(item[2]) for item in items}
+        if len(fingerprints) > 1:
+            conflicts.append((timestamp, [str(item[1]) for item in items]))
+
+    if conflicts:
+        detail = "; ".join(
+            f"{timestamp} -> {', '.join(paths)}"
+            for timestamp, paths in conflicts
+        )
+        raise ArchiveConflictError(
+            f"Ambiguous ALAM archive chronology for article {article_id}: {detail}. "
+            "Different payloads must not share the same explicit created_at timestamp."
+        )
+
+
+def prepare_public_archive():
+    """Load, deduplicate, and validate public archive records before DB mutation.
+
+    This is deliberately pure with respect to Supabase. The trusted sync job calls it
+    before incremental ingestion so a malformed chronology cannot partially advance
+    production content. Reconciliation calls the same function to guarantee both
+    paths enforce exactly one archive-ordering contract.
+
+    Returns a mapping of stable article ID to deterministic version tuples.
+    """
+    grouped = defaultdict(list)
+    for category, path, record in _article_inputs():
+        if not isinstance(record, dict) or not record.get("id") or not record.get("title"):
+            continue
+        grouped[str(record["id"])].append((category, path, record))
+
+    prepared = {}
+    for article_id, raw_records in grouped.items():
+        records = _dedupe_archive_records(raw_records)
+        if not records:
+            continue
+        _validate_archive_chronology(article_id, records)
+        prepared[article_id] = records
+    return prepared
 
 
 def _version_row(article_id, version_no, record):
@@ -148,23 +238,22 @@ def _reconcile_sources(client, article_id, record):
     return len(desired), len(stale_ids)
 
 
-def reconcile_public_archive(client):
+def reconcile_public_archive(client, prepared_archive=None):
     """Repair all public ALAM records represented by the GitHub audit archive.
 
-    The function deliberately scopes itself to ``_article_inputs()``, whose directory
-    allow-list contains only Discover, Practical, Market/reflection and Trend. The
-    private Global Engineering Job Radar therefore cannot be pulled into the public
-    database by this reconciliation pass.
+    The function deliberately scopes itself to ``prepare_public_archive()``, whose
+    underlying ``_article_inputs()`` directory allow-list contains only Discover,
+    Practical, Market/reflection and Trend. The private Global Engineering Job Radar
+    therefore cannot be pulled into the public database by this reconciliation pass.
+
+    ``prepared_archive`` lets the trusted sync job reuse the already validated
+    preflight snapshot, avoiding a second archive scan and guaranteeing that the
+    records written are the same records that passed conflict detection.
     """
-    grouped = defaultdict(list)
-    for category, path, record in _article_inputs():
-        if not isinstance(record, dict) or not record.get("id") or not record.get("title"):
-            continue
-        grouped[str(record["id"])].append((category, path, record))
+    grouped = prepared_archive if prepared_archive is not None else prepare_public_archive()
 
     stats = defaultdict(int)
-    for article_id, raw_records in grouped.items():
-        records = _dedupe_archive_records(raw_records)
+    for article_id, records in grouped.items():
         if not records:
             continue
 
