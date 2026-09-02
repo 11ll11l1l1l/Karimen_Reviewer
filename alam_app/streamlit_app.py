@@ -28,6 +28,7 @@ import alam_supabase_views as dbviews
 import alam_readiness as readiness
 import alam_evidence_views as evidence_views
 import alam_accessibility as accessibility
+import alam_article_scope as article_scope
 from alam_comment_scope import comment_scope_ids
 from alam_generated_images import generated_or_editorial_data_uri
 from alam_market_views import is_market_record, render_market
@@ -160,11 +161,28 @@ portraits.install(views)
 time_theme.install_time_theme()
 accessibility.install_accessibility()
 
-# Supabase is now the preferred source of truth. During migration the loader keeps
-# the existing local article folders as a safe fallback until published DB content
-# exists, so the live app never goes blank during cutover. Historical DB versions are
-# also folded into all_records so existing Before/Now timelines keep working.
-all_records = extras.load_article_records()
+# Resolve the current feed before history hydration. A selected article only needs
+# its own Before/Now timeline; fetching every article_versions row first made the
+# latency-sensitive mobile detail route pay for unrelated history. Feed/list routes
+# keep the mature full-history contract below, so Today/Weekly/Saved behavior is not
+# silently weakened by this optimization. Local migration fallback remains full-file.
+base_records = article_scope.load_current_article_records()
+base_current_records = latest_by_story(base_records)
+base_current_records = [
+    r for r in base_current_records
+    if r.get("_category") != "reflection" or is_market_record(r)
+]
+
+selected_id = st.session_state.get("selected_story")
+selected = next((r for r in base_current_records if str(r.get("id")) == str(selected_id)), None)
+if selected:
+    all_records = article_scope.load_selected_article_records(selected.get("id"))
+else:
+    # Invalid/stale selections fail safely back to the established feed contract.
+    # Full history is still hydrated for non-detail routes because Today, Weekly,
+    # inbox/change detection and offline/profile tools can legitimately need it.
+    all_records = extras.load_article_records()
+
 current_records = latest_by_story(all_records)
 # Preserve older philosophical records in history while the current public section
 # shows only explicit market_* records from this storage slot.
@@ -173,11 +191,8 @@ current_records = [r for r in current_records if r.get("_category") != "reflecti
 # or deleting shared ALAM intelligence.
 records = [r for r in current_records if not localstate.is_muted(r)]
 
-selected_id = st.session_state.get("selected_story")
-# Resolve selection before comment hydration. Article detail needs one story's panel,
-# not every discussion in the feed; narrowing this boundary cuts avoidable Supabase
-# response size and parsing work on the most latency-sensitive mobile navigation.
-# A stale selected ID safely falls back to full-feed scope inside comment_scope_ids.
+# Re-resolve selection from the final current set so detail rendering and history use
+# the same record contract even if fallback data differs from the first current read.
 selected = next((r for r in current_records if str(r.get("id")) == str(selected_id)), None)
 comment_ids = comment_scope_ids(current_records, selected.get("id") if selected else selected_id)
 # When the feed is Supabase-backed, cross-agent perspectives are loaded from the DB
