@@ -17,6 +17,7 @@ import alam_reader_views as reader
 import alam_polish as polish
 import alam_portraits as portraits
 import alam_visual_system as visual_system
+import alam_time_theme as time_theme
 from alam_editorial_visual import editorial_data_uri
 from alam_market_views import is_market_record, render_market
 from alam_personas import load_comments
@@ -76,8 +77,8 @@ st.markdown(reader.READER_CSS, unsafe_allow_html=True)
 st.markdown(polish.POLISH_CSS, unsafe_allow_html=True)
 st.markdown(portraits.PORTRAIT_CSS, unsafe_allow_html=True)
 
-# Load browser-local state before display-specific CSS so persisted dark mode and
-# preferences can take effect on the first useful render without a backend.
+# Load browser-local state before display-specific CSS so persisted preferences can
+# take effect on the first useful render without a backend.
 manager = init_browser_state()
 localstate.init_local_profile(manager)
 intelligence.init_preferences()
@@ -90,6 +91,9 @@ visual_system.install_visual_system(views)
 polish.install(views, reader)
 # Replace the old generic sprite with the fixed generated character portraits.
 portraits.install(views)
+# Apply this last so the time palette softly tints all surfaces without replacing
+# category/story identity colors. It is calculated from Japan local time on rerun.
+time_theme.install_time_theme()
 
 # Article loading is intentionally limited to the four article directories so
 # growing discussion/wisdom archives do not slow the main feed scan.
