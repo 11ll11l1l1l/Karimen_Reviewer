@@ -1,173 +1,177 @@
 # ALAM.ph Continuous Improvement Roadmap
 
-This file is the shared planning and handoff document for the ALAM.ph continuous-development cycle. Agent A (backend/reliability) and Agent B (product/UX) must inspect the latest main branch and this file before making changes. Do not mark work complete unless the implementation exists and has been validated.
+This is the shared planning and handoff document for ALAM.ph continuous development. Backend/reliability and product/UX work must inspect the newest `main` branch and this file before changing code. Do not mark a capability complete merely because code exists; distinguish repository implementation, CI verification, and external production activation.
 
 ## Product contract
 
-ALAM.ph is a mobile-first intelligence and action product for Filipino readers. It should answer, as quickly and credibly as possible:
-
-1. What happened?
-2. Why does it matter?
-3. What changed?
-4. What should I do, prepare for, avoid, or watch?
-5. How strong is the evidence?
-6. What do the other agents think, including meaningful disagreement?
+ALAM.ph is a mobile-first intelligence and action product for Filipino readers. It should answer quickly and credibly: What happened? Why does it matter? What changed? What should I do, prepare for, avoid, or watch? How strong is the evidence? What do the other agents think, including meaningful disagreement?
 
 Permanent constraints:
 
-- The Global Engineering Job Radar is private/chat-only and must never be published to the ALAM app or public Supabase tables.
-- Public ALAM content must be based on real events and real sources. Do not manufacture dummy/sample stories to fill empty UI states.
-- GitHub JSON remains the human-readable agent/audit trail; Supabase is the durable query/read/state layer.
-- Public Streamlit code uses only the Supabase publishable/public credential. Service-role/secret credentials belong only in trusted server-side automation.
-- Real/official/relevant images are preferred. Generated editorial imagery is a fallback when no suitable real image is available and must not be presented as documentary photography.
-- Taglish should remain natural, clear, and broadly understandable rather than forced slang.
-- Optimize for usefulness and trust, not engagement addiction or infinite-scroll time.
+- Global Engineering Job Radar is private/chat-only and must never enter the public ALAM app or public Supabase content tables.
+- Public ALAM content must represent real events with usable real sources. Never add fake/sample stories merely to populate a screen.
+- GitHub JSON is the human-readable agent/audit trail. Supabase is the durable query/read/state layer and may be rebuilt from that audit trail where explicitly designed.
+- Public Streamlit code uses only public/publishable Supabase credentials. Service-role/secret credentials are trusted automation only.
+- Prefer real relevant images, then official images, then suitable sourced web images. Generated editorial imagery is fallback-only and must not masquerade as documentary photography.
+- Taglish should be natural and broadly understandable.
+- Optimize for usefulness, trust, accountability, and action rather than engagement addiction.
 
-## A. Completed and verified
+## A. Completed and verified in the repository
 
-- Existing ALAM Streamlit application with Today, Discover, Action, Market, More, Weekly, Search, Saved, Predictions, Settings, article detail, mobile rendering, time-of-day visual system, and editorial image fallback.
-- Supabase public-client connection module using Streamlit secrets.
-- Supabase-first article loading with temporary local JSON fallback while the database contains no published ALAM records.
-- Supabase article source hydration back into the existing ALAM v5 record contract.
-- Read-only article-version loading so Before/Now/history features survive the database cutover.
-- Supabase-backed public cross-agent comment loading with local comment archive fallback.
-- Supabase-backed daily wisdom loading with local fallback.
-- Public prediction and article-relationship data access.
-- Database health/status display in Settings.
-- Trusted GitHub JSON -> Supabase ingestion utility for articles, sources, article versions, topics, comments, wisdom, predictions, and shared-signal relationships.
-- GitHub Actions workflow for validated ALAM data synchronization.
-- Core Supabase v5 schema, RLS policies, article history, comments/wisdom support, media storage foundation, predictions, relationships, user-state tables, and analytics tables.
-- Non-destructive compatibility bridge for the earlier UUID-based ALAM Supabase schema. Legacy tables are preserved as `*_legacy_20260902` rather than destructively converted.
-- User confirmed the compatibility/setup SQL was successfully run in Supabase on 2026-09-02.
-- Decision-first article page orchestration: article readers now see Why it matters, What to do, Evidence health/lifecycle/relevance, material Before -> Now changes, and a disagreement signal before choosing 30 sec / Panel / Evidence / Deep. The existing full panel thread remains available so substantive comments and reply relationships are not reduced to one-line reactions.
-- The decision-first reader is isolated in `alam_story_page.py` rather than adding more feed-rendering overrides to `alam_mobile_views.py`, and is included in the ALAM syntax gate.
-- CI run for commit `860184f10b2eeba361b89b3b77beb2933c5a9151` passed production-data validation, editorial-image self-test, both image regression tests, Python syntax compilation including the new story-page module, and Streamlit startup/health check on 2026-09-02.
+- Mobile Streamlit app with Today, Discover, Action, Market, More, Weekly, Search, Saved, Predictions, Settings, article detail, time-aware visual system, and editorial-image fallback.
+- Decision-first Today hierarchy and decision-first article-page orchestration are on `main`.
+- Saved-story version awareness is on `main`, including updated-since-saved behavior where version state is available.
+- Detailed ALAM Panel/cross-agent comment presentation preserves substantive SUPPORT/CHALLENGE/MIXED reasoning rather than reducing comments to one-line reactions.
+- Supabase public-client module and Supabase-first article loading with local JSON migration fallback.
+- Supabase source hydration, public article history, public cross-agent comments, daily wisdom, predictions, article relationships, and database-health reads.
+- Core v5 Supabase schema with RLS, article/source/history/comment/run/topic/media/user-state/briefing/prediction/relationship/event tables.
+- Non-destructive bridge for the earlier UUID ALAM schema; user confirmed the compatibility/full setup SQL ran successfully on 2026-09-02.
+- Trusted GitHub JSON -> Supabase incremental ingestion for public Discover, Practical, Market/reflection, Trend, comments, wisdom, sources, topics, predictions, versions, and explicit shared-signal relationships.
+- Trusted sync wrapper records sanitized GitHub run provenance and ingestion totals in `agent_runs`; service credentials remain server-side.
+- GitHub Actions serializes ALAM Supabase synchronization with a concurrency group so ordinary workflow dispatches do not overlap.
+- **Self-healing reconciliation layer** (`alam_supabase_reconcile.py`) added on 2026-09-03. After incremental ingestion it deterministically converges public current articles, numbered article history, normalized current sources, topics, and predictions from the GitHub audit archive.
+- Reconciliation specifically repairs the partial-write failure mode where `articles` was updated but later version/source/topic writes failed and a retry would otherwise incorrectly skip the record as unchanged.
+- Source reconciliation uses upsert-before-delete so a transient failure does not intentionally erase the previous good evidence set before desired sources are accepted.
+- Exact duplicate audit payloads are deduplicated before deterministic version numbering; equal timestamps use archive path ordering as a stable tie-breaker.
+- Reconciliation is scoped only to the four public ALAM article directories, preventing private Job Radar ingestion by construction.
+- Pure helper regression tests cover canonical payload identity, duplicate removal, chronological ordering, and deterministic equal-time ordering.
+- ALAM CI now runs the reconciliation regression test and compiles `alam_supabase_reconcile.py` plus the trusted sync wrapper.
 
-## B. In progress
+## B. In progress / requires production verification
 
 ### Supabase production cutover
 
-Goal: confirm that verified GitHub ALAM content has actually been mirrored into the new v5 Supabase tables and that the live Streamlit app is reading Supabase rather than the local migration fallback.
+Goal: prove that verified GitHub ALAM content is mirrored into the v5 Supabase tables and that production Streamlit is actually reading Supabase rather than silently relying on local fallback.
 
-Required verification:
+Required evidence:
 
-- `articles` contains published rows using stable text IDs.
-- `article_sources`, `article_versions`, `agent_comments`, `wisdom_entries`, `predictions`, and relationships contain the expected mirrored data where applicable.
-- ALAM Settings reports `Live article feed: Supabase`.
-- Article detail history and source evidence still render correctly after the cutover.
-- No private Job Radar data exists in public ALAM tables.
+- `articles` has published stable text IDs.
+- `article_sources`, `article_versions`, `agent_comments`, `wisdom_entries`, predictions, and relationships have expected mirrored rows where applicable.
+- A trusted `agent_runs` entry shows a successful synchronization and contains reconciliation totals.
+- ALAM Settings reports the live feed as Supabase, not local fallback.
+- Article evidence/history still render correctly after cutover.
+- No private Job Radar data is present in public ALAM tables.
 
 ### Deployment readiness
 
-- Verify the current Streamlit deployment entry point and dependency files.
-- Ensure CI exercises the ALAM modules and Streamlit startup path.
-- Ensure failures in Supabase do not crash the whole app and are visible enough to diagnose.
+- CI must remain green after backend and product changes.
+- Streamlit startup/health smoke test must continue to pass.
+- Supabase failures must degrade to an explicit diagnosable state rather than crash the application or falsely report a healthy live mirror.
 
 ## C. Next highest-priority improvements
 
 ### P0 — Reliability / data integrity
 
-1. Complete explicit Supabase cutover/readiness diagnostics that distinguish: connected, schema ready, data synchronized, live-on-Supabase, local fallback, history unavailable, comments unavailable, and stale synchronization.
-2. Record trusted ingestion runs in `agent_runs`/sync-health data so the app/admin view can answer when the database last synchronized and whether failures occurred.
-3. Make synchronization idempotency and update/version logic robust against duplicate workflow execution and out-of-order records.
-4. Add stronger source/evidence quality checks before publication and explicit rejection reasons for bad candidates.
-5. Add stale/outdated lifecycle checks and safe story expiration rules.
+1. Complete explicit cutover/readiness diagnostics that distinguish: connected, schema ready, synchronized, live-on-Supabase, local fallback, stale sync, history unavailable, comments unavailable, and trusted-sync failure.
+2. Verify a real successful `agent_runs` sync entry in production. Repository support is implemented; external workflow credentials/execution still determine whether this is live.
+3. Extend reconciliation/idempotency tests to failure-injection cases for article-row success followed by version/source failure. Current deterministic helpers are tested; database-level failure simulation is not yet implemented.
+4. Harden same-story/same-timestamp-but-different-payload conflict handling so agent bugs cannot silently create ambiguous chronological versions.
+5. Add stronger source/evidence quality gates before publication and structured rejection reasons.
+6. Add stale/outdated lifecycle checks and safe story-expiration rules.
 
 ### P1 — Core reader/product quality
 
-1. Tighten Today/Home hierarchy around: Today in 3 Lines -> Do Now -> Prepare -> Avoid -> Watch -> Discover.
-2. Refine article-page secondary ordering after the now-verified decision-first header: related stories, reader tuning, sharing, and any future saved-state update notice should remain useful without making the page feel endless.
-3. Ensure cross-agent perspectives continue to support substantive reasoning, evidence, uncertainty, implication, and disagreement rather than shallow one-line reactions; add stronger stance grouping only when it improves comprehension without duplicating the full thread.
-4. Surface source type/primary-vs-independent quality more clearly inside the Evidence view while keeping the first-screen Evidence card compact.
-5. Add clearer `Updated since you saved this`/material-change behavior using version timestamps.
+1. Keep Today hierarchy decision-first and prevent secondary modules from making the page feel endless.
+2. Surface source type, primary/official status, source independence, and claim support more clearly inside Evidence while keeping the first-screen health card compact.
+3. Preserve detailed cross-agent reasoning, uncertainty, implication, and disagreement; group stance only when it improves comprehension without duplicating the full thread.
+4. Continue refining material-change notices for saved stories and history.
+5. Improve partial-data/loading/fallback/stale-data states so operational truth is visible without overwhelming ordinary readers.
 
 ### P1 — Persistent user state
 
-1. Decide and implement account/auth approach without introducing a login wall.
-2. Keep ALAM usable anonymously.
-3. When authenticated, sync bookmarks, preferences, reading history, feedback, inbox state, and briefing state across devices using RLS-protected user tables.
-4. Preserve browser-local state as an anonymous/offline fallback.
+1. Select an auth/account approach that does not introduce a login wall.
+2. Keep anonymous use fully functional.
+3. For authenticated users, sync bookmarks, preferences, reading history, feedback, inbox, and briefing state through RLS-protected tables.
+4. Preserve browser-local state as anonymous/offline fallback.
 
 ### P2 — Intelligence layer
 
-1. Improve Connect the Dots using explicit relationships and evidence; never infer causality merely from co-occurrence.
-2. Surface meaningful agent disagreement and confidence differences.
-3. Build prediction accountability with status history and evidence-based resolution.
-4. Generate Daily and Weekly briefings only from already-validated ALAM stories.
-5. Add saved-story-change notifications/inbox once persistent user identity is available.
+1. Improve Connect the Dots using explicit relationships/evidence only; shared occurrence is not causality.
+2. Surface meaningful agent confidence differences and disagreements.
+3. Expand prediction accountability with status-history/evidence-based resolution.
+4. Generate daily/weekly briefings only from validated ALAM stories.
+5. Add saved-story-change notifications after persistent identity exists.
 
 ### P2 — Performance / accessibility
 
 1. Audit Supabase query count and cache boundaries.
-2. Avoid repeated hydration queries and oversized Streamlit rerenders.
-3. Consolidate conflicting CSS overrides when safe.
-4. Improve touch targets, labels, contrast, mobile card density, and keyboard behavior.
-5. Add useful empty/loading/error states for zero data, partial data, database fallback, and stale data.
+2. Avoid repeated hydration queries and oversized rerenders.
+3. Consolidate conflicting CSS layers only with regression coverage.
+4. Improve touch targets, labels, contrast, mobile density, and keyboard behavior.
 
 ### P3 — Admin / operations
 
-1. Admin dashboard for agent/sync runs, rejected candidates, failure reasons, stale stories, article merge/update status, and media issues.
-2. Safe publish/unpublish/merge/regenerate-image controls through trusted backend paths.
-3. Recovery/rollback documentation for Supabase schema/data issues.
-4. Correction history and visible accountability where a published story materially changes.
+1. Trusted admin view for sync runs, rejected candidates, failure reasons, stale stories, merge/update status, and media issues.
+2. Safe publish/unpublish/merge/regenerate-image operations through trusted backend paths.
+3. Recovery/rollback documentation for schema and mirror problems.
+4. Correction history and visible accountability for materially changed published stories.
 
 ## D. Blocked / manual-owner actions
 
-These actions require credentials or external consoles and must never be falsely marked complete by an agent that only changed repository files:
+These require credentials or external consoles and must never be falsely marked complete from repository changes alone:
 
-- Supabase SQL execution when a new migration requires manual application.
-- GitHub repository secret creation or rotation for `SUPABASE_SERVICE_ROLE_KEY` if not already present.
+- Supabase SQL execution when future migrations require it.
+- GitHub Actions secret creation/rotation for `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`.
 - Streamlit Cloud secret creation/rotation for `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY`.
-- Manual workflow dispatch when the connector/runtime cannot invoke GitHub Actions directly.
-- DNS/domain changes or Streamlit Cloud deployment configuration not available through repository files.
-
-When blocked, provide exact instructions and leave the repository in a safe state.
+- Manual workflow dispatch when the available connector cannot trigger Actions.
+- Streamlit Cloud deployment configuration or DNS/domain operations outside repository control.
 
 ## E. Longer-term opportunities
 
-- Installable PWA-quality experience where Streamlit constraints allow it.
-- Offline access for selected saved stories where practical.
-- Explicit topic preference controls with decaying weights and anti-filter-bubble discovery insertion.
-- Collections for saved stories: Read Later, Japan, Money, Ideas, Important.
-- Knowledge-graph relationships such as contributes_to, contradicts, affects, and shared_signal, only when supported by explicit evidence/agent reasoning.
-- Quality dashboards for source diversity, correction rate, duplicate rejection, agent usefulness, and prediction calibration.
-- Selective notifications instead of engagement spam.
+- Installable/PWA-quality experience where Streamlit allows it.
+- Offline access for selected saved stories.
+- Explicit topic preferences with decaying weights and anti-filter-bubble discovery insertion.
+- Saved collections such as Read Later, Japan, Money, Ideas, Important.
+- Evidence-backed relationship types such as contributes_to, contradicts, affects, and shared_signal.
+- Quality dashboards for source diversity, correction rate, duplicate rejection, agent usefulness, sync reliability, and prediction calibration.
+- Selective notifications rather than engagement spam.
 
 ## F. Known risks / technical debt
 
-- The application currently contains several visual/CSS modules layered in install order. Future work should avoid creating endless override chains and should consolidate carefully after regression checks. `alam_story_page.py` intentionally keeps article-page-specific CSS isolated rather than adding overrides to the feed CSS.
-- Browser-local Saved/preferences remain the current primary user-state mechanism until authentication/account synchronization is completed.
-- Supabase-first loading intentionally keeps local JSON as a temporary fallback. Once cutover is stable, decide whether fallback should remain as disaster recovery or be narrowed so stale local content cannot silently mask a failed sync.
-- GitHub-to-Supabase synchronization depends on trusted secrets and workflow execution. A healthy public Supabase connection alone does not prove that ingestion is current.
-- Existing ALAM data may contain multiple historical record shapes. Maintain translation compatibility until the audit archive is normalized.
-- The new story-page orchestrator deliberately reuses private rendering helpers from `alam_mobile_views.py` so behavior stays identical during the transition. If those helpers are later refactored, promote the shared 30-sec/Panel/Deep renderers into a public reader-component module rather than duplicating them.
+- Multiple visual/CSS modules remain layered in install order. Avoid endless override chains; consolidate only after regression checks.
+- Browser-local Saved/preferences remain primary user state until auth synchronization is implemented.
+- Local JSON fallback is intentionally protective during cutover but can eventually mask stale database synchronization. Decide whether it becomes explicit disaster recovery or is narrowed after production Supabase stability is proven.
+- A healthy public Supabase connection does not prove ingestion is current. Trusted run status and freshness must become part of readiness diagnostics.
+- Existing audit records may contain historical shapes; maintain translation compatibility until archive normalization is safe.
+- Reconciliation intentionally treats GitHub JSON as authoritative for known public article IDs. It does not delete unrelated Supabase articles that are absent from the GitHub archive; broad orphan cleanup requires a separately reviewed policy.
+- Deterministic reconciliation can repair derived version slots, including deleting trailing duplicate version numbers not justified by the GitHub audit. The GitHub audit itself is never deleted by this process.
+- Topic reconciliation currently uses the existing small delete/rebuild helper. It is retryable but does not yet use the safer upsert-before-delete pattern implemented for sources.
+- Supabase reconciliation is server-side only and relies on service-role workflow credentials. A missing credential stops the trusted job before database repair can begin.
 
-## G. Verification evidence / CI log
-
-Agents should append concise dated entries here after material iterations.
+## G. Verification evidence / development log
 
 ### 2026-09-02 — Supabase foundation
 
-- Existing UUID-era schema incompatibility identified after SQL failed on a missing `category` column.
-- Root cause: `CREATE TABLE IF NOT EXISTS` does not migrate an existing table shape, and the old ALAM article PK was UUID while v5 uses stable text IDs.
-- Non-destructive legacy bridge added and user confirmed SQL setup completed.
-- Supabase-first application/data-access and ingestion foundation committed.
+- Problem: setup SQL failed against an existing UUID-era ALAM schema.
+- Root cause: `CREATE TABLE IF NOT EXISTS` does not migrate table shape, and old article IDs were UUID while v5 uses stable text IDs.
+- Change: non-destructive legacy bridge plus fresh v5 tables; user confirmed SQL completion.
+- Result: repository/app can target the v5 Supabase contract while retaining legacy rollback tables.
 
-### 2026-09-02 — Agent B decision-first reader
+### 2026-09-02 — Decision-first product passes
 
-- Problem found: the article page had substantial intelligence features, but the first-screen reading order was fragmented. Impact, action, material change, evidence health, disagreement, related stories, and reader controls were rendered in separate layers after the depth selector.
-- Root cause: product features had been added incrementally to `streamlit_app.py`, `alam_mobile_views.py`, `alam_intelligence.py`, and Supabase-enhanced views without a page-level information-architecture owner.
-- Decision: create a dedicated article-page orchestrator while reusing the existing mature 30-sec, Panel, Evidence, and Deep renderers. Do not duplicate or weaken the full cross-agent thread.
-- Implementation: added `alam_story_page.py`, integrated it into the selected-story path, removed duplicate post-reader snapshot/change/disagreement blocks from that path, and added the new module to the CI syntax gate.
-- Mobile behavior: the decision summary is three columns on wider screens and a one-column stack on phones; Before/Now also collapses vertically on phones. Missing history or disagreement simply removes those enhancements.
-- Validation: ALAM production-data validation passed; editorial image self-test passed; article image fallback and reliable layered renderer regression tests passed; Python syntax gate passed; Streamlit server started and health endpoint passed.
-- Current CI/deployment status: repository main is deployable at the validated reader commit. Streamlit Cloud production rollout remains governed by the connected deployment configuration outside this repository check.
-- Remaining limitation/risk: related-story controls, Tune ALAM, and share tools still render after the chosen reading mode; future product work should refine secondary-page length without reintroducing duplicate intelligence summaries.
-- Recommended next action: Agent A should continue Supabase cutover/readiness and sync-health work. Agent B should next improve Today/Home action hierarchy or saved-story material-change visibility, whichever remains the highest-value product gap after inspecting the newest main branch.
+- Article page orchestration moved the immediate decision context ahead of deep reading modes while retaining full 30-sec/Panel/Evidence/Deep content.
+- Today was tightened around decision-first sections.
+- Saved view became update-aware.
+- Panel/comment presentation was expanded for substantive reasoning and stance rather than shallow reactions.
+- These changes were committed on main before the 2026-09-03 backend iteration and were not overwritten by the backend reconciliation work.
+
+### 2026-09-03 — Backend self-healing mirror
+
+- Agent: Backend Architect.
+- Problem found: incremental ingestion could partially succeed by updating the current article row, then fail while writing history/sources/topics. On retry, equal `created_at` caused `sync_article` to return `unchanged`, leaving Supabase permanently incomplete unless manually repaired.
+- Root cause: idempotency was implemented as a timestamp shortcut, but the database write sequence is not transactional across all derived tables.
+- Decision: retain fast incremental ingestion, then run a deterministic convergence pass from the GitHub audit archive. This avoids invasive schema changes and makes retries repair state.
+- Implementation: added `alam_supabase_reconcile.py`; wired it into `alam_supabase_sync_job.py`; added a deterministic helper regression test; added reconciliation module/test to ALAM CI; added the reconcile module to trusted-sync workflow path triggers.
+- Files affected: `alam_app/alam_supabase_reconcile.py`, `alam_app/alam_supabase_sync_job.py`, `alam_app/test_alam_supabase_reconcile.py`, `.github/workflows/alam-checks.yml`, `.github/workflows/alam-supabase-sync.yml`, this roadmap.
+- Security: reconciliation only reads the allow-listed public article directories and runs behind the existing service-role boundary. No public credential scope changed and no private Job Radar path was added.
+- Rollback: GitHub JSON remains untouched. Derived Supabase rows can be regenerated from it. No new database migration was required.
+- Validation performed: deterministic helper test added to CI; syntax gate expanded; Streamlit health/data/image gates remain in the same ALAM workflow. Final workflow conclusions must be checked after the roadmap commit before this iteration is considered fully green.
+- Remaining risk: no database-level failure-injection test yet; topic repair still uses delete/rebuild; production cutover still requires a successful trusted workflow with valid secrets.
+- Recommended next backend action: finish cutover/freshness diagnostics and expose only sanitized trusted-sync health to the public Settings/admin experience. Recommended product action: continue Evidence/source-quality presentation without changing the backend contract.
 
 ## H. Agent handoff template
 
-Every material iteration should leave enough context for the other agent to continue without re-discovering the same problem:
+Every material iteration should leave enough context for the other agent to continue without rediscovery:
 
 - Date/time:
 - Agent:
