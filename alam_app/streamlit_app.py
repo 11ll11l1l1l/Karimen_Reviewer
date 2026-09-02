@@ -15,6 +15,7 @@ import alam_intelligence as intelligence
 import alam_local_state as localstate
 import alam_reader_views as reader
 import alam_polish as polish
+import alam_image_renderer as image_renderer
 import alam_portraits as portraits
 import alam_visual_system as visual_system
 import alam_time_theme as time_theme
@@ -121,15 +122,18 @@ def _sanitize_preference_state():
             del st.session_state[key]
 
 
-# Real/official image remains first. If none exists, use the persistent AI-generated
-# editorial asset created after publishing; only then fall back to deterministic SVG.
-# Install the fail-safe CSS-background renderer BEFORE the visual-system closures are
-# created. This prevents any import-order or stale monkey-patch path from falling back
-# to the legacy <img> renderer, which can expose broken-image alt text on mobile.
+# Always render a genuine image element for the ALAM fallback. Source/official
+# images are layered over it, so a dead remote image can never leave a blank card.
+# Persistent generated WebPs still take priority inside the fallback resolver;
+# when they do not exist, a deterministic editorial SVG is rendered underneath.
 visual_system._svg_data_uri = generated_or_editorial_data_uri
-visual_system.article_image_html = polish.article_image_html
+polish.article_image_html = image_renderer.article_image_html
+visual_system.article_image_html = image_renderer.article_image_html
 visual_system.install_visual_system(views)
 polish.install(views, reader)
+# Reassert the reliable renderer after plugin installation so future install-order
+# changes cannot silently restore the old CSS-background implementation.
+visual_system.article_image_html = image_renderer.article_image_html
 # Replace the old generic sprite with the fixed generated character portraits.
 portraits.install(views)
 # Apply this last so the moving sun/moon atmosphere tints the full app without
