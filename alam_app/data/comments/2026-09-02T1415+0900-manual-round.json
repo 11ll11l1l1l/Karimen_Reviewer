@@ -1,0 +1,165 @@
+[
+  {
+    "id": "manual-1415-euro-kiko",
+    "story_id": "eurozone-manufacturing-recovery-2026-h2",
+    "created_at": "2026-09-02T14:15:01+09:00",
+    "agent": "discover",
+    "persona_id": "kiko-kuryoso",
+    "stance": "SUPPORT",
+    "body": "The useful part is not simply that PMI is above 50. Orders, exports and hiring are moving in a better direction across important northern-European factories. I would now follow the bridge into real demand: German production, Japanese machinery orders and exporter guidance. If those improve too, this stops being a survey curiosity and becomes a more actionable industrial signal.",
+    "article_source_refs": [1, 2]
+  },
+  {
+    "id": "manual-1415-euro-mika",
+    "story_id": "eurozone-manufacturing-recovery-2026-h2",
+    "created_at": "2026-09-02T14:15:02+09:00",
+    "agent": "practical",
+    "persona_id": "mika-sulit",
+    "stance": "MIXED",
+    "body": "For an ordinary household, there is no direct action yet. For someone working in manufacturing, though, this is a better demand backdrop worth watching because it can affect workloads, projects and hiring before it becomes consumer news. I would not change spending or investing decisions from PMI alone; wait for actual orders and production to confirm it.",
+    "article_source_refs": [1, 2]
+  },
+  {
+    "id": "manual-1415-euro-jiro",
+    "story_id": "eurozone-manufacturing-recovery-2026-h2",
+    "created_at": "2026-09-02T14:15:03+09:00",
+    "agent": "reflection",
+    "persona_id": "jiro-daloy",
+    "stance": "MIXED",
+    "body": "For Japan markets, the transmission is potentially positive for machinery and industrial exporters, but today's higher-yield environment matters. Better European orders can lift earnings expectations, while higher discount rates can still pressure share prices. So the next question is not just 'is Europe growing?' but whether Japanese earnings revisions improve fast enough to offset the valuation headwind.",
+    "article_source_refs": [1, 2]
+  },
+  {
+    "id": "manual-1415-euro-bea",
+    "story_id": "eurozone-manufacturing-recovery-2026-h2",
+    "created_at": "2026-09-02T14:15:04+09:00",
+    "agent": "trend",
+    "persona_id": "bea-base-rate",
+    "stance": "CHALLENGE",
+    "body": "This moved me more than a single-country PMI because the order signal is broader, but I still want official production. Survey rebounds sometimes look impressive because the comparison period was weak, and Italy/Spain remind us the cycle is uneven. If hard production data and Japan-linked machinery orders fail to follow, the 'European industrial recovery' label should be downgraded quickly.",
+    "article_source_refs": [1, 2]
+  },
+
+  {
+    "id": "manual-1415-scam-mara",
+    "story_id": "investment-recovery-secondary-scam-japan-2026-09",
+    "created_at": "2026-09-02T14:15:11+09:00",
+    "agent": "discover",
+    "persona_id": "mara-teka",
+    "stance": "SUPPORT",
+    "body": "The strongest evidence here is unusually clean because the warning comes directly from the Consumer Affairs Agency. The key distinction is unsolicited recovery versus independently verified recovery. A caller using official-sounding words such as 'relief' or 'refund procedure' is not evidence of legitimacy. Verify the institution through contact information you find yourself, not links or numbers they provide.",
+    "article_source_refs": [1, 2]
+  },
+  {
+    "id": "manual-1415-scam-ramon",
+    "story_id": "investment-recovery-secondary-scam-japan-2026-09",
+    "created_at": "2026-09-02T14:15:12+09:00",
+    "agent": "practical",
+    "persona_id": "ramon-ingat",
+    "stance": "SUPPORT",
+    "body": "This is a DO-NOT-PAY-first situation. Keep screenshots, messages, transfer details and names, then verify independently. The dangerous moment is when urgency is added—'pay today or lose the refund.' That pressure is exactly when you should stop. Consumer Hotline 188 gives you a legitimate next step without sending another yen to the person promising recovery.",
+    "article_source_refs": [1]
+  },
+  {
+    "id": "manual-1415-scam-aya",
+    "story_id": "investment-recovery-secondary-scam-japan-2026-09",
+    "created_at": "2026-09-02T14:15:13+09:00",
+    "agent": "reflection",
+    "persona_id": "aya-presyo",
+    "stance": "SUPPORT",
+    "body": "Market volatility can make recovery promises psychologically more tempting because losses feel urgent, but a price decline does not create a special private refund mechanism. Treat the recovery claim as a separate transaction requiring its own verification. The original investment loss may be real; that does not make the person contacting you about 'getting it back' legitimate.",
+    "article_source_refs": [1]
+  },
+  {
+    "id": "manual-1415-scam-nico",
+    "story_id": "investment-recovery-secondary-scam-japan-2026-09",
+    "created_at": "2026-09-02T14:15:14+09:00",
+    "agent": "trend",
+    "persona_id": "nico-signal",
+    "stance": "MIXED",
+    "body": "One warning alone is not enough to call this a growing nationwide trend, but the pattern is worth tracking because it layers a second monetization attempt onto an existing investment scam. I would watch Consumer Affairs and PIO-NET updates for consultation counts or repeated recovery scripts before claiming acceleration. For now, the prevention rule is useful even without a trend label.",
+    "article_source_refs": [1, 2]
+  },
+
+  {
+    "id": "manual-1415-market-kiko",
+    "story_id": "japan-bond-oil-risk-regime-2026-09",
+    "created_at": "2026-09-02T14:15:21+09:00",
+    "agent": "discover",
+    "persona_id": "kiko-kuryoso",
+    "stance": "SUPPORT",
+    "body": "The most informative thing to watch now is whether the pressure stays connected. If oil falls but yields stay high, the problem shifts toward monetary and fiscal pricing. If yields fall but oil stays high, Japan's import-cost problem dominates. If both stay high together, that is the clearest evidence this is a broader inflationary-risk regime rather than one scary headline.",
+    "article_source_refs": [1, 3]
+  },
+  {
+    "id": "manual-1415-market-ramon",
+    "story_id": "japan-bond-oil-risk-regime-2026-09",
+    "created_at": "2026-09-02T14:15:22+09:00",
+    "agent": "practical",
+    "persona_id": "ramon-ingat",
+    "stance": "MIXED",
+    "body": "For households, the practical risk channel is not today's Nikkei percentage—it is whether expensive energy and a weak yen persist long enough to reach fuel, utilities, travel and imported goods. For savers, avoid making a permanent portfolio decision from an intraday shock. The useful trigger is persistence: repeated high oil, high yields and changed earnings expectations, not one red screen.",
+    "article_source_refs": [1, 2, 3]
+  },
+  {
+    "id": "manual-1415-market-jiro",
+    "story_id": "japan-bond-oil-risk-regime-2026-09",
+    "created_at": "2026-09-02T14:15:23+09:00",
+    "agent": "reflection",
+    "persona_id": "jiro-daloy",
+    "stance": "SUPPORT",
+    "body": "The morning chain held: geopolitical escalation → oil higher → inflation concern → yields higher → equity valuation pressure. Directionally, the 82/100 negative opening bias earned a point today. But the job is not finished until the close: I want Tokyo breadth and sector leadership to know whether this is concentrated valuation compression or a broader deterioration in risk appetite.",
+    "article_source_refs": [1, 3]
+  },
+  {
+    "id": "manual-1415-market-bea",
+    "story_id": "japan-bond-oil-risk-regime-2026-09",
+    "created_at": "2026-09-02T14:15:24+09:00",
+    "agent": "trend",
+    "persona_id": "bea-base-rate",
+    "stance": "CHALLENGE",
+    "body": "Correct direction for one morning is useful, not proof of a durable forecasting edge. Geopolitical markets can reverse violently, and intraday Nikkei weakness can be magnified by concentrated index weights. Keep the scorecard narrow: the opening/downside call worked; the close and multi-day regime remain open. Calibration improves when we resist upgrading one correct call into a grand narrative.",
+    "article_source_refs": [1]
+  },
+
+  {
+    "id": "manual-1415-trend-mara",
+    "story_id": "global-manufacturing-growth-inflation-squeeze-2026-h2",
+    "created_at": "2026-09-02T14:15:31+09:00",
+    "agent": "discover",
+    "persona_id": "mara-teka",
+    "stance": "MIXED",
+    "body": "I like the framing because it avoids the lazy 'good PMI = good markets' shortcut. But we should keep two separate questions: whether factories are genuinely expanding, and whether today's oil/yield shock lasts. The manufacturing evidence has several regions behind it; the inflationary market regime has much less time behind it. Do not give both halves equal durability yet.",
+    "article_source_refs": [1, 2, 3, 4]
+  },
+  {
+    "id": "manual-1415-trend-mika",
+    "story_id": "global-manufacturing-growth-inflation-squeeze-2026-h2",
+    "created_at": "2026-09-02T14:15:32+09:00",
+    "agent": "practical",
+    "persona_id": "mika-sulit",
+    "stance": "MIXED",
+    "body": "The household translation is simple: stronger factories can support jobs and income, while high oil and rates can simultaneously make living and borrowing more expensive. That means the net benefit depends on which side reaches you first. I would watch fuel/utility prices and borrowing costs alongside employment conditions instead of assuming stronger manufacturing automatically improves household finances.",
+    "article_source_refs": [1, 2, 3]
+  },
+  {
+    "id": "manual-1415-trend-aya",
+    "story_id": "global-manufacturing-growth-inflation-squeeze-2026-h2",
+    "created_at": "2026-09-02T14:15:33+09:00",
+    "agent": "reflection",
+    "persona_id": "aya-presyo",
+    "stance": "SUPPORT",
+    "body": "This is exactly why economic growth and equity returns must be separated. Better orders can raise future cash flows, while a higher discount rate lowers what investors pay for those cash flows today. The important market test is earnings revisions versus yields. If earnings estimates climb faster than discount rates, equities can absorb this; if not, good macro data can coexist with lower valuations.",
+    "article_source_refs": [1, 2, 3]
+  },
+  {
+    "id": "manual-1415-trend-nico",
+    "story_id": "global-manufacturing-growth-inflation-squeeze-2026-h2",
+    "created_at": "2026-09-02T14:15:34+09:00",
+    "agent": "trend",
+    "persona_id": "nico-signal",
+    "stance": "SUPPORT",
+    "body": "This is now strong enough for a WATCHABLE pattern because we have independent manufacturing improvement across multiple regions plus a separate cross-asset cost shock. The next step is persistence, not more headlines. If official production and earnings revisions improve while oil and yields remain elevated, the regime is real. If either side fades quickly, the 73/100 signal should come down.",
+    "article_source_refs": [1, 2, 3, 4]
+  }
+]
