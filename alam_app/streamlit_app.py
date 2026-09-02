@@ -18,6 +18,7 @@ import alam_polish as polish
 import alam_portraits as portraits
 import alam_visual_system as visual_system
 import alam_time_theme as time_theme
+import alam_time_headers as time_headers
 from alam_generated_images import generated_or_editorial_data_uri
 from alam_market_views import is_market_record, render_market
 from alam_personas import load_comments
@@ -108,6 +109,9 @@ records = [r for r in current_records if not localstate.is_muted(r)]
 comments = load_comments()
 
 views.render_brand(records)
+# A six-scene Japan-time header makes the daypart immediately visible; the continuous
+# palette/sun-position theme underneath still changes smoothly between these scenes.
+time_headers.render_time_header()
 extras.render_wisdom_strip()
 
 selected_id = st.session_state.get("selected_story")
