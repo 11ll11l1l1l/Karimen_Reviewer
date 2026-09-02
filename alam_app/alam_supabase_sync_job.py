@@ -1,11 +1,10 @@
-"""Observable trusted Supabase synchronization job for ALAM.ph.
+"""Observable, self-healing trusted Supabase synchronization job for ALAM.ph.
 
-The low-level ingestion module intentionally focuses on deterministic data mirroring.
+The low-level ingestion module intentionally focuses on incremental data mirroring.
 This wrapper owns *operational* concerns: recording when a sync started, whether it
 finished cleanly, which Git commit produced it, and the ingestion statistics emitted
-by the underlying job. Keeping those responsibilities separate makes the ingestion
-functions reusable for local/admin tooling while giving production automation a
-persistent audit trail in ``agent_runs``.
+by the underlying job. It also runs a deterministic reconciliation pass after normal
+ingestion so a retry can repair an earlier partial write instead of preserving it.
 
 This file must run only with a Supabase service-role/secret credential. It is never
 imported by the public Streamlit app.
@@ -21,6 +20,7 @@ from contextlib import redirect_stdout
 from datetime import datetime, timezone
 
 from alam_supabase_ingest import _client, run as run_ingestion
+from alam_supabase_reconcile import reconcile_public_archive
 
 SYNC_AGENT_ID = "alam_supabase_sync"
 
@@ -165,6 +165,22 @@ def main():
         # searchable logs are preserved despite capturing stdout for structured use.
         print(output, end="" if output.endswith("\n") else "\n")
     stats = _parse_stats(output)
+
+    # Incremental ingestion can fail after writing the query-facing article row but
+    # before history/sources/topics are complete. A later incremental retry would see
+    # an equal timestamp and call that record unchanged. Reconciliation deliberately
+    # ignores that shortcut and rebuilds the derived Supabase state from the GitHub
+    # audit archive, making partial failures self-healing and repeated runs convergent.
+    try:
+        reconcile_stats = reconcile_public_archive(client)
+        stats.update(reconcile_stats)
+        if reconcile_stats:
+            print("ALAM reconciliation:")
+            print(json.dumps(reconcile_stats, indent=2, ensure_ascii=False))
+    except Exception as exc:
+        stats["reconcile_errors"] = int(stats.get("reconcile_errors") or 0) + 1
+        exit_code = 1
+        print(f"RECONCILIATION ERROR: {exc}", file=sys.stderr)
 
     try:
         _finish_run(client, run_id, exit_code, stats)
