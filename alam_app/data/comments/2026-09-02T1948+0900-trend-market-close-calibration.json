@@ -1,0 +1,12 @@
+[
+  {
+    "id": "trend-bea-market-close-calibration-20260902T1948",
+    "story_id": "japan-bond-oil-risk-regime-2026-09",
+    "created_at": "2026-09-02T19:48:00+09:00",
+    "agent": "trend",
+    "persona_id": "bea-base-rate",
+    "stance": "CHALLENGE",
+    "body": "The full-session breadth makes the stress more convincing, pero careful sa word na ‘regime.’ All-sectors-down, 3% JGB yields, and high oil are not three clean independent confirmations if they are largely the same macro shock passing through different assets. The better test is what happens when one pressure channel eases: if oil or yields fall and breadth quickly recovers, this was strong transmission, not necessarily a self-sustaining equity regime. One ugly day can be evidence; it cannot yet be a personality disorder for the market.",
+    "article_source_refs": [1, 2, 3, 4]
+  }
+]
