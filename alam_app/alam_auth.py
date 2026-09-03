@@ -12,6 +12,11 @@ A verified Supabase access/refresh token pair is persisted only in the browser's
 localStorage and restored with ``auth.set_session``. The storage bridge is rendered only
 inside Settings, never above ALAM's compact mobile shell. Tokens are never logged,
 placed in URLs, copied into the anonymous profile, or shared through a cached client.
+
+Once signed in, Settings safely merges this browser's exact Saved article IDs and
+preference settings into RLS-protected account state. Anonymous article-open telemetry
+for the linked visitor is imported idempotently into account read history by a narrow
+authenticated RPC; the original anonymous audit events are retained.
 """
 
 from __future__ import annotations
@@ -36,6 +41,7 @@ from alam_supabase import _safe_error
 
 EMAIL_RE = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 AUTH_STORAGE_KEY = "alam_auth_session_v1"
+MAX_ACCOUNT_SAVED_IMPORT = 200
 
 
 def _credentials() -> tuple[str, str]:
@@ -254,6 +260,161 @@ def _link_current_device() -> tuple[dict | None, str | None]:
         return None, _safe_error(exc)
 
 
+def _normalized_saved_ids(values) -> list[str]:
+    """Return bounded, stable browser Saved IDs without inventing account records."""
+    result = []
+    seen = set()
+    for value in values or []:
+        story_id = str(value or "").strip()
+        if not story_id or story_id in seen:
+            continue
+        seen.add(story_id)
+        result.append(story_id)
+        if len(result) >= MAX_ACCOUNT_SAVED_IMPORT:
+            break
+    return result
+
+
+def _local_preferences_payload(user_id: str) -> dict:
+    """Translate current browser settings into the existing RLS-backed preference row."""
+    return {
+        "user_id": str(user_id),
+        "interests": dict(st.session_state.get("alam_interest_preferences") or {}),
+        "settings": {
+            "alert_min": int(st.session_state.get("alam_alert_min_importance", 85)),
+            "alert_action": bool(st.session_state.get("alam_alert_only_actionable", False)),
+            "alert_change": bool(st.session_state.get("alam_alert_material_change", True)),
+            "dark": bool(st.session_state.get("alam_dark_mode", False)),
+        },
+    }
+
+
+def _apply_cloud_preferences(row: dict) -> None:
+    """Hydrate this Streamlit session from account settings without deleting local history."""
+    row = dict(row or {})
+    interests = row.get("interests")
+    if isinstance(interests, dict):
+        st.session_state["alam_interest_preferences"] = {
+            str(key): bool(value) for key, value in interests.items()
+        }
+    settings = row.get("settings")
+    settings = settings if isinstance(settings, dict) else {}
+    mapping = {
+        "alert_min": "alam_alert_min_importance",
+        "alert_action": "alam_alert_only_actionable",
+        "alert_change": "alam_alert_material_change",
+        "dark": "alam_dark_mode",
+    }
+    for source, target in mapping.items():
+        if source in settings:
+            st.session_state[target] = settings[source]
+
+    # Keep the existing portable profile coherent so a later browser-local save/export
+    # carries the restored account settings even if the reader subsequently signs out.
+    profile = st.session_state.get("alam_local_profile")
+    if isinstance(profile, dict):
+        profile["s"] = {
+            "interests": dict(st.session_state.get("alam_interest_preferences") or {}),
+            "alert_min": int(st.session_state.get("alam_alert_min_importance", 85)),
+            "alert_action": bool(st.session_state.get("alam_alert_only_actionable", False)),
+            "alert_change": bool(st.session_state.get("alam_alert_material_change", True)),
+            "dark": bool(st.session_state.get("alam_dark_mode", False)),
+        }
+
+
+def synchronize_account_state() -> tuple[dict | None, str | None]:
+    """Merge this browser into authenticated Saved/preferences/read state.
+
+    Saved IDs are unioned so first sign-in never destroys either the account list or
+    anonymous browser saves. Existing account preferences win over a fresh browser;
+    local preferences are imported only when the account has no preference row yet.
+    Anonymous article-open events are copied by an authenticated-only RPC whose source
+    event index makes repeated imports idempotent.
+    """
+    account = account_summary()
+    user_id = str(account.get("user_id") or "").strip()
+    if not user_id:
+        return None, "Sign in before syncing account state."
+    device_id = _valid_device_id(st.session_state.get("alam_device_id"))
+    if not device_id:
+        return None, "This browser identity is not ready yet."
+
+    try:
+        client = get_auth_client()
+        link, link_error = _link_current_device()
+        if link_error:
+            return None, link_error
+        st.session_state["alam_account_link"] = dict(link or {})
+        st.session_state.pop("alam_account_link_error", None)
+
+        cloud_saved_response = (
+            client.table("saved_articles")
+            .select("article_id")
+            .eq("user_id", user_id)
+            .execute()
+        )
+        cloud_saved = _normalized_saved_ids(
+            row.get("article_id") for row in (cloud_saved_response.data or []) if isinstance(row, dict)
+        )
+        local_saved = _normalized_saved_ids(st.session_state.get("followed_stories") or [])
+
+        # Validate local IDs against the live article table before the FK-protected
+        # upsert. Old browser cookies can legitimately contain IDs retired long ago;
+        # those stay local rather than causing the entire account sync to fail.
+        valid_local = []
+        if local_saved:
+            valid_response = client.table("articles").select("id").in_("id", local_saved).execute()
+            valid_local = _normalized_saved_ids(
+                row.get("id") for row in (valid_response.data or []) if isinstance(row, dict)
+            )
+        missing_saved = [story_id for story_id in valid_local if story_id not in set(cloud_saved)]
+        if missing_saved:
+            client.table("saved_articles").upsert(
+                [
+                    {"user_id": user_id, "article_id": story_id, "collection": "saved"}
+                    for story_id in missing_saved
+                ],
+                on_conflict="user_id,article_id",
+            ).execute()
+
+        merged_saved = _normalized_saved_ids([*cloud_saved, *valid_local])
+        st.session_state["followed_stories"] = merged_saved
+
+        preference_response = (
+            client.table("user_preferences")
+            .select("interests,settings,updated_at")
+            .eq("user_id", user_id)
+            .limit(1)
+            .execute()
+        )
+        preference_rows = [row for row in (preference_response.data or []) if isinstance(row, dict)]
+        if preference_rows:
+            _apply_cloud_preferences(preference_rows[0])
+            preference_mode = "restored"
+        else:
+            client.table("user_preferences").upsert(
+                _local_preferences_payload(user_id), on_conflict="user_id"
+            ).execute()
+            preference_mode = "imported"
+
+        read_response = client.rpc(
+            "alam_import_current_device_reads", {"p_device_id": device_id}
+        ).execute()
+        read_rows = list(read_response.data or [])
+        read_row = read_rows[0] if read_rows and isinstance(read_rows[0], dict) else {}
+        summary = {
+            "saved": len(merged_saved),
+            "reads": int(read_row.get("total_account_reads") or 0),
+            "reads_imported": int(read_row.get("imported_reads") or 0),
+            "preferences": preference_mode,
+        }
+        st.session_state["alam_account_state"] = summary
+        st.session_state["alam_account_state_user"] = user_id
+        return summary, None
+    except Exception as exc:
+        return None, _safe_error(exc)
+
+
 def verify_email_code(code: str) -> tuple[dict | None, str | None]:
     email = str(st.session_state.get("alam_auth_pending_email") or "").strip().lower()
     token = "".join(ch for ch in str(code or "") if ch.isdigit())
@@ -295,6 +456,8 @@ def sign_out() -> None:
         "alam_account",
         "alam_account_link",
         "alam_account_link_error",
+        "alam_account_state",
+        "alam_account_state_user",
         "alam_auth_pending_email",
         "alam_pending_auth_storage",
     ):
@@ -305,8 +468,8 @@ def render_account_settings() -> None:
     """Render optional account controls without turning ALAM into a login wall."""
     st.markdown("### ALAM account")
     st.caption(
-        "Optional. Your browser-only ALAM profile keeps working without an account. "
-        "An account is for future cross-device Saved, preferences and reading state."
+        "Optional. Browser-only ALAM keeps working without an account. When signed in, "
+        "Saved articles, reading history and core preferences can follow you across browsers."
     )
 
     ready, stored_tokens, storage_error = _auth_storage_bridge()
@@ -317,16 +480,48 @@ def render_account_settings() -> None:
     if account:
         email = account.get("email") or "Signed-in user"
         st.success(f"Signed in as {email}")
+
+        sync_summary = st.session_state.get("alam_account_state")
+        synced_user = st.session_state.get("alam_account_state_user")
+        sync_error = None
+        if synced_user != account.get("user_id") or not isinstance(sync_summary, dict):
+            sync_summary, sync_error = synchronize_account_state()
+
+        if sync_error:
+            st.warning(
+                "Your email session is active, but ALAM could not finish syncing this browser yet. "
+                "Your local Saved and preferences were not deleted."
+            )
+            st.caption(sync_error)
+        elif isinstance(sync_summary, dict):
+            pref_text = "account preferences restored" if sync_summary.get("preferences") == "restored" else "browser preferences imported"
+            st.caption(
+                f"Cloud sync: {int(sync_summary.get('saved') or 0)} Saved · "
+                f"{int(sync_summary.get('reads') or 0)} reads · {pref_text}."
+            )
+            imported = int(sync_summary.get("reads_imported") or 0)
+            if imported:
+                st.caption(f"Preserved {imported} earlier anonymous article opens in your account history.")
+
         if st.session_state.get("alam_account_link_error"):
             st.warning(
                 "Your email session is active, but this browser's anonymous history has not been linked yet. "
                 "ALAM will not overwrite either identity automatically."
             )
         else:
-            st.caption("This browser identity is linked to your account without deleting anonymous history.")
+            st.caption("This browser identity is linked without deleting the anonymous audit history.")
         if storage_error:
             st.caption("This account is active for this visit, but this browser could not persist the session.")
-        if st.button("Sign out", key="alam_account_sign_out", use_container_width=True):
+
+        action_cols = st.columns(2)
+        if action_cols[0].button("Sync this browser now", key="alam_account_sync_now", use_container_width=True):
+            summary, error = synchronize_account_state()
+            if error:
+                st.error(error)
+            else:
+                st.toast("ALAM account state synced.")
+                st.rerun()
+        if action_cols[1].button("Sign out", key="alam_account_sign_out", use_container_width=True):
             sign_out()
             st.rerun()
         return
