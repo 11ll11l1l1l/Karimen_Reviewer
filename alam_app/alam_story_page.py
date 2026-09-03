@@ -11,6 +11,7 @@ import re
 
 import streamlit as st
 
+import alam_action_checklist as action_checklist
 import alam_evidence_views as evidence_views
 import alam_intelligence as intelligence
 import alam_learning_views as learning_views
@@ -157,6 +158,7 @@ def render_story_page(all_records, record, comments, manager=None):
         st.rerun()
 
     _render_answer_grid(normalized_record, all_records)
+    action_checklist.render_action_checklist(record, manager)
     _render_change(record, all_records)
     _render_disagreement_signal(record, comments)
     learning_views.render_learning_section(record)
