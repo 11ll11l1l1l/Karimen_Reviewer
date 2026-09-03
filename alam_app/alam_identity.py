@@ -198,18 +198,32 @@ def init_identity(manager=None, *, storage_device_id: str | None = None) -> dict
     if st.session_state.get("alam_identity_initialized"):
         return dict(st.session_state.get("alam_visitor") or {})
 
+    cookie_device_id = _cookie_get(manager)
     device_id = (
         _valid_device_id(st.session_state.get("alam_device_id"))
         or _valid_device_id(storage_device_id)
-        or _cookie_get(manager)
+        or cookie_device_id
     )
     if not device_id:
         # This UUID is session-only until onboarding succeeds. Registration then queues
         # durable localStorage + cookie writes before the next session can depend on it.
         device_id = _new_uuid()
-    st.session_state["alam_device_id"] = device_id
 
     visitor, error = _lookup(device_id)
+    if not visitor and cookie_device_id and cookie_device_id != device_id:
+        # A browser can retain an older localStorage UUID after a partial persistence
+        # transition while the native compatibility cookie still identifies the registered
+        # visitor. Recover through that already-trusted fallback instead of forcing the
+        # reader through onboarding again. render_onboarding() will then repair storage.
+        cookie_visitor, cookie_error = _lookup(cookie_device_id)
+        if cookie_visitor:
+            device_id = cookie_device_id
+            visitor = cookie_visitor
+            error = None
+        elif not error:
+            error = cookie_error
+
+    st.session_state["alam_device_id"] = device_id
     st.session_state["alam_identity_error"] = error
     st.session_state["alam_visitor"] = dict(visitor or {})
     st.session_state["alam_identity_initialized"] = True
