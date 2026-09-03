@@ -3,6 +3,7 @@
 from types import SimpleNamespace
 
 import alam_core
+import alam_saved_views as saved_views
 from alam_local_state import _advance_saved_snapshot, _sid
 from alam_saved_views import (
     DEFAULT_COLLECTION,
@@ -78,6 +79,34 @@ def test_collection_cookie_uses_hashed_story_keys():
     key = _collection_key("a-very-long-stable-story-id")
     assert len(key) == 12
     assert "story" not in key
+
+
+def test_failed_cloud_collection_write_cannot_revert_newer_browser_choice():
+    """A stale successful read must not undo a collection move whose write is retrying."""
+    story_id = "story-sync-failure"
+    story_key = _collection_key(story_id)
+    original_st = saved_views.st
+    original_cloud_collections = saved_views._cloud_collections
+    original_set_cloud_collection = saved_views._set_cloud_collection
+    fake_st = SimpleNamespace(
+        session_state={
+            "alam_saved_collections_loaded": True,
+            "alam_saved_collections": {story_key: "money"},
+            saved_views.PENDING_COLLECTIONS_STATE: {story_id: "money"},
+        }
+    )
+    try:
+        saved_views.st = fake_st
+        saved_views._cloud_collections = lambda saved_ids: ({story_id: DEFAULT_COLLECTION}, None)
+        saved_views._set_cloud_collection = lambda sid, collection: (False, "retry pending")
+        effective, error = saved_views._effective_collections([{"id": story_id}])
+        assert effective[story_id] == "money"
+        assert error == "retry pending"
+        assert fake_st.session_state[saved_views.PENDING_COLLECTIONS_STATE][story_id] == "money"
+    finally:
+        saved_views.st = original_st
+        saved_views._cloud_collections = original_cloud_collections
+        saved_views._set_cloud_collection = original_set_cloud_collection
 
 
 def test_native_cookies_restore_saved_state_without_optional_cookie_manager():
