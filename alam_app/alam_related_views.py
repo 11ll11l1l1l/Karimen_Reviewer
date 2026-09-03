@@ -31,6 +31,36 @@ def _category(row: tuple[Any, ...]) -> str:
     return str(other.get("_category") or "").strip().lower()
 
 
+def related_story_selection(
+    record: dict[str, Any], records: list[dict[str, Any]], limit: int = 3
+) -> tuple[list[tuple[Any, ...]], int | None]:
+    """Return related rows plus the index of an intentional diversity insertion.
+
+    The explicit insertion index matters to presentation correctness. A shelf may be
+    naturally diverse because the normal ranking already spans categories; in that
+    case the UI must not claim that ALAM replaced a slot to create diversity.
+    """
+    if limit <= 0:
+        return [], None
+    pool = intelligence.connected_stories(record, records, limit=max(limit, 12))
+    selected = list(pool[:limit])
+    if len(selected) < 2 or len(selected) < limit:
+        return selected, None
+
+    categories = [_category(row) for row in selected if _category(row)]
+    counts = Counter(categories)
+    if len(counts) != 1:
+        return selected, None
+
+    dominant = categories[0]
+    stretch = next((row for row in pool[limit:] if _category(row) and _category(row) != dominant), None)
+    if stretch is None:
+        return selected, None
+
+    selected[-1] = stretch
+    return selected, len(selected) - 1
+
+
 def related_story_candidates(record: dict[str, Any], records: list[dict[str, Any]], limit: int = 3):
     """Return evidence-backed connections while avoiding a one-category echo shelf.
 
@@ -40,36 +70,17 @@ def related_story_candidates(record: dict[str, Any], records: list[dict[str, Any
     unrelated story because every candidate has already passed the shared-signal
     relationship test.
     """
-    if limit <= 0:
-        return []
-    pool = intelligence.connected_stories(record, records, limit=max(limit, 12))
-    selected = list(pool[:limit])
-    if len(selected) < 2 or len(selected) < limit:
-        return selected
-
-    categories = [_category(row) for row in selected if _category(row)]
-    counts = Counter(categories)
-    if len(counts) != 1:
-        return selected
-
-    dominant = categories[0]
-    stretch = next((row for row in pool[limit:] if _category(row) and _category(row) != dominant), None)
-    if stretch is None:
-        return selected
-
-    selected[-1] = stretch
+    selected, _stretch_index = related_story_selection(record, records, limit=limit)
     return selected
 
 
 def render_related_stories(record: dict[str, Any], records: list[dict[str, Any]]) -> None:
-    related = related_story_candidates(record, records, limit=3)
+    related, stretch_index = related_story_selection(record, records, limit=3)
     if not related:
         return
 
     st.markdown(RELATED_CSS, unsafe_allow_html=True)
-    categories = [_category(row) for row in related if _category(row)]
-    diversified = len(set(categories)) > 1
-    diversity_note = " ALAM keeps one evidence-connected story from a different category when the strongest links would otherwise all come from one lane." if diversified else ""
+    diversity_note = " ALAM keeps one evidence-connected story from a different category when the strongest links would otherwise all come from one lane." if stretch_index is not None else ""
     st.markdown(
         "<div class='related-shell'><div class='related-head'>Connected intelligence</div>"
         "<div class='related-sub'>Other validated ALAM stories sharing explicit tags/signals. "
@@ -77,13 +88,12 @@ def render_related_stories(record: dict[str, Any], records: list[dict[str, Any]]
         unsafe_allow_html=True,
     )
 
-    first_category = _category(related[0]) if related else ""
     for index, (_overlap_count, _score, other, overlap) in enumerate(related):
         meta = category_meta(other)
         signals = "".join(
             f"<span class='related-signal'>{esc(str(signal))}</span>" for signal in overlap[:4]
         )
-        stretch_label = "<div class='related-stretch'>Different lens · still connected by evidence</div>" if index > 0 and first_category and _category(related[index]) != first_category else ""
+        stretch_label = "<div class='related-stretch'>Different lens · still connected by evidence</div>" if index == stretch_index else ""
         st.markdown(
             "<div class='related-card'>"
             "<div class='related-top'>"
