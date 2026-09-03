@@ -11,6 +11,7 @@ from __future__ import annotations
 from collections import Counter
 import streamlit as st
 
+import alam_action_checklist as action_checklist
 import alam_daily_brief as daily_brief
 import alam_intelligence as intelligence
 import alam_local_state as localstate
@@ -28,11 +29,16 @@ TODAY_CSS = r"""
 .today-action-body{font-size:.78rem;line-height:1.43;color:#475467;margin-top:6px}
 .today-action-meta{font-size:.64rem;color:#98A2B3;margin-top:8px}
 .today-empty{font-size:.76rem;line-height:1.4;color:#98A2B3;margin-top:7px}
+.today-resume{border:1px solid rgba(8,125,91,.15);background:rgba(8,125,91,.045);border-radius:16px;padding:12px 13px;margin:8px 0 7px}
+.today-resume-kicker{font-size:.63rem;font-weight:950;letter-spacing:.07em;text-transform:uppercase;color:#087454}
+.today-resume-head{font-size:.9rem;line-height:1.28;font-weight:900;color:#17202A;margin-top:4px}
+.today-resume-next{font-size:.78rem;line-height:1.43;color:#344054;margin-top:5px}
+.today-resume-meta{font-size:.65rem;color:#667085;margin-top:7px}
 .today-discover-head{display:flex;align-items:end;justify-content:space-between;gap:10px;margin:20px 0 8px}.today-discover-head strong{font-size:1.2rem}.today-discover-head span{font-size:.72rem;color:#98A2B3}
 .today-caught-up{border:1px solid rgba(8,125,91,.13);background:rgba(8,125,91,.07);border-radius:14px;padding:9px 11px;margin:8px 0 12px;font-size:.76rem;line-height:1.4;color:#087454}
 .today-stretch{border:1px solid rgba(89,104,242,.14);background:rgba(89,104,242,.06);border-radius:14px;padding:9px 11px;margin:7px 0 10px;font-size:.74rem;line-height:1.4;color:#475467}.today-stretch strong{color:#3949ab}
 @media(max-width:900px){.today-action-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:560px){.today-action-grid{grid-template-columns:1fr}.today-action-card{padding:12px}.today-priority-title{font-size:1.05rem}.today-discover-head{align-items:flex-start;flex-direction:column;gap:2px}}
+@media(max-width:560px){.today-action-grid{grid-template-columns:1fr}.today-action-card{padding:12px}.today-priority-title{font-size:1.05rem}.today-discover-head{align-items:flex-start;flex-direction:column;gap:2px}.today-resume{padding:11px 12px}}
 </style>
 """
 
@@ -88,6 +94,86 @@ def _render_action_priorities(records):
         for col, (label, record) in zip(button_cols, active):
             if col.button(f"Open {label.title()} →", key=f"today_lane_{label}_{record.get('id')}", use_container_width=True):
                 _open_story(record)
+
+
+def _resume_items(records, progress=None, limit=2):
+    """Return recently touched, genuinely in-progress validated action plans.
+
+    Browser action state is ordered oldest-to-newest by the checklist persistence
+    layer, so scanning it backward provides a deterministic "continue where I left
+    off" queue without inventing urgency. A story qualifies only when at least one
+    currently valid step is complete and at least one currently valid step remains.
+    Materially changed steps have different identities and therefore cannot inherit
+    stale completion state into this lane.
+    """
+    progress = action_checklist._normalize_progress(
+        action_checklist._load_progress() if progress is None else progress
+    )
+    if not progress:
+        return []
+
+    by_story = {
+        action_checklist._story_key(record.get("id")): record
+        for record in records
+        if isinstance(record, dict) and record.get("id") is not None
+    }
+    items = []
+    for story_key in reversed(list(progress)):
+        record = by_story.get(story_key)
+        if not record:
+            continue
+        plan = action_checklist.action_plan(record)
+        if not plan:
+            continue
+        valid = {step["key"] for step in plan["steps"]}
+        completed = set(progress.get(story_key, [])) & valid
+        if not completed or len(completed) >= len(valid):
+            continue
+        focus = action_checklist.action_focus(record, completed)
+        if not focus or focus.get("complete") or not focus.get("next"):
+            continue
+        items.append(
+            {
+                "record": record,
+                "done": len(completed),
+                "total": len(valid),
+                "focus": focus,
+            }
+        )
+        if len(items) >= max(1, int(limit)):
+            break
+    return items
+
+
+def _render_action_resume(records):
+    items = _resume_items(records)
+    if not items:
+        return
+
+    st.markdown('<div class="today-priority-title">Continue your actions</div>', unsafe_allow_html=True)
+    st.markdown('<div class="today-priority-copy">Plans you already started, resumed from the first unfinished article-supplied step. ALAM does not create extra urgency or new instructions here.</div>', unsafe_allow_html=True)
+    for item in items:
+        record = item["record"]
+        focus = item["focus"]
+        next_step = focus["next"]
+        effort = ""
+        if focus.get("remaining_minutes") is not None:
+            effort = f" · ~{focus['remaining_minutes']} min remaining"
+        st.markdown(
+            f'<div class="today-resume">'
+            f'<div class="today-resume-kicker">In progress · {item["done"]}/{item["total"]} complete</div>'
+            f'<div class="today-resume-head">{esc(record.get("title", ""))}</div>'
+            f'<div class="today-resume-next"><strong>Next verified step:</strong> {esc(next_step.get("title", ""))} — {esc(next_step.get("action", ""))}</div>'
+            f'<div class="today-resume-meta">{focus["remaining"]} step{"s" if focus["remaining"] != 1 else ""} left{esc(effort)}</div>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
+        if st.button(
+            "Continue this plan →",
+            key=f"today_resume_{record.get('id')}",
+            use_container_width=True,
+        ):
+            _open_story(record)
 
 
 def _category(record):
@@ -157,6 +243,7 @@ def render_today(records, all_records, comments, manager, views, reader):
         if record:
             action_picks.append(record)
     _render_action_priorities(records)
+    _render_action_resume(records)
     reader.render_inbox(records, all_records, manager)
 
     unread_count = sum(1 for record in records if localstate.is_unread(record))
