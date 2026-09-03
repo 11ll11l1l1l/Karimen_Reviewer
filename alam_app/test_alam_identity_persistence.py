@@ -47,6 +47,14 @@ def main():
     original_core_stx = core.stx
     original_local_st = localstate.st
     try:
+        # The runtime deliberately degrades when this optional import is unavailable, but
+        # production identity persistence now depends on it. Keep CI from masking a
+        # missing deployment dependency by replacing ``None`` with the fake below.
+        assert original_identity_js is not None, (
+            "streamlit-js-eval must be installed; otherwise durable localStorage "
+            "device recognition silently falls back to cookies only."
+        )
+
         native_id = "805b1bcf-943e-4e07-9c3f-5bef33ac18b8"
         storage_id = "15ca5b5f-5ddb-49f1-a793-636f5f5e91c4"
 
