@@ -29,6 +29,24 @@ def test_concentrated_personalized_shelf_reserves_one_outside_category():
     _with_test_ranking(run)
 
 
+def test_stretch_must_add_a_category_not_already_on_the_shelf():
+    def run():
+        records = [
+            _record("p1", "practical", 100, 60), _record("p2", "practical", 99, 59),
+            _record("p3", "practical", 98, 58), _record("p4", "practical", 97, 57),
+            _record("p5", "practical", 96, 56), _record("t1", "trend", 95, 55),
+            # This duplicate Trend candidate has the strongest shared score, but choosing
+            # it would not actually broaden the shelf. Discover is the true stretch.
+            _record("t2", "trend", 20, 100), _record("d1", "discover", 19, 90),
+        ]
+        chosen, stretch = today._discover_pool(records, set(), limit=6)
+        assert stretch is not None
+        assert stretch["id"] == "d1"
+        assert chosen[-1]["id"] == "d1"
+        assert {_item["_category"] for _item in chosen} == {"practical", "trend", "discover"}
+    _with_test_ranking(run)
+
+
 def test_already_diverse_shelf_is_not_rewritten():
     def run():
         records = [
