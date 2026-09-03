@@ -90,6 +90,24 @@ def _assert_restore_rotates_persisted_pair():
         alam_auth.create_client = original_create_client
 
 
+def _assert_auth_project_guard_rejects_wrong_project():
+    original_credentials = alam_auth._credentials
+    alam_auth._credentials = lambda: (
+        "https://zkfmgezvzugchcwppreq.supabase.co",
+        "sb_publishable_test",
+    )
+    try:
+        alam_runtime_safety._install_supabase_project_guard()
+        try:
+            alam_auth._credentials()
+        except RuntimeError as exc:
+            assert "unexpected Supabase project" in str(exc)
+        else:
+            raise AssertionError("Auth credentials accepted the retired Supabase project")
+    finally:
+        alam_auth._credentials = original_credentials
+
+
 def _assert_sign_out_queues_browser_clear():
     original_st = alam_auth.st
     fake_state = {
@@ -190,6 +208,7 @@ def main():
 
     _assert_stale_account_fails_closed()
     _assert_restore_rotates_persisted_pair()
+    _assert_auth_project_guard_rejects_wrong_project()
     _assert_sign_out_queues_browser_clear()
     _assert_saved_normalization_is_bounded_and_stable()
     _assert_cloud_preferences_do_not_delete_local_history()
