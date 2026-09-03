@@ -73,6 +73,8 @@ jobs:
         run: python alam_app/test_alam_auth_contract.py
       - name: Live linked-account read mirror regression test
         run: python alam_app/test_alam_live_read_mirror.py
+      - name: Ask ALAM grounding regression test
+        run: python alam_app/test_alam_ask.py
       - name: Accessibility contract regression test
         run: python alam_app/test_alam_accessibility.py
       - name: Verified audit overlay regression test
