@@ -63,6 +63,8 @@ jobs:
         run: python alam_app/test_alam_article_scope.py
       - name: Persistent device recognition regression test
         run: python alam_app/test_alam_identity_persistence.py
+      - name: Optional account Auth contract regression test
+        run: python alam_app/test_alam_auth_contract.py
       - name: Accessibility contract regression test
         run: python alam_app/test_alam_accessibility.py
       - name: Verified audit overlay regression test
