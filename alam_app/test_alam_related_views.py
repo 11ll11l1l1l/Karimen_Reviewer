@@ -1,4 +1,4 @@
-from alam_related_views import related_story_candidates
+from alam_related_views import related_story_candidates, related_story_selection
 
 
 def _story(story_id, tags, category="discover", importance=70):
@@ -50,13 +50,14 @@ def test_concentrated_related_shelf_reserves_one_evidence_connected_different_le
             _story("family-lens", ["yen"], "practical", 75),
         ]
     )
-    selected = related_story_candidates(base, rows, limit=3)
+    selected, stretch_index = related_story_selection(base, rows, limit=3)
     assert [row[2]["id"] for row in selected[:2]] == ["money-1", "money-2"]
     assert selected[-1][2]["id"] == "family-lens"
     assert selected[-1][3] == ["yen"]
+    assert stretch_index == 2
 
 
-def test_already_diverse_related_shelf_keeps_original_ranking():
+def test_already_diverse_related_shelf_keeps_original_ranking_without_stretch_attribution():
     base = _story("base", ["yen", "household"])
     rows = [
         base,
@@ -65,5 +66,6 @@ def test_already_diverse_related_shelf_keeps_original_ranking():
         _story("discover", ["yen", "household"], "discover", 90),
         _story("extra", ["yen"], "trend", 80),
     ]
-    selected = related_story_candidates(base, rows, limit=3)
+    selected, stretch_index = related_story_selection(base, rows, limit=3)
     assert [row[2]["id"] for row in selected] == ["money", "family", "discover"]
+    assert stretch_index is None
