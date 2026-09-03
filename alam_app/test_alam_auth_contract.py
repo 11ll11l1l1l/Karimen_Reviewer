@@ -3,6 +3,7 @@
 import ast
 import inspect
 from pathlib import Path
+from types import SimpleNamespace
 
 import alam_auth
 import alam_runtime_safety
@@ -35,6 +36,20 @@ def _called_names(function_source: str) -> set[str]:
     return names
 
 
+def _assert_stale_account_fails_closed():
+    """A UI identity summary must never outlive its session-bound Auth client."""
+    original_st = alam_auth.st
+    fake_state = {
+        "alam_account": {"user_id": "stale-user", "email": "stale@example.com"}
+    }
+    alam_auth.st = SimpleNamespace(session_state=fake_state)
+    try:
+        assert alam_auth.refresh_account() == {}
+        assert "alam_account" not in fake_state
+    finally:
+        alam_auth.st = original_st
+
+
 def main():
     auth_source = inspect.getsource(alam_auth)
     client_source = inspect.getsource(alam_auth.get_auth_client)
@@ -51,6 +66,7 @@ def main():
     assert "alam_link_current_account" in auth_source
     assert "Anonymous ALAM" in settings_source or "browser-only ALAM" in settings_source
     assert "render_account_settings" in runtime_source
+    _assert_stale_account_fails_closed()
 
     migration = (
         Path(__file__).resolve().parents[1]

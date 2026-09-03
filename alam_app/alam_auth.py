@@ -80,8 +80,13 @@ def _set_account_from_user(user) -> dict:
 
 def refresh_account() -> dict:
     """Verify the server-side Auth session; expired/revoked sessions fail closed."""
-    if not st.session_state.get("alam_auth_client"):
-        return account_summary()
+    if st.session_state.get("alam_auth_client") is None:
+        # ``alam_account`` is only a UI summary, never proof of authentication. If the
+        # session-bound Auth client is gone (for example after partial cleanup or a new
+        # Streamlit session), discard any stale summary instead of rendering a false
+        # signed-in state that cannot make authenticated Supabase requests.
+        st.session_state.pop("alam_account", None)
+        return {}
     try:
         response = get_auth_client().auth.get_user()
         return _set_account_from_user(getattr(response, "user", None))
