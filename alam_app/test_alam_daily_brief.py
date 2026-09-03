@@ -50,7 +50,7 @@ def main():
         saved_update_predicate=lambda item: False,
         relevance_fn=relevance,
     )
-    assert [label for label, _ in rows] == ["DO", "WATCH", "KNOW"] or [label for label, _ in rows] == ["DO", "WATCH", "KNOW"]
+    assert [label for label, _ in rows] == ["DO", "WATCH", "KNOW"]
     assert len({item["id"] for _, item in rows}) == len(rows) == 3
 
     sparse = [
@@ -66,6 +66,29 @@ def main():
     assert len(rows) == 3
     assert len({item["id"] for _, item in rows}) == 3
     assert any(item["_category"] == "reflection" for _, item in rows), "Fallback must retain cross-category breadth."
+
+    # v5 records can legitimately use semantic/nested score forms. Runtime safety
+    # already hardens the main feed score, but the briefing's own fallback and
+    # explanation paths must not reintroduce direct float() crashes.
+    assert brief._importance_score(record("semantic", "discover", "HIGH")) == 80.0
+    assert brief._importance_score(record("nested", "discover", {"score": "92"})) == 92.0
+    original_feed_score = brief.feed_score
+    brief.feed_score = lambda item: 50.0
+    try:
+        semantic_sparse = [
+            record("semantic", "discover", "HIGH"),
+            record("other", "reflection", "MEDIUM"),
+            record("extra", "discover", {"score": "92"}),
+        ]
+        rows = brief.select_daily_brief_rows(
+            semantic_sparse,
+            saved_update_predicate=lambda item: False,
+            relevance_fn=lambda item: 50,
+        )
+        assert len(rows) == 3
+        assert {item["id"] for _, item in rows} == {"semantic", "other", "extra"}
+    finally:
+        brief.feed_score = original_feed_score
 
     assert brief.select_daily_brief_rows([], saved_update_predicate=lambda item: False, relevance_fn=relevance) == []
     print("ALAM daily briefing selection regression checks passed")
