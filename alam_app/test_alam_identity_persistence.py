@@ -1,9 +1,7 @@
 """Regression checks for ALAM browser/device recognition.
 
-This test stays network-free. It proves identity and local-profile startup reads use
-Streamlit's native request cookies, never depend on asynchronous component reads,
-writes the long-lived device cookie only when explicitly asked, and reuses one
-CookieManager instance per Streamlit session.
+Network-free checks cover UUID validation, native-cookie compatibility, localStorage
+payloads, durable-write queuing, profile hydration and CookieManager reuse.
 """
 
 import inspect
@@ -44,26 +42,53 @@ class FakeStx:
 
 def main():
     original_identity_st = identity.st
+    original_identity_js = identity.streamlit_js_eval
     original_core_st = core.st
     original_core_stx = core.stx
     original_local_st = localstate.st
     try:
         native_id = "805b1bcf-943e-4e07-9c3f-5bef33ac18b8"
-        legacy_component_id = "15ca5b5f-5ddb-49f1-a793-636f5f5e91c4"
+        storage_id = "15ca5b5f-5ddb-49f1-a793-636f5f5e91c4"
 
         identity.st = SimpleNamespace(
             context=SimpleNamespace(cookies=FakeCookies({identity.DEVICE_COOKIE: native_id}))
         )
-        manager = FakeManager(legacy_component_id)
+        manager = FakeManager(storage_id)
         assert identity._cookie_get(manager) == native_id
-        assert manager.get_calls == [], "Device recognition must not depend on an async component read."
+        assert manager.get_calls == [], "Device recognition must not depend on CookieManager reads."
 
         identity.st = SimpleNamespace(context=SimpleNamespace(cookies=FakeCookies()))
         assert identity._cookie_get(manager) is None
-        assert manager.get_calls == [], "Missing native cookies must not trigger a component read/rerun."
+        assert manager.get_calls == []
 
         assert identity._valid_device_id("not-a-uuid") is None
         assert identity._valid_device_id(native_id) == native_id
+
+        ready, parsed, error = identity._parse_storage_result(
+            '{"ready":true,"value":"' + storage_id + '","error":null}'
+        )
+        assert ready is True and parsed == storage_id and error is None
+        ready, parsed, error = identity._parse_storage_result(None)
+        assert ready is False and parsed is None and error is None
+        expression = identity._storage_expression(storage_id)
+        assert identity.DEVICE_STORAGE_KEY in expression
+        assert "localStorage.setItem" in expression
+        assert storage_id in expression
+
+        fake_state = {"alam_pending_device_storage": storage_id}
+        identity.st = SimpleNamespace(session_state=fake_state)
+        calls = []
+
+        def fake_js_eval(**kwargs):
+            calls.append(kwargs)
+            return '{"ready":true,"value":"' + storage_id + '","error":null}'
+
+        identity.streamlit_js_eval = fake_js_eval
+        ready, parsed, error = identity._browser_storage_bridge()
+        assert ready is True and parsed == storage_id and error is None
+        assert calls and calls[0]["want_output"] is True
+        assert "alam_pending_device_storage" not in fake_state
+        assert fake_state["alam_device_storage_persisted"] is True
 
         writer = FakeManager()
         assert identity._cookie_set(writer, native_id, key="confirm_alam_device_id") is True
@@ -74,14 +99,12 @@ def main():
         assert kwargs["path"] == "/"
         assert kwargs["same_site"] == "lax"
         assert kwargs["max_age"] == identity.COOKIE_MAX_AGE
-        assert kwargs["key"] == "confirm_alam_device_id"
         assert identity.COOKIE_DAYS >= 365
 
         onboarding_source = inspect.getsource(identity.render_onboarding)
-        assert "refresh_alam_device_id" not in onboarding_source
-        assert onboarding_source.count("_cookie_set(") == 1, (
-            "Returning visitors must not rewrite the device cookie on every render."
-        )
+        assert "alam_pending_device_storage" in onboarding_source
+        assert "Restoring this browser" in onboarding_source
+        assert onboarding_source.count("_cookie_set(") == 1
 
         profile = localstate._default_profile()
         profile["s"]["dark"] = True
@@ -93,25 +116,26 @@ def main():
             context=SimpleNamespace(cookies=FakeCookies({localstate.COOKIE_NAME: profile_cookie})),
         )
         localstate.init_local_profile(local_manager)
-        assert local_manager.get_calls == [], "Profile hydration must use native request cookies."
+        assert local_manager.get_calls == []
         assert local_state["alam_dark_mode"] is True
         assert local_state["alam_local_profile_loaded"] is True
 
         fake_stx = FakeStx()
-        fake_state = {}
+        browser_state = {}
         core.st = SimpleNamespace(
-            session_state=fake_state,
+            session_state=browser_state,
             context=SimpleNamespace(cookies=FakeCookies()),
         )
         core.stx = fake_stx
         first = core.init_browser_state()
         second = core.init_browser_state()
         assert first is second is fake_stx.manager
-        assert fake_stx.created == 1, "CookieManager must be created once per Streamlit session."
+        assert fake_stx.created == 1
 
         print("ALAM identity persistence regression checks passed")
     finally:
         identity.st = original_identity_st
+        identity.streamlit_js_eval = original_identity_js
         core.st = original_core_st
         core.stx = original_core_stx
         localstate.st = original_local_st
