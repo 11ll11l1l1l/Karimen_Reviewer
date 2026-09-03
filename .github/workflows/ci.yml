@@ -2,7 +2,11 @@ name: Japan Driving License Reviewer v5.3 checks
 
 on:
   push:
+    paths-ignore:
+      - 'alam_app/data/**'
   pull_request:
+    paths-ignore:
+      - 'alam_app/data/**'
 
 jobs:
   test:
@@ -13,6 +17,16 @@ jobs:
         with:
           python-version: '3.12'
           cache: 'pip'
+      - name: Workflow isolation regression guard
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          workflow = Path('.github/workflows/ci.yml').read_text(encoding='utf-8')
+          assert workflow.count("- 'alam_app/data/**'") >= 2, (
+              'Reviewer CI must ignore ALAM content-only pushes and pull requests; '
+              'ALAM data validation/sync is owned by the ALAM workflows.'
+          )
+          PY
       - name: Install dependencies
         run: python -m pip install --upgrade pip && pip install -r requirements.txt
       - name: Compile
