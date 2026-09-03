@@ -1,4 +1,5 @@
 import base64
+import hashlib
 import zlib
 from types import SimpleNamespace
 
@@ -91,6 +92,25 @@ def test_cookie_codec_is_bounded_and_rejects_corruption():
     oversized_json = b'{"story":["' + (b"x" * (checklist.MAX_COOKIE_JSON_BYTES + 256)) + b'"]}'
     bomb = base64.urlsafe_b64encode(zlib.compress(oversized_json, 9)).decode("ascii").rstrip("=")
     assert checklist._decode(bomb) == {}
+
+
+def test_cookie_persistence_evicts_oldest_stories_before_value_budget():
+    raw = {}
+    for story_index in range(checklist.MAX_STORIES):
+        story = hashlib.sha1(f"story-{story_index}".encode()).hexdigest()[:12]
+        raw[story] = [
+            hashlib.sha1(f"story-{story_index}-step-{step_index}".encode()).hexdigest()[:16]
+            for step_index in range(checklist.MAX_STEPS)
+        ]
+
+    assert len(checklist._encode(raw).encode("ascii")) > checklist.MAX_COOKIE_VALUE_BYTES
+    encoded = checklist._encode_for_cookie(raw)
+    persisted = checklist._decode(encoded)
+
+    assert len(encoded.encode("ascii")) <= checklist.MAX_COOKIE_VALUE_BYTES
+    assert list(raw)[-1] in persisted
+    assert list(raw)[0] not in persisted
+    assert len(persisted) < len(raw)
 
 
 def test_cached_session_progress_is_normalized_before_render(monkeypatch):
