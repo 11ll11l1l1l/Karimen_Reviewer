@@ -1,0 +1,234 @@
+{
+  "id": "japan-pension-support-benefit-claim-2026",
+  "agent": "practical",
+  "created_at": "2026-09-03T13:11:14+09:00",
+  "type": "benefit",
+  "title": "Green pension-support envelopes are arriving: claim them instead of leaving money unclaimed",
+  "summary": "Japan Pension Service began sending 2026 pension-support benefit claim forms from September 1 to people newly expected to qualify. If the green envelope arrives, the benefit is not automatic until you submit the claim, while existing recipients who still qualify generally do not need to reapply.",
+  "why_it_matters": "For eligible low-income pension recipients, this is recurring money added to the ordinary pension rather than a one-time campaign. The practical failure mode is simple: a genuine benefit can be missed because the green envelope looks like routine pension mail and gets ignored.",
+  "importance": 88,
+  "confidence": 98,
+  "tags": ["Japan", "Pension", "Benefit", "年金生活者支援給付金", "Household Money", "2026"],
+  "geography": ["Japan"],
+  "status": "NEW",
+  "sources": [
+    {
+      "publisher": "Japan Pension Service",
+      "title": "年金生活者支援給付金請求書（はがき型）が届いた方へ",
+      "url": "https://www.nenkin.go.jp/service/jukyu/tetsuduki/sonota-kyufu/shienkyufukin/seikyu/ta.html",
+      "published_at": "2026-09-01",
+      "source_type": "official"
+    },
+    {
+      "publisher": "Ministry of Health, Labour and Welfare",
+      "title": "年金生活者支援給付金制度について",
+      "url": "https://www.mhlw.go.jp/nenkinkyuufukin/system.html",
+      "published_at": "2026-09-01",
+      "source_type": "official"
+    },
+    {
+      "publisher": "Ministry of Health, Labour and Welfare",
+      "title": "年金生活者支援給付金制度 特設サイト",
+      "url": "https://www.mhlw.go.jp/nenkinkyuufukin/nenkinsupport.html",
+      "published_at": "2026-09-01",
+      "source_type": "official"
+    }
+  ],
+  "claims": [
+    {
+      "kind": "FACT",
+      "text": "Japan Pension Service began sending postcard-style pension-support benefit claim forms from the first business day of September to basic-pension recipients newly expected to qualify.",
+      "source_refs": [1],
+      "basis": "Japan Pension Service 2026 mailing notice"
+    },
+    {
+      "kind": "FACT",
+      "text": "A recipient can submit the postcard claim electronically if eligible for the electronic process, or by mail; a mailed postcard requires the claimant to fill in the requested details, apply the privacy sticker and postage, and post it.",
+      "source_refs": [1],
+      "basis": "Japan Pension Service submission instructions"
+    },
+    {
+      "kind": "FACT",
+      "text": "For old-age basic-pension recipients, the 2026 support amount is based on a monthly ¥5,620 reference amount and is adjusted by contribution and exemption periods; eligibility includes age 65+, receipt of old-age basic pension, a municipal-tax-exempt household, and income below the applicable threshold.",
+      "source_refs": [2],
+      "basis": "MHLW 2026 eligibility and calculation rules"
+    },
+    {
+      "kind": "FACT",
+      "text": "For disability basic pension, the 2026 support amount is ¥7,025 per month for grade 1 and ¥5,620 for grade 2; survivor basic-pension support uses a ¥5,620 monthly amount subject to the applicable rules.",
+      "source_refs": [2],
+      "basis": "MHLW 2026 benefit amounts"
+    },
+    {
+      "kind": "FACT",
+      "text": "People already receiving the pension-support benefit who continue to meet eligibility generally do not need to submit a new claim every year.",
+      "source_refs": [2, 3],
+      "basis": "MHLW/Japan Pension Service continuation guidance"
+    },
+    {
+      "kind": "INFERENCE",
+      "text": "The highest-value immediate action is to help an elderly or disabled family member recognize and submit a genuine green claim envelope rather than assuming the payment will start automatically.",
+      "source_refs": [1, 3],
+      "basis": "Inference from the requirement for newly eligible recipients to submit a claim and MHLW family guidance"
+    }
+  ],
+  "editorial_visual": {
+    "style": "editorial",
+    "motif": "document",
+    "secondary_motif": "yen",
+    "scene": "a restrained green pension envelope on a Japanese household table beside a pension booklet and a small stack of yen coins, with a clear path from envelope to mailbox and no readable personal information",
+    "caption": "One piece of pension mail can unlock a recurring payment",
+    "silliness": 3,
+    "exaggeration": 28
+  },
+  "content": {
+    "key_message": "If a green Japan Pension Service pension-support claim envelope arrives this September, do not file it away: newly eligible recipients must submit the claim to start receiving the benefit.",
+    "who_is_affected": "People newly expected to qualify for 年金生活者支援給付金 (Pensioner Support Benefit), including some recipients of old-age basic pension, disability basic pension and survivor basic pension. Existing recipients who still satisfy the rules generally do not need to reapply.",
+    "when": "Japan Pension Service started sending the 2026 postcard-style claim forms from September 1, 2026. The 2026 annual eligibility determination is reflected from October 2026 through September 2027.",
+    "financial_impact": "For old-age recipients, ¥5,620 per month is the 2026 reference amount before adjustment for contribution/exemption history. Disability grade 1 uses ¥7,025 per month and grade 2 ¥5,620; survivor support uses ¥5,620 under its rules. Actual old-age payment can differ from the reference amount, and supplemental old-age benefit can also be lower depending on income.",
+    "estimated_saving_yen": null,
+    "time_minutes": 10,
+    "travel_minutes": 0,
+    "risk_if_ignored": "A newly eligible person may delay or miss benefit payments because the payment does not simply begin from receiving the envelope; a claim must be submitted.",
+    "action": "DO NOW",
+    "deadline": "Use the deadline printed on the claim postcard and submit as early as practical. Japan Pension Service says a claim can still be possible after the printed deadline, but late submission can affect the period from which payment starts.",
+    "effort": "Low: check the envelope, verify the claimant information, then submit electronically when available or mail the completed postcard.",
+    "potential_benefit": "Recurring monthly support paid alongside the pension while eligibility continues, rather than a one-time payment.",
+    "downside": "Do not respond to unsolicited calls, SMS or emails demanding money or bank transfers. Official guidance says the real claim does not require you to send money to receive the benefit.",
+    "what_would_change_mind": "A Japan Pension Service notice materially changing the 2026 mailing process, eligibility thresholds, claim requirement, payment start rules or benefit amounts.",
+    "usefulness": 97,
+    "novelty": 74,
+    "impact": {
+      "money": "HIGH",
+      "family": "HIGH",
+      "career": "LOW",
+      "japan": "MED",
+      "urgency": "HIGH"
+    },
+    "connection_tags": ["pension-benefit", "low-income-support", "household-cashflow", "paperwork-risk"],
+    "reading_levels": {
+      "30 sec": {
+        "what_happened": "Japan started mailing this year's green pension-support claim forms to newly eligible people on September 1.",
+        "why_it_matters": "For new recipients, the benefit requires a claim; ignoring the envelope can delay money that may continue monthly while eligibility remains.",
+        "what_to_do_watch": "If the green envelope arrives, verify it as Japan Pension Service mail and submit the claim promptly by the official electronic or postal route.",
+        "bottom_line": "Do not mistake this for routine pension paperwork: for a newly eligible person, it is the step that starts the benefit."
+      },
+      "2_min": "年金生活者支援給付金 is an additional payment for qualifying low-income pension recipients. Japan Pension Service began this year's mailing on September 1 to people newly expected to qualify. The claim arrives in a green envelope and can be submitted electronically in eligible cases or by completing and mailing the postcard. Existing recipients who remain eligible generally do not repeat the process every year. For old-age pensioners, the 2026 amount is calculated from a ¥5,620 monthly reference and depends on contribution history and income; disability and survivor versions have their own fixed reference amounts and eligibility tests. The important practical distinction is between receiving the envelope and receiving the benefit: newly eligible recipients still need to submit the claim."
+    },
+    "learning": {
+      "outcomes": [
+        "Recognize what the green pension-support envelope is and why it is not merely informational mail.",
+        "Distinguish a newly eligible claimant from an existing recipient who generally does not need to reapply."
+      ],
+      "background": "Japan's Pensioner Support Benefit (年金生活者支援給付金) is an additional public payment for certain pension recipients with low income. It is paid separately from the pension but normally to the same bank account on the same payment date. Eligibility is reviewed using pension type, income and other conditions; for old-age basic pension recipients, household municipal-tax status is also part of the test.",
+      "terms": [
+        {
+          "term": "年金生活者支援給付金",
+          "meaning": "A government support payment added for certain low-income recipients of old-age, disability or survivor basic pensions.",
+          "why_it_matters": "It can provide recurring support beyond the ordinary pension amount."
+        },
+        {
+          "term": "老齢基礎年金",
+          "meaning": "Japan's basic old-age pension paid under the National Pension system when the applicable eligibility rules are met.",
+          "why_it_matters": "One branch of the support benefit is designed for qualifying low-income recipients of this pension."
+        }
+      ],
+      "how_it_works": [
+        {
+          "title": "Japan Pension Service identifies likely new recipients",
+          "explanation": "Using available pension and income-related information, Japan Pension Service sends a claim form to people newly expected to qualify. Some cases that cannot be confirmed automatically may receive a different form requesting additional income information."
+        },
+        {
+          "title": "The claimant must submit the form",
+          "explanation": "Receiving the green envelope is not the same as completing the claim. The postcard can be submitted through the official electronic route when available or completed and mailed according to the enclosed instructions."
+        },
+        {
+          "title": "Payment continues while the person remains eligible",
+          "explanation": "Once approved, the benefit is paid on the pension schedule. Existing recipients are generally rechecked using annual income information and do not submit a fresh claim every year unless eligibility was lost and later regained or another specific procedure becomes necessary."
+        }
+      ],
+      "example": "A 70-year-old low-income old-age basic-pension recipient who newly falls within the 2026 eligibility rules may receive the green claim envelope this September. If the form is genuine and completed, the approved support is paid alongside the pension; simply keeping the envelope without submitting it does not complete the claim.",
+      "takeaways": [
+        "Green claim envelopes started going out September 1.",
+        "Newly eligible recipients need to claim; existing continuing recipients generally do not reapply.",
+        "Old-age support uses ¥5,620 per month as the 2026 reference amount, but the actual amount can vary.",
+        "Use only Japan Pension Service/MHLW channels and never pay someone to unlock the benefit.",
+        "If the envelope is lost, Japan Pension Service provides a downloadable A4 claim route through a pension office."
+      ]
+    },
+    "action_plan": {
+      "goal": "Submit a genuine pension-support benefit claim promptly and safely so an eligible recipient does not leave recurring support unclaimed.",
+      "who_should_act": "Anyone who receives the green Japan Pension Service envelope for 年金生活者支援給付金, or a family member helping that recipient. People already receiving the benefit and still eligible generally do not need to submit a new annual claim.",
+      "deadline": "Follow the deadline printed on the postcard; submit early rather than relying on late-claim rules.",
+      "prepare": [
+        "The green envelope and enclosed claim postcard.",
+        "The recipient's pension information and current contact details if needed for verification.",
+        "A postage stamp if using the postal postcard route."
+      ],
+      "steps": [
+        {
+          "step": "Verify the envelope",
+          "action": "Confirm the sender is Japan Pension Service and that the document is the pension-support benefit claim form.",
+          "how": "Compare it with Japan Pension Service's official page showing the green envelope and claim process. If uncertain, use the official pension-support line or a pension office rather than a phone number supplied by an unsolicited caller or message.",
+          "needed": ["Envelope", "Official Japan Pension Service page"],
+          "time_minutes": 3,
+          "cost_yen": 0,
+          "done_when": "You are satisfied the envelope and claim form are genuine official documents."
+        },
+        {
+          "step": "Check the estimated amount",
+          "action": "Look at the monthly estimated amount printed on the postcard and confirm the recipient understands it is an estimate tied to the claim.",
+          "how": "Japan Pension Service states the postcard shows the expected monthly amount for the person if the claim is approved.",
+          "needed": ["Claim postcard"],
+          "time_minutes": 2,
+          "cost_yen": 0,
+          "done_when": "The recipient has seen the expected monthly amount and still wants to proceed."
+        },
+        {
+          "step": "Submit the claim",
+          "action": "Use the official electronic application if available for that postcard, or complete and mail the postcard.",
+          "how": "For mail, fill in the requested details, apply the privacy sticker, add postage and post it. If electronic filing is used, follow the enclosed Japan Pension Service instructions; do not also mail the same postcard after a successful electronic submission.",
+          "needed": ["Claim postcard", "Postage if mailing"],
+          "time_minutes": 5,
+          "cost_yen": null,
+          "done_when": "The electronic submission shows completion or the completed postcard has been posted."
+        },
+        {
+          "step": "If the form is lost",
+          "action": "Use the official downloadable A4 claim form and submit it to a pension office instead of abandoning the claim.",
+          "how": "Japan Pension Service provides the replacement route on its official claim page.",
+          "needed": ["A4 claim form"],
+          "time_minutes": 15,
+          "cost_yen": null,
+          "done_when": "A replacement claim has been submitted through an official pension channel."
+        }
+      ],
+      "mistakes_to_avoid": [
+        "Assuming the benefit starts automatically just because the green envelope arrived.",
+        "Throwing the envelope away as advertising or generic pension information.",
+        "Paying a caller, SMS sender or intermediary who says a transfer is required to release the benefit.",
+        "Submitting both electronic and postal versions after the electronic claim has already completed.",
+        "Assuming the old-age ¥5,620 figure is guaranteed for every recipient; it is a reference amount and can be adjusted by contribution history and income."
+      ],
+      "decision_rules": [
+        {
+          "if": "A genuine green claim envelope arrives and the recipient is not already receiving the benefit",
+          "then": "Submit the claim promptly using the official electronic or postal route."
+        },
+        {
+          "if": "The person already receives the benefit and still meets the rules",
+          "then": "Do not file a duplicate annual claim unless Japan Pension Service specifically requests one."
+        },
+        {
+          "if": "No envelope arrives but the person appears to meet the official eligibility conditions",
+          "then": "Contact Japan Pension Service or a pension office to check eligibility rather than assuming non-eligibility."
+        }
+      ],
+      "follow_up": "Watch for the Japan Pension Service decision notice showing whether the claim was approved and the payment amount. Approved payments are deposited on the pension payment schedule into the same account, separately from the pension entry."
+    },
+    "skeptical_view": "This is an annual administrative cycle rather than a newly created benefit. Its publication value comes from the 2026 mailing having just started and the asymmetric cost of missing a claim, not from policy novelty.",
+    "what_next": "Watch for any Japan Pension Service clarification of the printed 2026 submission deadline, delivery delays, revised eligibility thresholds or anti-fraud warnings tied to this mailing cycle.",
+    "recommendation": "DO NOW if the green envelope arrives: verify, complete and submit it through the official route. If helping an older relative, ask specifically whether they received green pension mail this month.",
+    "bottom_line": "A legitimate green pension envelope can represent recurring support, but for a newly eligible person the claim still has to be completed."
+  }
+}
