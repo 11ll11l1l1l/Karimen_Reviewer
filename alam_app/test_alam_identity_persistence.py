@@ -1,7 +1,7 @@
 """Regression checks for ALAM browser/device recognition.
 
-Network-free checks cover UUID validation, native-cookie compatibility, localStorage
-payloads, durable-write queuing, profile hydration and CookieManager reuse.
+Network-free checks cover UUID validation, native-cookie compatibility, parent-page
+localStorage payloads, durable-write queuing, profile hydration and CookieManager reuse.
 """
 
 import inspect
@@ -65,14 +65,18 @@ def main():
         assert identity._valid_device_id(native_id) == native_id
 
         ready, parsed, error = identity._parse_storage_result(
-            '{"ready":true,"value":"' + storage_id + '","error":null}'
+            '{"ready":true,"value":"' + storage_id + '","error":null,"scope":"parent"}'
         )
         assert ready is True and parsed == storage_id and error is None
         ready, parsed, error = identity._parse_storage_result(None)
         assert ready is False and parsed is None and error is None
         expression = identity._storage_expression(storage_id)
         assert identity.DEVICE_STORAGE_KEY in expression
-        assert "localStorage.setItem" in expression
+        assert "window.parent.localStorage" in expression, "Identity must prefer the ALAM page origin."
+        assert "window.localStorage" in expression, "Component storage remains a compatibility fallback."
+        assert "scope='parent'" in expression
+        assert "scope='component'" in expression
+        assert "store.setItem" in expression
         assert storage_id in expression
 
         fake_state = {"alam_pending_device_storage": storage_id}
@@ -81,7 +85,7 @@ def main():
 
         def fake_js_eval(**kwargs):
             calls.append(kwargs)
-            return '{"ready":true,"value":"' + storage_id + '","error":null}'
+            return '{"ready":true,"value":"' + storage_id + '","error":null,"scope":"parent"}'
 
         identity.streamlit_js_eval = fake_js_eval
         ready, parsed, error = identity._browser_storage_bridge()
