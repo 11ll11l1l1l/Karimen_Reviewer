@@ -93,6 +93,10 @@ def test_cookie_codec_is_bounded_and_rejects_corruption():
     bomb = base64.urlsafe_b64encode(zlib.compress(oversized_json, 9)).decode("ascii").rstrip("=")
     assert checklist._decode(bomb) == {}
 
+    valid_json = b'{"story":["step"]}'
+    trailing = base64.urlsafe_b64encode(zlib.compress(valid_json, 9) + b"trailing-junk").decode("ascii").rstrip("=")
+    assert checklist._decode(trailing) == {}
+
 
 def test_cookie_persistence_evicts_oldest_stories_before_value_budget():
     raw = {}
