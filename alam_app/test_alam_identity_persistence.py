@@ -118,6 +118,20 @@ def main():
         assert "Restoring this browser" in onboarding_source
         assert onboarding_source.count("_cookie_set(") == 1
 
+        rendered = []
+        malicious_name = "A&B <style>body{display:none}</style>"
+        identity.st = SimpleNamespace(
+            session_state={"alam_visitor": {"display_name": malicious_name}},
+            markdown=lambda body, **kwargs: rendered.append((body, kwargs)),
+        )
+        identity.render_returning_greeting()
+        assert len(rendered) == 1
+        greeting_html, greeting_kwargs = rendered[0]
+        assert malicious_name not in greeting_html
+        assert "A&amp;B &lt;style&gt;body{display:none}&lt;/style&gt;" in greeting_html
+        assert "<style>body{display:none}</style>" not in greeting_html
+        assert greeting_kwargs.get("unsafe_allow_html") is True
+
         profile = localstate._default_profile()
         profile["s"]["dark"] = True
         profile_cookie = localstate._encode(profile)
