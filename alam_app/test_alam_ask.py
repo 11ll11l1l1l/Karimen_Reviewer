@@ -27,6 +27,13 @@ def test_grounded_answer_reuses_record_text_exactly():
 def test_quality_score_cannot_create_relevance():
     unrelated = dict(VISA); unrelated["importance"] = 100; unrelated["confidence"] = 100; assert relevance_score(unrelated, "ocean salinity") == 0
 
+def test_v5_semantic_and_nested_quality_scores_rank_safely():
+    low = dict(VISA); low["id"] = "a-low"; low["importance"] = 10; low["confidence"] = 10
+    high = dict(VISA); high["id"] = "z-high"; high["importance"] = {"score": "92"}; high["confidence"] = "HIGH"
+    ranked = rank_records([low, high], "visa renewal fee")
+    assert ranked[0][1]["id"] == "z-high"
+    assert relevance_score(high, "visa renewal fee") > relevance_score(low, "visa renewal fee")
+
 def test_grounded_sources_are_safe_and_deduplicated():
     sources = grounded_sources(VISA); assert len(sources) == 1; assert sources[0]["publisher"] == "Immigration Services Agency of Japan"; assert sources[0]["source_type"] == "official"; assert sources[0]["url"].startswith("https://")
 
