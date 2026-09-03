@@ -28,6 +28,7 @@ permissions:
 env:
   # The project URL is public configuration, not a credential. Keeping it here
   # removes one unnecessary secret and leaves only the trusted backend key to configure.
+  # Credential rotation retries are safe because the canonical sync job is idempotent.
   SUPABASE_URL: https://zecztyabmmoqzjumhxxf.supabase.co
 
 jobs:
