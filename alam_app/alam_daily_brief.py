@@ -8,6 +8,7 @@ keep the three slots useful without turning personalization into a filter bubble
 
 from __future__ import annotations
 
+import re
 from html import escape
 
 import streamlit as st
@@ -19,6 +20,17 @@ from alam_core import feed_score
 
 ACTIONABLE = {"DO NOW", "APPLY", "AVOID", "PREPARE", "BUY", "WAIT"}
 WATCH_CATEGORIES = {"trend", "reflection"}
+IMPORTANCE_LABELS = {
+    "VERY HIGH": 90.0,
+    "HIGH": 80.0,
+    "MEDIUM-HIGH": 70.0,
+    "MED-HIGH": 70.0,
+    "MEDIUM": 55.0,
+    "MED": 55.0,
+    "LOW-MEDIUM": 40.0,
+    "LOW": 30.0,
+    "VERY LOW": 15.0,
+}
 
 
 def _story_id(record):
@@ -27,6 +39,30 @@ def _story_id(record):
 
 def _actionable(record):
     return str((record.get("content") or {}).get("action") or "").strip().upper() in ACTIONABLE
+
+
+def _importance_score(record):
+    """Normalize loose importance values so Today never crashes on valid v5 labels."""
+    value = record.get("importance")
+    if isinstance(value, bool):
+        return 100.0 if value else 0.0
+    if isinstance(value, (int, float)):
+        return max(0.0, min(100.0, float(value)))
+    if isinstance(value, dict):
+        for key in ("score", "value", "percent", "percentage", "rating"):
+            if key in value:
+                return _importance_score({"importance": value.get(key)})
+        return 0.0
+    text = str(value or "").strip().upper()
+    if text in IMPORTANCE_LABELS:
+        return IMPORTANCE_LABELS[text]
+    match = re.search(r"-?\d+(?:\.\d+)?", text.replace(",", ""))
+    if not match:
+        return 0.0
+    try:
+        return max(0.0, min(100.0, float(match.group(0))))
+    except ValueError:
+        return 0.0
 
 
 def _rank(record, relevance_fn):
@@ -57,7 +93,7 @@ def _balanced_fallback(records, relevance_fn, used_ids, used_categories):
     def score(record):
         category = str(record.get("_category") or "")
         novel = 1 if category and category not in used_categories else 0
-        importance = float(record.get("importance", 0) or 0)
+        importance = _importance_score(record)
         return (novel, importance, int(relevance_fn(record)), float(feed_score(record)))
 
     return max(candidates, key=score)
@@ -127,7 +163,7 @@ def _why_selected(label, record):
         return "Actionable verified item"
     if enabled_hits:
         return f"Matches {enabled_hits[0]}"
-    if float(record.get("importance", 0) or 0) >= 80:
+    if _importance_score(record) >= 80:
         return "High-importance signal kept for balance"
     return "Useful signal outside your immediate action queue"
 
