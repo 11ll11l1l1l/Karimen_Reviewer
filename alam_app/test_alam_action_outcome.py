@@ -3,16 +3,38 @@ from types import SimpleNamespace
 import alam_action_checklist as checklist
 
 
-def _record(action="Submit through the official route"):
+def _record(action="Submit through the official route", *, goal="Finish the application", deadline="Before Friday", minutes=10):
     return {
         "id": "story-outcome",
-        "content": {"action_plan": {"steps": [{"step": "Submit", "action": action, "done_when": "Accepted"}]}},
+        "content": {
+            "action_plan": {
+                "goal": goal,
+                "deadline": deadline,
+                "steps": [
+                    {
+                        "step": "Submit",
+                        "action": action,
+                        "done_when": "Accepted",
+                        "time_minutes": minutes,
+                    }
+                ],
+            }
+        },
     }
 
 
 def test_reflection_key_tracks_current_plan_shape():
-    assert checklist._reflection_key(_record()) != checklist._reflection_key(_record("Submit using the revised official form"))
+    baseline = checklist._reflection_key(_record())
+    assert baseline != checklist._reflection_key(_record("Submit using the revised official form"))
+    assert baseline != checklist._reflection_key(_record(goal="Complete the corrected application"))
+    assert baseline != checklist._reflection_key(_record(deadline="Before Monday"))
+    assert baseline != checklist._reflection_key(_record(minutes=30))
     assert checklist._reflection_key({"id": "none", "content": {}}) is None
+
+
+def test_reflection_key_uses_normalized_effort_shape():
+    assert checklist._reflection_key(_record(minutes="10")) == checklist._reflection_key(_record(minutes=10))
+    assert checklist._reflection_key(_record(minutes="invalid")) == checklist._reflection_key(_record(minutes=None))
 
 
 def test_completion_outcome_uses_minimized_existing_event(monkeypatch):
