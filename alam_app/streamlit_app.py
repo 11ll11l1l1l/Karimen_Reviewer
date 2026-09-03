@@ -12,6 +12,7 @@ from alam_core import (
 import alam_mobile_views as views
 import alam_extras as extras
 import alam_ask as ask_alam
+import alam_admin as admin
 import alam_intelligence as intelligence
 import alam_identity as identity
 import alam_local_state as localstate
@@ -219,6 +220,8 @@ readiness.render_runtime_status()
 time_headers.render_time_header()
 extras.render_wisdom_strip()
 
+admin_page_active = False
+
 if selected:
     if st.session_state.get("alam_last_article_open_logged") != str(selected.get("id")):
         identity.log_story_open(selected)
@@ -256,13 +259,14 @@ else:
     else:
         secondary = st.segmented_control(
             "More",
-            ["Trends", "Weekly", "Ask ALAM", "Saved", "Predictions", "Settings"],
+            ["Trends", "Weekly", "Ask ALAM", "Saved", "Predictions", "Settings", "Admin"],
             default="Trends",
             key="more_nav",
             label_visibility="collapsed",
             width="stretch",
         )
-        identity.log_navigation(secondary, section="more")
+        if secondary != "Admin":
+            identity.log_navigation(secondary, section="more")
         if secondary == "Weekly":
             intelligence.render_weekly(records, all_records)
             dbviews.render_connect_the_dots(records)
@@ -301,9 +305,13 @@ else:
             reader.render_local_profile(current_records, manager)
             st.divider()
             reader.render_offline_pack(records, all_records)
+        elif secondary == "Admin":
+            admin_page_active = True
+            admin.render_admin()
         else:
             views.render_category(records, "trend", manager, comments)
 
-identity.track_widget_changes()
-mark_visit(manager)
-views.render_footer(all_records, records, comments)
+if not admin_page_active:
+    identity.track_widget_changes()
+    mark_visit(manager)
+    views.render_footer(all_records, records, comments)
