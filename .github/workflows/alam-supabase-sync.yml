@@ -25,6 +25,11 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  # The project URL is public configuration, not a credential. Keeping it here
+  # removes one unnecessary secret and leaves only the trusted backend key to configure.
+  SUPABASE_URL: https://zecztyabmmoqzjumhxxf.supabase.co
+
 jobs:
   sync:
     runs-on: ubuntu-latest
@@ -40,35 +45,25 @@ jobs:
       - name: Validate ALAM audit data
         run: python alam_app/validate_alam_data.py
 
-      - name: Require trusted Supabase credentials
+      - name: Require trusted Supabase credential
         shell: bash
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
         run: |
-          missing=false
-          if [[ -z "$SUPABASE_URL" ]]; then
-            missing=true
-            echo "::error::Missing repository Actions secret SUPABASE_URL."
-          fi
           if [[ -z "$SUPABASE_SERVICE_ROLE_KEY" && -z "$SUPABASE_SECRET_KEY" ]]; then
-            missing=true
             echo "::error::Missing trusted Supabase backend credential. Configure SUPABASE_SECRET_KEY (preferred) or SUPABASE_SERVICE_ROLE_KEY."
-          fi
-          if [[ "$missing" == "true" ]]; then
             echo "### Supabase sync blocked" >> "$GITHUB_STEP_SUMMARY"
             echo "Trusted Supabase credentials are required for every main-branch ALAM sync. Audit validation passed, but the database was not modified." >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
-          echo "Trusted Supabase credentials are configured; canonical sync will run." >> "$GITHUB_STEP_SUMMARY"
+          echo "Trusted Supabase credential is configured; canonical sync will run." >> "$GITHUB_STEP_SUMMARY"
 
       - name: Install Supabase client
         run: pip install -r alam_app/requirements.txt
 
       - name: Sync verified ALAM records to Supabase
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
         run: python alam_app/alam_supabase_sync_job.py

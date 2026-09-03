@@ -8,10 +8,15 @@ def _workflow_text() -> str:
     return WORKFLOW.read_text(encoding="utf-8")
 
 
-def test_every_sync_event_fails_closed_on_missing_external_credentials():
+def test_sync_uses_public_project_url_as_non_secret_configuration():
     text = _workflow_text()
-    assert "Require trusted Supabase credentials" in text
-    assert "::error::Missing repository Actions secret SUPABASE_URL" in text
+    assert "SUPABASE_URL: https://zecztyabmmoqzjumhxxf.supabase.co" in text
+    assert "secrets.SUPABASE_URL" not in text
+
+
+def test_every_sync_event_fails_closed_on_missing_trusted_backend_credential():
+    text = _workflow_text()
+    assert "Require trusted Supabase credential" in text
     assert "::error::Missing trusted Supabase backend credential" in text
     assert "Trusted Supabase credentials are required for every main-branch ALAM sync" in text
     assert "exit 1" in text
