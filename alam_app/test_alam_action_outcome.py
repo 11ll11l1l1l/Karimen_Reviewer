@@ -74,13 +74,13 @@ def test_recovery_query_prefers_validated_story_title_then_goal():
     assert checklist.recovery_query({"id": "empty", "content": {}}) == ""
 
 
-def test_recovery_lenses_exclude_originating_lens():
+def test_recovery_lenses_can_still_describe_cross_lens_alternatives():
     assert checklist.recovery_lenses(_record(category="practical")) == ["Discover", "Market", "Trends"]
     assert checklist.recovery_lenses(_record(category="discover")) == ["Action", "Market", "Trends"]
     assert checklist.recovery_lenses(_record()) == []
 
 
-def test_grounded_recovery_routes_to_other_lenses_without_user_text(monkeypatch):
+def test_grounded_recovery_searches_all_lenses_but_excludes_tried_story(monkeypatch):
     fake_st = SimpleNamespace(session_state={"selected_story": "story-outcome"})
     monkeypatch.setattr(checklist, "st", fake_st)
     record = _record(title="Residence renewal checklist", category="practical")
@@ -89,7 +89,8 @@ def test_grounded_recovery_routes_to_other_lenses_without_user_text(monkeypatch)
     assert fake_st.session_state["main_nav"] == "More"
     assert fake_st.session_state["more_nav"] == "Ask ALAM"
     assert fake_st.session_state["alam_ask_query"] == "Residence renewal checklist"
-    assert fake_st.session_state["alam_ask_lenses"] == ["Discover", "Market", "Trends"]
+    assert fake_st.session_state["alam_ask_lenses"] == []
+    assert fake_st.session_state["alam_ask_excluded_story_ids"] == ["story-outcome"]
 
 
 def test_grounded_recovery_clears_stale_lenses_for_unknown_category(monkeypatch):
@@ -99,6 +100,17 @@ def test_grounded_recovery_clears_stale_lenses_for_unknown_category(monkeypatch)
     assert checklist.open_grounded_recovery(record) is True
     assert fake_st.session_state["alam_ask_lenses"] == []
     assert fake_st.session_state["alam_ask_query"] == "Legacy verified story"
+    assert fake_st.session_state["alam_ask_excluded_story_ids"] == ["story-outcome"]
+
+
+def test_grounded_recovery_without_stable_id_still_searches_without_fake_exclusion(monkeypatch):
+    fake_st = SimpleNamespace(session_state={})
+    monkeypatch.setattr(checklist, "st", fake_st)
+    record = _record(title="Verified topic")
+    record.pop("id")
+    assert checklist.open_grounded_recovery(record) is True
+    assert fake_st.session_state["alam_ask_lenses"] == []
+    assert fake_st.session_state["alam_ask_excluded_story_ids"] == []
 
 
 def test_grounded_recovery_fails_closed_without_validated_topic(monkeypatch):
