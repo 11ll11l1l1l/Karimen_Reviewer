@@ -110,7 +110,7 @@ def _discover_pool(records, action_ids, limit=6):
     if len(chosen) < 2:
         return chosen, None
 
-    represented = {_category(record) for record in chosen[:-1]}
+    represented = {_category(record) for record in chosen}
     alternatives = [record for record in pool if record not in chosen and _category(record) not in represented]
     if not alternatives:
         return chosen, None
