@@ -148,9 +148,10 @@ def open_grounded_recovery(record):
     query = recovery_query(record)
     if not query: return False
     st.session_state["selected_story"] = None; st.session_state["main_nav"] = "More"; st.session_state["more_nav"] = "Ask ALAM"; st.session_state["alam_ask_query"] = query
-    # Exact stable-ID exclusion is enforced by Ask ALAM before ranking. Because the
-    # failed story cannot reappear, recovery can safely search every validated lens,
-    # including a newer/different Action story on the same problem.
+    # Keep the exclusion tied to this seeded recovery query. Ask ALAM drops it as
+    # soon as the reader materially changes the question, preventing stale recovery
+    # state from silently hiding valid evidence in unrelated searches.
+    st.session_state["alam_ask_recovery_query"] = query
     st.session_state["alam_ask_excluded_story_ids"] = [str(record.get("id"))] if record.get("id") else []
     st.session_state["alam_ask_lenses"] = []
     return True
@@ -179,6 +180,6 @@ def render_action_checklist(record, manager=None):
                 if st.button("Ask ALAM about this", key=f"{reflection_key}_recovery", use_container_width=True):
                     if open_grounded_recovery(record): st.rerun()
         else:
-            st.markdown("**Did this plan solve what you needed?**"); st.caption("Optional. One tap helps ALAM measure action usefulness instead of attention time.")
+            st.markdown("**Did this plan solve what you needed?**"); st.caption("Optional. One tap helps ALAM measure whether actions actually worked.")
             for value, label in COMPLETION_OUTCOMES.items():
                 if st.button(label, key=f"{reflection_key}_{value}", use_container_width=True): record_completion_outcome(record, value); st.rerun()
