@@ -45,6 +45,7 @@ COLLECTIONS = (
 COLLECTION_LABELS = {slug: label for label, slug in COLLECTIONS}
 DEFAULT_COLLECTION = "read_later"
 MAX_COLLECTION_ASSIGNMENTS = 80
+PENDING_COLLECTIONS_STATE = "alam_saved_collection_pending_sync"
 
 
 def _collection_key(story_id):
@@ -103,6 +104,15 @@ def _persist_collection_map(manager=None):
             pass
 
 
+def _pending_collection_sync():
+    """Keep failed account writes session-local so stale cloud reads cannot undo them."""
+    pending = st.session_state.setdefault(PENDING_COLLECTIONS_STATE, {})
+    if not isinstance(pending, dict):
+        pending = {}
+        st.session_state[PENDING_COLLECTIONS_STATE] = pending
+    return pending
+
+
 def _local_collection(story_id):
     return _normalize_collection(_collection_map().get(_collection_key(story_id)))
 
@@ -142,24 +152,28 @@ def _cloud_collections(saved_ids):
 
 
 def _set_cloud_collection(story_id, collection):
-    """Upsert one collection assignment with the per-session authenticated client."""
+    """Upsert one assignment and remember a failed write until a later healthy rerun."""
     if not alam_auth.is_signed_in():
         return False, None
     user_id = str(alam_auth.account_summary().get("user_id") or "").strip()
     if not user_id:
         return False, None
+    story_id = str(story_id)
+    collection = _normalize_collection(collection)
     try:
         alam_auth.get_auth_client().table("saved_articles").upsert(
             {
                 "user_id": user_id,
-                "article_id": str(story_id),
-                "collection": _normalize_collection(collection),
+                "article_id": story_id,
+                "collection": collection,
             },
             on_conflict="user_id,article_id",
         ).execute()
+        _pending_collection_sync().pop(story_id, None)
         return True, None
     except Exception:
-        return False, "Saved locally; cloud collection sync will retry after account sync."
+        _pending_collection_sync()[story_id] = collection
+        return False, "Saved locally; cloud collection sync will retry automatically."
 
 
 def _encode_saved(ids):
@@ -207,11 +221,28 @@ def _change_preview(record, all_records):
 
 
 def _effective_collections(saved):
-    """Cloud is authoritative for signed-in rows; anonymous assignments remain fallback."""
+    """Prefer cloud state except while a newer local account write is still pending."""
     local = {str(record.get("id")): _local_collection(record.get("id")) for record in saved}
     cloud, error = _cloud_collections(local.keys())
     effective = dict(local)
     effective.update(cloud)
+
+    # A successful read can race with a failed write and return the old cloud value.
+    # Keep the user's newer browser choice visible and retry only after reads are healthy.
+    pending = dict(_pending_collection_sync())
+    for story_id, collection in pending.items():
+        if story_id in local:
+            effective[story_id] = _normalize_collection(collection)
+
+    if error is None and pending:
+        for story_id, collection in pending.items():
+            if story_id not in local:
+                _pending_collection_sync().pop(story_id, None)
+                continue
+            _, sync_error = _set_cloud_collection(story_id, collection)
+            if sync_error and error is None:
+                error = sync_error
+
     return effective, error
 
 
