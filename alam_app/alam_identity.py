@@ -13,6 +13,7 @@ from __future__ import annotations
 import json
 import uuid
 from datetime import datetime, timedelta
+from html import escape
 from pathlib import Path
 
 import streamlit as st
@@ -335,7 +336,7 @@ def render_returning_greeting() -> None:
     if not name:
         return
     st.markdown(
-        f"<div style='font-size:.82rem;color:#667085;margin:-4px 0 6px'>Welcome back, <strong>{name}</strong>.</div>",
+        f"<div style='font-size:.82rem;color:#667085;margin:-4px 0 6px'>Welcome back, <strong>{escape(name)}</strong>.</div>",
         unsafe_allow_html=True,
     )
 
