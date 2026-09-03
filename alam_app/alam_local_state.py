@@ -59,12 +59,31 @@ def _decode(code):
     return profile
 
 
+def _profile_minute(value):
+    """Normalize a persisted minute or reject only the corrupt entry.
+
+    Browser cookies and imported profile codes are persistence boundaries, not trusted
+    Python objects. A single malformed read/bookmark timestamp must not prevent ALAM
+    from starting or discard unrelated valid local state. Normal profile writes already
+    use integer minutes, so coercing numeric strings is backward-compatible.
+    """
+    try:
+        return int(value or 0)
+    except (TypeError, ValueError, OverflowError):
+        return None
+
+
 def _trim(profile):
     out = _default_profile()
     out["s"] = dict(profile.get("s") or {})
     reads = profile.get("r") or {}
     if isinstance(reads, dict):
-        newest = sorted(reads.items(), key=lambda item: int(item[1] or 0), reverse=True)[:MAX_READ]
+        valid_reads = []
+        for key, value in reads.items():
+            minute = _profile_minute(value)
+            if minute is not None:
+                valid_reads.append((str(key), minute))
+        newest = sorted(valid_reads, key=lambda item: item[1], reverse=True)[:MAX_READ]
         out["r"] = dict(newest)
     muted = profile.get("m") or []
     out["m"] = [str(x) for x in muted[-MAX_MUTED:]]
@@ -73,10 +92,15 @@ def _trim(profile):
         out["f"] = dict(list(feedback.items())[-MAX_FEEDBACK:])
     bookmarks = profile.get("b") or {}
     if isinstance(bookmarks, dict):
-        newest_bookmarks = sorted(
-            bookmarks.items(), key=lambda item: int(item[1] or 0), reverse=True
-        )[:MAX_SAVED_SNAPSHOTS]
-        out["b"] = {str(key): int(value or 0) for key, value in newest_bookmarks}
+        valid_bookmarks = []
+        for key, value in bookmarks.items():
+            minute = _profile_minute(value)
+            if minute is not None:
+                valid_bookmarks.append((str(key), minute))
+        newest_bookmarks = sorted(valid_bookmarks, key=lambda item: item[1], reverse=True)[
+            :MAX_SAVED_SNAPSHOTS
+        ]
+        out["b"] = dict(newest_bookmarks)
     return out
 
 
