@@ -1,5 +1,6 @@
 import base64
 import zlib
+from types import SimpleNamespace
 
 import alam_action_checklist as checklist
 
@@ -90,6 +91,21 @@ def test_cookie_codec_is_bounded_and_rejects_corruption():
     oversized_json = b'{"story":["' + (b"x" * (checklist.MAX_COOKIE_JSON_BYTES + 256)) + b'"]}'
     bomb = base64.urlsafe_b64encode(zlib.compress(oversized_json, 9)).decode("ascii").rstrip("=")
     assert checklist._decode(bomb) == {}
+
+
+def test_cached_session_progress_is_normalized_before_render(monkeypatch):
+    cached = {
+        "good-story": ["step-a", "", 123, "step-a"],
+        "bad-story": 42,
+    }
+    fake_st = SimpleNamespace(session_state={"alam_action_progress": cached})
+    monkeypatch.setattr(checklist, "st", fake_st)
+
+    assert checklist._load_progress() == {"good-story": ["step-a"]}
+    assert fake_st.session_state["alam_action_progress"] == {"good-story": ["step-a"]}
+
+    fake_st.session_state["alam_action_progress"] = ["legacy-invalid-shape"]
+    assert checklist._load_progress() == {}
 
 
 def test_story_page_integrates_action_follow_through():
