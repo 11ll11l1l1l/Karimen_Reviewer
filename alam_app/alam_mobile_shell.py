@@ -96,18 +96,31 @@ MOBILE_SHELL_CSS = r"""
     text-overflow:ellipsis!important;
   }
 
-  /* Daily Bible + Taglish reflection stays first-class but compact. */
+  /* Daily Bible + Taglish reflection stays first-class and fully readable. */
   .wisdom-strip{
     margin:0 0 7px!important;
     padding:7px 9px!important;
     border-radius:12px!important;
+    height:auto!important;
+    max-height:none!important;
+    overflow:visible!important;
   }
-  .wisdom-verse{font-size:.63rem!important;line-height:1.28!important}
-  .wisdom-verse:nth-of-type(n+2){display:none!important}
-  .wisdom-question{
+  .wisdom-line,.wisdom-verse{
+    display:block!important;
+    font-size:.63rem!important;
+    line-height:1.28!important;
+    white-space:normal!important;
+    overflow:visible!important;
+    text-overflow:clip!important;
+  }
+  .wisdom-line + .wisdom-line,.wisdom-verse + .wisdom-verse{margin-top:3px!important}
+  .wisdom-thought,.wisdom-question{
+    display:block!important;
     font-size:.72rem!important;
     line-height:1.32!important;
     margin-top:4px!important;
+    white-space:normal!important;
+    overflow:visible!important;
   }
 
   /* A true mobile bottom nav: low in the viewport with reserved content space.
