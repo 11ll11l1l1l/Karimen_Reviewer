@@ -1,0 +1,10 @@
+{
+  "name": "BibleQuest",
+  "short_name": "BibleQuest",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#fff8e7",
+  "theme_color": "#fff8e7",
+  "description": "Learn the Bible through games, stories, challenges, and reflection.",
+  "icons": []
+}
