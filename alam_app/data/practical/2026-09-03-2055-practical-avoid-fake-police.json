@@ -1,0 +1,268 @@
+{
+  "id": "japan-fake-police-scam-avoid-2026-09-03",
+  "agent": "practical",
+  "created_at": "2026-09-03T20:55:00+09:00",
+  "type": "fraud_prevention",
+  "title": "AVOID: Huwag mag-transfer ng pera sa “police” na tumatawag, nag-LINE, o nagvi-video call",
+  "summary": "Japan’s National Police Agency says fake-police scams remain a major high-loss fraud pattern. The core rule is simple: if someone claiming to be police tells you by phone, SNS, or video call that your account or phone is tied to a crime and then asks you to move money, send crypto, hand over gold, keep the matter secret, or follow a link, stop. Hang up and verify independently through #9110 or an official police-station number you find yourself.",
+  "why_it_matters": "Sa first half ng 2026 alone, the NPA recorded 4,466 fake-police scam cases with ¥50.79 billion in losses; more than 90% of the initial contacts were by phone. Scammers can show fake police IDs or arrest warrants and can even spoof a real police phone number, so “mukhang official” is no longer enough.",
+  "importance": 99,
+  "confidence": 99,
+  "tags": [
+    "Japan",
+    "Scam",
+    "Fraud",
+    "Fake Police",
+    "Phone Scam",
+    "LINE",
+    "Video Call",
+    "Family Safety",
+    "#9110"
+  ],
+  "geography": [
+    "Japan"
+  ],
+  "status": "NEW",
+  "sources": [
+    {
+      "publisher": "National Police Agency of Japan",
+      "title": "令和８年上半期における特殊詐欺の認知・検挙状況等について（暫定値）",
+      "url": "https://www.npa.go.jp/bureau/safetylife/sos47/new-topics/260731/01.html",
+      "published_at": "2026-07-31",
+      "source_type": "official"
+    },
+    {
+      "publisher": "National Police Agency of Japan",
+      "title": "ニセ警察詐欺に注意！ #ニセ警察詐欺",
+      "url": "https://www.npa.go.jp/bureau/safetylife/sos47/new-topics/241218/02.html",
+      "published_at": "2025-11-17",
+      "source_type": "official"
+    },
+    {
+      "publisher": "National Police Agency of Japan",
+      "title": "ニセ警察詐欺の特異な手口",
+      "url": "https://www.npa.go.jp/bureau/safetylife/sos47/new-topics/260605/03.html",
+      "published_at": "2026-06-05",
+      "source_type": "official"
+    },
+    {
+      "publisher": "Government of Japan Public Relations Office",
+      "title": "ニセ警察詐欺（令和8年（2026年）7月掲載）",
+      "url": "https://www.gov-online.go.jp/newspaper/tsukidashi/202607/newspaper-2013.html",
+      "published_at": "2026-07-27",
+      "source_type": "official"
+    }
+  ],
+  "claims": [
+    {
+      "kind": "FACT",
+      "text": "In the first half of 2026, Japan recorded 4,466 fake-police scam cases and ¥50.79 billion in losses.",
+      "source_refs": [
+        1
+      ],
+      "basis": "NPA first-half 2026 provisional special-fraud statistics."
+    },
+    {
+      "kind": "FACT",
+      "text": "More than 90% of initial contact in fake-police scams was by telephone in the first half of 2026.",
+      "source_refs": [
+        1
+      ],
+      "basis": "NPA first-half 2026 fake-police scam characteristics."
+    },
+    {
+      "kind": "FACT",
+      "text": "The NPA warns that real police do not use messaging apps to contact a person about an investigation, send images of police IDs or arrest warrants, or suddenly make video calls to a personal smartphone.",
+      "source_refs": [
+        2
+      ],
+      "basis": "NPA fake-police scam warning and verification guidance."
+    },
+    {
+      "kind": "FACT",
+      "text": "Scammers have spoofed the displayed phone number of an actual police headquarters or police station, so caller ID alone cannot prove the call is genuine.",
+      "source_refs": [
+        2
+      ],
+      "basis": "NPA documented caller-ID spoofing example."
+    },
+    {
+      "kind": "FACT",
+      "text": "NPA has documented fake-police cases involving demands to transfer money, send assets for 'investigation,' provide gold bullion, and even perform sexual or invasive acts over video calls.",
+      "source_refs": [
+        2,
+        3
+      ],
+      "basis": "NPA current scam pattern warnings."
+    },
+    {
+      "kind": "FACT",
+      "text": "NPA guidance is to end the call and verify independently through the nearest police station or the police consultation line #9110 rather than calling a number provided by the suspicious caller.",
+      "source_refs": [
+        2,
+        4
+      ],
+      "basis": "NPA and Government of Japan public warning guidance."
+    },
+    {
+      "kind": "INFERENCE",
+      "text": "For foreign residents who may be less familiar with Japanese police procedure, a simple household rule—never move money or assets because of an unsolicited police call—can reduce the chance that language pressure or fear overrides verification.",
+      "source_refs": [
+        1,
+        2
+      ],
+      "basis": "Practical inference from the documented high-loss pattern and official verification advice."
+    }
+  ],
+  "editorial_visual": {
+    "style": "editorial",
+    "motif": "phone_scam",
+    "secondary_motif": "police_badge",
+    "scene": "a smartphone showing a suspicious video call from a fake police officer while a large red stop symbol blocks arrows leading to a bank transfer, crypto wallet, and gold bar; a separate safe path points to #9110",
+    "caption": "If a 'police officer' asks you to move money, stop and verify independently",
+    "silliness": 12,
+    "exaggeration": 68
+  },
+  "content": {
+    "key_message": "AVOID moving money, crypto, gold, bank credentials, or personal images because of an unsolicited 'police' phone/SNS/video call. End the contact first, then verify independently through #9110 or an official police-station number you find yourself.",
+    "who_is_affected": "Anyone in Japan with a mobile or landline, including foreign residents and families. Risk is higher when a caller creates fear, urgency, secrecy, or language confusion and claims your bank account, phone contract, residence status, or identity is connected to a crime.",
+    "when": "This is a current nationwide risk. The NPA’s latest first-half 2026 release showed continuing high losses, and the government ran a nationwide fake-police-scam awareness campaign in July 2026.",
+    "financial_impact": "Potentially catastrophic. NPA first-half 2026 data show ¥50.79 billion lost to fake-police scams, with average completed losses above ¥11 million per case in the NPA summary.",
+    "estimated_saving_yen": null,
+    "time_minutes": 3,
+    "travel_minutes": 0,
+    "risk_if_ignored": "You can lose large amounts of savings very quickly, especially if fear pushes you to transfer funds, buy crypto or gold, disclose banking credentials, isolate yourself from family, or follow a fake police website. Some cases also involve invasive sexual demands over video calls.",
+    "action": "AVOID",
+    "deadline": "Immediate rule: apply this whenever an unsolicited caller claims to be police, prosecutor, telecom staff, or a government office and the conversation turns to criminal suspicion, account checking, asset protection, secrecy, or payment.",
+    "effort": "Very low: end the call, do not click links, do not send anything, and independently verify.",
+    "recommendation": "Huwag magpadala ng pera o assets, huwag sumunod sa LINE/video-call 'investigation,' at huwag tumawag pabalik sa number na ibinigay nila. Hang up, then use #9110 or independently look up the real police station.",
+    "potential_benefit": "Breaking the scammer’s pressure cycle before money or sensitive information leaves your control.",
+    "downside": "A legitimate inquiry may take a few extra minutes to verify, but independent verification is safer than continuing a high-pressure unsolicited call.",
+    "what_would_change_mind": "Only an official NPA procedural change explicitly stating that police now conduct these investigation/payment steps through messaging apps or private video calls would alter this rule. Current NPA guidance says the opposite.",
+    "usefulness": 100,
+    "novelty": 88,
+    "impact": {
+      "money": "HIGH",
+      "family": "HIGH",
+      "career": "LOW",
+      "japan": "HIGH",
+      "urgency": "HIGH"
+    },
+    "connection_tags": [
+      "fraud-prevention",
+      "fake-police",
+      "phone-scam",
+      "family-safety",
+      "japan-safety"
+    ],
+    "skeptical_view": "Not every unexpected call from police is necessarily fake, and real police can contact people by phone. The red flag is the combination of unsolicited contact with claims of criminal suspicion plus SNS/video-call migration, secrecy, fake warrants, or requests involving money/assets. Verification should be independent rather than based on the caller’s own number, badge image, or URL.",
+    "what_to_watch": "Watch NPA monthly statistics for whether fake-police scam losses keep rising and for new tactics such as caller-ID spoofing, fake websites, crypto, gold bullion, or coercive video calls.",
+    "reading_levels": {
+      "30 sec": {
+        "what_happened": "Fake-police scams remain one of Japan’s most damaging fraud patterns. In H1 2026, NPA counted 4,466 cases and ¥50.79 billion in losses.",
+        "why_it_matters": "Scammers can look convincing: fake police IDs, fake warrants, video calls, and even spoofed real police phone numbers.",
+        "what_to_do_watch": "If a 'police officer' asks you to move money/assets or continue on LINE/video, stop. Hang up and verify through #9110 or an independently found official number.",
+        "bottom_line": "Police-looking does not equal police. Never move money first and verify later."
+      },
+      "2_min": "Ang dangerous part ng fake-police scam is not just the fake uniform or fake warrant—it is the pressure sequence. A caller says your phone, account, or identity is connected to a crime, tells you not to tell family, moves you to LINE or video call, shows official-looking documents, then asks for money or assets supposedly for 'investigation' or 'protection.' NPA data show that this remains a high-loss nationwide problem. The safest household rule is mechanical: do not debate the caller and do not try to prove innocence while on the call. End contact. Do not click their link or call their supplied number. Then independently contact the police through #9110 or a real police-station number you find yourself. Caller ID, badge images, warrants on screen, and a confident Japanese-speaking 'officer' are not sufficient verification."
+    },
+    "learning": {
+      "outcomes": [
+        "Recognize the main fake-police scam sequence before money is transferred.",
+        "Explain why caller ID, badge photos, warrants, and video calls are not reliable proof.",
+        "Use an independent verification path instead of the contact details supplied by the caller."
+      ],
+      "background": "The NPA now treats fake-police scams as a distinct special-fraud category because of the scale of losses. The scam relies on authority pressure: the victim is made to feel like a suspect, isolated from family or advisers, and rushed into proving innocence through financial actions.",
+      "terms": [
+        {
+          "term": "ニセ警察詐欺 (nise keisatsu sagi)",
+          "meaning": "A scam in which criminals impersonate police or related authorities to obtain money, assets, credentials, or compliance.",
+          "why_it_matters": "Knowing the Japanese term makes it easier to recognize official warnings and search police guidance."
+        },
+        {
+          "term": "#9110",
+          "meaning": "Japan’s police consultation line for non-emergency police concerns.",
+          "why_it_matters": "It gives you an independent verification route when a suspicious caller claims to be police."
+        }
+      ],
+      "how_it_works": [
+        {
+          "title": "Authority hook",
+          "explanation": "The caller claims your phone, bank account, or identity is linked to crime and may transfer you between fake telecom, police, or prosecutor roles."
+        },
+        {
+          "title": "Isolation and proof theater",
+          "explanation": "They may demand secrecy, move you to LINE/video, display a badge or arrest warrant, or direct you to a fake police website."
+        },
+        {
+          "title": "Asset extraction",
+          "explanation": "They ask you to transfer money, move funds for 'inspection,' send crypto, buy/hand over gold, or reveal sensitive information."
+        },
+        {
+          "title": "Safe break point",
+          "explanation": "Hang up before complying. Independently contact #9110 or the police station using contact information you found yourself."
+        }
+      ],
+      "example": "Example: your phone shows what appears to be a real prefectural police number. The caller says an account in your name was used for money laundering and asks you to join a LINE video call. On screen they show a police ID and warrant, then tell you to transfer all savings temporarily for a 'funds check.' Treat the entire sequence as a scam signal. End the call and independently contact police.",
+      "takeaways": [
+        "Do not transfer money or assets to prove innocence.",
+        "Do not trust caller ID alone; it can be spoofed.",
+        "Do not continue a police 'investigation' through LINE or private video call.",
+        "Do not use the callback number or URL provided by the caller.",
+        "Verify independently through #9110 or an official police-station contact."
+      ]
+    },
+    "action_plan": {
+      "goal": "Make the household resistant to fake-police authority scams.",
+      "who_should_act": "Every adult family member, especially anyone handling household savings or speaking Japanese as a second language.",
+      "deadline": "Set the rule now; use it immediately whenever a suspicious authority call occurs.",
+      "prepare": [
+        "Save #9110 in the family contacts as 'Police consultation / 警察相談'.",
+        "Agree on a family rule: no bank transfer, crypto, gold purchase, or asset handover because of an unsolicited authority call.",
+        "Tell older relatives and family members that caller ID and video-call badges can be faked."
+      ],
+      "steps": [
+        {
+          "step": "Stop the conversation",
+          "action": "Say you will verify independently and end the call.",
+          "how": "Do not argue, provide more information, or stay on the line while 'verification' is arranged.",
+          "needed": [
+            "Phone"
+          ],
+          "time_minutes": 1,
+          "cost_yen": 0,
+          "done_when": "The suspicious call/video/chat is fully ended."
+        },
+        {
+          "step": "Do not use their contact path",
+          "action": "Ignore any callback number, LINE account, QR code, website, or contact person they supplied.",
+          "how": "Close the message/video session and do not click links.",
+          "needed": [],
+          "time_minutes": 1,
+          "cost_yen": 0,
+          "done_when": "You are no longer using any channel controlled by the caller."
+        },
+        {
+          "step": "Verify independently",
+          "action": "Call #9110 or independently find the official police-station number.",
+          "how": "Explain that someone claimed to be police and summarize what they requested.",
+          "needed": [
+            "Suspicious phone number or screenshots if safely available"
+          ],
+          "time_minutes": 5,
+          "cost_yen": 0,
+          "done_when": "A genuine police channel confirms whether the contact was legitimate."
+        }
+      ],
+      "avoid": [
+        "Do not transfer money, crypto, or securities.",
+        "Do not buy or hand over gold or other valuables.",
+        "Do not disclose internet-banking credentials, PINs, one-time passwords, or My Number credentials.",
+        "Do not send intimate images or comply with invasive video-call demands.",
+        "Do not isolate yourself from family because the caller says the investigation is secret."
+      ],
+      "if_already_paid": "Contact your bank or payment provider immediately, then police. Speed matters because financial institutions may still be able to restrict or trace some transactions.",
+      "done_definition": "Everyone in the household knows the stop-and-verify rule and can identify #9110 as the independent verification path."
+    }
+  }
+}
