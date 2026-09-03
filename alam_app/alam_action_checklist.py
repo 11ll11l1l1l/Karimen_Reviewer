@@ -196,25 +196,12 @@ def action_focus(record, completed=None):
 
 
 def _reflection_key(record):
-    """Bind a completion reflection to every rendered part of the validated plan.
-
-    A prior outcome must not suppress the question after editorial instructions change.
-    Step keys already cover title/action/done-when text; include normalized goal, deadline,
-    and effort too because those values can materially change while step wording stays the
-    same. Hash only the sanitized display plan so equivalent legacy input remains stable.
-    """
+    """Bind a completion reflection to every rendered part of the validated plan."""
     plan = action_plan(record)
     if not plan:
         return None
     shape = json.dumps(
-        {
-            "goal": plan.get("goal") or "",
-            "deadline": plan.get("deadline") or "",
-            "steps": [
-                {"key": step["key"], "minutes": step.get("minutes")}
-                for step in plan["steps"]
-            ],
-        },
+        {"goal": plan.get("goal") or "", "deadline": plan.get("deadline") or "", "steps": [{"key": step["key"], "minutes": step.get("minutes")} for step in plan["steps"]]},
         ensure_ascii=True,
         sort_keys=True,
         separators=(",", ":"),
@@ -223,12 +210,7 @@ def _reflection_key(record):
 
 
 def record_completion_outcome(record, outcome):
-    """Remember one voluntary outcome and emit only the existing minimized telemetry.
-
-    The analytics RPC already allowlists ui_control_changed/control/value and drops
-    arbitrary properties. Anonymous/unrecognized browsers still get a local acknowledgement
-    even when telemetry is unavailable; failure never blocks the checklist.
-    """
+    """Remember one voluntary outcome and emit only the existing minimized telemetry."""
     if outcome not in COMPLETION_OUTCOMES:
         return False
     key = _reflection_key(record)
@@ -236,6 +218,35 @@ def record_completion_outcome(record, outcome):
         return False
     st.session_state[key] = outcome
     alam_identity.log_event("ui_control_changed", record.get("id"), {"control": "action_plan_outcome", "value": outcome})
+    return True
+
+
+def recovery_query(record):
+    """Build a deterministic Ask ALAM query from the validated story, never user data.
+
+    Title is preferred because Ask ALAM's retrieval is corpus-grounded. Goal is only a
+    fallback for legacy records. If neither exists, no recovery CTA is shown rather than
+    sending a vague query that could retrieve unrelated evidence.
+    """
+    title = _compact(record.get("title"), 180) if isinstance(record, dict) else ""
+    if title:
+        return title
+    plan = action_plan(record) if isinstance(record, dict) else None
+    return _compact((plan or {}).get("goal"), 180)
+
+
+def open_grounded_recovery(record):
+    """Route an incomplete outcome into Ask ALAM without generating new advice."""
+    query = recovery_query(record)
+    if not query:
+        return False
+    # Clear detail selection first so the normal app router can render More > Ask ALAM.
+    # The query is derived only from the validated record; no outcome reason/free text is
+    # captured. Ask ALAM keeps its existing insufficient-evidence behavior.
+    st.session_state["selected_story"] = None
+    st.session_state["main_nav"] = "More"
+    st.session_state["more_nav"] = "Ask ALAM"
+    st.session_state["alam_ask_query"] = query
     return True
 
 
@@ -279,6 +290,12 @@ def render_action_checklist(record, manager=None):
         outcome = st.session_state.get(reflection_key) if reflection_key else None
         if outcome in COMPLETION_OUTCOMES:
             st.caption(f"Outcome recorded: {COMPLETION_OUTCOMES[outcome]}. Thanks — this helps ALAM measure whether actions actually worked.")
+            if outcome in {"partly", "no"} and recovery_query(record):
+                st.markdown("**Still unresolved? Check what ALAM can verify next.**")
+                st.caption("This opens grounded Ask ALAM using this story’s topic. It can only answer from validated ALAM records and will say when evidence is insufficient.")
+                if st.button("Ask ALAM about this", key=f"{reflection_key}_recovery", use_container_width=True):
+                    if open_grounded_recovery(record):
+                        st.rerun()
         else:
             st.markdown("**Did this plan solve what you needed?**")
             st.caption("Optional. One tap helps ALAM measure action usefulness instead of attention time.")
