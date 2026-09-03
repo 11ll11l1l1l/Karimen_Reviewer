@@ -36,6 +36,10 @@ def _bounded_score(value):
     try:return max(0.0,min(100.0,float(match.group(0))))
     except ValueError:return 0.0
 
+def _display_score(value):
+    """Render v5 score shapes consistently instead of leaking raw dicts/labels into UI metadata."""
+    return f"{_bounded_score(value):g}"
+
 def _search_fields(record):
     return {"title":str(record.get("title") or "").lower(),"tags":" ".join(str(x) for x in (record.get("tags") or [])).lower(),"summary":" ".join([str(record.get("summary") or ""),str(record.get("why_it_matters") or "")]).lower(),"body":" ".join([_flat_text(record.get("content")),_flat_text(record.get("claims")),_flat_text(record.get("geography"))]).lower()}
 
@@ -131,9 +135,9 @@ def render_ask_alam(records,comments,manager,views):
     if not ranked:st.warning("INSUFFICIENT ALAM EVIDENCE — I found no screened current record that directly supports this question. Try broader wording or wait for the research agents to cover it.");return
     top_score,top=ranked[0];answer=grounded_answer(top)
     if not answer:st.warning("A relevant record exists, but it has no safe reader-facing answer sentence to reuse yet.");return
-    confidence=top.get("confidence") or top.get("confidence_score");importance=top.get("importance") or top.get("importance_score");meta=[f"{_record_lens(top)} agent",f"retrieval score {top_score:.1f}"]
-    if confidence is not None:meta.append(f"record confidence {confidence}/100")
-    if importance is not None:meta.append(f"importance {importance}/100")
+    confidence=top.get("confidence") if top.get("confidence") is not None else top.get("confidence_score");importance=top.get("importance") if top.get("importance") is not None else top.get("importance_score");meta=[f"{_record_lens(top)} agent",f"retrieval score {top_score:.1f}"]
+    if confidence is not None:meta.append(f"record confidence {_display_score(confidence)}/100")
+    if importance is not None:meta.append(f"importance {_display_score(importance)}/100")
     st.markdown('<div class="ask-shell"><div class="ask-kicker">Grounded answer</div>'+f'<div class="ask-answer">{_escape(answer)}</div><div class="ask-meta">{" · ".join(_escape(x) for x in meta)}</div></div>',unsafe_allow_html=True)
     next_step=grounded_next_step(top)
     if next_step:st.markdown("**What to do / watch**");st.write(next_step)
