@@ -1,0 +1,273 @@
+{
+  "id": "japan-fake-tanaka-mikimoto-shopping-sites-sep2026",
+  "agent": "practical",
+  "created_at": "2026-09-03T22:14:04+09:00",
+  "type": "consumer_safety",
+  "title": "Fake Tanaka and Mikimoto ads are selling counterfeits through cash-on-delivery sites",
+  "summary": "Japan's Consumer Affairs Agency warned on September 3 that fake SNS ads impersonating Tanaka Precious Metals and Mikimoto have led buyers to counterfeit gold coins and pearl necklaces. The scam is unusually convincing because it uses familiar brands and cash on delivery, but the agency confirmed the tested products were fake.",
+  "why_it_matters": "Cash on delivery can feel safer because you do not enter card details, yet payment is usually made before you can verify what is inside. The new official investigation gives consumers concrete warning signs, named domains and a recovery route through Japan's Consumer Hotline 188.",
+  "importance": 88,
+  "confidence": 99,
+  "tags": [
+    "Japan",
+    "Scam",
+    "Fake Shopping Site",
+    "Consumer Safety",
+    "Tanaka Precious Metals",
+    "Mikimoto",
+    "Cash on Delivery",
+    "SNS Ads"
+  ],
+  "geography": ["Japan"],
+  "status": "NEW",
+  "sources": [
+    {
+      "publisher": "Consumer Affairs Agency",
+      "title": "大手貴金属・ジュエリーショップをかたり貴金属や宝飾品の偽物を販売する偽サイトに関する注意喚起",
+      "url": "https://www.caa.go.jp/notice/entry/047423/",
+      "published_at": "2026-09-03",
+      "source_type": "official"
+    },
+    {
+      "publisher": "Consumer Affairs Agency",
+      "title": "大手貴金属・ジュエリーショップをかたり貴金属や宝飾品の偽物を販売する偽サイトに関する注意喚起（公表資料）",
+      "url": "https://www.caa.go.jp/notice/assets/consumer_policy_cms103_260903_01.pdf",
+      "published_at": "2026-09-03",
+      "source_type": "official"
+    },
+    {
+      "publisher": "Tanaka Precious Metals",
+      "title": "【重要なお知らせ】当社名をかたる偽広告にご注意ください",
+      "url": "https://www.tanaka.co.jp/caution/",
+      "published_at": "2026-01-14",
+      "source_type": "official"
+    },
+    {
+      "publisher": "National Consumer Affairs Center of Japan",
+      "title": "代引き配達を利用したインターネット通販のトラブルにご注意",
+      "url": "https://www.kokusen.go.jp/news/data/n-20250820_1.html",
+      "published_at": "2025-08-20",
+      "source_type": "official"
+    }
+  ],
+  "claims": [
+    {
+      "kind": "FACT",
+      "text": "The Consumer Affairs Agency said on September 3, 2026 that many consultations had been received since October 2025 about SNS ads impersonating Tanaka Precious Metals or Mikimoto and directing consumers to suspected counterfeit sales.",
+      "source_refs": [1, 2],
+      "basis": "Consumer Affairs Agency investigation and public warning"
+    },
+    {
+      "kind": "FACT",
+      "text": "The agency identified dccvd.com, dcvfert.top and mzisoe.top as domains used by the investigated fake sites.",
+      "source_refs": [1, 2],
+      "basis": "Named domains in the official warning"
+    },
+    {
+      "kind": "FACT",
+      "text": "A tested item advertised as a Tanaka 24K Maple Leaf gold coin was mainly about 70% copper and 20% iron, while the tested Mikimoto-branded necklace was a pearl imitation.",
+      "source_refs": [2],
+      "basis": "Consumer Affairs Agency testing reported in the official document"
+    },
+    {
+      "kind": "FACT",
+      "text": "The investigated sites accepted only cash on delivery, and products were shipped from outside Japan about 10 days after ordering.",
+      "source_refs": [2],
+      "basis": "Transaction pattern documented by the Consumer Affairs Agency"
+    },
+    {
+      "kind": "FACT",
+      "text": "The Consumer Affairs Agency advises consumers to be cautious when prices are extremely low, payment options are unusually limited, the domain is foreign, company contact details are unclear or the Japanese language is unnatural, and to call Consumer Hotline 188 promptly after trouble because refunds may sometimes be possible.",
+      "source_refs": [2],
+      "basis": "Official Consumer Affairs Agency checklist and recovery advice"
+    },
+    {
+      "kind": "FACT",
+      "text": "Tanaka Precious Metals has separately warned that ads using its name and logo for special, limited or discount campaigns on social media may be unauthorized and tells consumers to verify information through its official websites.",
+      "source_refs": [3],
+      "basis": "Tanaka Precious Metals official warning"
+    },
+    {
+      "kind": "FACT",
+      "text": "Japan's National Consumer Affairs Center has warned that cash on delivery is not a guarantee of legitimacy and that getting money back from the delivery company after accepting and paying for a counterfeit can be difficult.",
+      "source_refs": [4],
+      "basis": "National Consumer Affairs Center guidance"
+    },
+    {
+      "kind": "INFERENCE",
+      "text": "The strongest practical defense is to leave the social-media ad and independently open the brand's official site before ordering, because logos, apparently official accounts and cash-on-delivery payment do not authenticate the seller.",
+      "source_refs": [2, 3, 4],
+      "basis": "Inference from the scam pattern and official prevention guidance"
+    }
+  ],
+  "editorial_visual": {
+    "style": "editorial",
+    "motif": "shield",
+    "secondary_motif": "document",
+    "scene": "a restrained smartphone shopping ad passes through a transparent verification shield while a suspicious parcel with a cash-on-delivery slip is held outside the safe zone",
+    "caption": "A familiar logo and cash on delivery do not prove a shop is genuine",
+    "silliness": 2,
+    "exaggeration": 32
+  },
+  "content": {
+    "key_message": "If a Tanaka Precious Metals or Mikimoto offer reaches you through an SNS ad, do not trust the ad, logo or cash-on-delivery option by themselves—verify the seller from the brand's official site before ordering.",
+    "who_is_affected": "Anyone in Japan who sees precious-metal or jewelry ads on Instagram, Facebook or other social media, especially unusually cheap Tanaka Precious Metals gold or Mikimoto pearl offers. People who have not seen or used such ads do not need to take any special action beyond normal online-shopping checks.",
+    "when": "The Consumer Affairs Agency published the warning on September 3, 2026 after consultations dating from October 2025. The three identified domains should be avoided immediately, but the warning signs matter even if scammers move to new domains.",
+    "financial_impact": "Potential loss is the full purchase price of a counterfeit item. The investigated pages advertised, among other examples, a purported 24K gold coin for ¥15,000 and a purported Mikimoto necklace for ¥14,800. Those advertised amounts describe the scam examples, not legitimate market prices.",
+    "estimated_saving_yen": null,
+    "time_minutes": 5,
+    "travel_minutes": 0,
+    "risk_if_ignored": "You can pay cash to the courier and only discover after opening or testing the item that it is counterfeit. Once cash-on-delivery payment has been made, the delivery company may not be able to simply refund you.",
+    "action": "AVOID",
+    "deadline": "Before placing or accepting payment for any suspicious order. If you already ordered or received a suspicious item, contact Consumer Hotline 188 promptly.",
+    "effort": "Low before purchase; potentially much higher after payment because recovery is not guaranteed.",
+    "potential_benefit": "Avoid losing the purchase price and avoid sharing your name, address and phone number with a fraudulent seller.",
+    "downside": "Not every cheap listing, foreign domain or cash-on-delivery shop is fraudulent. These are warning signals, not proof by themselves; verification should use the official brand site and seller information.",
+    "what_would_change_mind": "This story would need an update if the Consumer Affairs Agency adds new domains, reports the operators identified or enforcement action completed, changes recovery guidance, or the named brands publish materially different verification instructions.",
+    "usefulness": 97,
+    "novelty": 94,
+    "impact": {
+      "money": "MED",
+      "family": "MED",
+      "career": "LOW",
+      "japan": "MED",
+      "urgency": "HIGH"
+    },
+    "connection_tags": [
+      "fake-shopping-sites",
+      "sns-ad-scams",
+      "cash-on-delivery",
+      "consumer-188",
+      "brand-impersonation"
+    ],
+    "skeptical_view": "The three named domains are useful evidence but should not become a false safety list. Scam domains can change quickly, and the agency's checklist itself says consumers should judge the full site and independently verify the official seller rather than assuming every unlisted domain is safe.",
+    "what_to_watch": "Watch Consumer Affairs Agency and the brands' official warning pages for additional domains or changed scam patterns. The most important signal is not a particular domain ending but a seller reached through an SNS ad that fails independent official verification.",
+    "reading_levels": {
+      "30 sec": {
+        "what_happened": "Japan confirmed fake SNS shopping sites impersonating Tanaka Precious Metals and Mikimoto; tested goods were counterfeits.",
+        "why_it_matters": "The sites used familiar brands and cash on delivery, which can make a fake shop feel safer than it is.",
+        "what_to_do_watch": "Do not buy from the ad link. Open the brand's official site independently, verify the seller, and call 188 quickly if you already paid or ordered.",
+        "bottom_line": "Logo + discount + cash on delivery is not proof of authenticity."
+      },
+      "2_min": "The Consumer Affairs Agency investigated fake shopping sites promoted through social-media ads that appeared to sell genuine Tanaka Precious Metals gold coins and Mikimoto pearl jewelry. It identified three domains and tested products consumers had received: the supposed 24K coin was mainly copper and iron, and the supposed pearl necklace was an imitation. The sites used cash on delivery, so buyers could pay a courier without entering a card number and still receive fake goods. The practical rule is to leave the ad, independently open the brand's official website and verify the shopping channel before ordering. Warning signs include implausibly low prices, cash-on-delivery-only payment, unclear seller identity, foreign domains and unnatural Japanese. If you have already ordered or paid, preserve the order and delivery evidence and contact Consumer Hotline 188 promptly; refunds may sometimes be possible but are not guaranteed."
+    },
+    "learning": {
+      "outcomes": [
+        "Recognize why cash on delivery does not authenticate an online seller.",
+        "Identify the warning signs used in the Consumer Affairs Agency checklist.",
+        "Know the safe verification route before purchase and the first recovery step after a suspected scam."
+      ],
+      "background": "Fake-shop scams often borrow a trusted company's name, logo and product photographs, then use social-media advertising to move the buyer from a familiar platform to a separate shopping site. In this case the Consumer Affairs Agency confirmed that the investigated sellers were not supplying genuine Tanaka Precious Metals or Mikimoto products.",
+      "terms": [
+        {
+          "term": "Cash on delivery (代引き / daibiki)",
+          "meaning": "A payment method where the courier collects the purchase price when delivering the parcel.",
+          "why_it_matters": "It reduces the need to enter card details, but it does not verify the seller or the contents of the parcel."
+        },
+        {
+          "term": "Consumer Hotline 188",
+          "meaning": "Japan's nationwide three-digit consumer hotline that connects callers to a local consumer affairs consultation service.",
+          "why_it_matters": "It is the official first contact recommended when a suspicious online purchase has already happened."
+        }
+      ],
+      "how_it_works": [
+        {
+          "title": "The ad borrows trust",
+          "explanation": "A social-media ad uses a famous brand name, logo or apparent campaign to make the offer look official."
+        },
+        {
+          "title": "The fake store adds urgency",
+          "explanation": "The investigated pages used steep discounts, limited quantities and time-sale language to push a quick purchase before verification."
+        },
+        {
+          "title": "Cash on delivery feels safer but shifts the trap",
+          "explanation": "The buyer pays the courier at delivery, but authenticity may only become obvious after opening, inspecting or testing the item. The courier is not authenticating the merchandise."
+        },
+        {
+          "title": "Independent verification breaks the chain",
+          "explanation": "Instead of trusting the advertisement's link, open the brand's official website independently and confirm whether the campaign, seller or shopping channel exists there."
+        }
+      ],
+      "example": "The agency documented a page advertising a purported Tanaka 24K Maple Leaf coin for ¥15,000. A tested item from the investigated seller was mainly about 70% copper and 20% iron. The lesson is not to memorize that price; it is to treat an extraordinary precious-metal bargain as a reason to verify before paying.",
+      "takeaways": [
+        "Do not authenticate a seller from the logo or social-media account alone.",
+        "Cash on delivery is a payment method, not an authenticity guarantee.",
+        "The named domains dccvd.com, dcvfert.top and mzisoe.top were identified in the official warning.",
+        "Verify from the brand's independently opened official website before ordering.",
+        "If you already ordered or paid, keep the evidence and call 188 promptly."
+      ]
+    },
+    "action_plan": {
+      "goal": "Avoid paying a counterfeit seller, or preserve the best chance of assistance if you already ordered or paid.",
+      "who_should_act": "Act if you are considering or have already used an SNS-linked shop claiming to sell Tanaka Precious Metals, Mikimoto or similar high-value branded goods. Everyone else can simply remember the verification rule for future high-value online purchases.",
+      "deadline": "Verify before ordering. If already affected, contact 188 as soon as possible rather than waiting for the seller to become reachable.",
+      "prepare": [
+        "The advertisement or screenshot, if still available.",
+        "The exact website/domain and order confirmation.",
+        "Delivery slip, parcel and product if already received.",
+        "Proof of payment or receipt if already paid.",
+        "Any messages or phone numbers used by the seller."
+      ],
+      "steps": [
+        {
+          "step": "Leave the advertisement",
+          "action": "Do not use the ad's purchase button as proof that the seller is official.",
+          "how": "Open a new browser search or manually navigate to the company's known official website.",
+          "needed": ["Brand/company name"],
+          "time_minutes": 1,
+          "cost_yen": 0,
+          "done_when": "You are viewing the independently reached official company site, not the ad's destination."
+        },
+        {
+          "step": "Verify the offer and seller",
+          "action": "Check whether the official site recognizes the campaign, store or authorized sales route.",
+          "how": "Compare the seller domain and offer with the company's official shopping and warning pages. Treat extreme discounts, cash-on-delivery-only payment, unclear company details, foreign domains or unnatural Japanese as reasons to stop and verify further.",
+          "needed": ["Seller domain", "Official company site"],
+          "time_minutes": 3,
+          "cost_yen": 0,
+          "done_when": "The seller can be independently verified through the official brand channel; otherwise do not order."
+        },
+        {
+          "step": "If already affected, preserve evidence",
+          "action": "Keep the order page, messages, delivery slip, parcel, product and proof of payment.",
+          "how": "Take screenshots and do not discard packaging or transaction records while seeking advice.",
+          "needed": ["Order and delivery records"],
+          "time_minutes": 5,
+          "cost_yen": 0,
+          "done_when": "You have a usable record of what was advertised, ordered, delivered and paid."
+        },
+        {
+          "step": "Contact Consumer Hotline 188",
+          "action": "Ask the local consumer affairs consultation service what recovery steps apply to your case.",
+          "how": "Call 188 in Japan. Follow the case-specific instructions rather than assuming the courier can automatically refund a cash-on-delivery payment.",
+          "needed": ["Order details", "Payment/delivery evidence"],
+          "time_minutes": 10,
+          "cost_yen": 0,
+          "done_when": "You have received case-specific guidance from the connected consumer affairs service."
+        }
+      ],
+      "mistakes_to_avoid": [
+        "Assuming a familiar logo, brand name or apparently official social-media account proves authenticity.",
+        "Assuming cash on delivery is safe because no credit-card details are entered.",
+        "Trusting only the absence of the three named domains; scammers can use new domains.",
+        "Paying quickly because of 'today only', low-stock or extreme-discount language.",
+        "Throwing away the parcel, delivery slip or screenshots before seeking advice."
+      ],
+      "decision_rules": [
+        {
+          "if": "the offer cannot be independently verified through the brand's official website or official contact channel",
+          "then": "do not order or pay"
+        },
+        {
+          "if": "the site is one of dccvd.com, dcvfert.top or mzisoe.top",
+          "then": "do not buy from it; it was identified in the Consumer Affairs Agency warning"
+        },
+        {
+          "if": "you already ordered, paid or received a suspicious product",
+          "then": "preserve evidence and contact Consumer Hotline 188 promptly"
+        }
+      ],
+      "follow_up": "After receiving advice from 188, follow the recommended payment, delivery or dispute steps and keep all records until the case is resolved. Re-check the Consumer Affairs Agency and brand warning pages if the seller uses a different domain or campaign name."
+    }
+  }
+}
