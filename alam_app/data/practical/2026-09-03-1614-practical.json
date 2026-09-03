@@ -1,0 +1,223 @@
+{
+  "id": "japan-typhoon24-autumn-front-heavy-rain-sep2026",
+  "agent": "practical",
+  "created_at": "2026-09-03T16:14:00+09:00",
+  "type": "disaster_readiness",
+  "title": "Typhoon 24 may prolong heavy rain: prepare before tonight’s risk rises",
+  "summary": "Typhoon 24 and the autumn rain front are combining to create a prolonged heavy-rain pattern, with official guidance warning of flooding, swollen rivers and landslide risk in western Japan through around September 6 and newer forecasts extending warning-level rain risk more broadly. The useful move is not panic-buying—it is checking your local JMA risk map, route and evacuation triggers before conditions worsen after dark.",
+  "why_it_matters": "This is a long-duration rain setup, not simply a direct-hit typhoon story. Heavy rain can occur far from the storm center because the typhoon is feeding warm, moist air into the front, so households outside the projected track can still face flooding or landslide danger.",
+  "importance": 96,
+  "confidence": 95,
+  "tags": ["Japan", "Typhoon 24", "Heavy Rain", "Flood", "Landslide", "Disaster Preparedness", "Weather"],
+  "geography": ["Japan"],
+  "status": "DEVELOPING",
+  "sources": [
+    {
+      "publisher": "Osaka Regional Headquarters, Japan Meteorological Agency",
+      "title": "前線や台風第24号による天気の見通しに関する説明会",
+      "url": "https://www.jma-net.go.jp/osaka/index.html",
+      "published_at": "2026-09-02",
+      "source_type": "official"
+    },
+    {
+      "publisher": "Japan Meteorological Agency",
+      "title": "警報・注意報",
+      "url": "https://www.jma.go.jp/bosai/warning/",
+      "source_type": "official"
+    },
+    {
+      "publisher": "Japan Meteorological Association",
+      "title": "各地の警報級大雨の期間は? 台風24号と秋雨前線で大雨が広範囲で長期間続く恐れ",
+      "url": "https://tenki.jp/forecaster/t_yoshida/2026/09/03/40428.html",
+      "published_at": "2026-09-03",
+      "source_type": "analysis"
+    },
+    {
+      "publisher": "Japan Meteorological Agency",
+      "title": "最新の気象データ：特定期間の気象データ",
+      "url": "https://www.data.jma.go.jp/stats/data/mdrr/periodstat/index.html",
+      "published_at": "2026-09-03",
+      "source_type": "official"
+    }
+  ],
+  "claims": [
+    {
+      "kind": "FACT",
+      "text": "The Osaka Regional Headquarters of JMA said Typhoon 24 was expected to remain slow-moving south of Japan around the seas south of Kyushu through about September 7, while warm moist air from the typhoon would keep western Japan very unstable.",
+      "source_refs": [1],
+      "basis": "Official September 2 JMA briefing"
+    },
+    {
+      "kind": "FACT",
+      "text": "JMA's briefing warned of heavy rain from the front and typhoon, with particular concern for low-lying flooding, river rise and landslides from September 3 through around September 6 in western Japan, and warned that conditions could intensify overnight or early morning.",
+      "source_refs": [1],
+      "basis": "Official JMA hazard and preparedness guidance"
+    },
+    {
+      "kind": "FACT",
+      "text": "The Japan Meteorological Association reported on September 3 that warning-level heavy rain risk could extend from Kyushu to Tohoku over the following days, with prolonged rain possible even in areas far from the typhoon center.",
+      "source_refs": [3],
+      "basis": "September 3 forecast analysis using current weather guidance"
+    },
+    {
+      "kind": "FACT",
+      "text": "JMA's current-period weather dataset shows ongoing nationally tracked heavy-rain periods extending through September 3, confirming that soils and rivers in some areas are already being affected by repeated rainfall before the full Typhoon 24/front sequence ends.",
+      "source_refs": [4],
+      "basis": "JMA current-period observations"
+    },
+    {
+      "kind": "INFERENCE",
+      "text": "Because the main risk mechanism is moisture feeding into a front, households should base decisions on local warnings and JMA risk maps rather than on whether the typhoon center is forecast to pass nearby.",
+      "source_refs": [1, 2, 3],
+      "basis": "Inference from the official mechanism and warning system"
+    }
+  ],
+  "editorial_visual": {
+    "style": "editorial",
+    "motif": "weather",
+    "secondary_motif": "home",
+    "scene": "a long ribbon of rain clouds stretching across Japan while a distant typhoon feeds moisture into it, with a small household checking a hazard map before nightfall",
+    "caption": "The danger can arrive far from the typhoon center",
+    "silliness": 0,
+    "exaggeration": 34
+  },
+  "content": {
+    "key_message": "Do not judge Typhoon 24 risk by the storm track alone: the front can produce prolonged dangerous rain far from the center, so check your local warning level and evacuation route before nightfall.",
+    "who_is_affected": "People in western Japan are the clearest officially identified risk group in the September 2 JMA briefing, especially households near rivers, low-lying areas or slopes. Newer September 3 forecasts indicate warning-level rain risk may spread more broadly from Kyushu through parts of Tohoku, so everyone in potentially affected regions should check local JMA information rather than rely on a national headline.",
+    "when": "JMA's western-Japan briefing highlighted September 3 through around September 6 for flooding, river and landslide concern, with Typhoon 24 remaining slow-moving south of Japan through about September 7. The forecast can still change, so local warnings override this general window.",
+    "financial_impact": "No defensible household-yen estimate is available. The value is loss prevention: avoiding flooded roads, vehicle damage, missed evacuation timing and avoidable exposure to landslide or river hazards.",
+    "time_minutes": 15,
+    "risk_if_ignored": "The costly mistake is waiting for the typhoon center to approach before checking danger. This setup can produce heavy rain remotely, and JMA specifically warns that stronger conditions may occur during dark or early-morning hours when movement is harder.",
+    "action": "DO NOW",
+    "deadline": "Before local conditions deteriorate, ideally before evening on September 3 in areas already under heavy-rain risk. After that, follow real-time JMA and municipal warnings rather than this article's timestamp.",
+    "effort": "Low: about 10–15 minutes to check local risk, route, alerts and essentials.",
+    "potential_benefit": "Earlier decisions reduce the chance of being forced to travel or evacuate after roads, rivers or slopes have become dangerous.",
+    "downside": "Overreacting to a national forecast can waste time or money if your area is unaffected. The correct filter is your municipality's warning plus JMA's local risk information.",
+    "what_would_change_mind": "A material downgrade in local JMA warnings, a faster change in the typhoon/front pattern that reduces moisture inflow, or updated official guidance showing the expected prolonged-rain corridor has shifted away from a region.",
+    "usefulness": 98,
+    "novelty": 92,
+    "impact": {
+      "money": "MED",
+      "family": "HIGH",
+      "career": "MED",
+      "japan": "HIGH",
+      "urgency": "HIGH"
+    },
+    "connection_tags": ["typhoon-24", "autumn-rain-front", "flood-risk", "landslide-risk", "disaster-readiness"],
+    "skeptical_view": "Forecast spread is still large because Typhoon 24 is slow-moving and its path remains uncertain. Not every prefecture in the broad forecast zone will experience severe rain, and a warning-level possibility is not the same as a guaranteed disaster. Local JMA warnings and risk maps should therefore control action.",
+    "what_to_watch": "Watch your municipality's evacuation information, JMA warning level, landslide/flood/inundation Kikikuru maps, river information and transport operator notices. A rising local warning is more decision-useful than changes in the typhoon center track alone.",
+    "reading_levels": {
+      "30 sec": {
+        "what_happened": "Typhoon 24 is feeding warm moist air into the autumn rain front, creating a prolonged heavy-rain setup even far from the storm center.",
+        "why_it_matters": "Flood, river and landslide risk can rise overnight and can affect places not expecting a direct typhoon hit.",
+        "what_to_do_watch": "Check JMA's local warnings and Kikikuru risk maps now, confirm your evacuation route, and avoid planning unnecessary travel through flood- or landslide-prone areas.",
+        "bottom_line": "Follow local hazard levels, not the typhoon track alone."
+      },
+      "2_min": "The key mechanism is moisture transport. Typhoon 24 is moving slowly south of Japan and feeding warm, humid air into a front crossing Japan. That can repeatedly regenerate heavy rain over the same broad areas even when the typhoon center remains far away. JMA's September 2 briefing warned western Japan about flooding, swollen rivers and landslides from September 3 through around September 6, including possible worsening at night or early morning. A September 3 Japan Meteorological Association forecast extended warning-level heavy-rain concern more broadly from Kyushu toward Tohoku over the following days. The uncertainty is geographical: not every place in the broad zone will get severe rain. Therefore the correct action is to check your municipality and JMA's live risk maps, not to treat the national outlook as a guarantee for your neighborhood."
+    },
+    "learning": {
+      "outcomes": [
+        "Explain why a typhoon can cause dangerous rain far from its center.",
+        "Know which local warning signals should determine whether to stay, travel or evacuate.",
+        "Recognize why nighttime deterioration deserves earlier preparation."
+      ],
+      "background": "A typhoon does not need to pass directly overhead to create dangerous weather. When a front is sitting across Japan, a distant typhoon can act like a moisture pump: it continuously sends warm, humid air toward the front. If that moist air keeps rising along the front, rain clouds can repeatedly form over the same regions and total rainfall can become dangerous over several days.",
+      "terms": [
+        {
+          "term": "Autumn rain front",
+          "meaning": "A seasonal boundary between different air masses that can remain near Japan and repeatedly produce rain.",
+          "why_it_matters": "A typhoon feeding moisture into the front can intensify rain far from the typhoon itself."
+        },
+        {
+          "term": "Kikikuru",
+          "meaning": "JMA's color-coded local danger maps for landslides, flooding and inundation.",
+          "why_it_matters": "They show where danger is actually rising, which is more useful for household decisions than a national typhoon-track map alone."
+        }
+      ],
+      "how_it_works": [
+        {
+          "title": "The typhoon supplies moisture",
+          "explanation": "Typhoon 24 circulates warm humid air around itself and pushes part of that moisture northward toward Japan."
+        },
+        {
+          "title": "The front concentrates the rain",
+          "explanation": "When moist air meets the front it is forced upward, cools and forms strong rain clouds. If the front moves slowly, the same regions can receive repeated rain."
+        },
+        {
+          "title": "Accumulated rain raises secondary hazards",
+          "explanation": "Even if hourly rain briefly eases, saturated slopes, swollen rivers and wet low-lying ground can remain dangerous because risk depends on accumulated rainfall as well as the current shower."
+        }
+      ],
+      "example": "Imagine the typhoon as a pump and the front as a long gutter across Japan. The pump can keep feeding water into the gutter even when the pump itself is far away; the overflow risk depends on where the gutter is already full, not just where the pump is located.",
+      "takeaways": [
+        "A distant typhoon can still drive dangerous local rain.",
+        "Long-duration rain can make rivers and slopes more dangerous even between downpours.",
+        "JMA local warnings and Kikikuru should control decisions.",
+        "Nighttime intensification is a reason to prepare earlier, not to wait for visual confirmation.",
+        "The forecast remains uncertain, so re-check local official information frequently."
+      ]
+    },
+    "action_plan": {
+      "goal": "Know your local hazard level and be ready to act before heavy rain makes travel or evacuation more dangerous.",
+      "who_should_act": "Anyone in a municipality with heavy-rain, flood or landslide warnings/early-warning potential, especially households near rivers, slopes, underpasses or known flood zones. People outside warning areas can ignore emergency preparation beyond routine monitoring.",
+      "deadline": "Do the first check before conditions worsen locally; for areas already affected on September 3, complete it before evening where possible.",
+      "prepare": [
+        "Phone with sufficient battery and charging cable or power bank if already owned.",
+        "Municipal hazard map or online access to it.",
+        "Essential medicines, identification and necessary child/elder-care items if evacuation might become necessary.",
+        "A planned safer route that does not cross rivers, underpasses or steep-slope hazard areas when alternatives exist."
+      ],
+      "steps": [
+        {
+          "step": "Check your exact local hazard",
+          "action": "Open JMA warnings and Kikikuru for your municipality and check flood, inundation and landslide danger.",
+          "how": "Use JMA's official warning and risk-map pages, then compare with your municipal hazard map.",
+          "needed": ["Your current municipality/location"],
+          "time_minutes": 5,
+          "cost_yen": 0,
+          "done_when": "You know whether your home, route or workplace is inside a currently elevated risk area."
+        },
+        {
+          "step": "Set your trigger",
+          "action": "Decide what official warning or municipal evacuation notice means you will stop travel or move to a safer place.",
+          "how": "Follow municipal evacuation information and JMA warning levels; do not wait for water to enter the road or for a slope to visibly fail.",
+          "needed": ["Municipal alert source", "JMA local warning page"],
+          "time_minutes": 3,
+          "cost_yen": 0,
+          "done_when": "Everyone in the household knows the trigger and where to go."
+        },
+        {
+          "step": "Remove avoidable travel exposure",
+          "action": "Avoid unnecessary routes through river crossings, underpasses, low-lying roads and landslide-prone slopes during the heavy-rain window.",
+          "how": "Check railway, road and municipal notices before departure; delay nonessential travel if local warnings rise.",
+          "needed": ["Planned route"],
+          "time_minutes": 5,
+          "cost_yen": 0,
+          "done_when": "Your essential travel plan has a safer route, delay option or cancellation trigger."
+        }
+      ],
+      "mistakes_to_avoid": [
+        "Assuming you are safe because the typhoon center is far away.",
+        "Driving into a flooded underpass or across moving water to 'check' depth.",
+        "Waiting until nighttime or visible flooding to decide what to do.",
+        "Using a national social-media map instead of local JMA and municipal warnings.",
+        "Buying unnecessary emergency goods when the real immediate need is information, route planning and existing essentials."
+      ],
+      "decision_rules": [
+        {
+          "if": "Your municipality raises evacuation information or JMA danger levels in your immediate area",
+          "then": "Follow the official instruction promptly and avoid delaying until conditions visibly become severe."
+        },
+        {
+          "if": "Your route crosses a flooded, closed or rapidly worsening road",
+          "then": "Turn back or use a verified safer route; never test floodwater depth with a vehicle or on foot."
+        },
+        {
+          "if": "Your municipality remains outside heavy-rain warnings and local risk maps stay low",
+          "then": "Routine monitoring is sufficient; no special purchase is needed solely because Typhoon 24 exists."
+        }
+      ],
+      "follow_up": "Re-check JMA and municipal information before sleep, before any early-morning commute and before travel while the front/typhoon pattern remains active."
+    }
+  }
+}
