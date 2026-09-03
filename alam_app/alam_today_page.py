@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import streamlit as st
 
+import alam_daily_brief as daily_brief
 import alam_intelligence as intelligence
 import alam_local_state as localstate
 from alam_core import age_label, esc, feed_score
@@ -144,7 +145,7 @@ def render_today(records, all_records, comments, manager, views, reader):
     # An alert match is exceptional enough to stay above the normal hierarchy, but
     # it is rendered only when the user's explicit alert rules are satisfied.
     intelligence.render_alert_ribbon(records, all_records)
-    intelligence.render_daily_brief(records, all_records)
+    daily_brief.render_daily_brief(records, all_records)
 
     action_picks = []
     for _, _, allowed in ACTION_LANES:
