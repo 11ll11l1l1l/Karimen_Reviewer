@@ -37,3 +37,33 @@ def test_zero_and_one_story_states_are_safe():
     base = _story("base", ["yen"])
     assert related_story_candidates(base, []) == []
     assert related_story_candidates(base, [base]) == []
+
+
+def test_concentrated_related_shelf_reserves_one_evidence_connected_different_lens():
+    base = _story("base", ["yen", "household"])
+    rows = [base]
+    rows.extend(
+        [
+            _story("money-1", ["yen", "household"], "reflection", 99),
+            _story("money-2", ["yen", "household"], "reflection", 95),
+            _story("money-3", ["yen", "household"], "reflection", 90),
+            _story("family-lens", ["yen"], "practical", 75),
+        ]
+    )
+    selected = related_story_candidates(base, rows, limit=3)
+    assert [row[2]["id"] for row in selected[:2]] == ["money-1", "money-2"]
+    assert selected[-1][2]["id"] == "family-lens"
+    assert selected[-1][3] == ["yen"]
+
+
+def test_already_diverse_related_shelf_keeps_original_ranking():
+    base = _story("base", ["yen", "household"])
+    rows = [
+        base,
+        _story("money", ["yen", "household"], "reflection", 99),
+        _story("family", ["yen", "household"], "practical", 95),
+        _story("discover", ["yen", "household"], "discover", 90),
+        _story("extra", ["yen"], "trend", 80),
+    ]
+    selected = related_story_candidates(base, rows, limit=3)
+    assert [row[2]["id"] for row in selected] == ["money", "family", "discover"]
