@@ -196,15 +196,29 @@ def action_focus(record, completed=None):
 
 
 def _reflection_key(record):
-    """Bind a completion reflection to the current validated plan shape.
+    """Bind a completion reflection to every rendered part of the validated plan.
 
-    If editorial instructions materially change, step identities change too, so a prior
-    outcome must not suppress the question for the revised plan.
+    A prior outcome must not suppress the question after editorial instructions change.
+    Step keys already cover title/action/done-when text; include normalized goal, deadline,
+    and effort too because those values can materially change while step wording stays the
+    same. Hash only the sanitized display plan so equivalent legacy input remains stable.
     """
     plan = action_plan(record)
     if not plan:
         return None
-    shape = "|".join(step["key"] for step in plan["steps"])
+    shape = json.dumps(
+        {
+            "goal": plan.get("goal") or "",
+            "deadline": plan.get("deadline") or "",
+            "steps": [
+                {"key": step["key"], "minutes": step.get("minutes")}
+                for step in plan["steps"]
+            ],
+        },
+        ensure_ascii=True,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
     return f"alam_action_outcome_{_story_key(record.get('id'))}_{hashlib.sha1(shape.encode()).hexdigest()[:10]}"
 
 
