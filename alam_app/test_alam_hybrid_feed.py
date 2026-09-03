@@ -35,6 +35,16 @@ def main():
     assert len(clean) == 1
     assert clean[0]["_storage"] == "supabase"
 
+    # Postgres commonly serializes a Japan-time audit timestamp in UTC. These are
+    # the same instant and therefore the same material story version.
+    utc_mirror = _record("story-c", "2026-09-03T10:11:04+00:00", "supabase")
+    japan_audit = _record("story-c", "2026-09-03T19:11:04+09:00", "local")
+    timezone_clean, timezone_count = merge_missing_audit_versions([utc_mirror], [japan_audit])
+    assert version_key(utc_mirror) == version_key(japan_audit)
+    assert timezone_count == 0, timezone_count
+    assert len(timezone_clean) == 1
+    assert timezone_clean[0]["_storage"] == "supabase"
+
     print("ALAM hybrid feed regression test passed")
 
 
