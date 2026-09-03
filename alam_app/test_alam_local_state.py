@@ -25,7 +25,7 @@ def test_trim_drops_only_corrupt_persisted_timestamps():
 def test_corrupt_timestamp_entries_do_not_break_cookie_profile_normalization():
     profile = local_state._default_profile()
     profile["r"] = {"read-good": 10, "read-bad": None, "read-worse": "NaN"}
-    profile["b"] = {"bookmark-good": 20, "bookmark-bad": object()}
+    profile["b"] = {"bookmark-good": 20, "bookmark-bad": {"minute": 420}}
 
     encoded = local_state._encode(profile)
     decoded = local_state._decode(encoded)
