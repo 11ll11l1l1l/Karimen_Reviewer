@@ -1,0 +1,254 @@
+{
+  "id": "japan-residence-permit-fees-oct2026",
+  "agent": "practical",
+  "created_at": "2026-09-04T07:13:00+09:00",
+  "type": "immigration",
+  "title": "Japan residence fees jump from Oct. 1; PR rises to ¥200,000",
+  "summary": "Japan will sharply raise fees for residence-status changes, renewals and permanent residence for applications received on or after October 1, 2026. The cutoff is the application-received date, so a valid application accepted by September 30 stays under the old fee even if approval comes later.",
+  "why_it_matters": "The increase is large enough to materially affect household planning: permanent-residence approval rises from ¥10,000 to ¥200,000, while change/renewal fees will vary by the granted period and can reach ¥75,000 at the counter or ¥65,550 online including the payment fee.",
+  "importance": 96,
+  "confidence": 98,
+  "tags": ["Japan", "Immigration", "Residence status", "Permanent residence", "Fees", "Foreign residents"],
+  "geography": ["Japan"],
+  "status": "NEW",
+  "sources": [
+    {
+      "publisher": "Immigration Services Agency of Japan",
+      "title": "令和８年１０月１日付け在留許可手数料の額の改定等について",
+      "url": "https://www.moj.go.jp/isa/01_00644.html",
+      "published_at": "2026-08-28",
+      "source_type": "official"
+    },
+    {
+      "publisher": "Immigration Services Agency of Japan",
+      "title": "オンライン申請における手数料額及び手数料納付方法について(２０２６年１０月１日以降の申請分のみに適用)",
+      "url": "https://www.moj.go.jp/isa/11_00107.html",
+      "published_at": "2026-08-28",
+      "source_type": "official"
+    },
+    {
+      "publisher": "Immigration Services Agency of Japan",
+      "title": "令和８年１０月１日付け在留許可手数料の額の改定等に関するQ&A",
+      "url": "https://www.moj.go.jp/isa/applications/faq/01_00650.html",
+      "published_at": "2026-08-28",
+      "source_type": "official"
+    },
+    {
+      "publisher": "Immigration Services Agency of Japan",
+      "title": "永住許可申請",
+      "url": "https://www.moj.go.jp/isa/applications/procedures/16-4.html",
+      "published_at": "2026-09-04",
+      "source_type": "official"
+    }
+  ],
+  "claims": [
+    {
+      "kind": "FACT",
+      "text": "The new fee schedule applies to applications received on or after October 1, 2026; applications received by September 30 use the old fee even if approval occurs later.",
+      "source_refs": [1, 3],
+      "basis": "Official Immigration Services Agency implementation notice and Q&A."
+    },
+    {
+      "kind": "FACT",
+      "text": "Permanent-residence approval currently costs ¥10,000 and will cost ¥200,000 under the October 1 schedule.",
+      "source_refs": [1, 4],
+      "basis": "Official current PR procedure and revised fee notice."
+    },
+    {
+      "kind": "FACT",
+      "text": "For online change/renewal applications from October 1, the total payable amount ranges from ¥10,330 for a period of three months or less to ¥65,550 for five years or more, including the payment processor fee.",
+      "source_refs": [2],
+      "basis": "Official online fee table."
+    },
+    {
+      "kind": "FACT",
+      "text": "Online applications from October 1 use convenience-store or bank payment rather than revenue stamps; credit cards and QR-code payments are not supported.",
+      "source_refs": [2],
+      "basis": "Official online-payment instructions."
+    },
+    {
+      "kind": "FACT",
+      "text": "Online filing does not support the new fee-reduction measure; applicants seeking a reduction must file at the counter with supporting evidence.",
+      "source_refs": [2, 3],
+      "basis": "Official online instructions and Q&A."
+    },
+    {
+      "kind": "INFERENCE",
+      "text": "People who are already legally eligible and genuinely ready to file before October may have a strong financial reason not to delay solely for convenience, but nobody should submit an incomplete or premature immigration application just to chase the lower fee.",
+      "source_refs": [],
+      "basis": "Reasoned consequence of the official cutoff and fee difference; filing eligibility and document completeness remain controlling."
+    }
+  ],
+  "editorial_visual": {
+    "style": "editorial",
+    "motif": "document",
+    "secondary_motif": "yen",
+    "scene": "a residence-card-style document approaching an October calendar page while a stack of yen coins rises steeply on the far side, with a smaller September stack on the near side",
+    "caption": "The filing date now has a much bigger price consequence",
+    "silliness": 4,
+    "exaggeration": 38
+  },
+  "content": {
+    "key_message": "If you have a legitimate residence change, renewal or PR application coming soon, October 1 is now a major fee boundary—but do not rush an application that is not actually ready.",
+    "what_changed": [
+      "Applications received from October 1, 2026 use a new tiered fee schedule based on the period of stay granted for changes and renewals.",
+      "Permanent residence rises from the current ¥10,000 approval fee to ¥200,000.",
+      "Online applications also switch from revenue stamps to convenience-store or bank payment and add a payment-processing fee."
+    ],
+    "who_is_affected": "Foreign residents who will apply for a change of status, extension of period of stay or permanent residence. People with no upcoming immigration application can ignore this for now.",
+    "when": "New fees apply to applications received on or after October 1, 2026. An application received by September 30 remains under the old fee even if the decision comes in October or later.",
+    "financial_impact": "HIGH",
+    "risk_if_ignored": "A person who was otherwise ready to submit before the cutoff but waits until October can face tens of thousands of yen more for a change/renewal and ¥190,000 more for permanent residence approval.",
+    "action": "PREPARE",
+    "deadline": "September 30, 2026 is the last received-date for the old fee schedule.",
+    "effort": "MED",
+    "potential_benefit": "Avoiding a materially higher statutory fee when an application is already eligible, complete and appropriately timed.",
+    "downside": "Rushing can create a weak or incomplete filing. The fee difference does not change substantive eligibility requirements.",
+    "skeptical_view": "The September cutoff is financially important, but it is not a reason to file before a person is eligible or before required documents are ready. The government also created reduction/waiver provisions for qualifying hardship or special cases, so the headline amount is not necessarily what every affected applicant ultimately pays.",
+    "what_would_change_mind": "A later official notice delaying the October 1 implementation, changing the fee amounts, or changing the received-date transition rule would require a new version.",
+    "recommendation": "Check your real immigration timetable now. If you are independently eligible and can submit a complete application by September 30, compare the old and new fee before choosing the filing date; otherwise prioritize a correct application over the fee cutoff.",
+    "usefulness": 99,
+    "novelty": 96,
+    "impact": {
+      "money": "HIGH",
+      "family": "HIGH",
+      "career": "MED",
+      "japan": "HIGH",
+      "urgency": "HIGH"
+    },
+    "connection_tags": ["immigration-fees", "residence-renewal", "permanent-residence", "october-2026"],
+    "reading_levels": {
+      "30 sec": [
+        "What happened: Japan's residence change/renewal and PR fees rise for applications received from Oct. 1.",
+        "Why it matters: PR goes from ¥10,000 to ¥200,000; long change/renewal approvals can cost tens of thousands more.",
+        "What to do: If you already have a genuine upcoming filing, check whether a complete application can properly be received by Sept. 30.",
+        "Bottom line: The cutoff is based on when Immigration receives the application, not when it approves it."
+      ],
+      "2_min": "The reform changes both the amount and, for online cases, how payment works. Change/renewal fees depend on the period Immigration grants. At the counter the revised schedule reaches ¥75,000 for five years or more; online the base fee is ¥65,000 plus ¥550 processing, or ¥65,550 total. PR approval becomes ¥200,000. Crucially, a valid application received by Sept. 30 stays on the pre-Oct. 1 fee even if the decision arrives later. Online filings from Oct. 1 use convenience-store or bank payment and cannot use the reduction measure, so people who may qualify for a reduction need to check the counter route."
+    },
+    "learning": {
+      "outcomes": [
+        "Explain which date decides whether the old or new immigration fee applies.",
+        "Distinguish the new change/renewal fee tiers from the permanent-residence fee.",
+        "Know when online filing may not be the right route because of a fee-reduction request."
+      ],
+      "background": "Japan charges the fee when a change of status, extension of stay or permanent residence is approved. From October 1, 2026, the change/renewal amount is no longer one flat amount: it depends on the period of stay granted. Permanent residence has its own much larger fixed fee.",
+      "terms": [
+        {
+          "term": "在留期間更新許可",
+          "meaning": "Extension of period of stay—the procedure commonly called a visa/residence renewal inside Japan.",
+          "why_it_matters": "It is one of the procedures moving to the new tiered fee schedule."
+        },
+        {
+          "term": "申請受付日",
+          "meaning": "The date Immigration receives/accepts the application.",
+          "why_it_matters": "This date—not the approval date—determines whether the old or new fee schedule applies across the October 1 transition."
+        }
+      ],
+      "how_it_works": [
+        {
+          "title": "First determine the received date",
+          "explanation": "If Immigration receives the application by September 30, the old fee applies even if approval is after October 1."
+        },
+        {
+          "title": "Then determine the procedure and granted period",
+          "explanation": "PR has a fixed revised fee of ¥200,000. For change/renewal, the fee depends on the length of stay actually granted."
+        },
+        {
+          "title": "Payment route depends on filing method",
+          "explanation": "Counter cases continue using revenue stamps. Online cases received from October 1 use convenience-store or bank payment and include a processor fee."
+        }
+      ],
+      "example": "Example: a properly complete renewal received on September 30 remains under the old fee even if Immigration approves it in October. The same application first received on October 1 falls under the new schedule, with the final amount depending on the period granted.",
+      "takeaways": [
+        "September 30 is the key received-date cutoff.",
+        "PR approval rises from ¥10,000 to ¥200,000.",
+        "Change/renewal fees become period-based rather than flat.",
+        "Online payment changes on October 1 and does not support fee-reduction requests.",
+        "Do not trade application quality for a cheaper filing date."
+      ]
+    },
+    "action_plan": {
+      "goal": "Choose the correct filing timing and payment route without missing the September 30 old-fee cutoff or weakening the application.",
+      "who_should_act": "Anyone expecting to file a residence-status change, renewal or permanent-residence application around September/October 2026. Others can ignore this until they have an actual filing coming up.",
+      "deadline": "For the old fee schedule, Immigration must receive the application no later than September 30, 2026.",
+      "prepare": [
+        "Your current residence card and actual expiry date",
+        "The official checklist for your specific status/application type",
+        "All required supporting documents for that application",
+        "Evidence of the application's received date after filing",
+        "If seeking fee reduction, the supporting evidence required for that request and the official counter-filing guidance"
+      ],
+      "steps": [
+        {
+          "step": "Identify the real application window",
+          "action": "Check whether you are already eligible to file and whether your application can properly be submitted before September 30.",
+          "how": "Use the Immigration Services Agency procedure page for your exact status/application type; do not rely only on the fee announcement.",
+          "needed": ["Residence status", "Expiry date", "Application type"],
+          "time_minutes": 10,
+          "cost_yen": 0,
+          "done_when": "You know whether filing before September 30 is legally/procedurally appropriate, not merely cheaper."
+        },
+        {
+          "step": "Complete the evidence pack",
+          "action": "Gather every required document before filing.",
+          "how": "Follow the official document list for your specific application category and check validity periods of certificates.",
+          "needed": ["Official checklist", "Required certificates and supporting records"],
+          "time_minutes": 30,
+          "cost_yen": 0,
+          "done_when": "Every required item on the official checklist is present or an official rule clearly says it is unnecessary."
+        },
+        {
+          "step": "Choose online or counter filing",
+          "action": "Use the filing route that fits your case, especially if you may request a fee reduction.",
+          "how": "Online is available for eligible procedures, but the official Oct. 1 guidance says the new reduction measure is not supported online; reduction cases should use the counter route with evidence.",
+          "needed": ["Chosen filing route"],
+          "time_minutes": 5,
+          "cost_yen": 0,
+          "done_when": "You know where and how you will submit and whether the route supports every feature you need."
+        },
+        {
+          "step": "Preserve proof of receipt",
+          "action": "After submission, save the official receipt/acceptance evidence showing the application date.",
+          "how": "For online filing, retain the application receipt/number email; for counter filing, retain the official application evidence provided to you.",
+          "needed": ["Submitted application"],
+          "time_minutes": 5,
+          "cost_yen": 0,
+          "done_when": "You can prove the application was received on or before September 30 if claiming the old fee schedule."
+        },
+        {
+          "step": "Pay only through the official method when instructed",
+          "action": "Do not pay the approval fee before the official instruction and verify online payment emails carefully.",
+          "how": "For Oct. 1+ online cases, the agency says payment guidance comes only from no-reply@service-dgft.com; other payment-demand emails are fraudulent.",
+          "needed": ["Official approval/payment instruction"],
+          "time_minutes": 5,
+          "cost_yen": 0,
+          "done_when": "The payment request matches the official channel and the amount corresponds to your granted period/procedure."
+        }
+      ],
+      "mistakes_to_avoid": [
+        "Assuming the approval date decides the fee; the transition rule uses the application received date.",
+        "Submitting an incomplete or premature application merely to beat September 30.",
+        "Assuming every renewal will cost ¥75,000; the new amount depends on the granted stay period and filing method.",
+        "Trying to use the online route for a fee-reduction request after October 1.",
+        "Paying through a link from an email address other than the official payment address stated by Immigration."
+      ],
+      "decision_rules": [
+        {
+          "if": "You are already eligible and can submit a complete, correct application by September 30",
+          "then": "Consider filing by the cutoff because the old fee schedule will remain applicable even if approval comes later."
+        },
+        {
+          "if": "You are not eligible yet or required documents will not be ready",
+          "then": "Do not force an early filing solely to save the fee; prioritize a valid application."
+        },
+        {
+          "if": "You may qualify for the new fee-reduction measure",
+          "then": "Check the official reduction guidance and use counter filing rather than online filing for the reduction request."
+        }
+      ],
+      "follow_up": "After filing, keep the received-date evidence and re-check the official Immigration Services Agency fee page before payment in case implementation details change."
+    },
+    "bottom_line": "For a genuinely ready immigration application, September 30 can be worth tens or even hundreds of thousands of yen—but correctness still matters more than rushing."
+  }
+}
