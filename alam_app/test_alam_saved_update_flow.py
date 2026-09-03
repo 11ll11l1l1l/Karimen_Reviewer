@@ -1,5 +1,6 @@
 """Regression tests for ALAM Saved review state and collection organization."""
 
+from pathlib import Path
 from types import SimpleNamespace
 
 import alam_core
@@ -79,6 +80,23 @@ def test_collection_cookie_uses_hashed_story_keys():
     key = _collection_key("a-very-long-stable-story-id")
     assert len(key) == 12
     assert "story" not in key
+
+
+def test_saved_collection_database_domain_matches_product_vocabulary():
+    """Durable account state must reject labels the browser cannot interpret."""
+    migration = (
+        Path(__file__).resolve().parents[1]
+        / "supabase"
+        / "migrations"
+        / "017_saved_collection_domain.sql"
+    ).read_text(encoding="utf-8")
+    expected = {"saved", "read_later", "important", "money", "japan", "family", "ideas"}
+    for value in expected:
+        assert f"'{value}'" in migration
+    assert "saved_articles_collection_domain_check" in migration
+    assert "CHECK (collection IN" in migration
+    assert "DROP TABLE" not in migration.upper()
+    assert "DELETE FROM" not in migration.upper()
 
 
 def test_failed_cloud_collection_write_cannot_revert_newer_browser_choice():
