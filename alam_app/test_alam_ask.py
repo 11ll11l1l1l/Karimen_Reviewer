@@ -1,5 +1,5 @@
 """Regression tests for deterministic, evidence-only Ask ALAM retrieval."""
-from alam_ask import _display_score, grounded_answer, grounded_perspectives, grounded_sources, rank_records, relevance_score
+from alam_ask import _display_score, filter_excluded_records, grounded_answer, grounded_perspectives, grounded_sources, rank_records, relevance_score
 
 VISA={"id":"visa-fee","_category":"practical","title":"Japan visa renewal fees change in October","summary":"Residence renewal costs rise from October.","why_it_matters":"Foreign residents may pay more.","tags":["Japan","Visa Renewal","Immigration"],"importance":98,"confidence":99,"content":{"key_message":"File only when your residence application is genuinely ready.","reading_levels":{"30 sec":{"bottom_line":"Check the official filing window."}}},"sources":[{"publisher":"Immigration Services Agency of Japan","title":"Official fee notice","url":"https://www.moj.go.jp/isa/example.html","source_type":"official"},{"publisher":"Duplicate","title":"Duplicate URL","url":"https://www.moj.go.jp/isa/example.html"},{"publisher":"Unsafe","title":"Unsafe","url":"javascript:alert(1)"}]}
 QUAKE={"id":"quake-science","_category":"discover","title":"Japan maps earthquake plate locking more clearly","summary":"Researchers combined seismic and deformation observations.","tags":["Earthquake","Science"],"importance":86,"confidence":94,"content":{"key_message":"Better plate-locking maps are not an exact earthquake countdown."}}
@@ -28,6 +28,11 @@ def test_grounded_perspectives_are_same_story_and_challenge_first():
         {"story_id":"visa-fee","persona_id":"bad","stance":"UNKNOWN","body":"Invalid stance."},
     ]
     items=grounded_perspectives(comments,"visa-fee");assert len(items)==2;assert items[0]["stance"]=="CHALLENGE";assert items[0]["persona"]=="Mara Teka";assert all("Wrong story" not in item["body"] for item in items)
+def test_recovery_exclusion_removes_exact_failed_story_before_ranking():
+    duplicate=dict(VISA);duplicate["id"]="alternate-visa-fee";duplicate["title"]="Visa renewal fee alternatives after October"
+    filtered=filter_excluded_records([VISA,duplicate,QUAKE],["visa-fee"])
+    assert {record["id"] for record in filtered}=={"alternate-visa-fee","quake-science"}
+    ranked=rank_records(filtered,"visa renewal fee");assert ranked;assert all(record["id"]!="visa-fee" for _,record in ranked)
 
 if __name__=="__main__":
     tests=[value for name,value in globals().items() if name.startswith("test_") and callable(value)]
