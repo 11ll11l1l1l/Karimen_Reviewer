@@ -29,6 +29,12 @@ COMPLETION_OUTCOMES = {
     "partly": "Partly",
     "no": "No — I still need help",
 }
+CATEGORY_LENSES = {
+    "discover": "Discover",
+    "practical": "Action",
+    "reflection": "Market",
+    "trend": "Trends",
+}
 
 
 def _compact(value, limit=420):
@@ -222,12 +228,7 @@ def record_completion_outcome(record, outcome):
 
 
 def recovery_query(record):
-    """Build a deterministic Ask ALAM query from the validated story, never user data.
-
-    Title is preferred because Ask ALAM's retrieval is corpus-grounded. Goal is only a
-    fallback for legacy records. If neither exists, no recovery CTA is shown rather than
-    sending a vague query that could retrieve unrelated evidence.
-    """
+    """Build a deterministic Ask ALAM query from the validated story, never user data."""
     title = _compact(record.get("title"), 180) if isinstance(record, dict) else ""
     if title:
         return title
@@ -235,18 +236,31 @@ def recovery_query(record):
     return _compact((plan or {}).get("goal"), 180)
 
 
+def recovery_lenses(record):
+    """Prefer genuinely additional evidence instead of repeating the failed plan.
+
+    Recovery deliberately searches the other validated ALAM lenses. This excludes the
+    originating story by construction and makes a failed Action plan seek corroborating
+    context from Discover/Market/Trends rather than presenting the same instructions as
+    new help. If those lenses have no relevant record, Ask ALAM fails closed.
+    """
+    category = str((record or {}).get("_category") or (record or {}).get("category") or "").strip().lower()
+    origin = CATEGORY_LENSES.get(category)
+    return [label for label in CATEGORY_LENSES.values() if label != origin] if origin else []
+
+
 def open_grounded_recovery(record):
     """Route an incomplete outcome into Ask ALAM without generating new advice."""
     query = recovery_query(record)
     if not query:
         return False
-    # Clear detail selection first so the normal app router can render More > Ask ALAM.
-    # The query is derived only from the validated record; no outcome reason/free text is
-    # captured. Ask ALAM keeps its existing insufficient-evidence behavior.
     st.session_state["selected_story"] = None
     st.session_state["main_nav"] = "More"
     st.session_state["more_nav"] = "Ask ALAM"
     st.session_state["alam_ask_query"] = query
+    lenses = recovery_lenses(record)
+    if lenses:
+        st.session_state["alam_ask_lenses"] = lenses
     return True
 
 
@@ -292,7 +306,7 @@ def render_action_checklist(record, manager=None):
             st.caption(f"Outcome recorded: {COMPLETION_OUTCOMES[outcome]}. Thanks — this helps ALAM measure whether actions actually worked.")
             if outcome in {"partly", "no"} and recovery_query(record):
                 st.markdown("**Still unresolved? Check what ALAM can verify next.**")
-                st.caption("This opens grounded Ask ALAM using this story’s topic. It can only answer from validated ALAM records and will say when evidence is insufficient.")
+                st.caption("This opens grounded Ask ALAM using this story’s topic and other ALAM lenses first, so it does not simply repeat the same plan. If no additional validated evidence exists, ALAM will say so.")
                 if st.button("Ask ALAM about this", key=f"{reflection_key}_recovery", use_container_width=True):
                     if open_grounded_recovery(record):
                         st.rerun()
