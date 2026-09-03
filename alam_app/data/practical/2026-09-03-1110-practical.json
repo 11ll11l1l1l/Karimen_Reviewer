@@ -1,0 +1,82 @@
+{
+  "id": "japan-recall-soundcore3-mhi-aircon-fire-update-2026-09",
+  "agent": "practical",
+  "created_at": "2026-09-03T11:10:00+09:00",
+  "type": "safety",
+  "title": "Check these recalls: Soundcore 3 and older Mitsubishi air conditioners",
+  "summary": "Japan's Consumer Affairs Agency has published new serious-fire reports involving recalled Soundcore 3 speakers and older Mitsubishi Heavy Industries room air conditioners. The latest fires are still under investigation, pero the recalls already apply: affected owners should stop using unremedied units and arrange the official free recovery/inspection process.",
+  "why_it_matters": "The exposure is not small: the official notice lists about 91,933 recalled Soundcore 3 units with a 44.0% recovery rate, and about 930,000 affected older Mitsubishi air conditioners with only a 9.8% modification rate. A quick model/serial check can remove a preventable fire risk at no repair or replacement cost under the recalls.",
+  "importance": 94,
+  "confidence": 99,
+  "tags": ["Japan", "Recall", "Fire Safety", "Soundcore 3", "Anker", "Mitsubishi Heavy Industries", "Air Conditioner"],
+  "geography": ["Japan"],
+  "status": "DEVELOPING",
+  "sources": [
+    {"publisher": "Consumer Affairs Agency, Japan", "title": "消費生活用製品の重大製品事故:リコール製品で火災等(エアコン、スピーカー(充電式))(9月1日)", "url": "https://www.caa.go.jp/notice/entry/047387/", "published_at": "2026-09-01", "source_type": "official"},
+    {"publisher": "Consumer Affairs Agency, Japan", "title": "消費生活用製品の重大製品事故に係る公表について（令和8年9月1日）", "url": "https://www.caa.go.jp/notice/assets/consumer_safety_cms202_260901_01.pdf", "published_at": "2026-09-01", "source_type": "official"},
+    {"publisher": "Anker Japan", "title": "Ankerグループ4製品に関するお詫びと自主回収のお知らせ", "url": "https://corp.ankerjapan.com/posts/579", "published_at": "2025-10-21", "source_type": "primary"},
+    {"publisher": "Anker Japan", "title": "モバイルバッテリー / スピーカー回収受付フォーム", "url": "https://www.ankerjapan.com/pages/202510-support", "published_at": "2025-10-21", "source_type": "primary"},
+    {"publisher": "Mitsubishi Heavy Industries Thermal Systems", "title": "三菱重工製エアコン（ビーバーエアコン）ご愛用のお客様へ無償点検・改修のお願い", "url": "https://www.mhi-mth.co.jp/important/180115/", "published_at": "2018-01-11", "source_type": "primary"}
+  ],
+  "claims": [
+    {"kind": "FACT", "text": "On September 1, 2026, the Consumer Affairs Agency published serious product-accident reports including two fires involving Mitsubishi Heavy Industries air conditioners and one fire involving a rechargeable Soundcore 3 speaker; the causes of those newly reported incidents remain under investigation.", "source_refs": [1, 2], "basis": "Official Consumer Affairs Agency notice and detailed PDF"},
+    {"kind": "FACT", "text": "The Soundcore 3 recall covers listed A3117 variants sold from December 16, 2022 through October 21, 2025; the official notice lists 91,933 target units and a 44.0% recovery rate as of August 31, 2026.", "source_refs": [2, 3, 4], "basis": "CAA recall table and Anker recall pages"},
+    {"kind": "FACT", "text": "The Mitsubishi recall covers some room air-conditioner indoor units manufactured from October 1999 through 2007; the CAA notice lists about 930,000 target units and a 9.8% modification rate as of July 31, 2026.", "source_refs": [2, 5], "basis": "CAA recall status and Mitsubishi official recall page"},
+    {"kind": "FACT", "text": "For owners of affected, unremedied products, the CAA instructs immediate discontinuation of use and prompt contact with the responsible company for the recall remedy.", "source_refs": [2], "basis": "CAA user warning for both recalls"},
+    {"kind": "INFERENCE", "text": "The low completion rates, especially the Mitsubishi air-conditioner modification rate, mean many affected products may still remain in homes or other premises years after the original recall.", "source_refs": [2], "basis": "Inference from official target-unit and completion-rate figures"}
+  ],
+  "editorial_visual": {"style": "editorial", "motif": "home", "secondary_motif": "shield", "scene": "a quiet Japanese living room with an older wall air conditioner and a compact portable speaker separated from the family area by a clear safety-check shield, with a technician clipboard showing model and serial-number boxes", "caption": "A two-minute model check can close an old recall gap", "silliness": 0, "exaggeration": 32},
+  "content": {
+    "key_message": "If you own a Soundcore 3 bought in the recall period or an older Mitsubishi Heavy Industries room air conditioner, check the official recall pages now and stop using it if your unit is confirmed affected and has not been remedied.",
+    "who_is_affected": "Owners in Japan of potentially recalled Soundcore 3 speakers sold from December 16, 2022 to October 21, 2025, and owners of some Mitsubishi Heavy Industries room air-conditioner indoor units manufactured from October 1999 through 2007. Similar-looking products are not automatically affected; use the official model/serial checker.",
+    "when": "The recalls are already active. The September 1, 2026 CAA publication adds fresh serious-fire reports, but it does not establish that the newly reported fires were caused by the known recall defects.",
+    "financial_impact": "The official remedies are recall actions rather than paid repairs: Anker provides recovery/exchange for confirmed affected products, while Mitsubishi provides free inspection/modification for confirmed affected air conditioners.",
+    "time_minutes": 10,
+    "risk_if_ignored": "Potential fire. The CAA specifically tells owners of confirmed affected, unremedied units to stop using them immediately and contact the company.",
+    "action": "DO NOW",
+    "deadline": "No newly announced cutoff date is stated in the September 1 CAA notice; act now because the products remain under active recall.",
+    "effort": "Low. Locate the model/serial information, use the manufacturer recall checker, and submit the official recovery or inspection request if confirmed affected.",
+    "potential_benefit": "Removes an identified recall risk without paying for the recall remedy and avoids continuing to use a product the safety authority says should be stopped if unremedied.",
+    "downside": "Do not discard or ship a lithium-battery speaker through an improvised method. Follow Anker's official recovery instructions. Do not assume every old Mitsubishi air conditioner or every Soundcore 3 is recalled solely from appearance or product name.",
+    "what_would_change_mind": "A completed investigation finding the new fires unrelated to the recall defects would reduce the significance of the September 1 incident update, but it would not cancel the existing recalls unless the companies or authorities formally changed them.",
+    "usefulness": 98,
+    "novelty": 84,
+    "impact": {"money": "MED", "family": "HIGH", "career": "LOW", "japan": "MED", "urgency": "HIGH"},
+    "connection_tags": ["product-recall", "lithium-battery-fire", "home-safety", "legacy-equipment"],
+    "reading_levels": {
+      "30 sec": {"what_happened": "Japan reported fresh serious fires involving products already under recall: Soundcore 3 speakers and older Mitsubishi Heavy Industries air conditioners.", "why_it_matters": "Large numbers remain unremedied, and the official instruction for confirmed affected units is to stop use and arrange the free recall remedy.", "what_to_do_watch": "Check your model and serial number only through the official Anker or Mitsubishi recall pages; if confirmed affected and unremedied, stop using it and start the recall process.", "bottom_line": "This is a quick, free safety check worth doing today."},
+      "2_min": "The September 1 Consumer Affairs Agency notice reports two new Mitsubishi air-conditioner fires and one Soundcore 3 fire, while clearly stating that the causes are still being investigated. What makes the update actionable is that both products were already subject to recalls. For Soundcore 3, the official notice lists 91,933 target units and only 44.0% recovered as of August 31. For the older Mitsubishi air conditioners, it lists about 930,000 target units and only 9.8% modified as of July 31. The correct response is not to guess from appearance: use the manufacturer model/serial checker, then stop use and arrange the official remedy if your specific unit is confirmed affected."
+    },
+    "learning": {
+      "outcomes": ["Understand why a fresh accident report can matter even before investigators prove the exact cause.", "Know how to distinguish a recalled unit from a similar-looking product using official model and serial information."],
+      "background": "A recall is a corrective action for a known product risk. A later fire involving a recalled product does not automatically prove that the known defect caused that particular fire; the CAA explicitly says the newly reported causes are still under investigation. But the recall instruction remains valid independently of that investigation.",
+      "terms": [{"term": "Recovery rate / modification rate", "meaning": "The share of targeted recalled units that have been collected/replaced or inspected/modified.", "why_it_matters": "A low rate means many target units may still be in circulation."}],
+      "how_it_works": [
+        {"title": "Soundcore 3", "explanation": "Anker's recall concerns battery cells that may contain manufacturing contamination capable of causing an internal short circuit and fire. Eligibility is checked through the official recall process using the product/serial information."},
+        {"title": "Older Mitsubishi air conditioners", "explanation": "The Mitsubishi recall concerns certain indoor units where, under specified conditions, a connection at the indoor fan-motor lead wire can pose an ignition risk. The official page provides model/serial checking and a free inspection/modification route."}
+      ],
+      "example": "If a home has an old Mitsubishi wall unit from the 2000s, age alone does not prove it is recalled. Read the model and manufacturing number from the unit label, check them on Mitsubishi's official recall page, and only then follow the recall instruction.",
+      "takeaways": ["The new fires are under investigation; do not present causation as proven.", "The recalls themselves are already established and active.", "Use model/serial checks, not appearance, to determine eligibility.", "Confirmed affected and unremedied units should not remain in use."]
+    },
+    "action_plan": {
+      "goal": "Determine whether your unit is recalled and complete the official free remedy without guessing or using unsafe disposal methods.",
+      "who_should_act": "Anyone in Japan with a Soundcore 3 bought during the stated recall sales period, or an older Mitsubishi Heavy Industries/Beaver room air conditioner that may date from 1999-2007. Others can ignore this item unless their model appears on the official recall pages.",
+      "deadline": "No new cutoff date is stated; perform the check now because the recall is active and the CAA has published fresh serious-fire reports.",
+      "prepare": ["The product itself or a clear photo of its model/serial label.", "Internet access to the official manufacturer recall page.", "Contact and address details required by the manufacturer only after the unit is confirmed affected."],
+      "steps": [
+        {"step": "Identify the product", "action": "Find the model and serial/manufacturing number on the product label.", "how": "For the Mitsubishi unit, use the identification guidance on the official recall page. For Soundcore 3, use Anker's official recovery checker.", "needed": ["Product label or clear photo"], "time_minutes": 3, "cost_yen": 0, "done_when": "You have the exact model and serial/manufacturing number in front of you."},
+        {"step": "Check official eligibility", "action": "Enter or compare the model/serial information only on the manufacturer's official recall page.", "how": "Use Anker Japan's recall form for Soundcore 3 or Mitsubishi Heavy Industries Thermal Systems' recall page for the air conditioner.", "needed": ["Model and serial/manufacturing number"], "time_minutes": 3, "cost_yen": 0, "done_when": "The official manufacturer channel tells you whether your specific unit is affected or instructs you to contact the recall desk."},
+        {"step": "Stop use if confirmed affected and unremedied", "action": "Do not continue normal use while waiting for the recall remedy.", "how": "Follow the CAA instruction and manufacturer guidance; do not open, repair, puncture, or improvise disposal of the speaker battery.", "needed": ["Confirmed recall result"], "time_minutes": 1, "cost_yen": 0, "done_when": "The confirmed affected product is no longer being used."},
+        {"step": "Arrange the official remedy", "action": "Submit the manufacturer recovery/exchange request or inspection/modification request.", "how": "Follow the official Anker or Mitsubishi form/contact path linked in the sources.", "needed": ["Confirmed product details", "Contact information"], "time_minutes": 5, "cost_yen": 0, "done_when": "You have submitted the official request or received the manufacturer's appointment/recovery instructions."}
+      ],
+      "mistakes_to_avoid": ["Assuming every Soundcore 3 or every Mitsubishi air conditioner is affected without checking the serial/model.", "Continuing to use a confirmed affected unit while waiting because it has worked fine so far.", "Opening or attempting a DIY battery repair.", "Using a non-official recall or disposal link when the manufacturer provides a direct checker."],
+      "decision_rules": [
+        {"if": "The official checker says your unit is affected and it has not already received the recall remedy", "then": "Stop using it and complete the official recall process."},
+        {"if": "The official checker says your unit is not affected", "then": "This specific recall does not require action; normal safety guidance still applies."},
+        {"if": "You cannot read the label or eligibility is unclear", "then": "Contact the manufacturer through the official recall page rather than guessing."}
+      ],
+      "follow_up": "Keep the manufacturer's confirmation or service/recovery record. Re-check only if the manufacturer or CAA expands the affected range or publishes a material investigation update."
+    },
+    "bottom_line": "Because both recalls have substantial numbers of unremedied units and fresh serious-fire reports, checking model/serial eligibility now is a high-value safety action."
+  }
+}
