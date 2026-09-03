@@ -85,36 +85,48 @@ def _is_expected_supabase_url(url):
 
 
 def _install_supabase_project_guard():
-    """Refuse a silently wrong Supabase project while preserving normal secret errors."""
+    """Refuse a silently wrong Supabase project across public and Auth clients."""
     supabase_module = sys.modules.get("alam_supabase")
-    if supabase_module is None:
-        return
-    current = getattr(supabase_module, "get_supabase_public", None)
-    if current is None or getattr(current, "_alam_project_guard", False):
-        return
+    current = getattr(supabase_module, "get_supabase_public", None) if supabase_module else None
+    if current is not None and not getattr(current, "_alam_project_guard", False):
+        original = current
 
-    original = current
-
-    def guarded_get_supabase_public(*args, **kwargs):
-        try:
-            configured_url = st.secrets["SUPABASE_URL"]
-        except Exception:
+        def guarded_get_supabase_public(*args, **kwargs):
+            try:
+                configured_url = st.secrets["SUPABASE_URL"]
+            except Exception:
+                return original(*args, **kwargs)
+            if not _is_expected_supabase_url(configured_url):
+                raise RuntimeError(
+                    "ALAM Supabase configuration points to an unexpected project. "
+                    "Use the production ALAM Project2 deployment."
+                )
             return original(*args, **kwargs)
-        if not _is_expected_supabase_url(configured_url):
-            raise RuntimeError(
-                "ALAM Supabase configuration points to an unexpected project. "
-                "Use the production ALAM Project2 deployment."
-            )
-        return original(*args, **kwargs)
 
-    guarded_get_supabase_public._alam_project_guard = True
-    supabase_module.get_supabase_public = guarded_get_supabase_public
+        guarded_get_supabase_public._alam_project_guard = True
+        supabase_module.get_supabase_public = guarded_get_supabase_public
 
-    for name, module in list(sys.modules.items()):
-        if not name.startswith("alam_") or module is None:
-            continue
-        if getattr(module, "get_supabase_public", None) is original:
-            setattr(module, "get_supabase_public", guarded_get_supabase_public)
+        for name, module in list(sys.modules.items()):
+            if not name.startswith("alam_") or module is None:
+                continue
+            if getattr(module, "get_supabase_public", None) is original:
+                setattr(module, "get_supabase_public", guarded_get_supabase_public)
+
+    auth_credentials = getattr(alam_auth, "_credentials", None)
+    if auth_credentials is not None and not getattr(auth_credentials, "_alam_project_guard", False):
+        original_auth_credentials = auth_credentials
+
+        def guarded_auth_credentials():
+            url, key = original_auth_credentials()
+            if not _is_expected_supabase_url(url):
+                raise RuntimeError(
+                    "ALAM Auth configuration points to an unexpected Supabase project. "
+                    "Use the production ALAM Project2 deployment."
+                )
+            return url, key
+
+        guarded_auth_credentials._alam_project_guard = True
+        alam_auth._credentials = guarded_auth_credentials
 
 
 def _install_cookie_layout_guard():
