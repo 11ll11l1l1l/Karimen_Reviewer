@@ -1,10 +1,23 @@
 """Network-free regression checks for ALAM's optional Auth account boundary."""
 
+import ast
 import inspect
 from pathlib import Path
 
 import alam_auth
 import alam_runtime_safety
+
+
+def _decorator_names(function_source: str) -> set[str]:
+    """Return syntactic decorator names without matching explanatory docstrings."""
+    node = ast.parse(function_source).body[0]
+    names = set()
+    for decorator in getattr(node, "decorator_list", []):
+        try:
+            names.add(ast.unparse(decorator))
+        except Exception:
+            names.add("<unknown>")
+    return names
 
 
 def main():
@@ -13,7 +26,7 @@ def main():
     settings_source = inspect.getsource(alam_auth.render_account_settings)
     runtime_source = inspect.getsource(alam_runtime_safety._install_account_settings_hook)
 
-    assert "@st.cache_resource" not in client_source
+    assert "st.cache_resource" not in _decorator_names(client_source)
     assert "get_supabase_public" not in client_source
     assert 'st.session_state["alam_auth_client"]' in client_source
     assert "SUPABASE_SERVICE_ROLE_KEY" not in auth_source
