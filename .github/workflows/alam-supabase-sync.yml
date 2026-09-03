@@ -45,43 +45,24 @@ jobs:
       - name: Validate ALAM audit data
         run: python alam_app/validate_alam_data.py
 
-      - name: Check trusted Supabase credential
-        id: supabase-credential
+      - name: Require trusted Supabase credential
         shell: bash
         env:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
-          EVENT_NAME: ${{ github.event_name }}
         run: |
           if [[ -z "$SUPABASE_SERVICE_ROLE_KEY" && -z "$SUPABASE_SECRET_KEY" ]]; then
-            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::error::Missing trusted Supabase backend credential. Configure SUPABASE_SECRET_KEY (preferred) or SUPABASE_SERVICE_ROLE_KEY."
             echo "### Supabase sync blocked" >> "$GITHUB_STEP_SUMMARY"
-            echo "Trusted Supabase credentials are unavailable, so the database was not modified." >> "$GITHUB_STEP_SUMMARY"
-
-            # An explicit operator-requested sync must fail closed: reporting success here
-            # would falsely claim that a requested mirror operation happened. Ordinary
-            # content pushes are different; the missing secret is a known external blocker,
-            # so repeatedly failing otherwise-valid content commits only creates a false-red
-            # loop. Those pushes retain the validated GitHub audit record and skip the
-            # trusted mirror until credentials are configured.
-            if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
-              echo "::error::Missing trusted Supabase backend credential. Configure SUPABASE_SECRET_KEY (preferred) or SUPABASE_SERVICE_ROLE_KEY."
-              exit 1
-            fi
-
-            echo "::warning::Trusted Supabase backend credential is not configured; validated audit data will remain GitHub-only for this push."
-            exit 0
+            echo "Trusted Supabase credentials are required for every main-branch ALAM sync. Audit validation passed, but the database was not modified." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
           fi
-
-          echo "available=true" >> "$GITHUB_OUTPUT"
           echo "Trusted Supabase credential is configured; canonical sync will run." >> "$GITHUB_STEP_SUMMARY"
 
       - name: Install Supabase client
-        if: steps.supabase-credential.outputs.available == 'true'
         run: pip install -r alam_app/requirements.txt
 
       - name: Sync verified ALAM records to Supabase
-        if: steps.supabase-credential.outputs.available == 'true'
         env:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}

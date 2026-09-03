@@ -31,6 +31,7 @@ def test_actual_supabase_sync_is_unconditional_after_required_credential_gate():
     assert "SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" in text
     assert "if: steps.supabase_credentials.outputs.ready == 'true'" not in text
     assert "id: supabase_credentials" not in text
+    assert "if: steps.supabase-credential.outputs.available == 'true'" not in text
 
 
 def test_canonical_sync_job_remains_the_only_workflow_database_writer():
