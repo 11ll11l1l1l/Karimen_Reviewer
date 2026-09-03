@@ -1,0 +1,437 @@
+[
+  {
+    "id": "japan-residence-permit-fees-oct1-2026",
+    "agent": "practical",
+    "created_at": "2026-09-03T13:48:00+09:00",
+    "type": "immigration_cost",
+    "title": "File by Sept. 30 if ready: Japan residence-permit fees jump Oct. 1",
+    "summary": "Japan will sharply raise fees for residence-status changes, renewals and permanent residence for applications accepted from October 1, 2026. Applications accepted by September 30 keep the old fee even if approval comes later, so people already eligible and genuinely ready to file have a real cutoff to check.",
+    "why_it_matters": "For foreign households this can mean tens of thousands of yen more per application, and permanent residence at the counter rises to ¥200,000. But rushing an incomplete or premature application can create a bigger problem than the fee, so the useful action is to check readiness now—not to file carelessly.",
+    "importance": 99,
+    "confidence": 99,
+    "tags": ["Japan", "Immigration", "Residence Card", "Visa Renewal", "Permanent Residence", "Household Cost", "2026"],
+    "geography": ["Japan"],
+    "status": "NEW",
+    "sources": [
+      {
+        "publisher": "Immigration Services Agency of Japan",
+        "title": "令和８年１０月１日付け在留許可手数料の額の改定等について",
+        "url": "https://www.moj.go.jp/isa/01_00644.html",
+        "source_type": "official"
+      },
+      {
+        "publisher": "Immigration Services Agency of Japan",
+        "title": "オンライン申請における手数料額及び手数料納付方法について（2026年10月1日以降の申請分）",
+        "url": "https://www.moj.go.jp/isa/11_00107.html",
+        "source_type": "official"
+      },
+      {
+        "publisher": "Immigration Services Agency of Japan",
+        "title": "収入印紙の購入について",
+        "url": "https://www.moj.go.jp/isa/01_00646.html",
+        "source_type": "official"
+      },
+      {
+        "publisher": "Immigration Services Agency of Japan",
+        "title": "令和８年１０月１日以降における在留許可手数料の減額措置又は免除措置について",
+        "url": "https://www.moj.go.jp/isa/10_00273.html",
+        "source_type": "official"
+      }
+    ],
+    "claims": [
+      {
+        "kind": "FACT",
+        "text": "The revised fees apply to residence-status change, period-of-stay renewal and permanent-residence applications accepted on or after October 1, 2026; applications accepted by September 30 use the old fee even if permission is issued later.",
+        "source_refs": [1, 2],
+        "basis": "Immigration Services Agency effective-date rule"
+      },
+      {
+        "kind": "FACT",
+        "text": "For online change/renewal applications accepted from October 1, the total payment including the settlement fee ranges from ¥10,330 for a period of three months or less to ¥65,550 for five years or more; the pre-October online fee is ¥5,500.",
+        "source_refs": [2],
+        "basis": "Official online fee table"
+      },
+      {
+        "kind": "FACT",
+        "text": "For counter applications from October 1, change/renewal fees range from ¥10,000 to ¥75,000 depending on the permitted period, and permanent residence is ¥200,000.",
+        "source_refs": [3],
+        "basis": "Official revenue-stamp fee table"
+      },
+      {
+        "kind": "FACT",
+        "text": "Online payments switch to convenience-store or bank settlement; credit cards and QR payments are not supported, and fee-payment email should come only from no-reply@service-dgft.com.",
+        "source_refs": [2],
+        "basis": "Official payment and scam-warning guidance"
+      },
+      {
+        "kind": "FACT",
+        "text": "Certain people facing severe economic difficulty or other qualifying special circumstances may receive a reduced fee; online filing does not support the reduction process, which requires a counter application with supporting evidence.",
+        "source_refs": [4],
+        "basis": "Official reduction/waiver guidance"
+      },
+      {
+        "kind": "INFERENCE",
+        "text": "A person whose filing window is already open and whose application is complete can potentially avoid a substantial fee increase by filing before the September 30 acceptance cutoff, but fee savings alone are not a reason to submit an incomplete or strategically premature case.",
+        "source_refs": [1, 2, 3],
+        "basis": "Inference from the acceptance-date rule and new fee schedule"
+      }
+    ],
+    "editorial_visual": {
+      "style": "editorial",
+      "motif": "document",
+      "secondary_motif": "yen",
+      "scene": "a residence-card renewal folder approaching a calendar page marked September 30 while a stack of yen coins grows dramatically on the October 1 side",
+      "caption": "The filing date now has a much bigger price tag",
+      "silliness": 18,
+      "exaggeration": 68
+    },
+    "content": {
+      "key_message": "If your Japan residence renewal/change or PR application is already legitimately ready, check whether filing by September 30 is possible; applications accepted October 1 onward face much higher fees.",
+      "who_is_affected": "Foreign residents planning a residence-status change, period-of-stay renewal or permanent-residence application around late September/October 2026. The exact filing window and eligibility still depend on the procedure and your case.",
+      "when": "New fees apply to applications accepted from October 1, 2026. Applications accepted by September 30 remain under the old fee schedule even if the decision comes later.",
+      "financial_impact": "Example: an online five-year change/renewal goes from the current ¥5,500 to ¥65,550 total from October 1. Counter permanent residence is ¥200,000 under the new table.",
+      "time_minutes": 30,
+      "risk_if_ignored": "If an otherwise-ready application crosses into October acceptance, the household may pay materially more. The larger risk is misunderstanding the rule and rushing an incomplete application merely to chase the old fee.",
+      "action": "PREPARE",
+      "deadline": "September 30, 2026 is the last acceptance date for the old fee schedule. This is not a universal instruction to file by that date; file only if your procedure is open and the application is genuinely ready.",
+      "effort": "Medium: confirm eligibility/timing, gather the normal procedure-specific documents, choose online or counter route, and retain proof of submission/acceptance.",
+      "potential_benefit": "Potentially avoids tens of thousands of yen in new fees for a case that was already due and ready to file.",
+      "downside": "An early, incomplete or incorrect immigration application can cost more time and create legal/administrative risk. Do not let the fee deadline override the substantive requirements of your status.",
+      "what_would_change_mind": "A later Immigration Services Agency notice delaying the October 1 implementation, changing the acceptance-date rule or revising the published fee tables.",
+      "usefulness": 99,
+      "novelty": 98,
+      "impact": {
+        "money": "HIGH",
+        "family": "HIGH",
+        "career": "HIGH",
+        "japan": "HIGH",
+        "urgency": "HIGH"
+      },
+      "connection_tags": ["immigration-fees", "residence-renewal", "permanent-residence", "foreign-residents", "paperwork-deadline"],
+      "reading_levels": {
+        "30 sec": {
+          "what_happened": "Japan's residence-permit fees rise sharply for applications accepted from October 1.",
+          "why_it_matters": "The acceptance date decides whether the old or new fee applies; some households can save a large amount if an already-ready filing is accepted by September 30.",
+          "what_to_do_watch": "Check your real filing window and document readiness now. Do not submit an incomplete case just to beat the fee change.",
+          "bottom_line": "Treat September 30 as a cost cutoff, not as permission to ignore immigration requirements."
+        },
+        "2_min": "From October 1, Japan changes residence fees based on the period granted. Online change/renewal payments run from ¥10,330 to ¥65,550 including settlement fees, while counter change/renewal ranges from ¥10,000 to ¥75,000 and permanent residence is ¥200,000. The key rule is the application's acceptance date: an application accepted by September 30 keeps the old fee even if approved later. Online payment also changes to convenience-store or bank settlement, and the agency warns that payment emails from addresses other than no-reply@service-dgft.com are scams. A limited reduction route exists for qualifying severe hardship/special cases, but it is handled at the counter rather than online."
+      },
+      "learning": {
+        "outcomes": [
+          "Explain why the acceptance date, not the approval date, controls the new fee.",
+          "Recognize that online and counter fees differ and that hardship reduction is a separate counter process."
+        ],
+        "background": "Japan charges an administrative fee when certain residence permissions are granted. From October 1, 2026 the fee structure becomes much more expensive and, for change/renewal, varies with the period of stay granted. This is separate from whether the application itself qualifies.",
+        "terms": [
+          {
+            "term": "Application acceptance date",
+            "meaning": "The date Immigration accepts the application for processing, not the later date when permission is granted.",
+            "why_it_matters": "September 30 versus October 1 determines which fee schedule applies."
+          },
+          {
+            "term": "Revenue stamp (収入印紙)",
+            "meaning": "A government payment stamp still used for counter-based immigration fees.",
+            "why_it_matters": "Counter applicants should buy the amount stated on the official notice rather than guessing the denomination."
+          }
+        ],
+        "how_it_works": [
+          {
+            "title": "First determine whether you can legitimately file",
+            "explanation": "The fee change does not expand filing eligibility or waive ordinary document requirements. Confirm the normal timing and requirements for your exact status first."
+          },
+          {
+            "title": "Then the acceptance date locks the fee regime",
+            "explanation": "Accepted by September 30 means the old fee; accepted October 1 or later means the new schedule."
+          },
+          {
+            "title": "Payment route depends on how you filed",
+            "explanation": "Counter cases continue using revenue stamps. Online cases from October use the designated convenience-store/bank settlement process and a separate settlement fee."
+          }
+        ],
+        "example": "A worker whose five-year renewal is already within the valid filing window and fully prepared could face ¥65,550 total online if the application is accepted from October 1, compared with the current ¥5,500 online fee if accepted by September 30.",
+        "takeaways": [
+          "September 30 acceptance keeps the old fee.",
+          "October 1 acceptance triggers the new schedule.",
+          "Do not rush an incomplete application for fee savings.",
+          "Online payment emails should come only from the official designated address.",
+          "Hardship reductions are limited and require the counter route."
+        ]
+      },
+      "action_plan": {
+        "goal": "Avoid an unnecessary fee increase when an immigration filing is already due and complete, without compromising application quality.",
+        "who_should_act": "Foreign residents with a residence-status change, renewal or permanent-residence filing that is actually eligible to be submitted before October 1. People whose filing is not yet permitted or whose case is incomplete should not force an early application.",
+        "deadline": "For the old fee schedule, the application must be accepted no later than September 30, 2026.",
+        "prepare": [
+          "Your current residence card/passport and the normal documents required for your exact procedure.",
+          "Evidence that your filing window is open and your application is complete.",
+          "A decision on online versus counter filing based on eligibility and any need for a fee reduction."
+        ],
+        "steps": [
+          {
+            "step": "Confirm your filing window",
+            "action": "Check the official Immigration guidance for your exact residence procedure and confirm you are allowed to submit now.",
+            "how": "Use the Immigration Services Agency procedure page or obtain case-specific guidance from an immigration office/qualified professional when the timing is unclear.",
+            "needed": ["Current status", "Expiration date", "Procedure type"],
+            "time_minutes": 10,
+            "cost_yen": 0,
+            "done_when": "You can state why the application is valid to submit before October 1."
+          },
+          {
+            "step": "Audit completeness",
+            "action": "Check every required form/supporting document before trying to beat the cutoff.",
+            "how": "Use the official checklist for your exact status; do not rely on a generic social-media checklist.",
+            "needed": ["Completed forms", "Supporting documents"],
+            "time_minutes": 15,
+            "cost_yen": 0,
+            "done_when": "No required item is knowingly missing and the information is current/consistent."
+          },
+          {
+            "step": "Submit and retain proof",
+            "action": "Submit through the valid route and keep the official receipt/online acceptance evidence.",
+            "how": "The old fee depends on acceptance by September 30, so keep evidence of successful submission rather than assuming a started draft counts.",
+            "needed": ["Complete application"],
+            "time_minutes": 5,
+            "cost_yen": null,
+            "done_when": "You have official evidence the application was accepted."
+          }
+        ],
+        "mistakes_to_avoid": [
+          "Submitting before you are eligible solely to chase the old fee.",
+          "Assuming an online draft or failed submission counts as acceptance.",
+          "Paying an online fee from an email address other than no-reply@service-dgft.com.",
+          "Assuming a hardship reduction works through online filing.",
+          "Buying a counter revenue stamp amount before the official pickup notice confirms what is required."
+        ],
+        "decision_rules": [
+          {
+            "if": "Your case is already eligible, complete and can be accepted by September 30",
+            "then": "Consider filing before the cutoff to preserve the old fee."
+          },
+          {
+            "if": "Your case is incomplete, not yet eligible or strategically uncertain",
+            "then": "Do not trade application quality for fee savings; complete the case first."
+          },
+          {
+            "if": "You may qualify for the new hardship reduction",
+            "then": "Check the official reduction guidance and use the counter process with the required evidence rather than online filing."
+          }
+        ],
+        "follow_up": "After filing, retain acceptance evidence and follow only official Immigration instructions for the eventual payment/pickup."
+      }
+    }
+  },
+  {
+    "id": "japan-2026-year-end-adjustment-family-thresholds",
+    "agent": "practical",
+    "created_at": "2026-09-03T13:48:00+09:00",
+    "type": "tax_family",
+    "title": "2026 year-end tax: the family income threshold rises, but overseas proof still matters",
+    "summary": "For 2026 income tax, Japan raises the income test for a dependent relative, same-household spouse and a single parent's qualifying child to ¥620,000 of total income—equivalent to ¥1.36 million when the person's income is salary only under the stated assumptions. For relatives living overseas, however, relationship and remittance evidence still determines whether a deduction can actually be claimed.",
+    "why_it_matters": "Families can easily mix up three different things: the income-tax dependent threshold, social-insurance dependency and immigration/work limits. The tax threshold changes for 2026, but it does not automatically rewrite those other systems, and overseas-family deductions can fail if the required proof is missing.",
+    "importance": 96,
+    "confidence": 99,
+    "tags": ["Japan", "Tax", "Year-end Adjustment", "Dependents", "Overseas Family", "Remittance", "Filipino Families", "2026"],
+    "geography": ["Japan", "Philippines"],
+    "status": "NEW",
+    "sources": [
+      {
+        "publisher": "National Tax Agency, Japan",
+        "title": "令和８年度税制改正による所得税の基礎控除の引上げ等について",
+        "url": "https://www.nta.go.jp/users/gensen/2026kiso/index.htm",
+        "source_type": "official"
+      },
+      {
+        "publisher": "National Tax Agency, Japan",
+        "title": "令和8年4月 源泉所得税の改正のあらまし",
+        "url": "https://www.nta.go.jp/publication/pamph/gensen/2026kaisei.pdf",
+        "source_type": "official"
+      },
+      {
+        "publisher": "National Tax Agency, Japan",
+        "title": "令和8年分 年末調整Q&A",
+        "url": "https://www.nta.go.jp/publication/pamph/gensen/nencho2026/qa.htm",
+        "source_type": "official"
+      },
+      {
+        "publisher": "National Tax Agency, Japan",
+        "title": "扶養控除（国外居住親族の必要書類を含む）",
+        "url": "https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1180_qa.htm",
+        "source_type": "official"
+      }
+    ],
+    "claims": [
+      {
+        "kind": "FACT",
+        "text": "For 2026 and 2027 income tax, the income requirement for dependent relatives, same-household spouses and a single parent's qualifying child is ¥620,000 or less of total income; when income is salary only under the NTA table assumptions, the corresponding salary-revenue figure is ¥1.36 million or less.",
+        "source_refs": [2],
+        "basis": "NTA 2026 reform table"
+      },
+      {
+        "kind": "FACT",
+        "text": "The 2026 reform is generally effective from December 1, 2026 and is reflected in the December 2026 year-end adjustment; ordinary withholding through November is not changed by this reform.",
+        "source_refs": [1, 2],
+        "basis": "NTA implementation guidance"
+      },
+      {
+        "kind": "FACT",
+        "text": "To claim deductions for an overseas relative, the taxpayer may need relationship documents and remittance documents; foreign-language documents require Japanese translations under the NTA rules.",
+        "source_refs": [3, 4],
+        "basis": "NTA overseas-relative documentation rules"
+      },
+      {
+        "kind": "FACT",
+        "text": "For an overseas relative aged 30 to under 70, ordinary dependent deduction generally requires that the person fit an allowed category such as qualifying study abroad, disability, or receiving at least ¥380,000 during the year for living or education expenses, with the specified supporting documents.",
+        "source_refs": [3, 4],
+        "basis": "NTA overseas-relative rules"
+      },
+      {
+        "kind": "INFERENCE",
+        "text": "The safest practical interpretation is to treat ¥1.36 million as an income-tax figure only; a household should separately check social-insurance dependency, employment rules and immigration/work-permission limits rather than treating one threshold as universal.",
+        "source_refs": [1, 2],
+        "basis": "The cited NTA material governs income tax, not the separate social-insurance or immigration systems"
+      }
+    ],
+    "editorial_visual": {
+      "style": "editorial",
+      "motif": "document",
+      "secondary_motif": "family",
+      "scene": "a Japanese year-end tax form on a kitchen table connected by a clean paper trail to remittance receipts and a family photo overseas, while separate labeled lanes imply tax, insurance and immigration are different systems without readable text",
+      "caption": "One income number does not control every family rule",
+      "silliness": 12,
+      "exaggeration": 48
+    },
+    "content": {
+      "key_message": "For 2026 income tax, the salary-only dependent threshold can be ¥1.36 million, but do not confuse that with social-insurance or immigration limits—and keep overseas-family proof organized before year-end adjustment.",
+      "who_is_affected": "Employees in Japan preparing 2026 year-end adjustment who claim a spouse/dependent, especially people supporting relatives who live in the Philippines or another country.",
+      "when": "The reform is generally effective December 1, 2026 and affects the 2026 year-end adjustment. Overseas relationship/remittance documents should be collected during the year rather than reconstructed at the last minute.",
+      "financial_impact": "The reform can change whether a relative fits the income-tax dependent test and therefore whether a deduction is available. The exact tax saving depends on the taxpayer, deduction category and taxable income; ALAM does not invent a universal yen saving.",
+      "time_minutes": 30,
+      "risk_if_ignored": "A taxpayer may omit a valid deduction, claim an invalid one, or discover too late that overseas relationship/remittance evidence is missing. A second risk is planning work hours around ¥1.36 million while accidentally breaching a separate insurance or immigration rule.",
+      "action": "PREPARE",
+      "deadline": "Prepare before your employer's 2026 year-end-adjustment document deadline; the NTA reform itself is reflected from December 2026. Employer submission dates vary, so use the date your payroll/HR office gives you.",
+      "effort": "Medium: classify the relative, estimate 2026 income correctly, gather relationship/remittance evidence and submit the correct year-end forms.",
+      "potential_benefit": "Correctly claiming a deduction you are entitled to while avoiding a later correction, payroll rejection or tax-office query.",
+      "downside": "The ¥1.36 million salary-only figure is not a universal family-income wall. Applying it blindly to health insurance, pension or immigration can produce costly mistakes.",
+      "what_would_change_mind": "A later NTA amendment to the 2026 reform, year-end forms or overseas-dependent documentation rules.",
+      "usefulness": 99,
+      "novelty": 91,
+      "impact": {
+        "money": "HIGH",
+        "family": "HIGH",
+        "career": "MED",
+        "japan": "HIGH",
+        "urgency": "MED"
+      },
+      "connection_tags": ["year-end-adjustment", "dependent-deduction", "overseas-family", "remittance-proof", "income-threshold"],
+      "reading_levels": {
+        "30 sec": {
+          "what_happened": "Japan raises the 2026 income-tax test for several family-dependent categories to ¥620,000 total income, equivalent to ¥1.36 million salary-only under the NTA table.",
+          "why_it_matters": "More families may fit the income-tax test, but overseas deductions still need proof and other systems use different rules.",
+          "what_to_do_watch": "Estimate the relative's 2026 income, save relationship/remittance documents and check tax, social insurance and immigration separately.",
+          "bottom_line": "¥1.36 million is a tax number—not a universal permission to work or remain a dependent everywhere."
+        },
+        "2_min": "Japan's 2026 income-tax reform raises the family income test from ¥580,000 to ¥620,000 of total income; for salary-only income under the NTA table, that corresponds to ¥1.36 million instead of ¥1.23 million. The reform is generally implemented from December and reflected in 2026 year-end adjustment. For family living overseas, the deduction is not based on income alone: relationship and remittance documents are required, and relatives aged 30 to under 70 face additional category/document rules, including the ¥380,000 annual remittance route in applicable cases. This is income-tax law. Social-insurance dependency and immigration/work authorization must be checked separately."
+      },
+      "learning": {
+        "outcomes": [
+          "Distinguish total income from salary revenue in the NTA threshold table.",
+          "Explain why overseas-dependent proof and other systems must be checked separately."
+        ],
+        "background": "Japan's year-end adjustment lets many employees settle annual income tax through payroll. A dependent deduction is governed by tax-law definitions, not simply by whether a person is called a dependent in everyday life or on health insurance.",
+        "terms": [
+          {
+            "term": "Total income (合計所得金額)",
+            "meaning": "A tax-law income measure after applying the relevant income calculation rules; it is not always the same as gross salary received.",
+            "why_it_matters": "The legal dependent test is stated as ¥620,000 total income, while ¥1.36 million is the salary-only revenue equivalent in the NTA table."
+          },
+          {
+            "term": "Remittance documents (送金関係書類)",
+            "meaning": "Evidence showing money was sent for the overseas relative's living or education expenses as required by the NTA rules.",
+            "why_it_matters": "Without the required evidence, an otherwise-related overseas family member may not support the claimed deduction."
+          }
+        ],
+        "how_it_works": [
+          {
+            "title": "First classify the tax relationship",
+            "explanation": "Spouse, dependent relative and special-relative categories have different income ranges and deduction calculations. Start with the correct tax category rather than one household label."
+          },
+          {
+            "title": "Then test income using tax definitions",
+            "explanation": "For the core dependent-relative/same-household-spouse test, 2026 uses ¥620,000 total income. The ¥1.36 million number is specifically the salary-only revenue equivalent shown by the NTA."
+          },
+          {
+            "title": "Overseas claims add an evidence layer",
+            "explanation": "You must establish the family relationship and required financial support. Some 30-to-under-70 overseas relatives need additional qualifying evidence such as study-abroad status, disability status or at least ¥380,000 of qualifying annual remittance."
+          }
+        ],
+        "example": "A mother in the Philippines with salary-only income of ¥1.24 million equivalent may fall within the new 2026 salary-only tax threshold where she did not under the prior ¥1.23 million figure, but the Japanese taxpayer still has to satisfy the overseas-relative rules and provide the required documents.",
+        "takeaways": [
+          "2026 core family tax threshold: ¥620,000 total income.",
+          "Salary-only equivalent in the NTA table: ¥1.36 million.",
+          "Overseas relatives still require relationship/remittance evidence.",
+          "Some overseas relatives age 30–69 have extra qualification/document rules.",
+          "Tax, social insurance and immigration are separate systems."
+        ]
+      },
+      "action_plan": {
+        "goal": "Submit a correct 2026 year-end family deduction claim with the evidence needed for any overseas relative.",
+        "who_should_act": "Employees who plan to claim a spouse/dependent or who support relatives overseas. If you do not claim family-related deductions, this checklist can be ignored.",
+        "deadline": "Use your employer's year-end-adjustment deadline; do not assume every company uses the same date.",
+        "prepare": [
+          "Estimate of the relative's full-year 2026 income using the correct tax category.",
+          "Required relationship documents for an overseas relative and Japanese translations when required.",
+          "Remittance records showing support sent to each relevant overseas relative.",
+          "Any additional study-abroad/disability/¥380,000 remittance evidence required for an overseas relative age 30 to under 70."
+        ],
+        "steps": [
+          {
+            "step": "Classify the relative",
+            "action": "Identify the correct NTA category and whether the person lives in Japan or overseas.",
+            "how": "Use the NTA year-end materials rather than assuming health-insurance 'dependent' status determines income-tax treatment.",
+            "needed": ["Relationship", "Age", "Residence country"],
+            "time_minutes": 5,
+            "cost_yen": 0,
+            "done_when": "You know which NTA category/rules apply."
+          },
+          {
+            "step": "Check 2026 income",
+            "action": "Estimate the relative's full-year income and compare it with the correct tax-law threshold.",
+            "how": "For salary-only income, use the NTA's salary-revenue equivalents; do not mix gross salary with total-income figures.",
+            "needed": ["2026 income estimate"],
+            "time_minutes": 10,
+            "cost_yen": 0,
+            "done_when": "The income test is documented using one consistent definition."
+          },
+          {
+            "step": "Build the overseas evidence packet",
+            "action": "Collect relationship, remittance and any extra category documents before payroll asks for them.",
+            "how": "Follow the NTA overseas-relative list; translate foreign-language relationship/supporting documents when required.",
+            "needed": ["Relationship proof", "Remittance proof", "Translations/extra evidence if applicable"],
+            "time_minutes": 15,
+            "cost_yen": null,
+            "done_when": "You can show the required proof for each overseas relative you intend to claim."
+          }
+        ],
+        "mistakes_to_avoid": [
+          "Calling ¥1.36 million a universal social-insurance or immigration wall.",
+          "Comparing gross salary directly with a threshold stated as total income without using the NTA conversion/rules.",
+          "Sending money but discarding the remittance evidence.",
+          "Assuming one lump remittance automatically proves support for multiple relatives.",
+          "Waiting until payroll deadline to discover foreign documents require translation or additional proof."
+        ],
+        "decision_rules": [
+          {
+            "if": "The relative is overseas and you cannot establish the required relationship/remittance evidence",
+            "then": "Do not assume the deduction is valid; resolve the documentation issue before claiming it."
+          },
+          {
+            "if": "You are using the ¥1.36 million figure to decide work hours or dependent status",
+            "then": "Check social-insurance and immigration/work rules separately before acting."
+          }
+        ],
+        "follow_up": "Keep copies of the forms and evidence after year-end adjustment in case payroll or the tax office asks for clarification, and update the claim if the relative's final 2026 income differs materially from the estimate."
+      }
+    }
+  }
+]
