@@ -1,14 +1,16 @@
-"""Regression tests for ALAM's Saved material-update review state.
-
-These tests stay deterministic and browser-independent. They protect the product
-contracts around Saved review state and browser-cookie restoration.
-"""
+"""Regression tests for ALAM Saved review state and collection organization."""
 
 from types import SimpleNamespace
 
 import alam_core
 from alam_local_state import _advance_saved_snapshot, _sid
-from alam_saved_views import _change_preview
+from alam_saved_views import (
+    DEFAULT_COLLECTION,
+    _change_preview,
+    _collection_key,
+    _decode_collection_cookie,
+    _normalize_collection,
+)
 
 
 def test_saved_snapshot_advances_monotonically():
@@ -16,11 +18,8 @@ def test_saved_snapshot_advances_monotonically():
     story_id = "story-123"
     assert _advance_saved_snapshot(profile, story_id, 100) is True
     assert profile["b"][_sid(story_id)] == 100
-
-    # An older rerun/history record must never move the review baseline backwards.
     assert _advance_saved_snapshot(profile, story_id, 90) is False
     assert profile["b"][_sid(story_id)] == 100
-
     assert _advance_saved_snapshot(profile, story_id, 140) is True
     assert profile["b"][_sid(story_id)] == 140
 
@@ -42,8 +41,7 @@ def test_change_preview_uses_explicit_v5_change_summary_without_history():
             }
         },
     }
-    preview = _change_preview(record, [record])
-    assert preview == (
+    assert _change_preview(record, [record]) == (
         "Application deadline was September 10.",
         "Application deadline moved to September 20.",
     )
@@ -57,6 +55,29 @@ def test_change_preview_does_not_invent_change():
         "content": {},
     }
     assert _change_preview(record, [record]) is None
+
+
+def test_saved_collection_normalization_is_backward_compatible():
+    assert _normalize_collection("saved") == DEFAULT_COLLECTION
+    assert _normalize_collection("Read Later") == DEFAULT_COLLECTION
+    assert _normalize_collection("money") == "money"
+    assert _normalize_collection("unexpected-value") == DEFAULT_COLLECTION
+
+
+def test_saved_collection_cookie_rejects_bad_shape_and_normalizes_values():
+    assert _decode_collection_cookie("[]") == {}
+    story_key = _collection_key("story-9")
+    decoded = _decode_collection_cookie(
+        '{"%s":"Important","123456789abc":"not-a-real-collection"}' % story_key
+    )
+    assert decoded[story_key] == "important"
+    assert decoded["123456789abc"] == DEFAULT_COLLECTION
+
+
+def test_collection_cookie_uses_hashed_story_keys():
+    key = _collection_key("a-very-long-stable-story-id")
+    assert len(key) == 12
+    assert "story" not in key
 
 
 def test_native_cookies_restore_saved_state_without_optional_cookie_manager():
@@ -75,7 +96,6 @@ def test_native_cookies_restore_saved_state_without_optional_cookie_manager():
         alam_core.st = fake_st
         alam_core.stx = None
         manager = alam_core.init_browser_state()
-
         assert manager is None
         assert fake_st.session_state["followed_stories"] == ["story-7", "story-8"]
         assert fake_st.session_state["visit_reference"].isoformat() == "2026-09-03T02:30:00+00:00"
@@ -92,4 +112,4 @@ if __name__ == "__main__":
     ]
     for test in tests:
         test()
-    print(f"{len(tests)} Saved-update tests passed")
+    print(f"{len(tests)} Saved-update/collection tests passed")
