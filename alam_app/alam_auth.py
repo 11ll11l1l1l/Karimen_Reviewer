@@ -275,6 +275,13 @@ def _normalized_saved_ids(values) -> list[str]:
     return result
 
 
+def _merged_session_saved_ids(account_saved, local_saved) -> list[str]:
+    """Expose cloud Saved plus every browser-only ID without deleting stale local state."""
+    return _normalized_saved_ids(
+        [*_normalized_saved_ids(account_saved), *_normalized_saved_ids(local_saved)]
+    )
+
+
 def _local_preferences_payload(user_id: str) -> dict:
     """Translate current browser settings into the existing RLS-backed preference row."""
     return {
@@ -360,7 +367,7 @@ def synchronize_account_state() -> tuple[dict | None, str | None]:
 
         # Validate local IDs against the live article table before the FK-protected
         # upsert. Old browser cookies can legitimately contain IDs retired long ago;
-        # those stay local rather than causing the entire account sync to fail.
+        # those stay browser-local rather than causing the complete account sync to fail.
         valid_local = []
         if local_saved:
             valid_response = client.table("articles").select("id").in_("id", local_saved).execute()
@@ -377,8 +384,11 @@ def synchronize_account_state() -> tuple[dict | None, str | None]:
                 on_conflict="user_id,article_id",
             ).execute()
 
-        merged_saved = _normalized_saved_ids([*cloud_saved, *valid_local])
-        st.session_state["followed_stories"] = merged_saved
+        account_saved = _normalized_saved_ids([*cloud_saved, *valid_local])
+        session_saved = _merged_session_saved_ids(account_saved, local_saved)
+        st.session_state["followed_stories"] = session_saved
+        account_saved_set = set(account_saved)
+        local_only_saved = [story_id for story_id in local_saved if story_id not in account_saved_set]
 
         preference_response = (
             client.table("user_preferences")
@@ -403,7 +413,8 @@ def synchronize_account_state() -> tuple[dict | None, str | None]:
         read_rows = list(read_response.data or [])
         read_row = read_rows[0] if read_rows and isinstance(read_rows[0], dict) else {}
         summary = {
-            "saved": len(merged_saved),
+            "saved": len(account_saved),
+            "local_only_saved": len(local_only_saved),
             "reads": int(read_row.get("total_account_reads") or 0),
             "reads_imported": int(read_row.get("imported_reads") or 0),
             "preferences": preference_mode,
@@ -499,6 +510,12 @@ def render_account_settings() -> None:
                 f"Cloud sync: {int(sync_summary.get('saved') or 0)} Saved · "
                 f"{int(sync_summary.get('reads') or 0)} reads · {pref_text}."
             )
+            local_only = int(sync_summary.get("local_only_saved") or 0)
+            if local_only:
+                st.caption(
+                    f"{local_only} older browser-only Saved item(s) are not in the live article index; "
+                    "they were kept locally and not uploaded."
+                )
             imported = int(sync_summary.get("reads_imported") or 0)
             if imported:
                 st.caption(f"Preserved {imported} earlier anonymous article opens in your account history.")
