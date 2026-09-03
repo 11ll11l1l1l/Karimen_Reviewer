@@ -6,6 +6,7 @@ import streamlit as st
 import alam_core
 import alam_hybrid_feed
 import alam_mobile_shell
+import alam_auth
 
 
 EXPECTED_SUPABASE_PROJECT_REF = "zecztyabmmoqzjumhxxf"
@@ -98,8 +99,6 @@ def _install_supabase_project_guard():
         try:
             configured_url = st.secrets["SUPABASE_URL"]
         except Exception:
-            # Let the original helper produce its existing sanitized missing-secret
-            # message. The project guard exists only to catch a *present but wrong* URL.
             return original(*args, **kwargs)
         if not _is_expected_supabase_url(configured_url):
             raise RuntimeError(
@@ -111,9 +110,6 @@ def _install_supabase_project_guard():
     guarded_get_supabase_public._alam_project_guard = True
     supabase_module.get_supabase_public = guarded_get_supabase_public
 
-    # Some modules import the helper directly before this startup installer runs.
-    # Replace only references that still point to the exact original callable so
-    # readiness/diagnostic paths cannot bypass the same production-project guard.
     for name, module in list(sys.modules.items()):
         if not name.startswith("alam_") or module is None:
             continue
@@ -122,14 +118,7 @@ def _install_supabase_project_guard():
 
 
 def _install_cookie_layout_guard():
-    """Keep CookieManager functional without allowing its iframe to move the page.
-
-    ``extra_streamlit_components.CookieManager`` is iframe-backed. On some mobile
-    browsers its first render briefly reserves a large default iframe height, causing
-    ALAM's brand to jump upward only after the component settles. Wrapping the manager
-    in a keyed, visually collapsed host keeps the iframe alive for cookie I/O while
-    taking it out of normal document flow.
-    """
+    """Keep CookieManager functional without allowing its iframe to move the page."""
     if alam_core.stx is None:
         return
     current = getattr(alam_core.stx, "CookieManager", None)
@@ -165,13 +154,7 @@ def _overlay_verified_audit(records, extras):
 
 
 def _install_hybrid_feed_hooks():
-    """Keep verified hourly agent output visible while the trusted mirror lags.
-
-    Both the fast current-feed loader and the mature full-history loader are wrapped.
-    This matters because ``streamlit_app.py`` uses the former to resolve selections and
-    the latter for normal list routes. The overlay activates only when Supabase itself
-    returned content and GitHub contains a material version absent from that result.
-    """
+    """Keep verified hourly agent output visible while the trusted mirror lags."""
     extras = sys.modules.get("alam_extras")
     if extras is None:
         return
@@ -220,13 +203,33 @@ def _install_mobile_shell_hooks():
         readiness.render_runtime_status = alam_mobile_shell.render_runtime_status
 
 
-def install_runtime_safety():
-    """Install score hardening, project pinning, sync continuity and mobile guards.
+def _install_account_settings_hook():
+    """Add optional account controls only inside Settings, never above the mobile shell.
 
-    This installer intentionally patches existing call sites instead of duplicating
-    business logic in ``streamlit_app.py``. The public data contracts therefore remain
-    unchanged while cross-cutting reliability fixes can be applied independently.
+    This placement deliberately avoids creating another custom-component or auth surface
+    above the ALAM brand/Today content. Anonymous readers see no login wall; Settings
+    owns the explicit distinction between browser recognition and an optional account.
     """
+    extras = sys.modules.get("alam_extras")
+    if extras is None:
+        return
+    current = getattr(extras, "render_settings", None)
+    if current is None or getattr(current, "_alam_account_settings", False):
+        return
+    original = current
+
+    def render_settings_with_account(*args, **kwargs):
+        result = original(*args, **kwargs)
+        st.divider()
+        alam_auth.render_account_settings()
+        return result
+
+    render_settings_with_account._alam_account_settings = True
+    extras.render_settings = render_settings_with_account
+
+
+def install_runtime_safety():
+    """Install score hardening, project pinning, continuity, mobile and auth guards."""
     alam_core.feed_score = safe_feed_score
     for name, module in list(sys.modules.items()):
         if not name.startswith("alam_") or module is None:
@@ -238,3 +241,4 @@ def install_runtime_safety():
     _install_cookie_layout_guard()
     _install_hybrid_feed_hooks()
     _install_mobile_shell_hooks()
+    _install_account_settings_hook()
