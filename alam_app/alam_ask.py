@@ -77,6 +77,11 @@ def filter_excluded_records(records,excluded_ids):
     if not excluded:return [record for record in (records or []) if isinstance(record,dict)]
     return [record for record in (records or []) if isinstance(record,dict) and str(record.get("id") or "") not in excluded]
 
+def recovery_exclusions(query,seeded_query,excluded_ids):
+    """Apply recovery exclusions only while the reader is still on the seeded recovery question."""
+    current=" ".join(str(query or "").split()).casefold();seeded=" ".join(str(seeded_query or "").split()).casefold()
+    return list(excluded_ids or []) if current and seeded and current==seeded else []
+
 def rank_records(records,query,limit=8):
     ranked=[]
     for record in records or []:
@@ -135,7 +140,10 @@ def render_ask_alam(records,comments,manager,views):
     st.caption(f"Evidence source: {source_label}. Your question text is used locally for retrieval and is not stored by this feature.")
     query=st.text_input("Ask ALAM",placeholder="e.g. What changes for my visa renewal in October?",key="alam_ask_query")
     lenses=st.multiselect("Agent lenses",["Discover","Action","Market","Trends"],default=[],placeholder="All verified lenses",key="alam_ask_lenses")
-    category_by_label={value:key for key,value in CATEGORY_LABELS.items()};allowed={category_by_label[label] for label in lenses if label in category_by_label};pool=[r for r in filter_excluded_records(records,st.session_state.get("alam_ask_excluded_story_ids")) if not allowed or str(r.get("_category") or r.get("category") or "") in allowed]
+    excluded_ids=recovery_exclusions(query,st.session_state.get("alam_ask_recovery_query"),st.session_state.get("alam_ask_excluded_story_ids"))
+    if not excluded_ids and st.session_state.get("alam_ask_recovery_query"):
+        st.session_state.pop("alam_ask_recovery_query",None);st.session_state.pop("alam_ask_excluded_story_ids",None)
+    category_by_label={value:key for key,value in CATEGORY_LABELS.items()};allowed={category_by_label[label] for label in lenses if label in category_by_label};pool=[r for r in filter_excluded_records(records,excluded_ids) if not allowed or str(r.get("_category") or r.get("category") or "") in allowed]
     if not str(query or "").strip():st.info("Try a real question about Japan paperwork, household money, safety, markets, technology, or a topic ALAM has already researched.");return
     ranked=rank_records(pool,query,limit=8)
     if not ranked:st.warning("INSUFFICIENT ALAM EVIDENCE — I found no screened current record that directly supports this question. Try broader wording or wait for the research agents to cover it.");return
