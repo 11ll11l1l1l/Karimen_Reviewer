@@ -1,0 +1,92 @@
+{
+  "id": "japan-pension-dependent-declaration-2027-sep2026",
+  "agent": "practical",
+  "created_at": "2026-09-04T00:09:43+09:00",
+  "type": "tax_pension",
+  "title": "Japan starts mailing 2027 pension dependent-deduction forms on September 7",
+  "summary": "Japan Pension Service will start sending the 2027 public-pension dependent declaration from September 7 to pensioners who may need it for income-tax or resident-tax deductions. If you claim a spouse or relative—especially someone living overseas—check the notice, required proof and the deadline printed on your form instead of assuming it is automatic.",
+  "why_it_matters": "Missing or mishandling this declaration can mean the correct spouse, dependent, disability or related deductions are not reflected in pension withholding. Overseas relatives can require relationship and remittance evidence, including Japanese translations for foreign-language documents.",
+  "importance": 86,
+  "confidence": 99,
+  "tags": ["Japan", "Pension", "Tax", "扶養親族等申告書", "Dependent Deduction", "Overseas Family", "Resident Tax"],
+  "geography": ["Japan"],
+  "status": "NEW",
+  "sources": [
+    {"publisher": "Japan Pension Service", "title": "令和9年分「公的年金等の受給者の扶養親族等申告書」の紙の提出方法", "url": "https://www.nenkin.go.jp/service/jukyu/tetsuduki/rourei/jukyu/fuyo/2027fuyoukami.html", "published_at": "2026-09-03", "source_type": "official"},
+    {"publisher": "National Tax Agency", "title": "A2-6 公的年金等の受給者の扶養親族等の申告", "url": "https://www.nta.go.jp/taxes/tetsuzuki/shinsei/annai/gensen/annai/1648_09.htm", "published_at": null, "source_type": "official"},
+    {"publisher": "National Tax Agency", "title": "国外居住親族に係る扶養控除等の適用について", "url": "https://www.nta.go.jp/taxes/tetsuzuki/shinsei/annai/gensen/kokugai/", "published_at": null, "source_type": "official"}
+  ],
+  "claims": [
+    {"kind": "FACT", "text": "Japan Pension Service says it will begin sending the 2027 public-pension dependent declaration on September 7, 2026 to pensioners who may be subject to income-tax withholding or resident-tax taxation.", "source_refs": [1], "basis": "Japan Pension Service September 3 guidance."},
+    {"kind": "FACT", "text": "For 2027, Japan Pension Service says the mailing thresholds are annual pension amounts of at least ¥980,000 for recipients under 65 and at least ¥1.48 million for recipients age 65 or older, with a separate ¥700,000 threshold for certain retirement mutual-aid pension recipients also receiving the basic old-age pension.", "source_refs": [1], "basis": "2027 mailing-threshold table in Japan Pension Service guidance."},
+    {"kind": "FACT", "text": "A person who receives the notice may still not need to submit the declaration if they have none of the listed deductions or dependent-related items; people who previously filed electronically or selected paperless delivery may receive the notice through Mynaportal instead of paper.", "source_refs": [1], "basis": "Japan Pension Service eligibility and electronic-filing guidance."},
+    {"kind": "FACT", "text": "The National Tax Agency states that the declaration is the procedure used by public-pension recipients to receive dependent and related deductions on that year's public pension, and its general statutory timing is before the day of the first pension payment for that year.", "source_refs": [2], "basis": "National Tax Agency procedure guidance."},
+    {"kind": "FACT", "text": "When claiming qualifying relatives living outside Japan, relationship documents and remittance-related evidence may be required; foreign-language documents require Japanese translations, and some relatives age 30 to 69 face additional conditions such as study abroad, disability or at least ¥380,000 of qualifying remittances.", "source_refs": [3], "basis": "National Tax Agency rules for nonresident relatives."},
+    {"kind": "INFERENCE", "text": "The highest-value action is to treat the September notice as a tax-document checkpoint: verify whether a declaration is actually required, gather overseas-relative evidence early if applicable, and submit through the official electronic or paper route by the deadline shown in the notice.", "source_refs": [1,2,3], "basis": "Derived from the filing procedure, eligibility limits and supporting-document rules."}
+  ],
+  "content": {
+    "key_message": "If Japan Pension Service sends you a 2027 扶養親族等申告書 from September 7, check whether you actually need to file it and prepare dependent evidence early—especially for relatives living overseas.",
+    "when": "Mailing begins September 7, 2026. The Japan Pension Service says to follow the submission deadline printed in the notice; the National Tax Agency's general rule is submission before the first public-pension payment of the relevant year.",
+    "who_is_affected": "Mainly recipients of old-age or retirement public pensions who receive the 2027 declaration and have a spouse, dependent relative, disability, widow/single-parent status or another listed deduction to claim. People with no applicable deductions may not need to submit it. Paperless/e-filing users may receive the notice through Mynaportal instead of postal mail.",
+    "financial_impact": "The exact tax effect depends on the recipient's pension, taxable income and eligible deductions, so ALAM does not estimate a universal yen saving. The purpose is to ensure applicable deductions are reflected in pension income-tax withholding and resident-tax handling.",
+    "estimated_saving_yen": null,
+    "time_minutes": 20,
+    "travel_minutes": 0,
+    "risk_if_ignored": "Applicable deductions may not be reflected correctly in withholding or resident-tax processing, and overseas-dependent claims can be delayed if supporting evidence is missing.",
+    "action": "PREPARE",
+    "deadline": "Use the exact deadline printed on the Japan Pension Service notice. If the deadline is missed, Japan Pension Service says to submit as soon as possible rather than abandoning the filing.",
+    "effort": "Low to moderate for a simple unchanged declaration; higher when claiming overseas relatives because supporting documents may be required.",
+    "potential_benefit": "Correct tax treatment on pension income and fewer last-minute document problems, especially for overseas-family claims.",
+    "downside": "Receiving the notice does not automatically mean you must file it. Filing unnecessary or unsupported dependent claims can create errors, so first verify the eligibility section.",
+    "usefulness": 96,
+    "novelty": 91,
+    "impact": {"money": "MED", "family": "MED", "career": "LOW", "japan": "HIGH", "urgency": "MED"},
+    "connection_tags": ["public-pension", "dependent-deduction", "overseas-relatives", "resident-tax", "mynaportal"],
+    "skeptical_view": "The mailing threshold is not the same thing as entitlement to a deduction, and receiving a form does not prove that filing will reduce tax. The actual benefit depends on the recipient's facts and the eligibility of each claimed person.",
+    "what_to_watch": "Watch the individual notice for its printed deadline and whether Japan Pension Service contacts you through postal mail or Mynaportal. For overseas relatives, re-check the current National Tax Agency document rules before submission because eligibility depends on age and circumstances.",
+    "what_would_change_mind": "Update this story if Japan Pension Service changes the mailing date, thresholds, electronic-filing process or filing deadline guidance, or if the National Tax Agency materially changes the nonresident-relative documentation rules.",
+    "recommendation": "PREPARE: pension recipients who receive the notice should verify whether a declaration is necessary immediately and gather overseas-relative proof before the printed deadline.",
+    "learning": {
+      "outcomes": ["Understand what the public-pension dependent declaration does.", "Know why receiving the form does not automatically mean you must submit it.", "Recognize the extra evidence that can apply when a dependent lives outside Japan."],
+      "background": "Japan can withhold income tax directly from certain public-pension payments. The 扶養親族等申告書 is the declaration used to tell the pension payer about deductions such as qualifying spouse or dependent-relatives and certain personal statuses. Japan Pension Service also uses the integrated form for resident-tax information where applicable.",
+      "terms": [
+        {"term": "扶養親族等申告書", "meaning": "A declaration used by public-pension recipients to report qualifying spouse, dependent and related deduction information.", "why_it_matters": "Without the correct declaration and evidence, applicable deductions may not be reflected in pension withholding."},
+        {"term": "国外居住親族", "meaning": "A qualifying relative who lives outside Japan for tax-rule purposes.", "why_it_matters": "Claims involving overseas relatives can require relationship documents, remittance evidence and Japanese translations."}
+      ],
+      "how_it_works": [
+        {"title": "Japan Pension Service identifies possible filers", "explanation": "The agency sends notices to pension recipients who meet the relevant pension-amount screening conditions or may be subject to resident tax. This is a screening step, not automatic proof that a deduction exists."},
+        {"title": "You check whether a deduction actually applies", "explanation": "If you have no relevant spouse, dependent, disability or other listed item, Japan Pension Service says submission may not be necessary."},
+        {"title": "Overseas relatives need evidence", "explanation": "The tax rules can require documents proving the family relationship and remittances. Some relatives age 30 to 69 must also fit additional statutory conditions."},
+        {"title": "Submit once through the correct official channel", "explanation": "Eligible Mynaportal/nenkin-net users can file electronically; if filed electronically, the paper form is unnecessary. Paper filers use the official return route and should follow the deadline printed on the notice."}
+      ],
+      "example": "A pension recipient who claims a parent living overseas should not simply write the parent's name and assume the claim is complete. Depending on the parent's age and circumstances, the recipient may need relationship proof, qualifying remittance records and Japanese translations before the deduction can be supported.",
+      "takeaways": ["Mailing starts September 7, 2026.", "Receiving the form does not automatically mean filing is required.", "Follow the deadline printed on your own notice.", "Electronic filing means no duplicate paper filing.", "Overseas-relative claims can need relationship, remittance and translation documents."]
+    },
+    "action_plan": {
+      "goal": "Submit a correct 2027 pension dependent declaration only when needed, with all required supporting evidence.",
+      "who_should_act": "Act if Japan Pension Service sends you the 2027 declaration or a Mynaportal notice and you have a potentially applicable spouse, dependent, disability or related deduction. If you have no applicable deductions, verify the official eligibility guidance before filing anything.",
+      "deadline": "Follow the exact deadline printed on the Japan Pension Service notice. If already late, submit as soon as possible.",
+      "prepare": ["The Japan Pension Service notice or Mynaportal message.", "Your current spouse/dependent information and estimated income where the form requires it.", "For relatives living overseas: current relationship documents and remittance-related records required by the National Tax Agency.", "Japanese translations for required documents written in another language."],
+      "steps": [
+        {"step": "Confirm whether you actually need to file", "action": "Read the eligibility section of the Japan Pension Service guidance and compare it with your deduction situation.", "how": "Use the official Japan Pension Service 2027 declaration page linked in the article.", "needed": ["Your notice", "Your spouse/dependent situation"], "time_minutes": 5, "cost_yen": 0, "done_when": "You can state which deduction/status you are claiming, or that no filing is needed."},
+        {"step": "Check the delivery channel and deadline", "action": "Confirm whether your notice is paper or Mynaportal and note the exact submission deadline shown.", "how": "Check the mailed form or official electronic notice.", "needed": ["Paper form or Mynaportal access"], "time_minutes": 2, "cost_yen": 0, "done_when": "The deadline and filing channel are written down."},
+        {"step": "Prepare overseas-relative evidence if applicable", "action": "Gather the relationship and remittance evidence required for each claimed relative living outside Japan.", "how": "Match the relative's age and situation against the National Tax Agency overseas-relative rules; translate required foreign-language documents into Japanese.", "needed": ["Relationship documents", "Remittance records", "Translations where required"], "time_minutes": 30, "cost_yen": null, "done_when": "Every overseas-relative claim has the applicable supporting documents ready."},
+        {"step": "Submit through one official route", "action": "File electronically if eligible, or complete and return the official paper form.", "how": "Use Mynaportal/nenkin-net if offered, or the return envelope/instructions supplied by Japan Pension Service.", "needed": ["Completed declaration", "Supporting documents where required"], "time_minutes": 15, "cost_yen": 0, "done_when": "Electronic submission shows completion, or the completed paper filing has been mailed according to the official instructions."},
+        {"step": "Keep proof and follow up", "action": "Save a copy or submission record and respond if Japan Pension Service requests clarification.", "how": "Keep the electronic completion record or copies of the paper filing and evidence.", "needed": ["Submission record"], "time_minutes": 3, "cost_yen": 0, "done_when": "You can prove what was submitted and when."}
+      ],
+      "mistakes_to_avoid": ["Assuming everyone who receives the form must submit it.", "Submitting both electronically and on paper after a successful electronic filing.", "Claiming an overseas relative without checking the age-specific eligibility and evidence rules.", "Sending foreign-language evidence without the required Japanese translation.", "Ignoring the notice because the printed deadline has passed; Japan Pension Service says late filers should submit as soon as possible."],
+      "decision_rules": [
+        {"if": "you receive the notice but have no applicable deductions or listed statuses", "then": "verify the official no-filing condition before submitting anything"},
+        {"if": "you previously use electronic filing/paperless delivery and no paper arrives", "then": "check Mynaportal rather than assuming the notice was missed"},
+        {"if": "you claim a relative living outside Japan", "then": "check the National Tax Agency nonresident-relative evidence rules before filing"},
+        {"if": "the printed deadline has already passed", "then": "submit as soon as possible rather than abandoning the declaration"}
+      ],
+      "follow_up": "Keep the submission record. Re-check the pension withholding information when 2027 payments begin and contact Japan Pension Service if the declaration was submitted but the recorded dependent information appears incorrect."
+    },
+    "reading_levels": {
+      "30 sec": {"what_happened": "Japan Pension Service will start sending the 2027 pension dependent declaration from September 7.", "why_it_matters": "The form can affect spouse/dependent and related deductions used in pension tax withholding; overseas relatives may require extra documents.", "what_to_do_watch": "Check whether you actually need to file, note the deadline on your notice, and prepare overseas-family evidence early.", "bottom_line": "Do not ignore the form—but do not assume receiving it automatically means you must file."},
+      "2_min": "From September 7, Japan Pension Service will begin sending the 2027 扶養親族等申告書 to pensioners who may need to report spouse, dependent and related deduction information for income tax or resident tax. The agency's screening thresholds for mailing are ¥980,000 in annual pension for recipients under 65 and ¥1.48 million for those 65 or older, with a separate threshold for certain retirement mutual-aid pensions. Receiving the notice is not automatic proof that filing is required; people with no applicable deductions may not need to submit it, and paperless users may receive the notice through Mynaportal. The important complication for families with relatives overseas is documentation: National Tax Agency rules can require relationship proof, remittance records and Japanese translations, with extra conditions for some relatives age 30 to 69. Follow the exact deadline printed on your notice, use one official filing route, and keep proof of submission."
+    },
+    "editorial_visual": {"style": "editorial", "motif": "document", "secondary_motif": "family", "scene": "a calm Japanese pension notice on a kitchen table beside a family document folder and a smartphone showing a generic government notification, with a subtle overseas-family connection line; no logos, no readable personal data, no fake official seals", "caption": "A pension tax form can become a document problem if overseas-family proof is left until the deadline", "silliness": 1, "exaggeration": 24}
+  }
+}
