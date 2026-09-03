@@ -89,6 +89,7 @@ def test_grounded_recovery_searches_all_lenses_but_excludes_tried_story(monkeypa
     assert fake_st.session_state["main_nav"] == "More"
     assert fake_st.session_state["more_nav"] == "Ask ALAM"
     assert fake_st.session_state["alam_ask_query"] == "Residence renewal checklist"
+    assert fake_st.session_state["alam_ask_recovery_query"] == "Residence renewal checklist"
     assert fake_st.session_state["alam_ask_lenses"] == []
     assert fake_st.session_state["alam_ask_excluded_story_ids"] == ["story-outcome"]
 
@@ -100,6 +101,7 @@ def test_grounded_recovery_clears_stale_lenses_for_unknown_category(monkeypatch)
     assert checklist.open_grounded_recovery(record) is True
     assert fake_st.session_state["alam_ask_lenses"] == []
     assert fake_st.session_state["alam_ask_query"] == "Legacy verified story"
+    assert fake_st.session_state["alam_ask_recovery_query"] == "Legacy verified story"
     assert fake_st.session_state["alam_ask_excluded_story_ids"] == ["story-outcome"]
 
 
@@ -110,6 +112,7 @@ def test_grounded_recovery_without_stable_id_still_searches_without_fake_exclusi
     record.pop("id")
     assert checklist.open_grounded_recovery(record) is True
     assert fake_st.session_state["alam_ask_lenses"] == []
+    assert fake_st.session_state["alam_ask_recovery_query"] == "Verified topic"
     assert fake_st.session_state["alam_ask_excluded_story_ids"] == []
 
 
