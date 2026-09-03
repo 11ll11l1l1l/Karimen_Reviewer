@@ -60,10 +60,10 @@ def _assert_restore_rotates_persisted_pair():
 
         def set_session(self, access, refresh):
             self.set_calls.append((access, refresh))
-            return SimpleNamespace(session=rotated)
+            return SimpleNamespace(session=rotated, user=user)
 
         def get_user(self):
-            return SimpleNamespace(user=user)
+            raise AssertionError("set_session already returned the verified user")
 
     fake_auth = FakeAuth()
     fake_client = SimpleNamespace(auth=fake_auth)
