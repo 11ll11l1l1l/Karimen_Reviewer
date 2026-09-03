@@ -8,6 +8,7 @@ from alam_publication_quality import assess_article
 ROOT = Path(__file__).resolve().parent
 DATA = ROOT / "data"
 ERRORS = []
+COMMENT_ROWS = []
 V4_CUTOFF = datetime.fromisoformat("2026-09-02T13:20:00+09:00")
 V5_CUTOFF = datetime.fromisoformat("2026-09-02T14:30:00+09:00")
 LIFECYCLE = {"NEW", "DEVELOPING", "CONFIRMED", "FADING", "RESOLVED"}
@@ -115,6 +116,45 @@ def validate_comment(path, row):
             err(path, f"missing {key}")
     if is_v5(row) and row.get("stance") and str(row.get("stance")).upper() not in {"SUPPORT", "CHALLENGE", "MIXED"}:
         err(path, "stance must be SUPPORT/CHALLENGE/MIXED")
+    COMMENT_ROWS.append((path, row))
+
+
+def validate_comment_graph():
+    """Fail closed before sync when a reply target is ambiguous or impossible.
+
+    The trusted Supabase importer sorts comments by ``created_at``. Requiring a reply
+    target to exist in the same story and be strictly older guarantees that the parent
+    row is present before the database self-FK is evaluated. It also prevents a valid
+    comment ID from accidentally linking two unrelated article threads.
+    """
+    by_id = {}
+    for path, row in COMMENT_ROWS:
+        comment_id = str(row.get("id") or "")
+        if not comment_id:
+            continue
+        if comment_id in by_id:
+            err(path, f"duplicate comment id {comment_id!r}")
+            continue
+        by_id[comment_id] = (path, row)
+
+    for path, row in COMMENT_ROWS:
+        reply_to = row.get("reply_to")
+        if not reply_to:
+            continue
+        reply_id = str(reply_to)
+        parent = by_id.get(reply_id)
+        if parent is None:
+            err(path, f"reply_to {reply_id!r} does not exist in comment archive")
+            continue
+        _, parent_row = parent
+        if str(parent_row.get("story_id")) != str(row.get("story_id")):
+            err(path, f"reply_to {reply_id!r} belongs to a different story")
+        parent_time = record_time(parent_row)
+        child_time = record_time(row)
+        if parent_time is None or child_time is None:
+            err(path, f"reply_to {reply_id!r} requires valid timezone-aware created_at values")
+        elif parent_time >= child_time:
+            err(path, f"reply_to {reply_id!r} must be strictly older than its reply")
 
 
 def validate_wisdom(path, row):
@@ -147,6 +187,8 @@ for path in sorted(DATA.rglob("*.json")):
             validate_comment(path, row)
         else:
             validate_article(path, row)
+
+validate_comment_graph()
 
 if ERRORS:
     print("ALAM data validation failed:")
