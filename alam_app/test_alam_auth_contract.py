@@ -118,6 +118,13 @@ def _assert_saved_normalization_is_bounded_and_stable():
     many = [f"story-{index}" for index in range(alam_auth.MAX_ACCOUNT_SAVED_IMPORT + 20)]
     assert len(alam_auth._normalized_saved_ids(many)) == alam_auth.MAX_ACCOUNT_SAVED_IMPORT
 
+    # Cloud state is additive, but an old browser-only ID that no longer exists in the
+    # live article table must still remain in this session instead of being erased by sync.
+    assert alam_auth._merged_session_saved_ids(
+        ["cloud-story", "shared-story"],
+        ["stale-browser-story", "shared-story"],
+    ) == ["cloud-story", "shared-story", "stale-browser-story"]
+
 
 def _assert_cloud_preferences_do_not_delete_local_history():
     original_st = alam_auth.st
@@ -169,8 +176,9 @@ def main():
     assert "window.parent.localStorage" in storage_source
     assert "location.search" not in auth_source and "query_params" not in auth_source
     assert "render_account_settings" in runtime_source
-    assert "browser-only ALAM" in settings_source
+    assert "browser-only alam" in settings_source.lower()
     assert "Sync this browser now" in settings_source
+    assert "local_only_saved" in sync_source
 
     good = {
         "access_token": "a" * 45 + "." + "b" * 45 + "." + "c" * 45,
