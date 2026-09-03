@@ -179,29 +179,40 @@ def percent_value(value):
 
 def init_browser_state():
     st.session_state.setdefault("followed_stories", []); st.session_state.setdefault("visit_reference", None)
-    if stx is None: return None
-    try:
-        manager = st.session_state.get("_alam_cookie_manager")
-        if manager is None:
+    manager = st.session_state.get("_alam_cookie_manager")
+    if manager is None and stx is not None:
+        try:
             manager = stx.CookieManager(key="alam_cookie_manager")
             st.session_state["_alam_cookie_manager"] = manager
-        if not st.session_state.get("cookie_loaded"):
-            cookies = {}
+        except Exception:
+            manager = None
+    if not st.session_state.get("cookie_loaded"):
+        cookies = {}
+        try:
+            cookies = dict(st.context.cookies)
+        except Exception:
+            pass
+        raw = cookies.get("alam_followed")
+        if not raw and manager is not None:
             try:
-                cookies = dict(st.context.cookies)
+                raw = manager.get(cookie="alam_followed")
+            except Exception:
+                raw = None
+        if raw:
+            try:
+                parsed = json.loads(raw)
+                if isinstance(parsed, list): st.session_state["followed_stories"] = [str(x) for x in parsed]
             except Exception:
                 pass
-            raw = cookies.get("alam_followed") or manager.get(cookie="alam_followed")
-            if raw:
-                try:
-                    parsed = json.loads(raw)
-                    if isinstance(parsed, list): st.session_state["followed_stories"] = [str(x) for x in parsed]
-                except Exception: pass
-            last = cookies.get("alam_last_visit") or manager.get(cookie="alam_last_visit")
-            if last: st.session_state["visit_reference"] = parse_dt(last)
-            st.session_state["cookie_loaded"] = True
-        return manager
-    except Exception: return None
+        last = cookies.get("alam_last_visit")
+        if not last and manager is not None:
+            try:
+                last = manager.get(cookie="alam_last_visit")
+            except Exception:
+                last = None
+        if last: st.session_state["visit_reference"] = parse_dt(last)
+        st.session_state["cookie_loaded"] = True
+    return manager
 def is_followed(story_id): return str(story_id) in set(st.session_state.get("followed_stories", []))
 def toggle_follow(story_id, manager=None):
     sid = str(story_id); current = list(st.session_state.get("followed_stories", [])); current = [x for x in current if x != sid] if sid in current else current + [sid]; st.session_state["followed_stories"] = current

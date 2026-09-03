@@ -1,11 +1,12 @@
 """Regression tests for ALAM's Saved material-update review state.
 
-These tests stay deterministic and browser-independent. They protect the two product
-contracts that matter most: review acknowledgement advances monotonically without
-removing the bookmark, and explicit v5 change summaries remain usable even when the
-Saved page has only the current record rather than hydrated history.
+These tests stay deterministic and browser-independent. They protect the product
+contracts around Saved review state and browser-cookie restoration.
 """
 
+from types import SimpleNamespace
+
+import alam_core
 from alam_local_state import _advance_saved_snapshot, _sid
 from alam_saved_views import _change_preview
 
@@ -56,6 +57,32 @@ def test_change_preview_does_not_invent_change():
         "content": {},
     }
     assert _change_preview(record, [record]) is None
+
+
+def test_native_cookies_restore_saved_state_without_optional_cookie_manager():
+    original_st = alam_core.st
+    original_stx = alam_core.stx
+    fake_st = SimpleNamespace(
+        session_state={},
+        context=SimpleNamespace(
+            cookies={
+                "alam_followed": '["story-7", "story-8"]',
+                "alam_last_visit": "2026-09-03T02:30:00+00:00",
+            }
+        ),
+    )
+    try:
+        alam_core.st = fake_st
+        alam_core.stx = None
+        manager = alam_core.init_browser_state()
+
+        assert manager is None
+        assert fake_st.session_state["followed_stories"] == ["story-7", "story-8"]
+        assert fake_st.session_state["visit_reference"].isoformat() == "2026-09-03T02:30:00+00:00"
+        assert fake_st.session_state["cookie_loaded"] is True
+    finally:
+        alam_core.st = original_st
+        alam_core.stx = original_stx
 
 
 if __name__ == "__main__":
