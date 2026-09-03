@@ -3,8 +3,8 @@ from types import SimpleNamespace
 import alam_action_checklist as checklist
 
 
-def _record(action="Submit through the official route", *, goal="Finish the application", deadline="Before Friday", minutes=10):
-    return {
+def _record(action="Submit through the official route", *, goal="Finish the application", deadline="Before Friday", minutes=10, title=None):
+    record = {
         "id": "story-outcome",
         "content": {
             "action_plan": {
@@ -21,6 +21,9 @@ def _record(action="Submit through the official route", *, goal="Finish the appl
             }
         },
     }
+    if title is not None:
+        record["title"] = title
+    return record
 
 
 def test_reflection_key_tracks_current_plan_shape():
@@ -63,3 +66,29 @@ def test_completion_outcome_rejects_unknown_values_without_telemetry(monkeypatch
 
 def test_reflection_taxonomy_stays_small_and_non_textual():
     assert set(checklist.COMPLETION_OUTCOMES) == {"yes", "partly", "no"}
+
+
+def test_recovery_query_prefers_validated_story_title_then_goal():
+    assert checklist.recovery_query(_record(title="Residence renewal checklist")) == "Residence renewal checklist"
+    assert checklist.recovery_query(_record(goal="Finish the application")) == "Finish the application"
+    assert checklist.recovery_query({"id": "empty", "content": {}}) == ""
+
+
+def test_grounded_recovery_routes_to_existing_ask_alam_without_user_text(monkeypatch):
+    fake_st = SimpleNamespace(session_state={"selected_story": "story-outcome"})
+    monkeypatch.setattr(checklist, "st", fake_st)
+    record = _record(title="Residence renewal checklist")
+
+    assert checklist.open_grounded_recovery(record) is True
+    assert fake_st.session_state["selected_story"] is None
+    assert fake_st.session_state["main_nav"] == "More"
+    assert fake_st.session_state["more_nav"] == "Ask ALAM"
+    assert fake_st.session_state["alam_ask_query"] == "Residence renewal checklist"
+
+
+def test_grounded_recovery_fails_closed_without_validated_topic(monkeypatch):
+    fake_st = SimpleNamespace(session_state={"selected_story": "empty"})
+    monkeypatch.setattr(checklist, "st", fake_st)
+
+    assert checklist.open_grounded_recovery({"id": "empty", "content": {}}) is False
+    assert fake_st.session_state == {"selected_story": "empty"}
