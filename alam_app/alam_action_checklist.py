@@ -21,6 +21,10 @@ COOKIE_NAME = "alam_action_progress_v1"
 MAX_STORIES = 32
 MAX_STEPS = 8
 MAX_COOKIE_JSON_BYTES = 16 * 1024
+# Browser cookie limits vary, and the cookie name/expiry metadata also consume the
+# per-cookie budget. Keep the encoded value comfortably below common ceilings so a
+# full valid checklist history does not silently degrade to session-only state.
+MAX_COOKIE_VALUE_BYTES = 3500
 
 
 def _compact(value, limit=420):
@@ -138,6 +142,22 @@ def _encode(progress):
     return base64.urlsafe_b64encode(zlib.compress(raw, 9)).decode("ascii").rstrip("=")
 
 
+def _encode_for_cookie(progress):
+    """Encode recent progress inside a conservative browser-cookie value budget.
+
+    The normalized dictionary is ordered oldest-to-newest: each changed story is
+    popped and re-added by ``set_step_completed``. If the valid state grows beyond
+    the persistence envelope, evict only the oldest stories from the cookie copy.
+    The full normalized state remains in Streamlit session state for this session.
+    """
+    persisted = _normalize_progress(progress)
+    encoded = _encode(persisted)
+    while persisted and len(encoded.encode("ascii")) > MAX_COOKIE_VALUE_BYTES:
+        persisted.pop(next(iter(persisted)))
+        encoded = _encode(persisted)
+    return encoded
+
+
 def _load_progress():
     if "alam_action_progress" in st.session_state:
         progress = _normalize_progress(st.session_state["alam_action_progress"])
@@ -160,7 +180,7 @@ def _save_progress(progress, manager=None):
         try:
             manager.set(
                 COOKIE_NAME,
-                _encode(progress),
+                _encode_for_cookie(progress),
                 expires_at=datetime.now() + timedelta(days=365),
                 key="set_alam_action_progress",
             )
