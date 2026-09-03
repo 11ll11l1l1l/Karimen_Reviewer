@@ -24,6 +24,10 @@ ALIASES = {
 }
 STOPWORDS = {"a","an","and","are","as","at","be","can","do","does","for","from","how","i","in","is","it","me","my","of","on","or","should","the","this","to","what","when","where","which","who","why","with","yung","ang","ano","ba","ko","mo","sa","ng"}
 TOKEN_RE = re.compile(r"[a-z0-9]+(?:[./-][a-z0-9]+)*|[\u3040-\u30ff\u3400-\u9fff]+", re.I)
+SCORE_LABELS = {
+    "VERY HIGH": 90.0, "HIGH": 80.0, "MEDIUM-HIGH": 70.0, "MED-HIGH": 70.0,
+    "MEDIUM": 55.0, "MED": 55.0, "LOW-MEDIUM": 40.0, "LOW": 30.0, "VERY LOW": 15.0,
+}
 ASK_CSS = r"""
 <style>
 .ask-shell{padding:16px 17px;margin:8px 0 14px;border:1px solid rgba(23,32,42,.09);border-radius:18px;background:rgba(255,255,255,.72)}
@@ -37,6 +41,28 @@ def _flat_text(value) -> str:
     if isinstance(value, str): return value
     try: return json.dumps(value, ensure_ascii=False, sort_keys=True)
     except (TypeError, ValueError): return str(value)
+
+def _bounded_score(value) -> float:
+    """Normalize ALAM v5 numeric, semantic, and nested score forms without raising."""
+    if isinstance(value, bool):
+        return 100.0 if value else 0.0
+    if isinstance(value, (int, float)):
+        return max(0.0, min(100.0, float(value)))
+    if isinstance(value, dict):
+        for key in ("score", "value", "percent", "percentage", "rating"):
+            if key in value:
+                return _bounded_score(value.get(key))
+        return 0.0
+    text = str(value or "").strip().upper()
+    if text in SCORE_LABELS:
+        return SCORE_LABELS[text]
+    match = re.search(r"-?\d+(?:\.\d+)?", text.replace(",", ""))
+    if not match:
+        return 0.0
+    try:
+        return max(0.0, min(100.0, float(match.group(0))))
+    except ValueError:
+        return 0.0
 
 def _search_fields(record: dict) -> dict[str, str]:
     return {"title": str(record.get("title") or "").lower(), "tags": " ".join(str(x) for x in (record.get("tags") or [])).lower(), "summary": " ".join([str(record.get("summary") or ""), str(record.get("why_it_matters") or "")]).lower(), "body": " ".join([_flat_text(record.get("content")), _flat_text(record.get("claims")), _flat_text(record.get("geography"))]).lower()}
@@ -68,11 +94,9 @@ def relevance_score(record: dict, query: str) -> float:
         if hit and term in core: matched_core += 1
     if core and matched_core == 0: return 0.0
     if score <= 0: return 0.0
-    try: importance = float(record.get("importance") or record.get("importance_score") or 0)
-    except (TypeError, ValueError): importance = 0.0
-    try: confidence = float(record.get("confidence") or record.get("confidence_score") or 0)
-    except (TypeError, ValueError): confidence = 0.0
-    return round(score + min(max(importance,0),100)/100 + min(max(confidence,0),100)/200, 4)
+    importance = _bounded_score(record.get("importance") if record.get("importance") is not None else record.get("importance_score"))
+    confidence = _bounded_score(record.get("confidence") if record.get("confidence") is not None else record.get("confidence_score"))
+    return round(score + importance/100 + confidence/200, 4)
 
 def rank_records(records, query: str, limit: int = 8) -> list[tuple[float, dict]]:
     ranked = []
