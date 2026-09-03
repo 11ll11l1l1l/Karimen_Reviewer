@@ -70,6 +70,49 @@ def safe_feed_score(record):
     )
 
 
+def _normalize_intelligence_scores(record):
+    """Normalize score fields before legacy personalization/lifecycle float casts.
+
+    ALAM's v5 data contract accepts semantic and nested score shapes, while the
+    personalization module still has a few mature code paths that cast these fields
+    directly with ``float``. Copying the record keeps the source/audit object intact
+    while making those calculations use the same bounded score semantics as feeds.
+    """
+    if not isinstance(record, dict):
+        return record
+    normalized = dict(record)
+    normalized["importance"] = numeric_score(record.get("importance"), 50)
+    normalized["confidence"] = numeric_score(record.get("confidence"), 0)
+    return normalized
+
+
+def _install_intelligence_score_guard():
+    """Keep personalization and lifecycle calculations compatible with v5 scores."""
+    intelligence = sys.modules.get("alam_intelligence")
+    if intelligence is None:
+        return
+
+    personal_relevance = getattr(intelligence, "personal_relevance", None)
+    if personal_relevance is not None and not getattr(personal_relevance, "_alam_score_guard", False):
+        original_personal_relevance = personal_relevance
+
+        def guarded_personal_relevance(record):
+            return original_personal_relevance(_normalize_intelligence_scores(record))
+
+        guarded_personal_relevance._alam_score_guard = True
+        intelligence.personal_relevance = guarded_personal_relevance
+
+    story_lifecycle = getattr(intelligence, "story_lifecycle", None)
+    if story_lifecycle is not None and not getattr(story_lifecycle, "_alam_score_guard", False):
+        original_story_lifecycle = story_lifecycle
+
+        def guarded_story_lifecycle(record, all_records):
+            return original_story_lifecycle(_normalize_intelligence_scores(record), all_records)
+
+        guarded_story_lifecycle._alam_score_guard = True
+        intelligence.story_lifecycle = guarded_story_lifecycle
+
+
 def _is_expected_supabase_url(url):
     """True only for ALAM's production Project2 host.
 
@@ -249,6 +292,7 @@ def install_runtime_safety():
         if hasattr(module, "feed_score"):
             setattr(module, "feed_score", safe_feed_score)
 
+    _install_intelligence_score_guard()
     _install_supabase_project_guard()
     _install_cookie_layout_guard()
     _install_hybrid_feed_hooks()
