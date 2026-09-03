@@ -92,7 +92,12 @@ def _assert_restore_rotates_persisted_pair():
 
 def _assert_sign_out_queues_browser_clear():
     original_st = alam_auth.st
-    fake_state = {"alam_account": {"user_id": "u"}, "alam_pending_auth_storage": {"x": "y"}}
+    fake_state = {
+        "alam_account": {"user_id": "u"},
+        "alam_pending_auth_storage": {"x": "y"},
+        "alam_account_state": {"saved": 4},
+        "alam_account_state_user": "u",
+    }
     fake_auth = SimpleNamespace(sign_out=lambda: None)
     fake_state["alam_auth_client"] = SimpleNamespace(auth=fake_auth)
     alam_auth.st = SimpleNamespace(session_state=fake_state)
@@ -101,6 +106,42 @@ def _assert_sign_out_queues_browser_clear():
         assert fake_state["alam_clear_auth_storage"] is True
         assert "alam_auth_client" not in fake_state
         assert "alam_pending_auth_storage" not in fake_state
+        assert "alam_account_state" not in fake_state
+        assert "alam_account_state_user" not in fake_state
+    finally:
+        alam_auth.st = original_st
+
+
+def _assert_saved_normalization_is_bounded_and_stable():
+    values = ["story-a", "", "story-b", "story-a", None, " story-c "]
+    assert alam_auth._normalized_saved_ids(values) == ["story-a", "story-b", "story-c"]
+    many = [f"story-{index}" for index in range(alam_auth.MAX_ACCOUNT_SAVED_IMPORT + 20)]
+    assert len(alam_auth._normalized_saved_ids(many)) == alam_auth.MAX_ACCOUNT_SAVED_IMPORT
+
+
+def _assert_cloud_preferences_do_not_delete_local_history():
+    original_st = alam_auth.st
+    profile = {"r": {"hash-a": 1}, "m": ["hash-b"], "f": {"hash-c": ["MORE"]}, "s": {}}
+    fake_state = {"alam_local_profile": profile}
+    alam_auth.st = SimpleNamespace(session_state=fake_state)
+    try:
+        alam_auth._apply_cloud_preferences(
+            {
+                "interests": {"practical": True, "trend": False},
+                "settings": {
+                    "alert_min": 90,
+                    "alert_action": True,
+                    "alert_change": False,
+                    "dark": True,
+                },
+            }
+        )
+        assert fake_state["alam_interest_preferences"] == {"practical": True, "trend": False}
+        assert fake_state["alam_alert_min_importance"] == 90
+        assert fake_state["alam_dark_mode"] is True
+        assert profile["r"] == {"hash-a": 1}
+        assert profile["m"] == ["hash-b"]
+        assert profile["f"] == {"hash-c": ["MORE"]}
     finally:
         alam_auth.st = original_st
 
@@ -110,6 +151,7 @@ def main():
     client_source = inspect.getsource(alam_auth.get_auth_client)
     settings_source = inspect.getsource(alam_auth.render_account_settings)
     storage_source = inspect.getsource(alam_auth._auth_storage_expression)
+    sync_source = inspect.getsource(alam_auth.synchronize_account_state)
     runtime_source = inspect.getsource(alam_runtime_safety._install_account_settings_hook)
 
     assert "st.cache_resource" not in _decorator_names(client_source)
@@ -120,11 +162,15 @@ def main():
     assert "SUPABASE_PUBLISHABLE_KEY" in auth_source
     assert "verify_otp" in auth_source
     assert "alam_link_current_account" in auth_source
+    assert "alam_import_current_device_reads" in sync_source
+    assert 'table("saved_articles")' in sync_source
+    assert 'table("user_preferences")' in sync_source
     assert "set_session" in auth_source
     assert "window.parent.localStorage" in storage_source
     assert "location.search" not in auth_source and "query_params" not in auth_source
     assert "render_account_settings" in runtime_source
-    assert "Anonymous ALAM" in settings_source or "browser-only ALAM" in settings_source
+    assert "browser-only ALAM" in settings_source
+    assert "Sync this browser now" in settings_source
 
     good = {
         "access_token": "a" * 45 + "." + "b" * 45 + "." + "c" * 45,
@@ -137,6 +183,8 @@ def main():
     _assert_stale_account_fails_closed()
     _assert_restore_rotates_persisted_pair()
     _assert_sign_out_queues_browser_clear()
+    _assert_saved_normalization_is_bounded_and_stable()
+    _assert_cloud_preferences_do_not_delete_local_history()
 
     migration = (
         Path(__file__).resolve().parents[1] / "supabase" / "migrations" / "010_account_identity_bridge.sql"
@@ -146,6 +194,18 @@ def main():
     assert "revoke all on function public.alam_link_current_account(uuid) from public" in migration.lower()
     assert "grant execute on function public.alam_link_current_account(uuid) to authenticated" in migration.lower()
     assert "unique (visitor_id)" in migration.lower()
+
+    history_migration = (
+        Path(__file__).resolve().parents[1] / "supabase" / "migrations" / "012_account_state_history_bridge.sql"
+    ).read_text(encoding="utf-8")
+    lowered = history_migration.lower()
+    assert "source_event_id" in lowered
+    assert "article_reads_source_event_id_idx" in lowered
+    assert "alam_import_current_device_reads" in lowered
+    assert "auth.uid()" in lowered
+    assert "on conflict do nothing" in lowered
+    assert "revoke all on function public.alam_import_current_device_reads(uuid) from anon" in lowered
+    assert "grant execute on function public.alam_import_current_device_reads(uuid) to authenticated" in lowered
 
     print("ALAM optional Auth account contract checks passed")
 
