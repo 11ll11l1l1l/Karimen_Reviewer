@@ -7,6 +7,8 @@ must degrade safely when Supabase/local records lack optional metadata.
 
 from __future__ import annotations
 
+import re
+
 import streamlit as st
 
 import alam_evidence_views as evidence_views
@@ -30,6 +32,49 @@ STORY_PAGE_CSS = r"""
 @media(max-width:760px){.story-answer-grid{grid-template-columns:1fr}.story-answer-card{min-height:auto}.story-change-grid{grid-template-columns:1fr}.story-change-arrow{transform:rotate(90deg);text-align:center;padding:0}.story-view-label{margin-top:10px}}
 </style>
 """
+
+
+SCORE_LABELS = {
+    "VERY HIGH": 90.0,
+    "HIGH": 80.0,
+    "MEDIUM-HIGH": 70.0,
+    "MED-HIGH": 70.0,
+    "MEDIUM": 55.0,
+    "MED": 55.0,
+    "LOW-MEDIUM": 40.0,
+    "LOW": 30.0,
+    "VERY LOW": 15.0,
+}
+
+
+def _score_value(value, default=0.0):
+    """Normalize valid ALAM v5 score shapes before article-detail rendering.
+
+    Current records may carry numeric scores, semantic labels, or nested score
+    objects. The detail route must not crash merely because a valid record uses a
+    richer representation than a plain number.
+    """
+    if value is None:
+        return float(default)
+    if isinstance(value, bool):
+        return 100.0 if value else 0.0
+    if isinstance(value, (int, float)):
+        return max(0.0, min(100.0, float(value)))
+    if isinstance(value, dict):
+        for key in ("score", "value", "percent", "percentage", "rating"):
+            if key in value:
+                return _score_value(value.get(key), default)
+        return float(default)
+    text = str(value).strip().upper()
+    if text in SCORE_LABELS:
+        return SCORE_LABELS[text]
+    match = re.search(r"-?\d+(?:\.\d+)?", text.replace(",", ""))
+    if not match:
+        return float(default)
+    try:
+        return max(0.0, min(100.0, float(match.group(0))))
+    except ValueError:
+        return float(default)
 
 
 def _compact(value, limit=360):
@@ -91,10 +136,17 @@ def render_story_page(all_records, record, comments, manager=None):
         st.session_state.pop("selected_story", None)
         st.rerun()
 
+    confidence_raw = record.get("confidence") if record.get("confidence") is not None else record.get("confidence_score")
+    importance_raw = record.get("importance") if record.get("importance") is not None else record.get("importance_score")
+    confidence = _score_value(confidence_raw, 0.0)
+    normalized_record = dict(record)
+    normalized_record["confidence"] = confidence
+    normalized_record["importance"] = _score_value(importance_raw, 50.0)
+
     meta = category_meta(record)
     total, strong = source_quality(record)
     tags = " · ".join(str(x) for x in record.get("tags", [])[:5])
-    st.markdown("<div class='detail-shell'><div class='story-topline'>" f"<div class='story-label' style='margin:0;background:{meta['soft']};color:{meta['accent']}'>{esc(type_label(record))}</div><div class='story-age'>{esc(age_label(record.get('created_at')))}</div></div>" f"<div class='detail-title'>{esc(record.get('title',''))}</div><div class='detail-summary'>{esc(record.get('summary',''))}</div><div class='story-meta' style='margin-top:14px'><span>{int(record.get('confidence',0) or 0)}% confidence</span><span>{total} sources</span><span>{strong} primary/official</span><span>{esc(tags)}</span></div></div>", unsafe_allow_html=True)
+    st.markdown("<div class='detail-shell'><div class='story-topline'>" f"<div class='story-label' style='margin:0;background:{meta['soft']};color:{meta['accent']}'>{esc(type_label(record))}</div><div class='story-age'>{esc(age_label(record.get('created_at')))}</div></div>" f"<div class='detail-title'>{esc(record.get('title',''))}</div><div class='detail-summary'>{esc(record.get('summary',''))}</div><div class='story-meta' style='margin-top:14px'><span>{confidence:g}% confidence</span><span>{total} sources</span><span>{strong} primary/official</span><span>{esc(tags)}</span></div></div>", unsafe_allow_html=True)
 
     if localstate.saved_has_update(record):
         st.markdown("<div class='story-saved-update'><strong>Updated since you saved this.</strong> This stable story ID now points to a newer ALAM version than the one captured when you saved it.</div>", unsafe_allow_html=True)
@@ -104,7 +156,7 @@ def render_story_page(all_records, record, comments, manager=None):
         localstate.toggle_saved(record, manager)
         st.rerun()
 
-    _render_answer_grid(record, all_records)
+    _render_answer_grid(normalized_record, all_records)
     _render_change(record, all_records)
     _render_disagreement_signal(record, comments)
     learning_views.render_learning_section(record)
