@@ -1,32 +1,35 @@
 """Privacy-preserving anonymous identity and interaction telemetry for ALAM.
 
-ALAM remembers a browser by a random UUID stored in a long-lived cookie. Returning
-sessions read that cookie from Streamlit's native initial-request context, avoiding
-custom-component initialization/read races. CookieManager is used only for the
-first-registration cookie write. ALAM never attempts hardware/browser fingerprinting
-and does not store IP addresses for recognition. The public Supabase key can only call
-narrow SECURITY DEFINER RPCs; visitor tables remain closed to direct public reads/writes
-under RLS.
+ALAM remembers a browser by a random UUID. The durable browser copy lives in
+localStorage because component-written cookies are not reliably visible in every
+Streamlit/browser deployment. A long-lived cookie remains a compatibility backup.
+The UUID is random; ALAM does not fingerprint hardware and does not store IP addresses
+for recognition. Shared visitor tables stay closed by RLS and are reached only through
+narrow Supabase RPCs.
 """
 
 from __future__ import annotations
 
+import json
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import streamlit as st
 
+try:
+    from streamlit_js_eval import streamlit_js_eval
+except Exception:
+    streamlit_js_eval = None
+
 from alam_supabase import _safe_error, get_supabase_public
 
 DEVICE_COOKIE = "alam_device_id_v1"
+DEVICE_STORAGE_KEY = "alam_device_id_v2"
 COOKIE_DAYS = 730
 COOKIE_MAX_AGE = COOKIE_DAYS * 24 * 60 * 60
 WELCOME_ART = Path(__file__).resolve().parent / "assets" / "alam_welcome.svg"
 
-# Only structured controls are mirrored automatically. Free-text/search fields are
-# intentionally excluded even though the user asked for interaction history: future
-# personalization needs behavioral signals, not an accidental collection of typed text.
 TRACKED_WIDGET_PREFIXES = (
     "main_nav",
     "more_nav",
@@ -43,7 +46,6 @@ def _new_uuid() -> str:
 
 
 def _valid_device_id(value) -> str | None:
-    """Return a canonical UUID string or None for malformed/untrusted cookie values."""
     try:
         return str(uuid.UUID(str(value).strip()))
     except (ValueError, TypeError, AttributeError):
@@ -51,8 +53,7 @@ def _valid_device_id(value) -> str | None:
 
 
 def _device_metadata() -> dict:
-    """Return coarse device context without collecting IP or fingerprint attributes."""
-    metadata = {"identity_model": "random_cookie_uuid", "app": "alam_streamlit"}
+    metadata = {"identity_model": "random_browser_uuid_v2", "app": "alam_streamlit"}
     try:
         headers = st.context.headers
         user_agent = str(headers.get("User-Agent") or "").strip()
@@ -64,7 +65,6 @@ def _device_metadata() -> dict:
 
 
 def _request_cookie_get() -> str | None:
-    """Read the device cookie synchronously from the initial Streamlit request."""
     try:
         return _valid_device_id(st.context.cookies.get(DEVICE_COOKIE))
     except Exception:
@@ -72,15 +72,11 @@ def _request_cookie_get() -> str | None:
 
 
 def _cookie_get(manager=None) -> str | None:
-    """Return the native request cookie without invoking a custom component read."""
-    # Keep the manager argument for call-site/backward compatibility, but deliberately
-    # do not use manager.get(). Component reads can cause asynchronous reruns and are
-    # unnecessary because Streamlit exposes initial request cookies directly.
+    # Never wait on CookieManager reads. Native request cookies are synchronous.
     return _request_cookie_get()
 
 
 def _cookie_set(manager, device_id: str, *, key: str) -> bool:
-    """Best-effort persistent device cookie write with an explicit component key."""
     canonical = _valid_device_id(device_id)
     if manager is None or not canonical:
         return False
@@ -97,6 +93,64 @@ def _cookie_set(manager, device_id: str, *, key: str) -> bool:
         return True
     except Exception:
         return False
+
+
+def _storage_expression(write_value: str | None = None) -> str:
+    """Return JS that always reports a ready sentinel once the component hydrates."""
+    key = json.dumps(DEVICE_STORAGE_KEY)
+    value = json.dumps(_valid_device_id(write_value)) if write_value else "null"
+    return (
+        "(() => { try {"
+        f"const k={key}; const requested={value};"
+        "if (requested) window.localStorage.setItem(k, requested);"
+        "const stored=window.localStorage.getItem(k);"
+        "return JSON.stringify({ready:true,value:stored,error:null});"
+        "} catch (e) {"
+        "return JSON.stringify({ready:true,value:null,error:'storage_unavailable'});"
+        "} })()"
+    )
+
+
+def _parse_storage_result(raw) -> tuple[bool, str | None, str | None]:
+    """Return (ready, device_id, error) from the browser component payload."""
+    if raw is None:
+        return False, None, None
+    try:
+        payload = json.loads(str(raw))
+    except Exception:
+        return True, None, "invalid_storage_response"
+    if not isinstance(payload, dict):
+        return True, None, "invalid_storage_response"
+    return bool(payload.get("ready", True)), _valid_device_id(payload.get("value")), payload.get("error")
+
+
+def _browser_storage_bridge() -> tuple[bool, str | None, str | None]:
+    """Read/write the durable device UUID without making component reads authoritative.
+
+    The call is made unconditionally near the top of onboarding. This avoids the known
+    Streamlit custom-component failure mode where a component created only inside a
+    button branch can disappear before its browser-side work completes.
+    """
+    if streamlit_js_eval is None:
+        return True, None, "storage_component_unavailable"
+
+    pending = _valid_device_id(st.session_state.get("alam_pending_device_storage"))
+    try:
+        raw = streamlit_js_eval(
+            js_expressions=_storage_expression(pending),
+            want_output=True,
+            key="alam_device_storage_write_v2" if pending else "alam_device_storage_read_v2",
+        )
+    except Exception:
+        return True, None, "storage_component_error"
+
+    ready, stored, error = _parse_storage_result(raw)
+    if ready and pending and stored == pending:
+        st.session_state.pop("alam_pending_device_storage", None)
+        st.session_state["alam_device_storage_persisted"] = True
+    if ready:
+        st.session_state["alam_device_storage_error"] = error
+    return ready, stored, error
 
 
 def _lookup(device_id: str):
@@ -127,20 +181,20 @@ def _register(device_id: str, name: str, session_id: str):
         return None, _safe_error(exc)
 
 
-def init_identity(manager=None) -> dict:
-    """Resolve this browser to a visitor profile if one already exists."""
+def init_identity(manager=None, *, storage_device_id: str | None = None) -> dict:
+    """Resolve a browser identity using session -> localStorage -> native cookie."""
     st.session_state.setdefault("alam_session_id", _new_uuid())
     if st.session_state.get("alam_identity_initialized"):
         return dict(st.session_state.get("alam_visitor") or {})
 
-    # On a brand-new Streamlit session, st.context.cookies contains the cookies from
-    # the initial HTTP/WebSocket request immediately. This avoids waiting for the
-    # third-party CookieManager component to hydrate just to identify a return visit.
-    device_id = _valid_device_id(st.session_state.get("alam_device_id")) or _cookie_get(manager)
+    device_id = (
+        _valid_device_id(st.session_state.get("alam_device_id"))
+        or _valid_device_id(storage_device_id)
+        or _cookie_get(manager)
+    )
     if not device_id:
-        # Keep an unregistered ID only in this Streamlit session. We deliberately do
-        # not write a browser cookie yet; successful registration is the single
-        # authoritative persistence point.
+        # This UUID is session-only until onboarding succeeds. Registration then queues
+        # durable localStorage + cookie writes before the next session can depend on it.
         device_id = _new_uuid()
     st.session_state["alam_device_id"] = device_id
 
@@ -164,7 +218,6 @@ def is_recognized() -> bool:
 
 
 def log_event(event_name: str, article_id: str | None = None, properties: dict | None = None) -> bool:
-    """Best-effort public event logging through the constrained Supabase RPC."""
     device_id = _valid_device_id(st.session_state.get("alam_device_id"))
     if not device_id or not is_recognized():
         return False
@@ -181,8 +234,6 @@ def log_event(event_name: str, article_id: str | None = None, properties: dict |
         ).execute()
         return True
     except Exception:
-        # Telemetry must never block reading. Production diagnostics can inspect RPC
-        # health separately; do not surface noisy event failures to ordinary readers.
         return False
 
 
@@ -200,12 +251,26 @@ def _welcome_copy() -> None:
 
 
 def render_onboarding(manager=None) -> bool:
-    """Render first-visit onboarding. Return True only when the visitor is recognized."""
-    init_identity(manager)
+    """Restore or register the anonymous browser identity."""
+    storage_ready, storage_device_id, _ = _browser_storage_bridge()
+
+    # On a fresh Streamlit session, do not mint a new UUID until localStorage has had
+    # one hydration opportunity. Otherwise an existing browser identity can be replaced
+    # simply because a custom component returned its initial None value.
+    has_immediate_identity = bool(
+        _valid_device_id(st.session_state.get("alam_device_id")) or _cookie_get(manager)
+    )
+    if not storage_ready and not has_immediate_identity:
+        st.caption("Restoring this browser…")
+        return False
+
+    init_identity(manager, storage_device_id=storage_device_id)
     if is_recognized():
-        # A valid 730-day device cookie already exists. Do not rewrite it on every
-        # Streamlit render: component writes can trigger additional reruns and timing
-        # noise, while providing no recognition benefit.
+        # If an older browser was recognized only from the cookie, backfill the more
+        # reliable localStorage copy once without rewriting it every render.
+        device_id = _valid_device_id(st.session_state.get("alam_device_id"))
+        if device_id and storage_ready and storage_device_id != device_id:
+            st.session_state["alam_pending_device_storage"] = device_id
         return True
 
     if WELCOME_ART.exists():
@@ -220,7 +285,7 @@ def render_onboarding(manager=None) -> bool:
             key="alam_onboarding_name",
         )
         st.caption(
-            "We remember this browser using a random device ID. No hardware fingerprinting and no IP address is stored for recognition."
+            "This is browser recognition, not an email/password account. ALAM stores a random browser ID locally; no hardware fingerprinting or IP address is used for recognition."
         )
         submitted = st.form_submit_button("Enter ALAM →", use_container_width=True, type="primary")
 
@@ -237,19 +302,19 @@ def render_onboarding(manager=None) -> bool:
             str(st.session_state.get("alam_session_id")),
         )
         if profile:
-            # First registration is the single authoritative cookie write. By this
-            # point the user has interacted with the page and CookieManager is mounted.
-            persisted = _cookie_set(
+            # Queue durable localStorage persistence for the next unconditional bridge
+            # render. CookieManager remains a compatibility backup only.
+            st.session_state["alam_pending_device_storage"] = device_id
+            st.session_state["alam_device_cookie_persisted"] = _cookie_set(
                 manager,
                 device_id,
                 key="confirm_alam_device_id",
             )
-            st.session_state["alam_device_cookie_persisted"] = persisted
             st.session_state["alam_visitor"] = dict(profile)
             st.session_state["alam_identity_error"] = None
             log_event("onboarding_completed", properties={"returning_device": False})
             st.rerun()
-        st.error("ALAM could not save this device profile yet. " + str(error or "Please retry."))
+        st.error("ALAM could not save this browser profile yet. " + str(error or "Please retry."))
     elif st.session_state.get("alam_identity_error"):
         st.caption("Personalization is temporarily unavailable; ALAM will retry when this page reloads.")
     return False
@@ -273,7 +338,6 @@ def log_session_open_once() -> None:
 
 
 def log_navigation(page: str, section: str = "main") -> None:
-    """Deduplicate navigation events within one session."""
     value = str(page or "")
     key = f"{section}:{value}"
     if st.session_state.get("alam_last_navigation") == key:
@@ -297,7 +361,6 @@ def log_story_open(record: dict) -> None:
 
 
 def track_widget_changes() -> None:
-    """Log safe structured UI-control changes for future personalization models."""
     if not is_recognized():
         return
     previous = dict(st.session_state.get("alam_widget_snapshot") or {})
@@ -309,7 +372,6 @@ def track_widget_changes() -> None:
         if isinstance(value, (str, int, float, bool)):
             current[text_key] = value
             if text_key in previous and previous[text_key] != value:
-                # Button False resets are not useful behavior; the True click is.
                 if not (isinstance(value, bool) and value is False):
                     log_event(
                         "ui_control_changed",
