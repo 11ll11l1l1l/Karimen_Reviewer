@@ -1,3 +1,6 @@
+import base64
+import zlib
+
 import alam_action_checklist as checklist
 
 
@@ -61,6 +64,10 @@ def test_cookie_codec_is_bounded_and_rejects_corruption():
     decoded = checklist._decode(checklist._encode(raw))
     assert len(decoded) == checklist.MAX_STORIES
     assert checklist._decode("corrupt-cookie") == {}
+
+    oversized_json = b'{"story":["' + (b"x" * (checklist.MAX_COOKIE_JSON_BYTES + 256)) + b'"]}'
+    bomb = base64.urlsafe_b64encode(zlib.compress(oversized_json, 9)).decode("ascii").rstrip("=")
+    assert checklist._decode(bomb) == {}
 
 
 def test_story_page_integrates_action_follow_through():
