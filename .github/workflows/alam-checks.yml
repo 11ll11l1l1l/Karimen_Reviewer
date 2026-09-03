@@ -33,6 +33,8 @@ jobs:
         run: python alam_app/alam_image_generation.py --self-test
       - name: Install ALAM dependencies
         run: pip install -r alam_app/requirements.txt
+      - name: Execute every ALAM regression assertion
+        run: python alam_app/run_regression_suite.py
       - name: Article image fallback regression test
         run: python alam_app/test_article_image_render.py
       - name: Reliable layered image renderer regression test
