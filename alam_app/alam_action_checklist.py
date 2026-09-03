@@ -126,10 +126,16 @@ def _decode(raw):
         compressed = base64.urlsafe_b64decode(padded.encode("ascii"))
         # Browser cookies are user-controlled input. Bound decompression before JSON
         # parsing so a tiny high-ratio payload cannot make a routine page rerun spend
-        # unbounded memory/CPU. Normal checklist state is far below this ceiling.
+        # unbounded memory/CPU. Require exactly one complete zlib stream as well;
+        # trailing bytes make the cookie malformed even when the first stream is valid.
         inflater = zlib.decompressobj()
         payload = inflater.decompress(compressed, MAX_COOKIE_JSON_BYTES + 1)
-        if len(payload) > MAX_COOKIE_JSON_BYTES or not inflater.eof or inflater.unconsumed_tail:
+        if (
+            len(payload) > MAX_COOKIE_JSON_BYTES
+            or not inflater.eof
+            or inflater.unconsumed_tail
+            or inflater.unused_data
+        ):
             return {}
         decoded = json.loads(payload.decode("utf-8"))
     except Exception:
