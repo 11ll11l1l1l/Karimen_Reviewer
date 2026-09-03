@@ -193,8 +193,11 @@ def _restore_browser_session(stored_tokens: dict | None) -> dict:
             tokens["access_token"], tokens["refresh_token"]
         )
         _queue_session_persistence(getattr(response, "session", None))
-        user_response = get_auth_client().auth.get_user()
-        return _set_account_from_user(getattr(user_response, "user", None))
+        user = getattr(response, "user", None)
+        if user is None:
+            user_response = get_auth_client().auth.get_user()
+            user = getattr(user_response, "user", None)
+        return _set_account_from_user(user)
     except Exception:
         st.session_state.pop("alam_account", None)
         st.session_state.pop("alam_auth_client", None)
