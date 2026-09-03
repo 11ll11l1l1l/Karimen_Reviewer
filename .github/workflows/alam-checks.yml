@@ -61,6 +61,8 @@ jobs:
         run: python alam_app/test_alam_evidence_views.py
       - name: Saved material-update review regression test
         run: python alam_app/test_alam_saved_update_flow.py
+      - name: Today briefing personalization regression test
+        run: python alam_app/test_alam_daily_brief.py
       - name: Comment hydration scope regression test
         run: python alam_app/test_alam_comment_scope.py
       - name: Comment reply integrity regression test
