@@ -20,6 +20,7 @@ import streamlit as st
 COOKIE_NAME = "alam_action_progress_v1"
 MAX_STORIES = 32
 MAX_STEPS = 8
+MAX_COOKIE_JSON_BYTES = 16 * 1024
 
 
 def _compact(value, limit=420):
@@ -98,7 +99,14 @@ def _decode(raw):
         return {}
     try:
         padded = value + "=" * (-len(value) % 4)
-        payload = zlib.decompress(base64.urlsafe_b64decode(padded.encode("ascii")))
+        compressed = base64.urlsafe_b64decode(padded.encode("ascii"))
+        # Browser cookies are user-controlled input. Bound decompression before JSON
+        # parsing so a tiny high-ratio payload cannot make a routine page rerun spend
+        # unbounded memory/CPU. Normal checklist state is far below this ceiling.
+        inflater = zlib.decompressobj()
+        payload = inflater.decompress(compressed, MAX_COOKIE_JSON_BYTES + 1)
+        if len(payload) > MAX_COOKIE_JSON_BYTES or not inflater.eof or inflater.unconsumed_tail:
+            return {}
         decoded = json.loads(payload.decode("utf-8"))
     except Exception:
         return {}
