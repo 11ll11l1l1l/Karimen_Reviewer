@@ -14,16 +14,24 @@ source-of-truth policy.
 
 from __future__ import annotations
 
+from datetime import timezone
+
 from alam_core import parse_dt
 
 
 def version_key(record):
-    """Stable identity for one material story version across storage backends."""
+    """Stable identity for one material story version across storage backends.
+
+    GitHub audit records commonly preserve Japan's +09:00 offset while Postgres
+    serializes the same instant as +00:00. Normalize both to UTC before comparing so
+    an already-mirrored version is not falsely reported as pending sync work.
+    """
     if not isinstance(record, dict) or not record.get("id"):
         return None
+    created_at = parse_dt(record.get("created_at")).astimezone(timezone.utc)
     return (
         str(record.get("id")),
-        parse_dt(record.get("created_at")).isoformat(),
+        created_at.isoformat(),
     )
 
 
