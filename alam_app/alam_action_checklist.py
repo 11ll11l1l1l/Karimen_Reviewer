@@ -144,15 +144,15 @@ def recovery_lenses(record):
     return [label for label in CATEGORY_LENSES.values() if label != origin] if origin else []
 
 def open_grounded_recovery(record):
-    """Route an incomplete outcome into Ask ALAM, excluding exactly the tried story."""
+    """Route an incomplete outcome into full-corpus Ask ALAM, excluding exactly the tried story."""
     query = recovery_query(record)
     if not query: return False
     st.session_state["selected_story"] = None; st.session_state["main_nav"] = "More"; st.session_state["more_nav"] = "Ask ALAM"; st.session_state["alam_ask_query"] = query
-    # The exact stable ID lets Ask ALAM search every relevant lens without presenting
-    # the already-tried plan as new help. Lens narrowing remains a conservative hint
-    # until the destination consumes this exclusion context.
+    # Exact stable-ID exclusion is enforced by Ask ALAM before ranking. Because the
+    # failed story cannot reappear, recovery can safely search every validated lens,
+    # including a newer/different Action story on the same problem.
     st.session_state["alam_ask_excluded_story_ids"] = [str(record.get("id"))] if record.get("id") else []
-    st.session_state["alam_ask_lenses"] = recovery_lenses(record)
+    st.session_state["alam_ask_lenses"] = []
     return True
 
 def render_action_checklist(record, manager=None):
@@ -175,7 +175,7 @@ def render_action_checklist(record, manager=None):
         if outcome in COMPLETION_OUTCOMES:
             st.caption(f"Outcome recorded: {COMPLETION_OUTCOMES[outcome]}. Thanks — this helps ALAM measure whether actions actually worked.")
             if outcome in {"partly", "no"} and recovery_query(record):
-                st.markdown("**Still unresolved? Check what ALAM can verify next.**"); st.caption("This opens grounded Ask ALAM using this story’s topic and other ALAM lenses first, so it does not simply repeat the same plan. If no additional validated evidence exists, ALAM will say so.")
+                st.markdown("**Still unresolved? Check what ALAM can verify next.**"); st.caption("This opens grounded Ask ALAM on the same topic across every verified lens. The exact plan you already tried is excluded, so ALAM can surface a different validated Action story too. If no additional evidence exists, ALAM will say so.")
                 if st.button("Ask ALAM about this", key=f"{reflection_key}_recovery", use_container_width=True):
                     if open_grounded_recovery(record): st.rerun()
         else:
