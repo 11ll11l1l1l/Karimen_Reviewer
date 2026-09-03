@@ -93,6 +93,26 @@ def action_plan(record):
     }
 
 
+def _normalize_progress(decoded):
+    """Normalize browser/session progress before any render path trusts its shape.
+
+    Streamlit session state can survive code reloads and component/rerun transitions,
+    so it is not safe to assume the cached value still matches this module's current
+    dictionary-of-string-lists contract. Apply the same bounds used for cookie input
+    instead of allowing stale/malformed cached values to crash article rendering.
+    """
+    if not isinstance(decoded, dict):
+        return {}
+    clean = {}
+    for story, values in decoded.items():
+        if not isinstance(values, list):
+            continue
+        valid = [str(item)[:32] for item in values if isinstance(item, str) and item]
+        if valid:
+            clean[str(story)[:20]] = list(dict.fromkeys(valid))[:MAX_STEPS]
+    return dict(list(clean.items())[-MAX_STORIES:])
+
+
 def _decode(raw):
     value = str(raw or "").strip()
     if not value:
@@ -110,16 +130,7 @@ def _decode(raw):
         decoded = json.loads(payload.decode("utf-8"))
     except Exception:
         return {}
-    if not isinstance(decoded, dict):
-        return {}
-    clean = {}
-    for story, values in decoded.items():
-        if not isinstance(values, list):
-            continue
-        valid = [str(item)[:32] for item in values if isinstance(item, str) and item]
-        if valid:
-            clean[str(story)[:20]] = list(dict.fromkeys(valid))[:MAX_STEPS]
-    return dict(list(clean.items())[-MAX_STORIES:])
+    return _normalize_progress(decoded)
 
 
 def _encode(progress):
@@ -129,7 +140,9 @@ def _encode(progress):
 
 def _load_progress():
     if "alam_action_progress" in st.session_state:
-        return st.session_state["alam_action_progress"]
+        progress = _normalize_progress(st.session_state["alam_action_progress"])
+        st.session_state["alam_action_progress"] = progress
+        return progress
     raw = None
     try:
         raw = st.context.cookies.get(COOKIE_NAME)
@@ -141,7 +154,7 @@ def _load_progress():
 
 
 def _save_progress(progress, manager=None):
-    progress = dict(list(progress.items())[-MAX_STORIES:])
+    progress = _normalize_progress(progress)
     st.session_state["alam_action_progress"] = progress
     if manager:
         try:
