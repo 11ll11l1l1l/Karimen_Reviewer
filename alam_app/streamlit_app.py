@@ -11,6 +11,7 @@ from alam_core import (
 )
 import alam_mobile_views as views
 import alam_extras as extras
+import alam_ask as ask_alam
 import alam_intelligence as intelligence
 import alam_identity as identity
 import alam_local_state as localstate
@@ -255,7 +256,7 @@ else:
     else:
         secondary = st.segmented_control(
             "More",
-            ["Trends", "Weekly", "Search", "Saved", "Predictions", "Settings"],
+            ["Trends", "Weekly", "Ask ALAM", "Saved", "Predictions", "Settings"],
             default="Trends",
             key="more_nav",
             label_visibility="collapsed",
@@ -267,8 +268,8 @@ else:
             dbviews.render_connect_the_dots(records)
             st.divider()
             reader.render_agent_audit(records, all_records, comments)
-        elif secondary == "Search":
-            extras.render_search(records, comments, manager, views)
+        elif secondary == "Ask ALAM":
+            ask_alam.render_ask_alam(records, comments, manager, views)
         elif secondary == "Saved":
             saved_views.render_saved(records, manager, comments, views)
         elif secondary == "Predictions":
