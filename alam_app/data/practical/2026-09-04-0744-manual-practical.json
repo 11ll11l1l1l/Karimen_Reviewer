@@ -1,0 +1,257 @@
+[
+  {
+    "id": "japan-minimum-wage-2026-final-prefecture-answers",
+    "agent": "practical",
+    "created_at": "2026-09-04T07:44:00+09:00",
+    "type": "employment",
+    "title": "Japan's 2026 minimum-wage map is now complete: check your October-December payslip",
+    "summary": "Lahat ng 47 prefectures have now answered their 2026 regional minimum-wage increases. The proposed national weighted average is ¥1,177/hour, up ¥56, with prefectural increases of ¥54-¥65 taking effect on different dates from October 1 to December 2 after final procedures.",
+    "why_it_matters": "If your hourly equivalent is near the legal floor, a payroll rate that stays unchanged after your prefecture's effective date can become an underpayment. Employers also need to budget for a historically large wage-floor increase rather than assuming one national start date.",
+    "importance": 94,
+    "confidence": 98,
+    "tags": ["Japan", "Minimum Wage", "Salary", "Employment", "October 2026", "Household Income"],
+    "geography": ["Japan"],
+    "status": "NEW",
+    "sources": [
+      {
+        "publisher": "Ministry of Health, Labour and Welfare",
+        "title": "全ての都道府県で地域別最低賃金の改定額が答申されました",
+        "url": "https://www.mhlw.go.jp/stf/newpage_75950.html",
+        "published_at": "2026-09-03",
+        "source_type": "official"
+      },
+      {
+        "publisher": "Ministry of Health, Labour and Welfare",
+        "title": "令和８年度地域別最低賃金額改定の目安について",
+        "url": "https://www.mhlw.go.jp/stf/newpage_74920.html",
+        "published_at": "2026-07-28",
+        "source_type": "official"
+      }
+    ],
+    "claims": [
+      {
+        "kind": "FACT",
+        "text": "All 47 prefectural minimum-wage councils have now submitted their 2026 answers, with proposed increases ranging from ¥54 to ¥65 per hour.",
+        "source_refs": [1],
+        "basis": "MHLW nationwide compilation dated September 3, 2026"
+      },
+      {
+        "kind": "FACT",
+        "text": "The proposed national weighted-average regional minimum wage is ¥1,177 per hour, ¥56 above last year's ¥1,121.",
+        "source_refs": [1],
+        "basis": "MHLW nationwide compilation"
+      },
+      {
+        "kind": "FACT",
+        "text": "The ¥56 weighted-average increase is the second-largest since the guideline system began in 1978.",
+        "source_refs": [1],
+        "basis": "MHLW historical comparison"
+      },
+      {
+        "kind": "FACT",
+        "text": "The answered rates are expected to take effect prefecture by prefecture between October 1 and December 2 after objection procedures and final decisions by labour-bureau directors.",
+        "source_refs": [1],
+        "basis": "MHLW implementation procedure"
+      },
+      {
+        "kind": "INFERENCE",
+        "text": "Workers paid close to the legal minimum should verify the first payslip covering work after their prefecture's effective date because the start date is not uniform nationwide.",
+        "source_refs": [1],
+        "basis": "Practical implication of prefecture-specific rates and effective dates"
+      }
+    ],
+    "editorial_visual": {
+      "style": "editorial",
+      "motif": "yen",
+      "secondary_motif": "document",
+      "scene": "a Japanese hourly wage card climbing a staircase made of prefecture-shaped pay slips while a calendar flips from October toward December",
+      "caption": "The wage floor is rising, but not on one nationwide date",
+      "silliness": 34,
+      "exaggeration": 66
+    },
+    "content": {
+      "key_message": "Know your prefecture's new rate and effective date, then compare it with the hourly equivalent on the first affected payslip.",
+      "who_is_affected": "Employees working in Japan whose hourly pay or hourly-equivalent pay is near the regional minimum wage, plus households relying on part-time or low-wage earnings and employers managing payroll.",
+      "when": "Final prefectural rates are expected to begin on different dates from October 1 through December 2, 2026.",
+      "financial_impact": "At the national weighted-average level, the increase is ¥56 per hour. As an illustration only, 100 paid hours in a month at a rate that rises by ¥56 equals ¥5,600 more gross pay for that month before tax/social-insurance effects. Your actual increase depends on prefecture, hours and current wage.",
+      "risk_if_ignored": "A worker near the wage floor may fail to notice an outdated hourly rate after the legal effective date. The opposite mistake is assuming the new rate applies immediately on September 3 or on one common national date; it does not.",
+      "action": "PREPARE",
+      "deadline": "Before your prefecture's 2026 effective date; then verify the first payslip that includes work performed after that date.",
+      "effort": "Low: check one official prefectural rate/date and one payslip.",
+      "potential_benefit": "Correct pay and earlier detection of underpayment; for workers exactly at the old floor, the gross monthly difference can be several thousand yen depending on hours and prefecture.",
+      "downside": "The September 3 figures are council answers, not a claim that every new rate is already legally effective. Final implementation follows prefectural procedures and dates differ.",
+      "what_would_change_mind": "A prefectural labour bureau changing the answered amount or effective date during final procedures would require updating that prefecture's advice.",
+      "usefulness": 98,
+      "novelty": 92,
+      "impact": {"money": "HIGH", "family": "MED", "career": "MED", "japan": "HIGH", "urgency": "MED"},
+      "connection_tags": ["minimum-wage", "household-income", "part-time-work", "payroll", "inflation"],
+      "reading_levels": {
+        "30 sec": {
+          "what_happened": "All prefectures have now answered their 2026 minimum-wage increases; the national weighted average would rise to ¥1,177/hour.",
+          "why_it_matters": "Rates rise by ¥54-¥65/hour, but each prefecture has its own effective date from October to early December.",
+          "what_to_do_watch": "Check your prefecture's official final rate/date and compare it with your first affected payslip.",
+          "bottom_line": "Near-minimum-wage workers should verify payroll rather than assuming the raise is automatic or starts on one national date."
+        }
+      },
+      "learning": {
+        "outcomes": ["Explain why Japan does not have one identical minimum wage nationwide.", "Know when to check a payslip for the 2026 increase."],
+        "background": "Japan sets regional minimum wages by prefecture. The national weighted average is useful for describing the overall direction, but the legally relevant number for a worker is normally the minimum wage applicable to the prefecture where the work is performed.",
+        "terms": [
+          {"term": "National weighted average", "meaning": "An employment-weighted average of prefectural minimum wages, not a single legal wage that applies everywhere.", "why_it_matters": "¥1,177 is the national summary figure; your prefecture's rate is the number to check against payroll."}
+        ],
+        "how_it_works": [
+          {"title": "Prefectures answer first", "explanation": "Local minimum-wage councils recommend a new regional amount after considering the national guideline and local conditions."},
+          {"title": "Final procedure follows", "explanation": "After objection procedures, the prefectural labour-bureau director decides the rate and it takes effect on the specified date."},
+          {"title": "Payroll must meet the applicable floor", "explanation": "Once effective, covered wages must meet at least the applicable regional minimum when converted to the legal hourly comparison basis."}
+        ],
+        "example": "ESTIMATE example: if a worker's applicable rate rises by ¥56/hour and the worker has 100 paid hours in a month, the gross difference is ¥56 × 100 = ¥5,600. This is an illustration, not a universal raise amount.",
+        "takeaways": ["All 47 prefectural answers are now in.", "The weighted average is ¥1,177/hour.", "Prefectural increases are ¥54-¥65/hour.", "Effective dates differ.", "Check the official local rate, then your payslip."]
+      },
+      "action_plan": {
+        "goal": "Confirm that pay meets the new regional minimum once it becomes effective.",
+        "who_should_act": "Workers whose pay is close to the regional minimum wage. Workers comfortably above it can simply note the change unless their contract links pay to the minimum.",
+        "deadline": "Before the applicable prefectural effective date, then again after the first affected payroll period.",
+        "prepare": ["Your prefecture/work location", "Current hourly wage or payslip", "Official prefectural labour-bureau minimum-wage notice when published"],
+        "steps": [
+          {"step": "Find the applicable local rate", "action": "Check the final 2026 regional minimum wage and effective date for the prefecture where you work.", "how": "Use MHLW or your prefectural Labour Bureau's official minimum-wage page.", "needed": ["Work prefecture"], "done_when": "You have the official yen/hour amount and effective date."},
+          {"step": "Check the first affected payslip", "action": "Compare the wage covering work after the effective date with the applicable legal floor.", "how": "Use the hourly rate shown on the payslip or the official wage-conversion method if you are not paid hourly.", "needed": ["Payslip", "Official rate"], "done_when": "You can confirm the applicable wage is at or above the new floor."},
+          {"step": "Escalate a mismatch", "action": "If the rate appears below the minimum, ask payroll/employer for the calculation and, if unresolved, use the Labour Bureau/Labour Standards Inspection Office consultation channel.", "how": "Keep the payslip, contract and work-hours record.", "needed": ["Payslip", "Employment terms", "Hours record"], "done_when": "The calculation is corrected or formally explained."}
+        ],
+        "mistakes_to_avoid": ["Using the ¥1,177 national average as if it were your prefecture's legal rate.", "Assuming September 3 is the effective date.", "Comparing only monthly gross pay without converting wages correctly when necessary."],
+        "decision_rules": [{"if": "Your pay is clearly above the new local minimum", "then": "No special filing is required; keep the official rate/date for reference."}, {"if": "Your pay is near or below the new floor after its effective date", "then": "Verify payroll promptly and retain records."}],
+        "follow_up": "Recheck once your prefectural Labour Bureau publishes the final rate and effective date."
+      }
+    }
+  },
+  {
+    "id": "japan-jasso-oct2026-support-band-review",
+    "agent": "practical",
+    "created_at": "2026-09-04T07:44:00+09:00",
+    "type": "education_benefit",
+    "title": "JASSO October support results start appearing today—check before your allowance changes",
+    "summary": "From September 4, JASSO grant-scholarship recipients can start checking their reviewed support category in ScholarNet Personal. The new category applies from October 2026 through September 2027 and can raise, reduce, restart or stop grant payments depending on household tax/income, assets and support classification.",
+    "why_it_matters": "A changed category can alter a student's monthly grant for a full year and can also affect Type I loan coordination. Families should verify the result now rather than discovering the change only when the October payment differs.",
+    "importance": 86,
+    "confidence": 98,
+    "tags": ["Japan", "JASSO", "Scholarship", "University", "Family Budget", "Education", "September 2026"],
+    "geography": ["Japan"],
+    "status": "NEW",
+    "sources": [
+      {"publisher": "Japan Student Services Organization", "title": "【給付奨学生】2026年10月の支援区分見直しについて（2026年度適格認定（家計））", "url": "https://www.jasso.go.jp/news/1217376_1579.html", "published_at": "2026-07-22", "source_type": "official"},
+      {"publisher": "Japan Student Services Organization", "title": "【給付奨学生】2026年10月の支援区分見直し（2026年度適格認定（家計））", "url": "https://www.jasso.go.jp/shogakukin/saiyochu/kyufu/tekikaku_kakei/shienkubun.html", "source_type": "official"}
+    ],
+    "claims": [
+      {"kind": "FACT", "text": "Recipients whose review has completed can check the new support category in ScholarNet Personal sequentially from September 4, 2026.", "source_refs": [1,2], "basis": "JASSO official review notice"},
+      {"kind": "FACT", "text": "The reviewed category applies to grant-scholarship support from October 2026 through September 2027.", "source_refs": [2], "basis": "JASSO annual household eligibility review"},
+      {"kind": "FACT", "text": "The 2026 review principally uses 2025 income reflected in 2026 resident-tax information plus reported assets and household/support conditions.", "source_refs": [2], "basis": "JASSO eligibility methodology"},
+      {"kind": "FACT", "text": "A category change can change the grant amount, and receiving a Type I scholarship loan together with a grant can also change the Type I loan amount through coordination rules.", "source_refs": [1,2], "basis": "JASSO support-category guidance"},
+      {"kind": "INFERENCE", "text": "Checking the result before October gives a household time to understand a budget change and challenge or correct a result when JASSO's stated correction routes apply.", "source_refs": [1,2], "basis": "Practical timing implication"}
+    ],
+    "editorial_visual": {"style": "editorial", "motif": "document", "secondary_motif": "yen", "scene": "a student and parent opening a scholarship result envelope while an October calendar and household budget sit beside it", "caption": "Check the support band before October changes the cash flow", "silliness": 28, "exaggeration": 58},
+    "content": {
+      "key_message": "If your household has a current JASSO grant scholar, open ScholarNet Personal from today and confirm the October 2026 support category.",
+      "who_is_affected": "Current JASSO grant-scholarship recipients subject to the 2026 household eligibility review and the families supporting them. Families without a current JASSO grant recipient can ignore this alert.",
+      "when": "Results begin appearing sequentially September 4, 2026; the reviewed category applies October 2026-September 2027.",
+      "financial_impact": "Potentially material but household-specific. The exact yen change depends on the student's category, school/residence situation and whether other JASSO support such as a Type I loan is coordinated. ALAM is not assigning a generic savings figure.",
+      "risk_if_ignored": "A family may budget using the old grant amount and only notice a reduction or suspension after October. A result that looks wrong may also require school-mediated action or supporting documents, so delay reduces preparation time.",
+      "action": "DO NOW",
+      "deadline": "Check from September 4 once the review result appears; act promptly through the school if JASSO indicates documents or a correction route is needed.",
+      "effort": "Low for result checking; higher only if supporting documents are required.",
+      "potential_benefit": "Early visibility into the next 12 months of grant support and time to correct eligible data/document issues before they become a household cash-flow surprise.",
+      "downside": "Results are released sequentially, so absence of a result early on September 4 does not by itself mean a problem. Some reviews are delayed by late April enrollment reports, My Number information checks or requested documents.",
+      "what_would_change_mind": "A JASSO notice changing the release timing, review period, category methodology or correction procedure would require an update.",
+      "usefulness": 93,
+      "novelty": 90,
+      "impact": {"money": "HIGH", "family": "HIGH", "career": "LOW", "japan": "MED", "urgency": "HIGH"},
+      "connection_tags": ["jasso", "education-costs", "scholarship", "household-budget", "resident-tax"],
+      "reading_levels": {"30 sec": {"what_happened": "JASSO's October 2026 grant-support review results begin appearing today.", "why_it_matters": "The new category can change grant cash flow for October 2026-September 2027 and may affect Type I loan coordination.", "what_to_do_watch": "Open ScholarNet Personal, check the support-category history, and contact the school promptly if the result is unexpected or documents are requested.", "bottom_line": "Current grant recipients should check now so October's payment is not a surprise."}},
+      "learning": {
+        "outcomes": ["Understand why JASSO rechecks support categories each year.", "Know where to see the new category and what an unexpected result means."],
+        "background": "JASSO grant scholarship support is not fixed permanently at the category assigned when a student first enters the program. JASSO performs a household eligibility review and applies the resulting category to the next support year.",
+        "terms": [{"term": "Support category", "meaning": "JASSO's classification used to determine the level/type of grant and tuition-support treatment for an eligible student.", "why_it_matters": "A category change can change the money the student receives and related loan coordination."}],
+        "how_it_works": [{"title": "JASSO checks household information", "explanation": "For the 2026 review, JASSO uses the relevant household/support-person information plus 2025 income reflected in 2026 resident-tax data and reported assets."}, {"title": "A new category is assigned", "explanation": "The reviewed category governs support from October 2026 through September 2027 unless another applicable rule changes the situation."}, {"title": "Unexpected results need diagnosis, not guessing", "explanation": "JASSO lists specific cases where tax corrections, unavailable My Number data, special-family-member treatment or requested documents can affect the result or timing."}],
+        "takeaways": ["Results start September 4.", "The new category covers 12 months from October.", "Grant and Type I loan amounts can both be affected.", "A delayed result can be procedural, not necessarily a rejection.", "Use JASSO/school channels if the result looks wrong."]
+      },
+      "action_plan": {
+        "goal": "Confirm the student's October 2026 support category and resolve any genuine discrepancy early.",
+        "who_should_act": "Current JASSO grant-scholarship recipients or the family member helping them manage education finances.",
+        "deadline": "Start checking September 4, 2026; respond promptly if JASSO or the school requests documents.",
+        "prepare": ["ScholarNet Personal login", "Grant scholarship number", "Any recent JASSO/school document request"],
+        "steps": [
+          {"step": "Open the result", "action": "Log in to ScholarNet Personal and open the grant scholar's detailed information/support-category history.", "how": "Use JASSO's official ScholarNet Personal route.", "needed": ["Login credentials", "Scholarship number"], "done_when": "The October 2026 category is visible or you confirm the review is still pending."},
+          {"step": "Compare with expectation", "action": "Check whether the category and support status match what you expected from household circumstances.", "how": "Use JASSO's official 2026 household-review explanation rather than estimating from gross salary alone.", "needed": ["Displayed category", "JASSO criteria page"], "done_when": "You understand whether support rises, falls, restarts, stops or remains unchanged."},
+          {"step": "Resolve a mismatch", "action": "If the result is unexpected, read JASSO's stated mismatch/correction guidance and contact the student's school promptly when school-mediated submission is required.", "how": "Follow the official JASSO route for the specific cause; do not send random documents without instruction.", "needed": ["Result screen", "Relevant tax/document records only if requested"], "done_when": "The school/JASSO confirms the next required step or that no correction applies."}
+        ],
+        "mistakes_to_avoid": ["Assuming no result early today means support was denied.", "Budgeting October using the old category without checking.", "Assuming a recent household change is automatically reflected in this annual review."],
+        "decision_rules": [{"if": "The new category is as expected", "then": "Update the household education budget for October 2026-September 2027."}, {"if": "The result is missing or unexpected", "then": "Check JASSO's listed delay/correction reasons and use the school/JASSO process rather than guessing."}],
+        "follow_up": "Verify the October payment/support treatment against the displayed category once the first affected payment is processed."
+      }
+    }
+  },
+  {
+    "id": "typhoon24-autumn-front-sep2026-japan",
+    "agent": "practical",
+    "created_at": "2026-09-04T07:44:00+09:00",
+    "type": "weather_safety",
+    "title": "Typhoon 24 plus the autumn front raises flood and travel risk through the weekend",
+    "summary": "Typhoon 24 and a stalled autumn rain front are bringing a multi-day heavy-rain risk, with western Japan's Pacific side under the strongest immediate threat on September 4 and rain risk extending across a broad area. MLIT has already warned that Kyushu expressways and national-road restriction sections may close depending on conditions.",
+    "why_it_matters": "The practical hazard is not just the typhoon's center: moist air feeding the front can produce intense rain far from it, so a route that looks outside the forecast track can still flood, close or suffer rail/flight disruption.",
+    "importance": 96,
+    "confidence": 94,
+    "tags": ["Japan", "Typhoon 24", "Heavy Rain", "Flood", "Travel", "Kyushu", "Safety"],
+    "geography": ["Japan", "Kyushu", "Western Japan"],
+    "status": "DEVELOPING",
+    "sources": [
+      {"publisher": "Ministry of Land, Infrastructure, Transport and Tourism Kyushu Regional Development Bureau / Kyushu Transport Bureau / JMA Fukuoka Regional Headquarters / NEXCO West", "title": "台風第24号および前線の影響に伴う通行止めの可能性について", "url": "https://www.qsr.mlit.go.jp/content/000003072.pdf", "published_at": "2026-09-03", "source_type": "official"},
+      {"publisher": "Weathernews", "title": "今日9月4日(金)の天気予報 西日本の太平洋側で大雨警戒 東日本も断続的な雨に", "url": "https://weathernews.jp/news/202609/040031/", "published_at": "2026-09-04", "source_type": "news"},
+      {"publisher": "Weathernews", "title": "週間天気予報 秋雨前線が停滞し大雨に警戒 暑さは落ち着く", "url": "https://weathernews.jp/news/202609/040041/", "published_at": "2026-09-04", "source_type": "news"},
+      {"publisher": "Japan Meteorological Agency", "title": "雨雲の動き・雷活動度・竜巻発生確度（ナウキャスト）", "url": "https://www.jma.go.jp/bosai/nowc/", "source_type": "official"}
+    ],
+    "claims": [
+      {"kind": "FACT", "text": "MLIT, JMA's Fukuoka regional office and NEXCO West warned that Typhoon 24 and the front could force closures on Kyushu expressways and national-road pre-emptive restriction sections, with timing and sections subject to weather changes.", "source_refs": [1], "basis": "Joint official transport warning issued September 3"},
+      {"kind": "FACT", "text": "On the morning of September 4, the strongest immediate heavy-rain concern was western Japan's Pacific side, while eastern Japan also faced intermittent rain.", "source_refs": [2], "basis": "September 4 forecast reporting"},
+      {"kind": "FACT", "text": "The autumn rain front is expected to keep rain risk elevated into the weekend and potentially beyond as Typhoon 24 moves unusually slowly/complexly.", "source_refs": [3], "basis": "September 4 weekly forecast"},
+      {"kind": "INFERENCE", "text": "Travellers should treat road, rail and flight disruption as a route-and-rainfall problem rather than relying only on distance from the typhoon center.", "source_refs": [1,2,3], "basis": "Inference from frontal rainfall and official closure warnings"}
+    ],
+    "editorial_visual": {"style": "editorial", "motif": "weather", "secondary_motif": "train", "scene": "a restrained map-like scene of a rain front stretching across Japan while a small typhoon spiral feeds moisture toward roads and rail lines, with warning barriers in the foreground", "caption": "The rain front can disrupt travel far from the typhoon center", "silliness": 2, "exaggeration": 32},
+    "content": {
+      "key_message": "If travelling in Kyushu or western Japan today/weekend, check rainfall and transport status immediately before departure and be willing to delay rather than driving into a closure or flooded route.",
+      "who_is_affected": "People in or travelling through Kyushu and western Japan are the highest-priority group on September 4; anyone travelling through areas under heavy-rain warnings should monitor local conditions because the front can shift the risk zone.",
+      "when": "Immediate risk September 4 and into the weekend; the exact high-risk area and timing remain changeable because the front and Typhoon 24 are moving slowly/complexly.",
+      "financial_impact": "No defensible generic yen estimate. The avoidable losses are missed bookings, vehicle damage and emergency costs from travel into disrupted/flooded areas; safety consequences dominate the money calculation.",
+      "risk_if_ignored": "Road closures can strand a trip, and intense rain can create flooding, river rise and landslide risk. The dangerous assumption is that being away from the typhoon center means the route is safe.",
+      "action": "PREPARE",
+      "deadline": "Before any trip on September 4-6 in affected areas; recheck immediately before departure because closure forecasts can change.",
+      "effort": "Low: a few minutes checking JMA and the relevant road/rail/air operator before leaving.",
+      "potential_benefit": "Avoid entering a closure or high-risk rain zone and preserve flexibility to delay or reroute before becoming stranded.",
+      "downside": "Forecast position and rainfall maxima can shift. Do not cancel every trip nationwide solely because Typhoon 24 exists; use location-specific official warnings and transport status.",
+      "what_would_change_mind": "A rapid weakening/dissipation of the typhoon plus the front moving away, withdrawal of heavy-rain warnings, and normalization of transport would downgrade this alert. Escalating JMA warnings or confirmed closures would strengthen it.",
+      "usefulness": 99,
+      "novelty": 94,
+      "impact": {"money": "MED", "family": "HIGH", "career": "MED", "japan": "HIGH", "urgency": "HIGH"},
+      "connection_tags": ["typhoon24", "autumn-rain-front", "heavy-rain", "transport-disruption", "flood-risk"],
+      "reading_levels": {"30 sec": {"what_happened": "Typhoon 24 is feeding moisture into the autumn front, raising heavy-rain and transport-disruption risk, especially in western Japan today.", "why_it_matters": "Official agencies already warn that Kyushu roads may close, and heavy rain can occur away from the typhoon center.", "what_to_do_watch": "Check JMA plus your road/rail/air operator just before leaving; delay if warnings or closures affect the route.", "bottom_line": "Treat this as a rainfall-and-route hazard, not only a typhoon-track hazard."}},
+      "learning": {
+        "outcomes": ["Understand why heavy rain can occur far from a typhoon's center.", "Know which information to check before travelling."],
+        "background": "A typhoon can affect Japan indirectly by sending warm, moisture-rich air toward a stationary front. When that moisture is lifted along the front, rain clouds can repeatedly form even in places the typhoon center never crosses.",
+        "terms": [{"term": "Autumn rain front", "meaning": "A seasonal boundary between air masses that can stall near Japan and focus repeated rainfall.", "why_it_matters": "Typhoon moisture can intensify rainfall along this front far from the cyclone itself."}],
+        "how_it_works": [{"title": "Moisture feeds the front", "explanation": "Typhoon circulation transports warm humid air toward the frontal zone."}, {"title": "Rain concentrates along the boundary", "explanation": "The front lifts that humid air, allowing strong rain bands to form and persist."}, {"title": "Transport reacts before or during dangerous conditions", "explanation": "Road operators can impose pre-emptive closures and rail/air operators can delay or suspend service when rainfall, wind or safety thresholds are threatened."}],
+        "takeaways": ["The typhoon track is not the whole risk map.", "Western Japan has the strongest immediate rain concern today.", "Kyushu road closures are possible.", "Conditions can change quickly.", "Check official local warnings and operator status immediately before travel."]
+      },
+      "action_plan": {
+        "goal": "Avoid preventable exposure to flooding, landslide zones and transport shutdowns during the September 4-6 rain event.",
+        "who_should_act": "Anyone travelling through a heavy-rain warning area, especially by road in Kyushu/western Japan. People outside affected areas can monitor rather than change plans pre-emptively.",
+        "deadline": "Before departure and again immediately before entering the affected route/region.",
+        "prepare": ["Charged phone/power bank", "JMA warning/Kikikuru access", "Road or rail operator status", "Flexible route or delay option"],
+        "steps": [
+          {"step": "Check local hazard level", "action": "Open JMA warnings, rain nowcast and Kikikuru for the origin, route and destination.", "how": "Use JMA official disaster-weather pages.", "needed": ["Route/location"], "done_when": "You know whether heavy-rain, flood or landslide risk is elevated along the route."},
+          {"step": "Check transport status", "action": "Confirm road closures or rail/flight changes from the relevant official operator.", "how": "For Kyushu roads use official MLIT/NEXCO information; for rail/air use the operator's current status page.", "needed": ["Route/service number"], "done_when": "The planned route is confirmed operating and not inside a warned closure window."},
+          {"step": "Use a stop rule", "action": "Delay or reroute if the route is closed, a severe local warning is active, or water/visibility conditions are deteriorating.", "how": "Do not attempt to bypass barricades or drive through visible floodwater.", "needed": ["Alternative plan"], "done_when": "You are no longer committed to entering the hazardous section."}
+        ],
+        "mistakes_to_avoid": ["Judging safety only from the typhoon center line.", "Using an old screenshot of the forecast instead of current warnings.", "Driving around a closure barrier or through floodwater.", "Assuming a morning-open road will remain open all day."],
+        "decision_rules": [{"if": "Official warnings and operator status are normal for the full route", "then": "Travel can proceed with continued monitoring."}, {"if": "A closure, severe warning or rapidly worsening rainfall affects the route", "then": "Delay or reroute; do not force the trip."}],
+        "follow_up": "Recheck conditions during breaks because the front and closure zones can move."
+      }
+    }
+  }
+]
