@@ -20,6 +20,21 @@ def _decorator_names(function_source: str) -> set[str]:
     return names
 
 
+def _called_names(function_source: str) -> set[str]:
+    """Return actual call targets so comments/docstrings cannot fool safety checks."""
+    tree = ast.parse(function_source)
+    names = set()
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        try:
+            names.add(ast.unparse(node.func))
+        except Exception:
+            if isinstance(node.func, ast.Name):
+                names.add(node.func.id)
+    return names
+
+
 def main():
     auth_source = inspect.getsource(alam_auth)
     client_source = inspect.getsource(alam_auth.get_auth_client)
@@ -27,7 +42,8 @@ def main():
     runtime_source = inspect.getsource(alam_runtime_safety._install_account_settings_hook)
 
     assert "st.cache_resource" not in _decorator_names(client_source)
-    assert "get_supabase_public" not in client_source
+    client_calls = _called_names(client_source)
+    assert not any(name == "get_supabase_public" or name.endswith(".get_supabase_public") for name in client_calls)
     assert 'st.session_state["alam_auth_client"]' in client_source
     assert "SUPABASE_SERVICE_ROLE_KEY" not in auth_source
     assert "SUPABASE_PUBLISHABLE_KEY" in auth_source
