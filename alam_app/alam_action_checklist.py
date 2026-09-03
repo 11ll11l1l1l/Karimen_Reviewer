@@ -193,6 +193,30 @@ def progress_counts(record):
     return (len(done), len(valid))
 
 
+def action_focus(record, completed=None):
+    """Return the next verified step and remaining effort without inventing priority.
+
+    Action-plan order is editorially supplied by the validated record, so the first
+    unfinished item is the only defensible next step. Remaining time is shown only
+    when every unfinished step has an explicit valid time estimate.
+    """
+    plan = action_plan(record)
+    if not plan:
+        return None
+    completed = set(completed if completed is not None else completed_step_keys(record))
+    unfinished = [step for step in plan["steps"] if step["key"] not in completed]
+    if not unfinished:
+        return {"complete": True, "next": None, "remaining": 0, "remaining_minutes": 0}
+    estimates = [step.get("minutes") for step in unfinished]
+    remaining_minutes = sum(estimates) if all(value is not None for value in estimates) else None
+    return {
+        "complete": False,
+        "next": unfinished[0],
+        "remaining": len(unfinished),
+        "remaining_minutes": remaining_minutes,
+    }
+
+
 def render_action_checklist(record, manager=None):
     """Render optional mobile-friendly follow-through beneath article decision cards."""
     plan = action_plan(record)
@@ -201,6 +225,7 @@ def render_action_checklist(record, manager=None):
     completed = completed_step_keys(record)
     total = len(plan["steps"])
     done = len(completed & {step["key"] for step in plan["steps"]})
+    focus = action_focus(record, completed)
 
     st.markdown("#### Action checklist")
     st.caption(
@@ -210,6 +235,16 @@ def render_action_checklist(record, manager=None):
         st.markdown(f"**Goal:** {plan['goal']}")
     if plan.get("deadline"):
         st.markdown(f"**Timing:** {plan['deadline']}")
+
+    if focus and not focus["complete"]:
+        next_step = focus["next"]
+        effort = ""
+        if focus["remaining_minutes"] is not None:
+            effort = f" · ~{focus['remaining_minutes']} min remaining"
+        st.info(
+            f"Next verified step: {next_step['title']} — {next_step['action']}"
+            f" · {focus['remaining']} step{'s' if focus['remaining'] != 1 else ''} left{effort}"
+        )
 
     for index, step in enumerate(plan["steps"], start=1):
         checked = step["key"] in completed
