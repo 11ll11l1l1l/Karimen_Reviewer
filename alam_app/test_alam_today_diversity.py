@@ -43,7 +43,22 @@ def test_stretch_must_add_a_category_not_already_on_the_shelf():
         assert stretch is not None
         assert stretch["id"] == "d1"
         assert chosen[-1]["id"] == "d1"
+        assert "t1" in {item["id"] for item in chosen}
         assert {_item["_category"] for _item in chosen} == {"practical", "trend", "discover"}
+    _with_test_ranking(run)
+
+
+def test_stretch_does_not_swap_one_singleton_category_for_another():
+    def run():
+        records = [
+            _record("p1", "practical", 100, 90),
+            _record("t1", "trend", 99, 89),
+            _record("d1", "discover", 20, 100),
+        ]
+        chosen, stretch = today._discover_pool(records, set(), limit=2)
+        assert [item["id"] for item in chosen] == ["p1", "t1"]
+        assert stretch is None
+        assert {_item["_category"] for _item in chosen} == {"practical", "trend"}
     _with_test_ranking(run)
 
 

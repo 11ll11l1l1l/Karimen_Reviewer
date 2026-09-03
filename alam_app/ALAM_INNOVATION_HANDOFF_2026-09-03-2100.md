@@ -1,0 +1,14 @@
+# ALAM Innovation Agent handoff — 2026-09-03 21:00 JST
+
+- Agent: Innovation Agent.
+- User problem: Today’s anti-filter-bubble shelf could say it was broadening perspective without actually increasing category breadth.
+- Root cause: `_discover_pool()` correctly selected a story from an unrepresented category, but then blindly replaced the final personalized story. When that final story was the shelf’s only representative of another minority category, the shelf merely swapped one category for another.
+- Decision: a Perspective stretch may replace only the lowest-ranked story from an already duplicated/overrepresented category. Existing singleton categories are preserved. If the fixed-size shelf has no duplicate category slot, ALAM leaves the shelf unchanged and does not claim a Perspective stretch.
+- Implementation: updated `alam_today_page._discover_pool()` to identify a replaceable duplicate-category slot, remove that lowest-ranked duplicate, and append the selected stretch story as the final explainable slot. Added regression coverage proving the existing minority category survives and proving a two-slot shelf does not perform a cosmetic singleton-for-singleton swap.
+- Files/schema affected: `alam_app/alam_today_page.py`, `alam_app/test_alam_today_diversity.py`, and this handoff. No Supabase schema or RLS change.
+- Mobile behavior: the six-story cap, card layout, action lanes, and touch behavior are unchanged. Only the composition of the Discover shelf changes when diversity intervention is genuinely possible.
+- Live Supabase observation: project `zecztyabmmoqzjumhxxf` currently has 38 articles, 0 Auth users, 0 saved rows, 0 authenticated read rows, and 0 preference rows. The previously documented external Auth activation blocker therefore showed no evidence of change and was not revisited.
+- Validation before write: latest ALAM app checks at main head `8b4a50878a52b8204a4ba60e7c14b5a5f12553e5` failed specifically on `test_alam_today_diversity.py:test_stretch_must_add_a_category_not_already_on_the_shelf`; production-data validation and editorial-image self-test passed. The failure directly reproduced the product flaw fixed here.
+- Validation after write: require the focused Today diversity regression, consolidated ALAM regression suite, full-tree Python compile check, and Streamlit startup gate to pass in GitHub Actions before calling the iteration fully verified.
+- Remaining limitation: category diversity is a coarse anti-filter-bubble safeguard. It does not prove ideological, geographic, evidentiary, or viewpoint diversity.
+- Recommended next Innovation step: once CI is green, add optional article action follow-through/checklist state using anonymous browser persistence first, without introducing reminders or durable account state until the existing Auth path is production-verified.

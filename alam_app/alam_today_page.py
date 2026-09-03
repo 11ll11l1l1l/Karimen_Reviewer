@@ -99,9 +99,12 @@ def _discover_pool(records, action_ids, limit=6):
 
     Personal relevance still drives the shelf. If the first picks collapse into too
     few categories while another category has a strong current story, reserve the
-    final slot for the highest shared-feed-score story from an unrepresented category.
-    This is deterministic, uses only validated records, and never lowers the shelf
-    below the available corpus just to manufacture diversity.
+    final slot for the strongest shared-feed-score story from an unrepresented
+    category. The stretch may replace only a story from an overrepresented category;
+    this preserves singleton categories already earned by personalization and ensures
+    the intervention actually increases category breadth instead of merely swapping
+    one minority category for another. If a fixed-size shelf cannot become broader,
+    leave it untouched and do not claim a perspective stretch.
     """
     pool = [record for record in records if str(record.get("id")) not in action_ids]
     pool.sort(key=_rank, reverse=True)
@@ -120,7 +123,24 @@ def _discover_pool(records, action_ids, limit=6):
         return chosen, None
 
     stretch = max(alternatives, key=lambda record: (feed_score(record), intelligence.personal_relevance(record)))
-    chosen[-1] = stretch
+
+    # Preserve categories that already have exactly one representative. Replacing a
+    # singleton would make the "stretch" cosmetic: the shelf would trade one category
+    # for another without becoming broader. Because `chosen` is relevance-sorted,
+    # scanning backward removes the lowest-ranked duplicate-category story first.
+    replace_index = next(
+        (
+            index
+            for index in range(len(chosen) - 1, -1, -1)
+            if counts[_category(chosen[index])] > 1
+        ),
+        None,
+    )
+    if replace_index is None:
+        return chosen, None
+
+    chosen.pop(replace_index)
+    chosen.append(stretch)
     return chosen, stretch
 
 
