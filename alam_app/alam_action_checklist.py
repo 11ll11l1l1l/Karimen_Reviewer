@@ -258,9 +258,9 @@ def open_grounded_recovery(record):
     st.session_state["main_nav"] = "More"
     st.session_state["more_nav"] = "Ask ALAM"
     st.session_state["alam_ask_query"] = query
-    lenses = recovery_lenses(record)
-    if lenses:
-        st.session_state["alam_ask_lenses"] = lenses
+    # Always replace the widget state. An empty list is the documented all-lenses
+    # fallback for unknown/legacy categories and must not inherit a prior recovery.
+    st.session_state["alam_ask_lenses"] = recovery_lenses(record)
     return True
 
 
