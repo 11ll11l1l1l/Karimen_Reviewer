@@ -4,17 +4,27 @@ Anonymous ALAM use remains the default. Authenticated clients are created per St
 session and are never cached globally: Supabase Auth mutates client session headers, so
 a process-wide client could leak one reader's session into another reader's request.
 
-Email OTP is used because it avoids passwords and keeps the complete token exchange in
-one Streamlit session. The hosted Supabase project's Magic Link email template must use
-``{{ .Token }}`` for this UI to receive a six-digit code; until that owner-side setting
-is confirmed, the account panel describes the feature as configuration-dependent.
+Email OTP is used because it avoids passwords and keeps the token exchange in one
+Streamlit session. The hosted Supabase project's Magic Link email template must use
+``{{ .Token }}`` for this UI to receive a six-digit code.
+
+A verified Supabase access/refresh token pair is persisted only in the browser's own
+localStorage and restored with ``auth.set_session``. The storage bridge is rendered only
+inside Settings, never above ALAM's compact mobile shell. Tokens are never logged,
+placed in URLs, copied into the anonymous profile, or shared through a cached client.
 """
 
 from __future__ import annotations
 
+import json
 import re
 
 import streamlit as st
+
+try:
+    from streamlit_js_eval import streamlit_js_eval
+except Exception:
+    streamlit_js_eval = None
 
 try:
     from supabase import create_client
@@ -25,6 +35,7 @@ from alam_identity import _valid_device_id
 from alam_supabase import _safe_error
 
 EMAIL_RE = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
+AUTH_STORAGE_KEY = "alam_auth_session_v1"
 
 
 def _credentials() -> tuple[str, str]:
@@ -78,20 +89,137 @@ def _set_account_from_user(user) -> dict:
     return payload
 
 
+def _session_tokens(session) -> dict | None:
+    """Extract only the token pair required by Supabase session restoration."""
+    if not session:
+        return None
+    access = str(getattr(session, "access_token", "") or "").strip()
+    refresh = str(getattr(session, "refresh_token", "") or "").strip()
+    if not access or not refresh:
+        return None
+    return {"access_token": access, "refresh_token": refresh}
+
+
+def _parse_persisted_session(raw) -> dict | None:
+    """Validate browser storage without ever returning arbitrary stored fields."""
+    if not raw:
+        return None
+    try:
+        payload = json.loads(str(raw)) if not isinstance(raw, dict) else raw
+    except Exception:
+        return None
+    if not isinstance(payload, dict):
+        return None
+    access = str(payload.get("access_token") or "").strip()
+    refresh = str(payload.get("refresh_token") or "").strip()
+    if access.count(".") < 2 or len(access) < 40 or len(refresh) < 20:
+        return None
+    return {"access_token": access, "refresh_token": refresh}
+
+
+def _auth_storage_expression(*, write_tokens: dict | None = None, clear: bool = False) -> str:
+    """Read/write account tokens on the top-level ALAM origin when available."""
+    key = json.dumps(AUTH_STORAGE_KEY)
+    requested = json.dumps(write_tokens, separators=(",", ":")) if write_tokens else "null"
+    clear_js = "true" if clear else "false"
+    return (
+        "(() => { try {"
+        f"const k={key}; const requested={requested}; const clear={clear_js};"
+        "let store=null; let scope='parent';"
+        "try { store=window.parent.localStorage; store.getItem(k); } catch (_) {"
+        "store=window.localStorage; scope='component';"
+        "}"
+        "if (clear) store.removeItem(k); else if (requested) store.setItem(k, JSON.stringify(requested));"
+        "const stored=store.getItem(k);"
+        "return JSON.stringify({ready:true,value:stored,error:null,scope:scope});"
+        "} catch (e) {"
+        "return JSON.stringify({ready:true,value:null,error:'storage_unavailable',scope:null});"
+        "} })()"
+    )
+
+
+def _auth_storage_bridge() -> tuple[bool, dict | None, str | None]:
+    """Hydrate or persist account tokens only when Settings renders the account panel."""
+    if streamlit_js_eval is None:
+        return True, None, "storage_component_unavailable"
+
+    pending = _parse_persisted_session(st.session_state.get("alam_pending_auth_storage"))
+    clear = bool(st.session_state.get("alam_clear_auth_storage"))
+    try:
+        raw = streamlit_js_eval(
+            js_expressions=_auth_storage_expression(write_tokens=pending, clear=clear),
+            want_output=True,
+            key="alam_auth_storage_clear_v1" if clear else (
+                "alam_auth_storage_write_v1" if pending else "alam_auth_storage_read_v1"
+            ),
+        )
+    except Exception:
+        return True, None, "storage_component_error"
+
+    if raw is None:
+        return False, None, None
+    try:
+        envelope = json.loads(str(raw))
+    except Exception:
+        return True, None, "invalid_storage_response"
+    if not isinstance(envelope, dict):
+        return True, None, "invalid_storage_response"
+
+    if clear and envelope.get("ready"):
+        st.session_state.pop("alam_clear_auth_storage", None)
+        st.session_state.pop("alam_pending_auth_storage", None)
+        return True, None, envelope.get("error")
+
+    stored = _parse_persisted_session(envelope.get("value"))
+    if pending and stored == pending:
+        st.session_state.pop("alam_pending_auth_storage", None)
+    return bool(envelope.get("ready", True)), stored, envelope.get("error")
+
+
+def _queue_session_persistence(session) -> None:
+    tokens = _session_tokens(session)
+    if tokens:
+        st.session_state["alam_pending_auth_storage"] = tokens
+        st.session_state.pop("alam_clear_auth_storage", None)
+
+
+def _restore_browser_session(stored_tokens: dict | None) -> dict:
+    """Restore and verify a browser session, rotating persisted tokens when refreshed."""
+    tokens = _parse_persisted_session(stored_tokens)
+    if not tokens or st.session_state.get("alam_auth_client") is not None:
+        return {}
+    try:
+        response = get_auth_client().auth.set_session(
+            tokens["access_token"], tokens["refresh_token"]
+        )
+        _queue_session_persistence(getattr(response, "session", None))
+        user_response = get_auth_client().auth.get_user()
+        return _set_account_from_user(getattr(user_response, "user", None))
+    except Exception:
+        st.session_state.pop("alam_account", None)
+        st.session_state.pop("alam_auth_client", None)
+        st.session_state["alam_clear_auth_storage"] = True
+        st.session_state.pop("alam_pending_auth_storage", None)
+        return {}
+
+
 def refresh_account() -> dict:
     """Verify the server-side Auth session; expired/revoked sessions fail closed."""
     if st.session_state.get("alam_auth_client") is None:
-        # ``alam_account`` is only a UI summary, never proof of authentication. If the
-        # session-bound Auth client is gone (for example after partial cleanup or a new
-        # Streamlit session), discard any stale summary instead of rendering a false
-        # signed-in state that cannot make authenticated Supabase requests.
         st.session_state.pop("alam_account", None)
         return {}
     try:
         response = get_auth_client().auth.get_user()
-        return _set_account_from_user(getattr(response, "user", None))
+        account = _set_account_from_user(getattr(response, "user", None))
+        if account:
+            current = get_auth_client().auth.get_session()
+            _queue_session_persistence(current)
+        return account
     except Exception:
         st.session_state.pop("alam_account", None)
+        st.session_state.pop("alam_auth_client", None)
+        st.session_state["alam_clear_auth_storage"] = True
+        st.session_state.pop("alam_pending_auth_storage", None)
         return {}
 
 
@@ -101,10 +229,7 @@ def send_email_code(email: str) -> tuple[bool, str | None]:
         return False, "Enter a valid email address."
     try:
         get_auth_client().auth.sign_in_with_otp(
-            {
-                "email": clean,
-                "options": {"should_create_user": True},
-            }
+            {"email": clean, "options": {"should_create_user": True}}
         )
         st.session_state["alam_auth_pending_email"] = clean
         return True, None
@@ -141,9 +266,9 @@ def verify_email_code(code: str) -> tuple[dict | None, str | None]:
         account = _set_account_from_user(user)
         if not account:
             return None, "Supabase did not return an authenticated user session."
+        _queue_session_persistence(getattr(response, "session", None))
         link, link_error = _link_current_device()
         if link_error:
-            # Authentication succeeded, but do not pretend anonymous history is linked.
             st.session_state["alam_account_link_error"] = link_error
         else:
             st.session_state.pop("alam_account_link_error", None)
@@ -161,12 +286,14 @@ def sign_out() -> None:
             client.auth.sign_out()
         except Exception:
             pass
+    st.session_state["alam_clear_auth_storage"] = True
     for key in (
         "alam_auth_client",
         "alam_account",
         "alam_account_link",
         "alam_account_link_error",
         "alam_auth_pending_email",
+        "alam_pending_auth_storage",
     ):
         st.session_state.pop(key, None)
 
@@ -179,6 +306,10 @@ def render_account_settings() -> None:
         "An account is for future cross-device Saved, preferences and reading state."
     )
 
+    ready, stored_tokens, storage_error = _auth_storage_bridge()
+    if ready and stored_tokens and st.session_state.get("alam_auth_client") is None:
+        _restore_browser_session(stored_tokens)
+
     account = refresh_account()
     if account:
         email = account.get("email") or "Signed-in user"
@@ -190,6 +321,8 @@ def render_account_settings() -> None:
             )
         else:
             st.caption("This browser identity is linked to your account without deleting anonymous history.")
+        if storage_error:
+            st.caption("This account is active for this visit, but this browser could not persist the session.")
         if st.button("Sign out", key="alam_account_sign_out", use_container_width=True):
             sign_out()
             st.rerun()
@@ -213,12 +346,14 @@ def render_account_settings() -> None:
 
     if st.session_state.get("alam_auth_pending_email"):
         code = st.text_input(
-            "Six-digit code",
-            max_chars=6,
-            placeholder="123456",
-            key="alam_account_code",
+            "Six-digit code", max_chars=6, placeholder="123456", key="alam_account_code"
         )
-        if st.button("Verify & link this browser", key="alam_account_verify_code", type="primary", use_container_width=True):
+        if st.button(
+            "Verify & link this browser",
+            key="alam_account_verify_code",
+            type="primary",
+            use_container_width=True,
+        ):
             account, error = verify_email_code(code)
             if account:
                 st.rerun()
