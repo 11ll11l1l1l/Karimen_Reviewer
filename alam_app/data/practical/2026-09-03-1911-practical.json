@@ -1,0 +1,240 @@
+{
+  "id": "japan-electric-gas-summer-support-sep2026",
+  "agent": "practical",
+  "created_at": "2026-09-03T19:11:04+09:00",
+  "type": "household_money",
+  "title": "September is the last announced month of Japan’s summer electricity and gas discount",
+  "summary": "Japan’s current summer electricity and city-gas support still covers September 2026 usage, but at a lower rate than August and with no announced continuation beyond September usage. Walang application na kailangan—official guidance says the discount is applied through participating utilities, so emails asking you to claim it or pay a fee are a scam warning sign.",
+  "why_it_matters": "Households can misread an October bill increase as a utility-company price hike when part of the difference may simply be the end of the temporary government discount. Knowing the exact subsidy rate also makes it easier to verify that the September-usage discount was actually reflected and to avoid fake claim messages.",
+  "importance": 84,
+  "confidence": 97,
+  "tags": [
+    "Japan",
+    "Electricity",
+    "Gas",
+    "Household Costs",
+    "Utilities",
+    "Scam Prevention",
+    "September 2026"
+  ],
+  "geography": ["Japan"],
+  "status": "NEW",
+  "sources": [
+    {
+      "publisher": "Agency for Natural Resources and Energy",
+      "title": "エネルギー価格の支援について",
+      "url": "https://www.enecho.meti.go.jp/category/gekihen_lp/",
+      "source_type": "official"
+    },
+    {
+      "publisher": "Ministry of Economy, Trade and Industry",
+      "title": "2026年7月、8月及び9月使用分の電気・ガス料金支援の実施に伴い、電気・都市ガス料金の値引きを行うことができる特例認可・承認を行いました",
+      "url": "https://www.meti.go.jp/press/2026/06/20260612003/20260612003.html",
+      "published_at": "2026-06-12",
+      "source_type": "official"
+    },
+    {
+      "publisher": "Agency for Natural Resources and Energy",
+      "title": "電気・ガス料金支援に関する詐欺メールにご注意ください",
+      "url": "https://www.enecho.meti.go.jp/notice/caution/260625.html",
+      "published_at": "2026-06-25",
+      "source_type": "official"
+    }
+  ],
+  "claims": [
+    {
+      "kind": "FACT",
+      "text": "For September 2026 usage, the support rate is ¥3.5/kWh for low-voltage electricity, ¥1.8/kWh for high-voltage electricity, and ¥14.0/m³ for eligible city gas.",
+      "source_refs": [1, 2],
+      "basis": "Current Agency for Natural Resources and Energy support page and METI approval notice"
+    },
+    {
+      "kind": "FACT",
+      "text": "The August 2026 usage rates were higher: ¥4.5/kWh for low-voltage electricity, ¥2.3/kWh for high-voltage electricity, and ¥18.0/m³ for eligible city gas.",
+      "source_refs": [1, 2],
+      "basis": "Official published support rates"
+    },
+    {
+      "kind": "FACT",
+      "text": "The currently announced summer program covers July, August and September 2026 usage; September is therefore the final usage month in the published program.",
+      "source_refs": [1, 2],
+      "basis": "Official program scope"
+    },
+    {
+      "kind": "FACT",
+      "text": "Consumers do not need to submit an application, personal information or a fee to receive the electricity and gas support, and the Agency for Natural Resources and Energy has warned about scam emails pretending otherwise.",
+      "source_refs": [3],
+      "basis": "Official scam warning"
+    },
+    {
+      "kind": "INFERENCE",
+      "text": "If no replacement support is announced, bills reflecting October usage can rise relative to otherwise identical September usage because the temporary per-unit discount disappears.",
+      "source_refs": [1, 2],
+      "basis": "Inference from the published end of the current three-month support window"
+    }
+  ],
+  "editorial_visual": {
+    "style": "editorial",
+    "motif": "home",
+    "secondary_motif": "yen",
+    "scene": "a household utility meter beside a calendar turning from September to October, with a temporary yen discount tag quietly lifting away",
+    "caption": "The summer utility discount reaches its last announced usage month",
+    "silliness": 18,
+    "exaggeration": 48
+  },
+  "content": {
+    "key_message": "September usage still gets the summer utility discount, but the published program stops there—and you never need to apply or pay anyone to receive it.",
+    "who_is_affected": "Households and small users receiving low-voltage electricity through participating retailers, plus households and businesses using eligible city gas. LP gas is not covered by this national per-unit city-gas discount; separate local support may exist. People whose utility does not participate should verify directly with that utility rather than assuming coverage.",
+    "when": "The current support applies to July, August and September 2026 usage. September usage is generally reflected on a later bill according to each utility's meter-reading and billing cycle. The official program page currently lists no October 2026 usage discount under this summer measure.",
+    "financial_impact": "For September usage the discount is ¥3.5 per kWh for low-voltage electricity and ¥14 per m³ for eligible city gas. Example: 400 kWh of eligible household electricity would receive a ¥1,400 electricity discount for September usage. This is a simple multiplication example, not an estimate of a typical household bill.",
+    "estimated_saving_yen": null,
+    "time_minutes": 5,
+    "travel_minutes": 0,
+    "risk_if_ignored": "You may mistake the disappearance of a temporary subsidy for a new utility surcharge, fail to notice a missing discount on a covered bill, or respond to a fraudulent message asking you to 'claim' support that should not require an application.",
+    "action": "WATCH",
+    "deadline": "No consumer application deadline exists for this support. Check the bill that reflects September 2026 usage, then watch for any official announcement about support after September before assuming October usage will also be discounted.",
+    "effort": "Very low. No application is required; the useful work is checking your bill and ignoring fake claim requests.",
+    "potential_benefit": "Correctly understand a near-term utility-bill change, verify the automatic discount, and avoid handing personal information or money to scammers.",
+    "downside": "The subsidy does not guarantee that the total bill falls, because fuel-adjustment charges, usage and other tariff components can move at the same time. A higher bill is not proof that the subsidy was missing.",
+    "what_would_change_mind": "A new METI or Agency for Natural Resources and Energy announcement extending or replacing the support for October 2026 usage or later would materially change the conclusion and should trigger a new version of this story.",
+    "usefulness": 95,
+    "novelty": 73,
+    "impact": {
+      "money": "MED",
+      "family": "MED",
+      "career": "LOW",
+      "japan": "HIGH",
+      "urgency": "MED"
+    },
+    "connection_tags": [
+      "utility-costs",
+      "inflation-support",
+      "temporary-subsidy",
+      "scam-prevention",
+      "household-budget"
+    ],
+    "skeptical_view": "The end of the published subsidy does not mean every October bill will rise. Weather, electricity consumption, fuel-cost adjustments and each retailer's tariff can outweigh the subsidy effect in either direction. The only defensible claim is that the temporary per-unit support presently published stops after September usage unless the government announces another measure.",
+    "what_to_watch": "Watch the Agency for Natural Resources and Energy support page and your utility's official bill notice for any post-September extension or replacement program. Treat social-media posts and unsolicited emails as unverified until they match an official source.",
+    "reading_levels": {
+      "30 sec": {
+        "what_happened": "Japan's summer electricity and city-gas support still covers September usage, but the discount is smaller than in August and September is the last usage month in the currently announced program.",
+        "why_it_matters": "A later bill can rise partly because the temporary discount ends—not necessarily because your utility suddenly raised its base price.",
+        "what_to_do_watch": "Check the bill that reflects September usage. Do not apply, pay a fee, or send personal information to anyone claiming you must 'claim' the subsidy.",
+        "bottom_line": "Verify the automatic September discount and budget for the possibility that October usage will have no equivalent support unless a new measure is announced."
+      },
+      "2_min": "Japan's summer utility support is a temporary per-unit discount applied through participating electricity and city-gas retailers. The strongest support was for August usage; September falls back to ¥3.5/kWh for household-type low-voltage electricity and ¥14/m³ for eligible city gas. The current official program covers July through September usage only. Consumers do not submit an application. That detail matters because the energy agency has already warned about scam emails asking people to complete online procedures to receive the support. When comparing bills, separate the subsidy effect from changes in usage, fuel-adjustment charges and tariff components. If no replacement program is announced, the bill reflecting October usage can lose this specific per-unit discount."
+    },
+    "learning": {
+      "outcomes": [
+        "Explain how the summer utility support changes the bill without a consumer application.",
+        "Recognize why a post-support bill can rise even if the utility's base tariff did not change.",
+        "Identify a fake subsidy-claim request."
+      ],
+      "background": "Japan's government can reduce electricity and city-gas bills by subsidizing participating retailers, which then reflect a per-unit discount in customer charges. The summer 2026 measure was designed as a three-month support window for July, August and September usage, with a larger discount during August when electricity demand is typically high.",
+      "terms": [
+        {
+          "term": "Low-voltage electricity",
+          "meaning": "The electricity supply category used by most ordinary households and many small businesses.",
+          "why_it_matters": "The September support rate for this category is ¥3.5 per kWh."
+        },
+        {
+          "term": "Per-unit discount",
+          "meaning": "A fixed amount subtracted for each kWh of electricity or cubic meter of eligible city gas used.",
+          "why_it_matters": "Your actual yen benefit depends on usage, not on household income or an application amount."
+        }
+      ],
+      "how_it_works": [
+        {
+          "title": "Government supports participating retailers",
+          "explanation": "The support is implemented through electricity and gas retailers rather than through individual cash applications from households."
+        },
+        {
+          "title": "The retailer reflects the discount in the bill",
+          "explanation": "Eligible usage receives the official per-unit reduction. Consumers should look at their utility's bill or explanation rather than submit a separate government claim."
+        },
+        {
+          "title": "The temporary rate ends with the published period",
+          "explanation": "The current summer program lists July through September usage. Unless a new measure is announced, later usage no longer receives this specific discount."
+        }
+      ],
+      "example": "If an eligible household uses 400 kWh in September, the electricity portion of the government support is 400 × ¥3.5 = ¥1,400. If the same 400 kWh were used in August, the support would have been 400 × ¥4.5 = ¥1,800. The ¥400 difference comes from the lower September subsidy rate, before considering any other bill component.",
+      "takeaways": [
+        "September usage is still covered.",
+        "The September rate is lower than August's.",
+        "The currently announced summer program ends after September usage.",
+        "No consumer application or fee is required.",
+        "A higher later bill can have several causes, so check the bill components before blaming one factor."
+      ]
+    },
+    "action_plan": {
+      "goal": "Confirm you received the September utility support correctly, avoid scams, and understand any later bill increase.",
+      "who_should_act": "Households using ordinary low-voltage electricity or eligible city gas should check their bill. LP-gas users can ignore the national city-gas rate in this article and instead check any prefectural or municipal LP-gas support. Anyone receiving a message asking them to apply for this electricity/gas support should treat it as suspicious.",
+      "deadline": "There is no application deadline because consumers do not apply. Review the bill that reflects September 2026 usage when it arrives and re-check official support information before the bill reflecting October usage.",
+      "prepare": [
+        "Your electricity or city-gas bill showing the usage period and usage amount.",
+        "Your utility's official website or customer portal if the bill does not clearly label the support.",
+        "The Agency for Natural Resources and Energy support page for the official per-unit rates."
+      ],
+      "steps": [
+        {
+          "step": "Confirm the usage month",
+          "action": "Find the exact usage period on your bill rather than relying only on the payment month.",
+          "how": "Look for the meter-reading/usage dates on the paper bill or utility portal.",
+          "needed": ["Current bill"],
+          "time_minutes": 1,
+          "cost_yen": 0,
+          "done_when": "You can tell whether the bill includes September 2026 usage."
+        },
+        {
+          "step": "Check the expected support rate",
+          "action": "For September usage, use ¥3.5/kWh for low-voltage electricity or ¥14/m³ for eligible city gas as the official reference rate.",
+          "how": "Compare the bill explanation with the Agency for Natural Resources and Energy rate table. If your tariff or utility is unclear, use the utility's official customer support channel.",
+          "needed": ["Usage amount", "Official rate table"],
+          "time_minutes": 2,
+          "cost_yen": 0,
+          "done_when": "The bill's support treatment is consistent with the official rate or your utility has explained why your plan is outside the program."
+        },
+        {
+          "step": "Ignore claim requests",
+          "action": "Do not click links, send personal information, or pay a fee to receive this support.",
+          "how": "The energy agency states that consumers are not asked to complete an application, provide personal information or pay a fee for this program.",
+          "needed": [],
+          "time_minutes": 1,
+          "cost_yen": 0,
+          "done_when": "You have deleted or independently verified any unsolicited 'subsidy claim' message without using its links."
+        },
+        {
+          "step": "Budget for the next usage month",
+          "action": "Do not assume October usage receives the same discount unless a new official measure is announced.",
+          "how": "Check the official energy-support page before comparing the later bill with September.",
+          "needed": ["Official support page"],
+          "time_minutes": 1,
+          "cost_yen": 0,
+          "done_when": "You know whether a post-September support program has actually been announced."
+        }
+      ],
+      "mistakes_to_avoid": [
+        "Paying a fee or submitting personal information to 'claim' the support.",
+        "Comparing payment months instead of the underlying usage months.",
+        "Assuming every increase after September is caused only by the subsidy ending.",
+        "Applying the city-gas rate to LP gas.",
+        "Assuming an extension exists because of an unofficial post or forwarded message."
+      ],
+      "decision_rules": [
+        {
+          "if": "an email, SMS or caller says you must apply or pay to receive the electricity/gas support",
+          "then": "do not use the supplied link or payment method; verify through the official energy-agency or utility channel instead"
+        },
+        {
+          "if": "your September-usage bill appears to lack the support despite an eligible plan",
+          "then": "contact your utility through its official customer-support channel and ask how the government support is displayed on your tariff"
+        },
+        {
+          "if": "a new official government measure extends support beyond September",
+          "then": "use the new official dates and rates rather than assuming this article's end-of-program conclusion still applies"
+        }
+      ],
+      "follow_up": "When the bill reflecting October usage arrives, compare usage quantity and tariff components separately from government support. Re-check the official energy-support page if a new extension has been announced."
+    }
+  }
+}
