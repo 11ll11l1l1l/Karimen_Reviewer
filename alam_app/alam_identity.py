@@ -96,17 +96,27 @@ def _cookie_set(manager, device_id: str, *, key: str) -> bool:
 
 
 def _storage_expression(write_value: str | None = None) -> str:
-    """Return JS that always reports a ready sentinel once the component hydrates."""
+    """Return JS that stores identity on the ALAM page origin when possible.
+
+    Streamlit v1 custom components execute inside an iframe. Using ``window.localStorage``
+    alone can bind persistence to the component frame rather than the top-level ALAM page
+    in some deployments. Prefer the parent page's storage explicitly, then fall back to
+    the component frame only when browser isolation prevents parent access.
+    """
     key = json.dumps(DEVICE_STORAGE_KEY)
     value = json.dumps(_valid_device_id(write_value)) if write_value else "null"
     return (
         "(() => { try {"
         f"const k={key}; const requested={value};"
-        "if (requested) window.localStorage.setItem(k, requested);"
-        "const stored=window.localStorage.getItem(k);"
-        "return JSON.stringify({ready:true,value:stored,error:null});"
+        "let store=null; let scope='parent';"
+        "try { store=window.parent.localStorage; store.getItem(k); } catch (_) {"
+        "store=window.localStorage; scope='component';"
+        "}"
+        "if (requested) store.setItem(k, requested);"
+        "const stored=store.getItem(k);"
+        "return JSON.stringify({ready:true,value:stored,error:null,scope:scope});"
         "} catch (e) {"
-        "return JSON.stringify({ready:true,value:null,error:'storage_unavailable'});"
+        "return JSON.stringify({ready:true,value:null,error:'storage_unavailable',scope:null});"
         "} })()"
     )
 
