@@ -13,6 +13,11 @@ def main():
     assert "bottom:calc(.55rem + env(safe-area-inset-bottom, 0px))!important" in mobile
     assert ".alam-time-header" in mobile and "min-height:82px!important" in mobile
     assert ".wisdom-strip" in mobile
+    assert ".wisdom-line,.wisdom-verse" in mobile
+    assert "height:auto!important" in mobile
+    assert "max-height:none!important" in mobile
+    assert "overflow:visible!important" in mobile
+    assert ".wisdom-verse:nth-of-type(n+2){display:none!important}" not in mobile
     assert ".intel-brief-copy,.intel-mini{display:none!important}" in mobile
     assert ".today-action-card:has(.today-empty){display:none!important}" in mobile
 
