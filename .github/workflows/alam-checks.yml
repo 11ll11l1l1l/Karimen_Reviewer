@@ -49,6 +49,10 @@ jobs:
         run: python alam_app/test_alam_publication_quality.py
       - name: Story lifecycle reactivation safety test
         run: python alam_app/test_alam_lifecycle.py
+      - name: Article version migration regression test
+        run: python alam_app/test_alam_article_version_migration.py
+      - name: Article version concurrency regression test
+        run: python alam_app/test_alam_article_version_concurrency.py
       - name: Supabase readiness regression test
         run: python alam_app/test_alam_supabase_health.py
       - name: Product readiness presentation regression test
