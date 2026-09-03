@@ -92,6 +92,15 @@ def test_grounded_recovery_routes_to_other_lenses_without_user_text(monkeypatch)
     assert fake_st.session_state["alam_ask_lenses"] == ["Discover", "Market", "Trends"]
 
 
+def test_grounded_recovery_clears_stale_lenses_for_unknown_category(monkeypatch):
+    fake_st = SimpleNamespace(session_state={"selected_story": "legacy", "alam_ask_lenses": ["Discover", "Market", "Trends"]})
+    monkeypatch.setattr(checklist, "st", fake_st)
+    record = _record(title="Legacy verified story")
+    assert checklist.open_grounded_recovery(record) is True
+    assert fake_st.session_state["alam_ask_lenses"] == []
+    assert fake_st.session_state["alam_ask_query"] == "Legacy verified story"
+
+
 def test_grounded_recovery_fails_closed_without_validated_topic(monkeypatch):
     fake_st = SimpleNamespace(session_state={"selected_story": "empty"})
     monkeypatch.setattr(checklist, "st", fake_st)
