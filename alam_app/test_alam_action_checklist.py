@@ -59,6 +59,28 @@ def test_materially_changed_action_gets_new_completion_identity():
     assert old_key != new_key
 
 
+def test_action_focus_uses_first_unfinished_verified_step_and_known_effort():
+    record = _record()
+    plan = checklist.action_plan(record)
+    focus = checklist.action_focus(record, {plan["steps"][0]["key"]})
+    assert focus["complete"] is False
+    assert focus["next"]["title"] == "Submit"
+    assert focus["remaining"] == 1
+    assert focus["remaining_minutes"] == 10
+
+
+def test_action_focus_does_not_guess_missing_effort_and_handles_completion():
+    record = _record()
+    record["content"]["action_plan"]["steps"][1].pop("time_minutes")
+    plan = checklist.action_plan(record)
+    focus = checklist.action_focus(record, set())
+    assert focus["next"]["title"] == "Verify eligibility"
+    assert focus["remaining_minutes"] is None
+    completed = checklist.action_focus(record, {step["key"] for step in plan["steps"]})
+    assert completed == {"complete": True, "next": None, "remaining": 0, "remaining_minutes": 0}
+    assert checklist.action_focus({"id": "none", "content": {}}) is None
+
+
 def test_cookie_codec_is_bounded_and_rejects_corruption():
     raw = {f"story-{i}": [f"step-{i}"] for i in range(checklist.MAX_STORIES + 5)}
     decoded = checklist._decode(checklist._encode(raw))
