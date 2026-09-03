@@ -43,6 +43,7 @@ class FakeStx:
 def main():
     original_identity_st = identity.st
     original_identity_js = identity.streamlit_js_eval
+    original_identity_lookup = identity._lookup
     original_core_st = core.st
     original_core_stx = core.stx
     original_local_st = localstate.st
@@ -113,6 +114,30 @@ def main():
         assert kwargs["max_age"] == identity.COOKIE_MAX_AGE
         assert identity.COOKIE_DAYS >= 365
 
+        # A stale but syntactically valid localStorage UUID must not strand a known reader
+        # in onboarding when the native recovery cookie still maps to the registered profile.
+        identity_state = {}
+        identity.st = SimpleNamespace(
+            session_state=identity_state,
+            context=SimpleNamespace(cookies=FakeCookies({identity.DEVICE_COOKIE: native_id})),
+        )
+        lookups = []
+
+        def fake_lookup(device_id):
+            lookups.append(device_id)
+            if device_id == native_id:
+                return {"visitor_id": "visitor-1", "display_name": "Mark"}, None
+            return None, None
+
+        identity._lookup = fake_lookup
+        restored = identity.init_identity(storage_device_id=storage_id)
+        assert lookups == [storage_id, native_id]
+        assert restored == {"visitor_id": "visitor-1", "display_name": "Mark"}
+        assert identity_state["alam_device_id"] == native_id
+        assert identity_state["alam_identity_error"] is None
+        assert identity_state["alam_identity_initialized"] is True
+        identity._lookup = original_identity_lookup
+
         onboarding_source = inspect.getsource(identity.render_onboarding)
         assert "alam_pending_device_storage" in onboarding_source
         assert "Restoring this browser" in onboarding_source
@@ -162,6 +187,7 @@ def main():
     finally:
         identity.st = original_identity_st
         identity.streamlit_js_eval = original_identity_js
+        identity._lookup = original_identity_lookup
         core.st = original_core_st
         core.stx = original_core_stx
         localstate.st = original_local_st
