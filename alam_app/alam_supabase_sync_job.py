@@ -25,6 +25,7 @@ from alam_supabase_ingest import _client, run as run_ingestion
 from alam_supabase_reconcile import prepare_public_archive, reconcile_public_archive
 
 SYNC_AGENT_ID = "alam_supabase_sync"
+# Deliberately exceeds the workflow's 10-minute hard timeout; regression-enforced.
 STALE_SYNC_RUN_MINUTES = 30
 
 
