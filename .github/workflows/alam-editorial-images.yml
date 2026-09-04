@@ -1,24 +1,7 @@
 name: ALAM editorial image generation
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'alam_app/data/discover/*.json'
-      - 'alam_app/data/reflection/*.json'
-      - 'alam_app/data/practical/*.json'
-      - 'alam_app/data/trend/*.json'
-      - 'alam_app/alam_image_generation.py'
-      - 'alam_app/alam_generated_images.py'
-      - '.github/workflows/alam-editorial-images.yml'
   workflow_dispatch:
-
-permissions:
-  contents: write
-
-concurrency:
-  group: alam-editorial-images-main
-  cancel-in-progress: false
 
 jobs:
   generate:
