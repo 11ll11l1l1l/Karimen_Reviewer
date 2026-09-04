@@ -98,6 +98,34 @@ def _profile_alert_min(value, default=85):
     return max(0, min(100, parsed))
 
 
+def _profile_bool(value, default=False):
+    """Normalize a browser-restored boolean without Python truthiness surprises.
+
+    ALAM writes real JSON booleans, but portable profile codes and cookies are browser-
+    controlled persistence boundaries. In particular, ``bool("false")`` is ``True`` in
+    Python, so blindly restoring a malformed/older string can silently invert a reader's
+    filters or theme. Accept common legacy scalar spellings and otherwise keep the
+    setting's established default.
+    """
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)) and value in (0, 1):
+        return bool(value)
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized in {"true", "1", "yes", "on"}:
+            return True
+        if normalized in {"false", "0", "no", "off", ""}:
+            return False
+    return bool(default)
+
+
+def _profile_interests(value):
+    if not isinstance(value, dict):
+        return {}
+    return {str(key): _profile_bool(enabled, False) for key, enabled in value.items()}
+
+
 def _trim(profile):
     out = _default_profile()
     out["s"] = dict(profile.get("s") or {})
@@ -133,14 +161,14 @@ def _apply_settings(profile):
     settings = profile.get("s") or {}
     interests = settings.get("interests")
     if isinstance(interests, dict):
-        st.session_state["alam_interest_preferences"] = {str(k): bool(v) for k, v in interests.items()}
-    for key, target in (
-        ("alert_action", "alam_alert_only_actionable"),
-        ("alert_change", "alam_alert_material_change"),
-        ("dark", "alam_dark_mode"),
+        st.session_state["alam_interest_preferences"] = _profile_interests(interests)
+    for key, target, default in (
+        ("alert_action", "alam_alert_only_actionable", False),
+        ("alert_change", "alam_alert_material_change", True),
+        ("dark", "alam_dark_mode", False),
     ):
         if key in settings:
-            st.session_state[target] = settings[key]
+            st.session_state[target] = _profile_bool(settings[key], default)
     if "alert_min" in settings:
         st.session_state["alam_alert_min_importance"] = _profile_alert_min(settings.get("alert_min"))
 
@@ -192,11 +220,11 @@ def _save(manager=None):
 def persist_settings(manager=None):
     profile = _profile()
     profile["s"] = {
-        "interests": dict(st.session_state.get("alam_interest_preferences") or {}),
+        "interests": _profile_interests(st.session_state.get("alam_interest_preferences") or {}),
         "alert_min": _profile_alert_min(st.session_state.get("alam_alert_min_importance", 85)),
-        "alert_action": bool(st.session_state.get("alam_alert_only_actionable", False)),
-        "alert_change": bool(st.session_state.get("alam_alert_material_change", True)),
-        "dark": bool(st.session_state.get("alam_dark_mode", False)),
+        "alert_action": _profile_bool(st.session_state.get("alam_alert_only_actionable", False), False),
+        "alert_change": _profile_bool(st.session_state.get("alam_alert_material_change", True), True),
+        "dark": _profile_bool(st.session_state.get("alam_dark_mode", False), False),
     }
     _save(manager)
 
