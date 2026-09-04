@@ -20,8 +20,8 @@ from alam_core import age_label, category_meta, esc, type_label
 RELATED_CSS = r"""
 <style>
 .related-shell{margin:18px 0 8px}.related-head{font-size:1.05rem;font-weight:950;color:#17202A}.related-sub{font-size:.78rem;line-height:1.45;color:#667085;margin:3px 0 10px}
-.related-card{border:1px solid rgba(23,32,42,.09);background:rgba(255,255,255,.94);border-radius:17px;padding:13px 14px;margin:7px 0 5px}.related-top{display:flex;justify-content:space-between;gap:8px;align-items:center}.related-kind{font-size:.65rem;font-weight:950;letter-spacing:.055em;text-transform:uppercase}.related-age{font-size:.68rem;color:#98A2B3}.related-title{font-size:.94rem;font-weight:900;line-height:1.3;color:#17202A;margin-top:7px}.related-why{font-size:.77rem;line-height:1.42;color:#667085;margin-top:6px}.related-signal{display:inline-block;background:#F2F4F7;border-radius:999px;padding:3px 7px;margin:3px 4px 0 0;font-size:.66rem;color:#475467}.related-stretch{font-size:.67rem;font-weight:900;color:#5968F2;margin-top:6px}
-@media(max-width:760px){.related-card{padding:12px 13px;border-radius:15px}.related-title{font-size:.91rem}}
+.related-card{border:1px solid rgba(23,32,42,.09);background:rgba(255,255,255,.94);border-radius:17px;padding:13px 14px;margin:7px 0 5px}.related-top{display:flex;justify-content:space-between;gap:8px;align-items:center}.related-kind{font-size:.65rem;font-weight:950;letter-spacing:.055em;text-transform:uppercase}.related-age{font-size:.68rem;color:#98A2B3}.related-title{font-size:.94rem;font-weight:900;line-height:1.3;color:#17202A;margin-top:7px}.related-why{font-size:.77rem;line-height:1.42;color:#667085;margin-top:6px}.related-signal{display:inline-block;background:#F2F4F7;border-radius:999px;padding:3px 7px;margin:3px 4px 0 0;font-size:.66rem;color:#475467}.related-preview{border-left:3px solid rgba(89,104,242,.22);padding-left:9px;margin-top:9px;font-size:.78rem;line-height:1.43;color:#344054}.related-preview b{font-size:.65rem;letter-spacing:.045em;text-transform:uppercase;color:#667085;margin-right:5px}.related-stretch{font-size:.67rem;font-weight:900;color:#5968F2;margin-top:6px}
+@media(max-width:760px){.related-card{padding:12px 13px;border-radius:15px}.related-title{font-size:.91rem}.related-preview{font-size:.77rem}}
 </style>
 """
 
@@ -29,6 +29,26 @@ RELATED_CSS = r"""
 def _category(row: tuple[Any, ...]) -> str:
     other = row[2] if len(row) > 2 and isinstance(row[2], dict) else {}
     return str(other.get("_category") or "").strip().lower()
+
+
+def related_story_decision_preview(record: dict[str, Any], limit: int = 180) -> str:
+    """Return one explicit reader-impact line from a validated related record.
+
+    Connected-story ranking explains *why records are linked*. This preview answers
+    the separate product question "why should I open it?" without generating a new
+    conclusion. Only the article's own scalar ``why_it_matters`` is eligible; missing,
+    structured, or placeholder values fail closed so relationship UI cannot silently
+    manufacture advice from tags, titles, or model memory.
+    """
+    value = record.get("why_it_matters")
+    if not isinstance(value, str):
+        return ""
+    text = " ".join(value.split()).strip()
+    if not text or text.lower() in {"none", "n/a", "na", "unknown", "tbd"}:
+        return ""
+    if len(text) > limit:
+        return text[: limit - 1].rstrip() + "…"
+    return text
 
 
 def related_story_selection(
@@ -93,6 +113,8 @@ def render_related_stories(record: dict[str, Any], records: list[dict[str, Any]]
         signals = "".join(
             f"<span class='related-signal'>{esc(str(signal))}</span>" for signal in overlap[:4]
         )
+        preview = related_story_decision_preview(other)
+        preview_html = f"<div class='related-preview'><b>Why it may matter</b>{esc(preview)}</div>" if preview else ""
         stretch_label = "<div class='related-stretch'>Different lens · still connected by evidence</div>" if index == stretch_index else ""
         st.markdown(
             "<div class='related-card'>"
@@ -101,7 +123,7 @@ def render_related_stories(record: dict[str, Any], records: list[dict[str, Any]]
             f"<span class='related-age'>{esc(age_label(other.get('created_at')))}</span></div>"
             f"<div class='related-title'>{esc(other.get('title', 'Untitled'))}</div>"
             f"<div class='related-why'>Connected by {len(overlap)} shared signal{'s' if len(overlap) != 1 else ''}: {signals}</div>"
-            f"{stretch_label}</div>",
+            f"{preview_html}{stretch_label}</div>",
             unsafe_allow_html=True,
         )
         if st.button(
