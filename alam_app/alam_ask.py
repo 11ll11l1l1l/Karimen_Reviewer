@@ -13,7 +13,8 @@ SCORE_LABELS={"VERY HIGH":90.0,"HIGH":80.0,"MEDIUM-HIGH":70.0,"MED-HIGH":70.0,"M
 ASK_CSS=r'''<style>
 .ask-shell{padding:16px 17px;margin:8px 0 14px;border:1px solid rgba(23,32,42,.09);border-radius:18px;background:rgba(255,255,255,.72)}
 .ask-kicker{font-size:.68rem;font-weight:850;letter-spacing:.08em;text-transform:uppercase;color:#667085}.ask-answer{font-size:1.02rem;line-height:1.55;font-weight:720;color:#273142;margin-top:7px}.ask-meta{font-size:.72rem;color:#667085;margin-top:8px;line-height:1.4}.ask-lens,.ask-perspective{padding:10px 11px;border:1px solid rgba(23,32,42,.08);border-radius:14px;margin:7px 0;background:rgba(255,255,255,.58)}.ask-lens strong,.ask-perspective strong{font-size:.78rem}.ask-lens span,.ask-perspective span{font-size:.78rem;color:#475467;line-height:1.45}.ask-stance{font-size:.64rem;font-weight:850;letter-spacing:.05em;color:#667085}
-@media(max-width:760px){.ask-shell{padding:13px 13px;border-radius:16px}.ask-answer{font-size:.94rem}}
+.ask-recovery{padding:11px 12px;margin:8px 0 6px;border:1px solid rgba(23,32,42,.10);border-radius:14px;background:rgba(248,250,252,.92);font-size:.78rem;line-height:1.45;color:#475467}.ask-recovery strong{color:#273142}
+@media(max-width:760px){.ask-shell{padding:13px 13px;border-radius:16px}.ask-answer{font-size:.94rem}.ask-recovery{padding:10px 11px}}
 </style>'''
 
 def _flat_text(value):
@@ -82,6 +83,11 @@ def recovery_exclusions(query,seeded_query,excluded_ids):
     current=" ".join(str(query or "").split()).casefold();seeded=" ".join(str(seeded_query or "").split()).casefold()
     return list(excluded_ids or []) if current and seeded and current==seeded else []
 
+def recovery_context(query,seeded_query,excluded_ids):
+    """Describe recovery state for transparent UI without exposing or persisting question text."""
+    active_ids=recovery_exclusions(query,seeded_query,excluded_ids)
+    return {"active":bool(active_ids),"excluded_count":len({str(value) for value in active_ids if value is not None and str(value)})}
+
 def rank_records(records,query,limit=8):
     ranked=[]
     for record in records or []:
@@ -141,6 +147,12 @@ def render_ask_alam(records,comments,manager,views):
     query=st.text_input("Ask ALAM",placeholder="e.g. What changes for my visa renewal in October?",key="alam_ask_query")
     lenses=st.multiselect("Agent lenses",["Discover","Action","Market","Trends"],default=[],placeholder="All verified lenses",key="alam_ask_lenses")
     excluded_ids=recovery_exclusions(query,st.session_state.get("alam_ask_recovery_query"),st.session_state.get("alam_ask_excluded_story_ids"))
+    recovery=recovery_context(query,st.session_state.get("alam_ask_recovery_query"),st.session_state.get("alam_ask_excluded_story_ids"))
+    if recovery["active"]:
+        tried_label="the plan you already tried" if recovery["excluded_count"]==1 else f"{recovery['excluded_count']} plans you already tried"
+        st.markdown(f'<div class="ask-recovery"><strong>Recovery mode</strong> · ALAM is excluding {_escape(tried_label)} for this seeded question. Edit the question to search normally, or exit recovery mode below.</div>',unsafe_allow_html=True)
+        if st.button("Exit recovery mode",key="alam_ask_exit_recovery",use_container_width=True):
+            st.session_state.pop("alam_ask_recovery_query",None);st.session_state.pop("alam_ask_excluded_story_ids",None);st.rerun()
     if not excluded_ids and st.session_state.get("alam_ask_recovery_query"):
         st.session_state.pop("alam_ask_recovery_query",None);st.session_state.pop("alam_ask_excluded_story_ids",None)
     category_by_label={value:key for key,value in CATEGORY_LABELS.items()};allowed={category_by_label[label] for label in lenses if label in category_by_label};pool=[r for r in filter_excluded_records(records,excluded_ids) if not allowed or str(r.get("_category") or r.get("category") or "") in allowed]
