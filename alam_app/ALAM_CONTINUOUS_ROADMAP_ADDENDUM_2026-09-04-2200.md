@@ -1,0 +1,13 @@
+# ALAM Continuous Roadmap Addendum — 2026-09-04 22:00 JST
+
+- **Lane:** Innovation Agent
+- **User problem:** Connected intelligence could show why a story matters plus a Practical action/timing cue, but readers still had to open the related story to learn whether its explicitly stated affected audience was relevant to them.
+- **Root cause:** `alam_related_views.py` intentionally exposed only `why_it_matters`, `content.action`, and explicit deadline/timing metadata on connected cards. The already-validated Practical `content.who_is_affected` field was not represented there.
+- **Decision:** Add one compact `Affected · …` line to connected Practical cards when—and only when—the related record explicitly supplies a usable scalar `who_is_affected` value. This is triage context, not personalized eligibility logic.
+- **Implementation:** Added `related_story_audience()` with the existing fail-closed scalar rules and a 120-character mobile bound; rendered it below action/timing cues. Missing, placeholder, structured, non-Practical, or otherwise unusable values render nothing. No inference from tags, browsing state, location, titles, or model memory.
+- **Mobile behavior:** Audience text remains a short secondary line under compact action chips; long explicit audience statements are bounded rather than expanding connected cards indefinitely. Existing full-width open-story controls remain unchanged.
+- **Files/schema affected:** `alam_app/alam_related_views.py`, `alam_app/test_alam_related_views.py`, this addendum. No schema, RLS, Auth, sync, telemetry, ingestion, or public article-content changes.
+- **Validation:** Focused regressions cover valid Practical audience, non-Practical suppression, missing/placeholder/structured fail-closed behavior, and mobile-length bounding. GitHub ALAM app checks for commit `3de503c897ae6ac671f552241f1be36c808f4d8c` were queued at handoff time; do not treat them as green until GitHub reports success.
+- **Live state checked:** Supabase project `zecztyabmmoqzjumhxxf` reported 65 public articles and 0 Auth users during this run. The unchanged external Auth blocker was therefore not revisited.
+- **Remaining limitation:** `Affected` is the publisher/research record's audience statement, not proof that the current reader personally qualifies. Cross-device personalization still depends on the separately blocked/owned account-state path.
+- **Recommended next step:** After CI is green, continue article-detail/connected-intelligence work only where explicit validated metadata reduces a real open-before-knowing friction; otherwise rotate to a different priority lane rather than overloading related cards.
