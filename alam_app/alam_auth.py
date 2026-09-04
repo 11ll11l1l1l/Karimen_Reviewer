@@ -36,7 +36,7 @@ try:
 except ModuleNotFoundError:
     create_client = None
 
-from alam_identity import _valid_device_id
+from alam_identity import _component_ready, _valid_device_id
 from alam_local_state import _profile_alert_min, _profile_bool, _profile_interests
 from alam_supabase import _safe_error
 
@@ -172,7 +172,8 @@ def _auth_storage_bridge() -> tuple[bool, dict | None, str | None]:
     if not isinstance(envelope, dict):
         return True, None, "invalid_storage_response"
 
-    if clear and envelope.get("ready"):
+    ready = _component_ready(envelope.get("ready", True), True)
+    if clear and ready:
         st.session_state.pop("alam_clear_auth_storage", None)
         st.session_state.pop("alam_pending_auth_storage", None)
         return True, None, envelope.get("error")
@@ -180,7 +181,7 @@ def _auth_storage_bridge() -> tuple[bool, dict | None, str | None]:
     stored = _parse_persisted_session(envelope.get("value"))
     if pending and stored == pending:
         st.session_state.pop("alam_pending_auth_storage", None)
-    return bool(envelope.get("ready", True)), stored, envelope.get("error")
+    return ready, stored, envelope.get("error")
 
 
 def _queue_session_persistence(session) -> None:
