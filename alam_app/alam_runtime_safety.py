@@ -1,5 +1,6 @@
 import re
 import sys
+from datetime import datetime, timezone
 
 import streamlit as st
 
@@ -59,7 +60,7 @@ def _recency_bonus(record):
     created = alam_core.parse_dt(record.get("created_at"))
     age_hours = max(
         0.0,
-        (alam_core.current_utc() - created).total_seconds() / 3600.0,
+        (datetime.now(timezone.utc) - created.astimezone(timezone.utc)).total_seconds() / 3600.0,
     )
     # Freshness is intentionally dominant. Quality still matters inside each age band.
     knots = (
@@ -228,7 +229,7 @@ def _install_recency_priority_hooks():
                     > ref.astimezone(mobile_views.timezone.utc)
                 ]
         elif selected_filter == "High confidence":
-            subset = [r for r in subset if int(r.get("confidence", 0) or 0) >= 85]
+            subset = [r for r in subset if numeric_score(r.get("confidence"), 0) >= 85]
         elif selected_filter == "Following":
             subset = [r for r in subset if mobile_views.is_followed(r.get("id"))]
         if not subset:
