@@ -59,7 +59,9 @@ def related_story_action_cues(record: dict[str, Any]) -> list[tuple[str, str]]:
         return []
     content = record.get("content") if isinstance(record.get("content"), dict) else {}
     action = _safe_scalar(content.get("action"), 24).upper()
-    deadline = _safe_scalar(content.get("deadline") or content.get("when"), 72)
+    # Validate the preferred field before falling back. A truthy placeholder such as
+    # "TBD" must not suppress a usable legacy/alternate `when` value.
+    deadline = _safe_scalar(content.get("deadline"), 72) or _safe_scalar(content.get("when"), 72)
     cues: list[tuple[str, str]] = []
     if action in {"DO NOW", "WATCH", "AVOID", "BUY", "WAIT", "APPLY", "PREPARE", "IGNORE"}:
         cues.append(("Action", action))
