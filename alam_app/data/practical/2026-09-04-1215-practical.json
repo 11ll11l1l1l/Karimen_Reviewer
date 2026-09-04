@@ -1,0 +1,286 @@
+{
+  "id": "japan-mirai-eco-zeh-custom-home-sep30-2026",
+  "agent": "practical",
+  "created_at": "2026-09-04T12:15:00+09:00",
+  "type": "housing_subsidy",
+  "title": "ZEH custom-home subsidy applications close September 30",
+  "summary": "Japan’s 2026 Mirai Eco Housing program will stop accepting grant applications for newly built custom ZEH-standard homes no later than September 30, 2026. The reservation window already closed August 17, so households still relying on the subsidy need their registered builder to submit the actual grant application before the cutoff.",
+  "why_it_matters": "For eligible child-rearing or young-couple households building a custom ZEH-standard home, the subsidy is ¥350,000 or ¥400,000 per home depending on the regional energy zone. Missing the application deadline can mean losing the subsidy even if the house itself would otherwise qualify.",
+  "importance": 88,
+  "confidence": 98,
+  "tags": [
+    "Japan",
+    "Housing",
+    "Subsidy",
+    "ZEH",
+    "Energy Efficiency",
+    "Family",
+    "Deadline"
+  ],
+  "geography": [
+    "Japan"
+  ],
+  "status": "NEW",
+  "sources": [
+    {
+      "publisher": "住宅省エネ2026キャンペーン（国土交通省・環境省・経済産業省）",
+      "title": "住宅省エネ2026キャンペーン",
+      "url": "https://jutaku-shoene2026.mlit.go.jp/",
+      "published_at": "2026-09-04",
+      "source_type": "official"
+    },
+    {
+      "publisher": "みらいエコ住宅2026事業",
+      "title": "対象要件の詳細【注文住宅の新築】",
+      "url": "https://mirai-eco2026.mlit.go.jp/new-house/",
+      "source_type": "official"
+    },
+    {
+      "publisher": "みらいエコ住宅2026事業",
+      "title": "※重要※注文住宅の新築（ZEH水準住宅）の交付申請の予約の受付を終了しました。",
+      "url": "https://mirai-eco2026.mlit.go.jp/news/2026081802.html",
+      "published_at": "2026-08-18",
+      "source_type": "official"
+    },
+    {
+      "publisher": "住宅省エネ2026キャンペーン",
+      "title": "キャンペーンについて【新築】",
+      "url": "https://jutaku-shoene2026.mlit.go.jp/about/new-house.html",
+      "source_type": "official"
+    }
+  ],
+  "claims": [
+    {
+      "kind": "FACT",
+      "text": "For newly built custom ZEH-standard homes, the grant-application deadline is no later than September 30, 2026, and acceptance can end earlier if the relevant budget reaches its ceiling.",
+      "source_refs": [
+        2,
+        3,
+        4
+      ],
+      "basis": "Official program application schedule"
+    },
+    {
+      "kind": "FACT",
+      "text": "The reservation window for newly built custom ZEH-standard homes ended on August 17, 2026, but an actual grant application may still be submitted until September 30, subject to the budget ceiling.",
+      "source_refs": [
+        3
+      ],
+      "basis": "Official August 18 program notice"
+    },
+    {
+      "kind": "FACT",
+      "text": "Custom ZEH-standard homes are limited to child-rearing households or young-couple households under the program’s definitions; the base subsidy is ¥400,000 per home in regional energy zones 1–4 and ¥350,000 in zones 5–8.",
+      "source_refs": [
+        2,
+        4
+      ],
+      "basis": "Official eligibility and subsidy table"
+    },
+    {
+      "kind": "FACT",
+      "text": "Consumers cannot apply directly: the registered Mirai Eco housing business submits the application and passes the subsidy benefit back to the building owner.",
+      "source_refs": [
+        2
+      ],
+      "basis": "Official program procedure"
+    },
+    {
+      "kind": "FACT",
+      "text": "As of September 4, 2026, applications for the combined long-life/ZEH housing budget were about 27% of the ¥145 billion ceiling, so the immediate constraint is the September 30 ZEH custom-home deadline rather than budget exhaustion.",
+      "source_refs": [
+        1
+      ],
+      "basis": "Official daily budget-utilization dashboard"
+    },
+    {
+      "kind": "INFERENCE",
+      "text": "If an eligible custom-home project has already passed foundation completion but the builder has not filed the grant application, confirming submission status now is materially more useful than waiting until late September.",
+      "source_refs": [
+        1,
+        2,
+        3
+      ],
+      "basis": "Inference from the fixed deadline, builder-controlled filing process and current budget headroom"
+    }
+  ],
+  "editorial_visual": {
+    "style": "editorial",
+    "motif": "home",
+    "secondary_motif": "document",
+    "scene": "a modern energy-efficient Japanese house beside an oversized calendar page marked September 30, with a builder carrying a neat application folder toward a closing administrative gate; clean and informative, not alarming",
+    "caption": "The subsidy window closes before the construction story does",
+    "silliness": 16,
+    "exaggeration": 48
+  },
+  "content": {
+    "key_message": "If you are building a custom ZEH-standard home and expect the Mirai Eco 2026 subsidy, ask your registered builder today whether the actual grant application—not just a reservation—has been submitted.",
+    "who_is_affected": "Households building a new custom ZEH-standard home through a registered Mirai Eco housing business. For this ZEH category, the applicant household must meet the program’s child-rearing or young-couple definition. GX-oriented homes and long-life quality homes have different schedules, so do not assume this September 30 cutoff applies to every new-home category.",
+    "when": "The reservation window ended August 17, 2026. The actual grant application for a newly built custom ZEH-standard home must be submitted no later than September 30, 2026, or earlier if the applicable budget reaches 100%.",
+    "financial_impact": "Base subsidy is ¥400,000 per home in regional energy zones 1–4 and ¥350,000 in zones 5–8. A qualifying demolition can add ¥200,000 where the separate demolition conditions are met.",
+    "estimated_saving_yen": 350000,
+    "time_minutes": 15,
+    "travel_minutes": 0,
+    "risk_if_ignored": "An otherwise eligible household can lose ¥350,000–¥400,000 of base support if the registered builder misses the filing cutoff. Having a qualifying house, contract or old reservation is not enough if the actual grant application is not submitted in time.",
+    "action": "DO NOW",
+    "deadline": "2026-09-30, or earlier if the relevant budget reaches 100%.",
+    "effort": "Low for the household: confirm status and provide any missing documents. The registered builder performs the actual program filing.",
+    "potential_benefit": "Protects a potential ¥350,000–¥400,000 base subsidy and avoids discovering after the deadline that the filing was never completed.",
+    "downside": "This is not money available to every new-home buyer. ZEH-standard custom homes have household, performance, floor-area, occupancy, construction-timing and location requirements; the subsidy should not drive someone into a more expensive project that does not otherwise make financial sense.",
+    "what_would_change_mind": "A later official notice extending the September 30 filing deadline, closing the category early because the budget reaches its ceiling, or a project-specific eligibility finding from the registered builder would change the action.",
+    "usefulness": 96,
+    "novelty": 84,
+    "impact": {
+      "money": "HIGH",
+      "family": "HIGH",
+      "career": "LOW",
+      "japan": "MED",
+      "urgency": "HIGH"
+    },
+    "connection_tags": [
+      "housing-subsidy",
+      "zeh",
+      "energy-efficiency",
+      "september-deadline"
+    ],
+    "skeptical_view": "The overall long-life/ZEH budget is only about 27% utilized as of September 4, so there is no evidence of an imminent budget sell-out. The urgency comes from the category-specific September 30 deadline, not from a claim that funds are about to disappear.",
+    "what_to_watch": "The official daily budget-utilization page and any program notice changing the September 30 deadline or announcing early closure.",
+    "recommendation": "Treat this as a builder-status check, not a reason to rush into a new home. If your project already qualifies and construction is far enough along for filing, confirm the submission status and get a concrete completion reference from the builder.",
+    "reading_levels": {
+      "30 sec": {
+        "what_happened": "Applications for the 2026 subsidy on newly built custom ZEH-standard homes close no later than September 30; reservations already closed August 17.",
+        "why_it_matters": "Eligible households can receive ¥350,000–¥400,000, but the registered builder must submit the actual grant application.",
+        "what_to_do_watch": "Ask the builder whether the application has been filed and what remains missing; monitor the official budget dashboard.",
+        "bottom_line": "Do not confuse an old reservation, a qualifying house or a verbal promise with a completed grant application."
+      }
+    },
+    "learning": {
+      "outcomes": [
+        "Know whether this particular September 30 cutoff applies to your new-home project.",
+        "Understand who actually files the subsidy application.",
+        "Recognize the difference between reservation, application and eligibility."
+      ],
+      "background": "Mirai Eco Housing 2026 is a national energy-efficiency support program covering several new-home and renovation categories. The rules differ by housing performance. For custom-built ZEH-standard homes, the special 2026 application window closes earlier than the main year-end window used by some other categories.",
+      "terms": [
+        {
+          "term": "ZEH-standard home",
+          "meaning": "A newly built home meeting the program’s specified energy-efficiency level associated with Japan’s Zero Energy House standards.",
+          "why_it_matters": "This story is about the ZEH-standard custom-home category, not every energy-efficient house."
+        },
+        {
+          "term": "Grant-application reservation",
+          "meaning": "A temporary procedure that can secure budget space for a limited period before the full grant application is completed.",
+          "why_it_matters": "The reservation deadline already passed, and a reservation that is not converted into the actual application can expire."
+        },
+        {
+          "term": "Registered Mirai Eco housing business",
+          "meaning": "A builder or seller registered with the program to submit subsidy applications on behalf of consumers.",
+          "why_it_matters": "Consumers cannot directly file this subsidy themselves."
+        }
+      ],
+      "how_it_works": [
+        {
+          "title": "First, the project must qualify",
+          "explanation": "The household, builder, energy performance, floor area, owner occupancy, construction timing and location all have to satisfy the official rules."
+        },
+        {
+          "title": "Then the builder files",
+          "explanation": "After the required construction stage is reached, the registered builder submits the grant application on the owner’s behalf."
+        },
+        {
+          "title": "The subsidy is returned to the consumer",
+          "explanation": "The registered business receives and passes through the subsidy benefit according to the program process; the household does not independently claim it from the government."
+        }
+      ],
+      "example": "A qualifying young-couple household building a ZEH-standard custom home in a regional energy zone 5–8 could have a ¥350,000 base subsidy at stake. If the house qualifies but the registered builder does not submit the actual grant application by September 30, the household can miss the support.",
+      "takeaways": [
+        "September 30 is the ZEH custom-home grant-application cutoff.",
+        "Reservation and actual grant application are different.",
+        "Your registered builder—not you—submits the application.",
+        "Base support is ¥350,000 or ¥400,000 depending on regional energy zone.",
+        "The budget is not currently near exhaustion, but the date cutoff is still real."
+      ]
+    },
+    "action_plan": {
+      "goal": "Confirm that an eligible custom ZEH-home subsidy application is actually filed before the cutoff.",
+      "who_should_act": "Households already building a custom ZEH-standard home and expecting support under Mirai Eco Housing 2026. Ignore this checklist if your project is GX-oriented housing, a long-life quality home, a subdivision purchase, a renovation, or is not using this subsidy category; check that category’s own schedule instead.",
+      "deadline": "No later than September 30, 2026, and earlier if the category budget unexpectedly reaches its ceiling.",
+      "prepare": [
+        "Builder/company name",
+        "Construction contract or project reference",
+        "Property address",
+        "Any documents the registered builder has already requested for subsidy filing",
+        "Any reservation reference if a reservation was previously submitted"
+      ],
+      "steps": [
+        {
+          "step": "Confirm the exact subsidy category",
+          "action": "Ask the builder to confirm in writing that your project is being filed as a newly built custom ZEH-standard home under Mirai Eco Housing 2026.",
+          "how": "Contact the registered builder handling the subsidy application.",
+          "needed": [
+            "Project reference",
+            "Builder contact"
+          ],
+          "time_minutes": 5,
+          "cost_yen": 0,
+          "done_when": "You have confirmation of the exact subsidy category and that the September 30 deadline applies."
+        },
+        {
+          "step": "Check whether the actual grant application was submitted",
+          "action": "Ask for the filing status of the full grant application, not only whether the project was reserved or planned for subsidy use.",
+          "how": "Request the submission date or current portal/application status from the registered builder.",
+          "needed": [
+            "Any prior reservation reference if applicable"
+          ],
+          "time_minutes": 5,
+          "cost_yen": 0,
+          "done_when": "The builder confirms the actual grant application has been submitted, or gives a specific list of missing items preventing submission."
+        },
+        {
+          "step": "Supply missing items immediately",
+          "action": "If filing is not complete, provide only the documents or information the registered builder says are required under the official process.",
+          "how": "Use the builder’s documented submission channel and keep copies.",
+          "needed": [
+            "Any missing documents identified by the builder"
+          ],
+          "time_minutes": 5,
+          "cost_yen": 0,
+          "done_when": "The builder confirms nothing further is needed from you for filing."
+        },
+        {
+          "step": "Get a completion check",
+          "action": "Ask the builder to confirm once the full application is accepted/submitted in the program system.",
+          "how": "Keep the written confirmation or application reference with your project records.",
+          "needed": [
+            "Email or other written record"
+          ],
+          "time_minutes": 2,
+          "cost_yen": 0,
+          "done_when": "You have a concrete submission confirmation rather than a verbal expectation."
+        }
+      ],
+      "mistakes_to_avoid": [
+        "Assuming the August reservation equals the final grant application.",
+        "Waiting until September 30 to ask the builder for the first time.",
+        "Trying to apply directly as a consumer; the registered housing business files the application.",
+        "Assuming every energy-efficient new home qualifies for the same amount or deadline.",
+        "Choosing a more expensive house solely to obtain the subsidy without comparing the net cost."
+      ],
+      "decision_rules": [
+        {
+          "if": "Your builder confirms the full grant application has already been submitted",
+          "then": "No additional filing action is needed from you; keep the submission confirmation and monitor the result."
+        },
+        {
+          "if": "The builder says only a reservation exists",
+          "then": "Ask what remains before conversion to the actual grant application and whether the reservation’s own validity expires earlier than September 30."
+        },
+        {
+          "if": "Your project is not a custom ZEH-standard home",
+          "then": "Ignore this specific deadline and check the official schedule for your actual housing category."
+        }
+      ],
+      "follow_up": "Re-check the official program site if your application remains incomplete, because the program can stop accepting applications earlier if the budget reaches 100%."
+    }
+  }
+}
