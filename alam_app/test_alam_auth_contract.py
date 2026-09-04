@@ -130,6 +130,33 @@ def _assert_sign_out_queues_browser_clear():
         alam_auth.st = original_st
 
 
+def _assert_auth_storage_readiness_is_normalized():
+    original_st = alam_auth.st
+    original_eval = alam_auth.streamlit_js_eval
+    fake_state = {"alam_clear_auth_storage": True}
+    alam_auth.st = SimpleNamespace(session_state=fake_state)
+    try:
+        # Legacy/component string booleans must not acknowledge a sign-out clear early.
+        alam_auth.streamlit_js_eval = lambda **_kwargs: '{"ready":"false","value":null,"error":null}'
+        ready, stored, error = alam_auth._auth_storage_bridge()
+        assert ready is False and stored is None and error is None
+        assert fake_state["alam_clear_auth_storage"] is True
+
+        alam_auth.streamlit_js_eval = lambda **_kwargs: '{"ready":"true","value":null,"error":null}'
+        ready, stored, error = alam_auth._auth_storage_bridge()
+        assert ready is True and stored is None and error is None
+        assert "alam_clear_auth_storage" not in fake_state
+
+        for encoded, expected in (("0", False), ("1", True)):
+            alam_auth.streamlit_js_eval = (
+                lambda value=encoded, **_kwargs: f'{{"ready":"{value}","value":null,"error":null}}'
+            )
+            assert alam_auth._auth_storage_bridge()[0] is expected
+    finally:
+        alam_auth.st = original_st
+        alam_auth.streamlit_js_eval = original_eval
+
+
 def _assert_saved_normalization_is_bounded_and_stable():
     values = ["story-a", "", "story-b", "story-a", None, " story-c "]
     assert alam_auth._normalized_saved_ids(values) == ["story-a", "story-b", "story-c"]
@@ -252,6 +279,7 @@ def main():
     _assert_restore_rotates_persisted_pair()
     _assert_auth_project_guard_rejects_wrong_project()
     _assert_sign_out_queues_browser_clear()
+    _assert_auth_storage_readiness_is_normalized()
     _assert_saved_normalization_is_bounded_and_stable()
     _assert_cloud_preferences_do_not_delete_local_history()
     _assert_cloud_preferences_normalize_legacy_or_malformed_scalars()
