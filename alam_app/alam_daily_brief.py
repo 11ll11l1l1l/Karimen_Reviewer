@@ -56,6 +56,23 @@ def _deadline_note(record):
     return text[:96]
 
 
+def _affected_note(record):
+    """Expose only the article's explicit affected-audience statement.
+
+    Practical stories are required to answer who is affected, but Today must never
+    infer eligibility from a reader profile or from article prose. Structured or
+    placeholder values therefore fail closed and the published text is display-capped.
+    """
+    content = record.get("content") or {}
+    value = content.get("who_is_affected")
+    if not isinstance(value, str):
+        return ""
+    text = " ".join(value.split()).strip()
+    if not text or text.lower() in {"none", "n/a", "na", "not applicable", "unknown", "tbd"}:
+        return ""
+    return text[:150]
+
+
 def _importance_score(record):
     """Normalize loose importance values so Today never crashes on valid v5 labels."""
     value = record.get("importance")
@@ -247,7 +264,9 @@ def _render_deadline_queue(records, brief_rows, limit=2):
     st.caption("Other validated actions with an explicit published deadline. ALAM is not inferring urgency or reordering dates from prose.")
     for record in items:
         deadline = _deadline_note(record)
-        st.markdown("<div class='intel-brief-card'>" f"<div class='intel-kicker'>{escape(_action_label(record))}</div>" f"<div class='intel-brief-head'>{escape(str(record.get('title') or ''))}</div>" f"<div class='intel-mini'><strong>Deadline · {escape(deadline)}</strong></div></div>", unsafe_allow_html=True)
+        affected = _affected_note(record)
+        affected_html = f"<div class='intel-mini'>Affected · {escape(affected)}</div>" if affected else ""
+        st.markdown("<div class='intel-brief-card'>" f"<div class='intel-kicker'>{escape(_action_label(record))}</div>" f"<div class='intel-brief-head'>{escape(str(record.get('title') or ''))}</div>" f"<div class='intel-mini'><strong>Deadline · {escape(deadline)}</strong></div>{affected_html}</div>", unsafe_allow_html=True)
         title = str(record.get("title") or "Action").strip(); button_title = title if len(title) <= 58 else title[:57].rstrip() + "…"
         if st.button(f"{_brief_open_label('DO', record)} · {button_title} →", key=f"today_deadline_{_story_id(record)}", use_container_width=True):
             _open_story(record)
@@ -262,9 +281,10 @@ def render_daily_brief(records, all_records):
     for label, record in rows:
         copy = str(_brief_copy(label, record, all_records) or "")[:190]
         reason = _why_selected(label, record); lifecycle = intelligence.story_lifecycle(record, all_records); relevance = intelligence.personal_relevance(record)
-        display_label = _display_label(label, record); deadline = _deadline_note(record) if label == "DO" else ""
+        display_label = _display_label(label, record); deadline = _deadline_note(record) if label == "DO" else ""; affected = _affected_note(record) if label == "DO" else ""
         deadline_html = f"<div class='intel-mini'><strong>Deadline · {escape(deadline)}</strong></div>" if deadline else ""
-        html.append("<div class='intel-brief-card'>" f"<div class='intel-kicker'>{escape(display_label)}</div>" f"<div class='intel-brief-head'>{escape(str(record.get('title') or ''))}</div>" f"<div class='intel-brief-copy'>{escape(copy)}</div>{deadline_html}" f"<div class='intel-mini'>{escape(reason)} · Relevance {relevance}/100 · {escape(lifecycle)}</div></div>")
+        affected_html = f"<div class='intel-mini'>Affected · {escape(affected)}</div>" if affected else ""
+        html.append("<div class='intel-brief-card'>" f"<div class='intel-kicker'>{escape(display_label)}</div>" f"<div class='intel-brief-head'>{escape(str(record.get('title') or ''))}</div>" f"<div class='intel-brief-copy'>{escape(copy)}</div>{deadline_html}{affected_html}" f"<div class='intel-mini'>{escape(reason)} · Relevance {relevance}/100 · {escape(lifecycle)}</div></div>")
     html.append("</div>"); st.markdown("".join(html), unsafe_allow_html=True)
     for label, record in rows:
         title = str(record.get("title") or "Story").strip(); button_title = title if len(title) <= 52 else title[:51].rstrip() + "…"
