@@ -1,4 +1,4 @@
-from alam_related_views import related_story_action_cues, related_story_candidates, related_story_decision_preview, related_story_selection
+from alam_related_views import related_story_action_cues, related_story_audience, related_story_candidates, related_story_decision_preview, related_story_selection
 
 
 def _story(story_id, tags, category="discover", importance=70):
@@ -121,3 +121,30 @@ def test_related_action_cues_fail_closed_without_valid_practical_metadata():
     assert related_story_action_cues(practical) == []
     practical["content"] = {"action": "TBD", "when": "unknown"}
     assert related_story_action_cues(practical) == []
+
+
+def test_related_practical_story_surfaces_only_explicit_affected_audience():
+    practical = _story("linked", ["family"], "practical")
+    practical["content"] = {"who_is_affected": " Families with children enrolled in eligible schools "}
+    assert related_story_audience(practical) == "Families with children enrolled in eligible schools"
+
+    discover = _story("discover", ["family"], "discover")
+    discover["content"] = {"who_is_affected": "Everyone"}
+    assert related_story_audience(discover) == ""
+
+
+def test_related_audience_fails_closed_for_missing_placeholder_and_structured_values():
+    practical = _story("linked", ["family"], "practical")
+    assert related_story_audience(practical) == ""
+    practical["content"] = {"who_is_affected": "TBD"}
+    assert related_story_audience(practical) == ""
+    practical["content"] = {"who_is_affected": ["families", "students"]}
+    assert related_story_audience(practical) == ""
+
+
+def test_related_audience_is_bounded_for_mobile_scanability():
+    practical = _story("linked", ["family"], "practical")
+    practical["content"] = {"who_is_affected": "A" * 180}
+    audience = related_story_audience(practical, limit=60)
+    assert len(audience) == 60
+    assert audience.endswith("…")
