@@ -1,0 +1,241 @@
+[
+  {
+    "id": "japan-battery-recalls-anker-spicerr-sep2026",
+    "agent": "practical",
+    "created_at": "2026-09-04T21:10:00+09:00",
+    "type": "consumer_safety",
+    "title": "Two recalled battery products are still causing fires in Japan",
+    "summary": "May bagong fire reports sa dalawang products na matagal nang naka-recall: Anker PowerCore 10000 (A1263) at SPICERR pocketable pressure washers. Kung meron ka nito, huwag nang gamitin habang hinihintay ang recall process.",
+    "why_it_matters": "Hindi ito bagong recall announcement lang. The Consumer Affairs Agency reported new fires while recovery is still incomplete: only 39.6% of the affected Anker PowerCore 10000 units and 70.5% of the SPICERR pressure washers had been recovered at the latest official counts.",
+    "importance": 89,
+    "confidence": 96,
+    "tags": ["Japan", "Recall", "Consumer Safety", "Fire Safety", "Anker", "Battery"],
+    "geography": ["Japan"],
+    "status": "DEVELOPING",
+    "sources": [
+      {
+        "publisher": "Consumer Affairs Agency",
+        "title": "消費生活用製品の重大製品事故:リコール製品で火災等(高圧洗浄機(充電式)、リチウム電池内蔵充電器)(9月4日)",
+        "url": "https://www.caa.go.jp/notice/entry/047427/",
+        "published_at": "2026-09-04",
+        "source_type": "official"
+      },
+      {
+        "publisher": "Consumer Affairs Agency",
+        "title": "消費生活用製品の重大製品事故に係る公表について 令和8年9月4日",
+        "url": "https://www.caa.go.jp/notice/assets/consumer_safety_cms202_260904_01.pdf",
+        "published_at": "2026-09-04",
+        "source_type": "official"
+      },
+      {
+        "publisher": "Anker Japan",
+        "title": "Ankerグループ4製品に関するお詫びと自主回収のお知らせ",
+        "url": "https://corp.ankerjapan.com/posts/579",
+        "published_at": "2025-10-21",
+        "source_type": "primary"
+      },
+      {
+        "publisher": "Anker Japan",
+        "title": "モバイルバッテリー / スピーカー回収受付フォーム",
+        "url": "https://www.ankerjapan.com/pages/202510-support",
+        "published_at": "2025-10-21",
+        "source_type": "primary"
+      },
+      {
+        "publisher": "SYGNHOUSE",
+        "title": "お詫びと自主回収・交換のご案内 - ポケッタブル高圧洗浄機 SWU-1・PHP-1",
+        "url": "https://sygnhouse.jp/support/2025re/swu-1/",
+        "published_at": "2025-08-04",
+        "source_type": "primary"
+      }
+    ],
+    "claims": [
+      {
+        "kind": "FACT",
+        "text": "On September 4, 2026, the Consumer Affairs Agency reported a fire involving a recalled Anker PowerCore 10000 while it was charging at a lodging facility; the cause remained under investigation and the agency had not yet established that the recall defect caused this particular fire.",
+        "source_refs": [1, 2],
+        "basis": "Official CAA accident release"
+      },
+      {
+        "kind": "FACT",
+        "text": "The affected Anker PowerCore 10000 recall covers model A1263 units sold in Japan from December 25, 2022 through October 21, 2025, subject to serial-number verification; the CAA reported a recovery rate of 39.6% as of September 3, 2026.",
+        "source_refs": [2, 3, 4],
+        "basis": "CAA recall table and Anker recall guidance"
+      },
+      {
+        "kind": "FACT",
+        "text": "The CAA reported five recall-related fire accidents for the Anker PowerCore 10000 in FY2026 and five in FY2025, excluding the newly reported September 4 case from that count.",
+        "source_refs": [2],
+        "basis": "Official CAA accident-count table"
+      },
+      {
+        "kind": "FACT",
+        "text": "The SPICERR pocketable pressure washer recall covers SWU-1/PHP-1-family units because of a battery-cell manufacturing problem associated with smoke or ignition; the CAA reported a recovery rate of 70.5% as of July 31, 2026 and another fire while the product was being stored.",
+        "source_refs": [2, 5],
+        "basis": "CAA recall update and manufacturer recall page"
+      },
+      {
+        "kind": "INFERENCE",
+        "text": "Because a large share of the recalled population remains unrecovered and new fire reports continue to appear, households that own these exact products gain meaningful safety value from checking the model and serial number now rather than assuming an old recall is no longer relevant.",
+        "source_refs": [2, 3, 5],
+        "basis": "Recovery rates plus continuing official fire reports"
+      }
+    ],
+    "content": {
+      "key_message": "Old recall does not mean old risk: check these exact battery products now and complete the official recovery process if yours is affected.",
+      "what_changed": [
+        "CAA published new September 4 fire reports involving one recalled Anker PowerCore 10000 and one recalled SPICERR pressure washer.",
+        "The Anker recall was only 39.6% recovered as of September 3; the SPICERR recall was 70.5% recovered as of July 31.",
+        "The CAA says the newly reported Anker fire is still under investigation, so ALAM is not claiming the known recall defect caused that specific incident."
+      ],
+      "who_is_affected": "People in Japan who own an Anker PowerCore 10000 model A1263 bought during the affected period, or a SPICERR pocketable pressure washer in the recalled SWU-1/PHP-1 family. Similar-looking Anker or SPICERR products are not automatically included; verify the exact model/serial using the official pages.",
+      "when": "Act now if you still possess an affected unit. These recalls are already active and there is no benefit to waiting for another accident report.",
+      "financial_impact": "Recall replacement/return is handled by the manufacturers. The main value is avoiding fire/property loss, not chasing a subsidy or discount.",
+      "risk_if_ignored": "Fire or heat damage from a recalled lithium-battery product; for the Anker case, the CAA has not yet confirmed that the recall defect caused the newest fire, but the product is already under an official recall for internal-short/fire risk.",
+      "action": "DO NOW",
+      "deadline": "No fixed consumer filing deadline was stated in the cited recall notices; act as soon as you identify an affected product.",
+      "effort": "LOW",
+      "potential_benefit": "Remove an already recalled battery product from active use and complete the manufacturer recovery/replacement process.",
+      "downside": "You may temporarily lose use of the product while completing the recall process.",
+      "skeptical_view": "The newest Anker incident alone does not prove the known recall defect caused that fire; CAA explicitly says the cause is still being investigated. The case is still actionable because the exact model was already under recall before this incident, and recovery remains incomplete.",
+      "what_to_watch": "Watch the CAA/manufacturer pages for updated accident causation, recovery rates, expanded serial ranges, or changed handling instructions.",
+      "what_would_change_mind": "Risk would be materially lower if the manufacturer or regulator formally narrowed the affected population, established that specific serials are not at risk, or reported near-complete recovery with no continuing recall-related incidents.",
+      "bottom_line": "Check the model and serial number tonight; if affected, stop normal use and follow the official recall instructions rather than continuing to charge or store it as usual.",
+      "impact": {
+        "money": "MED",
+        "family": "HIGH",
+        "career": "LOW",
+        "japan": "MED",
+        "urgency": "HIGH"
+      },
+      "connection_tags": ["battery-recall", "consumer-safety", "fire-safety", "lithium-ion"],
+      "reading_levels": {
+        "30 sec": [
+          "What happened: CAA reported new fires involving recalled Anker PowerCore 10000 and SPICERR battery products.",
+          "Why it matters: recovery is incomplete—39.6% for the affected Anker units and 70.5% for the SPICERR units at the latest official counts.",
+          "What to do: verify exact model/serial, stop normal use if affected, then complete the official recall process.",
+          "Bottom line: an old recall can remain a current household fire risk."
+        ],
+        "2_min": "The newest CAA release is important because it shows why old recall notices should not be ignored. Anker PowerCore 10000 model A1263 is already under recall because a supplier manufacturing issue may allow internal battery-cell shorts and fire. CAA says only 39.6% had been recovered as of September 3, 2026. A newly reported fire occurred while one was charging at a lodging facility, although CAA has not yet confirmed the recall defect caused that specific fire. Separately, SPICERR SWU-1/PHP-1-family pressure washers are under recall for a battery-cell manufacturing problem associated with smoke/ignition; their recovery rate was 70.5% as of July 31, and another storage fire was reported. The right response is model/serial verification and manufacturer recall completion—not panic about every Anker or battery product."
+      },
+      "learning": {
+        "outcomes": [
+          "Distinguish an active recall from a new accident report.",
+          "Know why model and serial-number verification matters before assuming a similar product is affected.",
+          "Understand that an unconfirmed accident cause can still justify action when the product is already under an independent recall."
+        ],
+        "background": "A product recall can remain active for months or years because not every unit is returned immediately. Lithium-battery recalls are especially important because the hazardous failure mode can involve internal short circuit, overheating, smoke or fire. A new accident report does not automatically prove the known recall defect caused that accident; regulators often publish early reports while causation is still being investigated.",
+        "terms": [
+          {
+            "term": "Recovery rate",
+            "meaning": "The share of recalled units that the recall program has already collected or otherwise recovered.",
+            "why_it_matters": "A low recovery rate means many potentially affected units may still be in homes, cars, offices or luggage."
+          },
+          {
+            "term": "Internal short circuit",
+            "meaning": "An unintended electrical path forming inside a battery cell.",
+            "why_it_matters": "It can create rapid heating and is one known route to battery fire."
+          }
+        ],
+        "how_it_works": [
+          {
+            "title": "Why exact identification matters",
+            "explanation": "Manufacturers may sell many products with similar names. Recall scope is normally tied to a model, production/sales period and sometimes an individual serial number, so visual similarity is not enough."
+          },
+          {
+            "title": "Why this remains actionable before causation is final",
+            "explanation": "The newest Anker fire is still under investigation, but the model was independently recalled earlier for a known potential battery defect. You do not need to wait for the newest accident investigation to finish before following an already-valid recall instruction."
+          }
+        ],
+        "example": "If your power bank says PowerCore 10000 but the model is not A1263, do not assume it is covered by this specific recall. If it is A1263, use Anker's official serial-number checker because the manufacturer defines the final affected population by serial verification.",
+        "takeaways": [
+          "Check model first, then serial number when the manufacturer requires it.",
+          "Do not treat a year-old recall as expired unless the manufacturer/regulator says it ended.",
+          "A new accident can still be under investigation while the underlying recall remains valid.",
+          "Use the manufacturer's official recall channel, not marketplace messages or unofficial resellers."
+        ]
+      },
+      "action_plan": {
+        "goal": "Identify whether you own an affected unit and complete the official recall/replacement process without continuing normal use.",
+        "who_should_act": "Owners of Anker PowerCore 10000 model A1263 or recalled SPICERR pocketable pressure washers. People with different models can ignore this specific alert after confirming the model/serial is outside the recall.",
+        "deadline": "No fixed consumer deadline is stated in the cited notices; act promptly because the recalls remain active.",
+        "prepare": [
+          "The product itself",
+          "Model number from the product label",
+          "For Anker: the serial number marked after 'SN:'; Anker's checker handles the final recall determination",
+          "For SPICERR: the model marking on the rear of the unit",
+          "Purchase-period information if the serial/model label is unreadable"
+        ],
+        "steps": [
+          {
+            "step": "Identify the product",
+            "action": "Read the model number from the device label before charging or using it again.",
+            "how": "For Anker, check whether it is PowerCore 10000 model A1263. For SPICERR, compare the rear model marking with the recalled SWU-1/PHP-1-family guidance.",
+            "needed": ["Product label"],
+            "time_minutes": 3,
+            "cost_yen": 0,
+            "done_when": "You have written down the exact model number."
+          },
+          {
+            "step": "Verify recall eligibility",
+            "action": "Use the manufacturer's official recall page rather than a marketplace listing or social-media post.",
+            "how": "For Anker, enter the serial number in the official 202510-support checker. For SPICERR, compare the model with the official SYGNHOUSE recall page and use its online recall form if affected.",
+            "needed": ["Model number", "Serial number for Anker"],
+            "time_minutes": 5,
+            "cost_yen": 0,
+            "done_when": "The official manufacturer page confirms either affected or not affected."
+          },
+          {
+            "step": "Stop normal use if affected",
+            "action": "Do not continue normal charging or use while waiting for the recall process.",
+            "how": "Follow the product-specific handling instructions on the recall page. For SPICERR, the manufacturer specifically instructs owners to discharge it using water operation, avoid dry-running, then stop using/charging it and store it away from heat, humidity and water until return.",
+            "needed": ["Official manufacturer instructions"],
+            "time_minutes": 15,
+            "cost_yen": 0,
+            "done_when": "The affected product is no longer in normal use and is being handled according to the manufacturer recall instructions."
+          },
+          {
+            "step": "Submit the recall request",
+            "action": "Complete the official online form or contact the manufacturer's recall desk.",
+            "how": "Use Anker Japan's recall form for A1263 or SYGNHOUSE's recall form for the pressure washer. Follow the return/replacement instructions they provide.",
+            "needed": ["Confirmed affected product", "Contact information"],
+            "time_minutes": 10,
+            "cost_yen": 0,
+            "done_when": "You have a submitted recall request or direct manufacturer case/return instruction."
+          }
+        ],
+        "mistakes_to_avoid": [
+          "Assuming every Anker 10000mAh power bank is included; verify model and serial.",
+          "Assuming the recall is no longer relevant because it began in 2025.",
+          "For SPICERR, running the pressure washer dry to discharge it; the manufacturer specifically warns against dry-running.",
+          "Continuing to charge an affected unit while waiting to arrange the return.",
+          "Using an unofficial seller or social-media link instead of the manufacturer recall page."
+        ],
+        "decision_rules": [
+          {
+            "if": "The official serial/model checker says your product is affected",
+            "then": "Stop normal use and complete the recall process promptly."
+          },
+          {
+            "if": "The exact model or serial is outside the official affected population",
+            "then": "This specific recall does not require action; do not discard a different product solely because it looks similar."
+          },
+          {
+            "if": "The label is unreadable or you cannot verify the serial",
+            "then": "Contact the manufacturer's recall desk and have purchase-period information available rather than guessing."
+          }
+        ],
+        "follow_up": "Keep the manufacturer confirmation/return information until the replacement or recovery process is completed, and re-check the official recall page if the scope or instructions are updated."
+      },
+      "editorial_visual": {
+        "style": "editorial",
+        "motif": "shield",
+        "secondary_motif": "battery",
+        "scene": "a restrained household safety illustration showing two generic recalled battery-powered devices separated from a home by a protective shield, with subtle heat-warning symbolism and no flames touching people",
+        "caption": "Old recall, current risk",
+        "silliness": 0,
+        "exaggeration": 28
+      }
+    }
+  }
+]
