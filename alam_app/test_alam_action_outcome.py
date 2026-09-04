@@ -90,7 +90,8 @@ def test_grounded_recovery_searches_all_lenses_but_excludes_tried_story(monkeypa
     assert fake_st.session_state["more_nav"] == "Ask ALAM"
     assert fake_st.session_state["alam_ask_query"] == "Residence renewal checklist"
     assert fake_st.session_state["alam_ask_recovery_query"] == "Residence renewal checklist"
-    assert fake_st.session_state["alam_ask_lenses"] == []
+    assert fake_st.session_state["alam_ask_lenses"] == ["Discover", "Market", "Trends"]
+    assert "Action" not in fake_st.session_state["alam_ask_lenses"]
     assert fake_st.session_state["alam_ask_excluded_story_ids"] == ["story-outcome"]
 
 
