@@ -17,6 +17,7 @@ MAX_READ = 48
 MAX_FEEDBACK = 30
 MAX_MUTED = 24
 MAX_SAVED_SNAPSHOTS = 48
+MAX_PROFILE_JSON_BYTES = 16 * 1024
 
 VOTE_WEIGHT = {
     "MORE": 6,
@@ -48,7 +49,16 @@ def _decode(code):
     if not value:
         return _default_profile()
     padded = value + "=" * (-len(value) % 4)
-    raw = zlib.decompress(base64.urlsafe_b64decode(padded.encode("ascii")))
+    packed = base64.urlsafe_b64decode(padded.encode("ascii"))
+    inflater = zlib.decompressobj()
+    raw = inflater.decompress(packed, MAX_PROFILE_JSON_BYTES + 1)
+    if len(raw) > MAX_PROFILE_JSON_BYTES or inflater.unconsumed_tail:
+        raise ValueError("Profile payload is too large")
+    raw += inflater.flush(MAX_PROFILE_JSON_BYTES + 1 - len(raw))
+    if len(raw) > MAX_PROFILE_JSON_BYTES:
+        raise ValueError("Profile payload is too large")
+    if not inflater.eof or inflater.unused_data:
+        raise ValueError("Profile payload is not one complete zlib stream")
     decoded = json.loads(raw.decode("utf-8"))
     if not isinstance(decoded, dict):
         raise ValueError("Profile must be an object")
