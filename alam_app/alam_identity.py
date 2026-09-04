@@ -183,6 +183,23 @@ def _browser_storage_bridge() -> tuple[bool, str | None, str | None]:
     return ready, stored, error
 
 
+def _queue_storage_repair(state, device_id: str | None, storage_device_id: str | None) -> bool:
+    """Queue one repair rerun when cookie/session identity disagrees with localStorage.
+
+    A recognized reader can recover through the compatibility cookie while localStorage is
+    stale or missing. Merely setting the pending write is not enough because Streamlit will
+    not run the component again until another rerun. Return True only when a new repair is
+    queued; an already-pending failed write must not create a rerun loop.
+    """
+    canonical = _valid_device_id(device_id)
+    if not canonical or _valid_device_id(storage_device_id) == canonical:
+        return False
+    if _valid_device_id(state.get("alam_pending_device_storage")) == canonical:
+        return False
+    state["alam_pending_device_storage"] = canonical
+    return True
+
+
 def _lookup(device_id: str):
     try:
         response = get_supabase_public().rpc(
@@ -311,10 +328,11 @@ def render_onboarding(manager=None) -> bool:
     init_identity(manager, storage_device_id=storage_device_id)
     if is_recognized():
         # If an older browser was recognized only from the cookie, backfill the more
-        # reliable localStorage copy once without rewriting it every render.
+        # reliable localStorage copy immediately. The bridge already rendered this pass,
+        # so a single controlled rerun is required to execute the queued browser write.
         device_id = _valid_device_id(st.session_state.get("alam_device_id"))
-        if device_id and storage_ready and storage_device_id != device_id:
-            st.session_state["alam_pending_device_storage"] = device_id
+        if storage_ready and _queue_storage_repair(st.session_state, device_id, storage_device_id):
+            st.rerun()
         return True
 
     if WELCOME_ART.exists():
