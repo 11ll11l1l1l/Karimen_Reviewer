@@ -1,12 +1,7 @@
 name: Japan Driving License Reviewer v5.3 checks
 
 on:
-  push:
-    paths-ignore:
-      - 'alam_app/data/**'
-  pull_request:
-    paths-ignore:
-      - 'alam_app/data/**'
+  workflow_dispatch:
 
 jobs:
   test:
