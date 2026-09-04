@@ -1,5 +1,5 @@
 """Regression tests for deterministic, evidence-only Ask ALAM retrieval."""
-from alam_ask import _display_score, filter_excluded_records, grounded_answer, grounded_perspectives, grounded_sources, rank_records, recovery_exclusions, relevance_score
+from alam_ask import _display_score, filter_excluded_records, grounded_answer, grounded_perspectives, grounded_sources, rank_records, recovery_context, recovery_exclusions, relevance_score
 
 VISA={"id":"visa-fee","_category":"practical","title":"Japan visa renewal fees change in October","summary":"Residence renewal costs rise from October.","why_it_matters":"Foreign residents may pay more.","tags":["Japan","Visa Renewal","Immigration"],"importance":98,"confidence":99,"content":{"key_message":"File only when your residence application is genuinely ready.","reading_levels":{"30 sec":{"bottom_line":"Check the official filing window."}}},"sources":[{"publisher":"Immigration Services Agency of Japan","title":"Official fee notice","url":"https://www.moj.go.jp/isa/example.html","source_type":"official"},{"publisher":"Duplicate","title":"Duplicate URL","url":"https://www.moj.go.jp/isa/example.html"},{"publisher":"Unsafe","title":"Unsafe","url":"javascript:alert(1)"}]}
 QUAKE={"id":"quake-science","_category":"discover","title":"Japan maps earthquake plate locking more clearly","summary":"Researchers combined seismic and deformation observations.","tags":["Earthquake","Science"],"importance":86,"confidence":94,"content":{"key_message":"Better plate-locking maps are not an exact earthquake countdown."}}
@@ -38,6 +38,12 @@ def test_recovery_exclusion_applies_only_to_seeded_question():
     assert recovery_exclusions("Visa renewal fee", "  visa   renewal fee ", excluded)==excluded
     assert recovery_exclusions("earthquake preparedness", "visa renewal fee", excluded)==[]
     assert recovery_exclusions("visa renewal fee", None, excluded)==[]
+def test_recovery_context_is_visible_only_for_seeded_query():
+    context=recovery_context(" Visa renewal fee ","visa  renewal fee",["visa-fee"])
+    assert context=={"active":True,"excluded_count":1}
+    assert recovery_context("earthquake preparedness","visa renewal fee",["visa-fee"])=={"active":False,"excluded_count":0}
+def test_recovery_context_deduplicates_story_ids_for_reader_copy():
+    assert recovery_context("visa renewal fee","visa renewal fee",["visa-fee","visa-fee",None])=={"active":True,"excluded_count":1}
 
 if __name__=="__main__":
     tests=[value for name,value in globals().items() if name.startswith("test_") and callable(value)]
