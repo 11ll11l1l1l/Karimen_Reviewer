@@ -1,6 +1,6 @@
 """Regression coverage for article-detail compatibility and grounded action context."""
 
-from alam_story_page import _practical_action_snapshot, _score_value
+from alam_story_page import _practical_action_snapshot, _practical_action_tradeoffs, _score_value
 
 
 def test_article_detail_accepts_v5_semantic_and_nested_scores():
@@ -45,3 +45,34 @@ def test_practical_action_snapshot_fails_closed_for_missing_or_malformed_metadat
         },
     }
     assert _practical_action_snapshot(record) == []
+
+
+def test_practical_action_tradeoffs_show_only_explicit_article_metadata():
+    record = {
+        "_category": "practical",
+        "content": {
+            "potential_benefit": "  Save up to ¥20,000  ",
+            "downside": "Requires an in-person visit.",
+            "effort": "About 30 minutes",
+            "financial_impact": "LOW",
+        },
+    }
+    assert _practical_action_tradeoffs(record) == [
+        ("Potential benefit", "Save up to ¥20,000"),
+        ("Downside", "Requires an in-person visit."),
+        ("Effort / cost", "About 30 minutes"),
+    ]
+
+
+def test_practical_action_tradeoffs_fail_closed_and_use_financial_fallback():
+    assert _practical_action_tradeoffs({"_category": "discover", "content": {"effort": "LOW"}}) == []
+    record = {
+        "_category": "practical",
+        "content": {
+            "potential_benefit": ["saving"],
+            "downside": "unknown",
+            "effort": "TBD",
+            "financial_impact": "MED",
+        },
+    }
+    assert _practical_action_tradeoffs(record) == [("Effort / cost", "MED")]
