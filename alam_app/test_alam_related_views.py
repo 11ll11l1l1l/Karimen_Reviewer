@@ -103,6 +103,15 @@ def test_related_practical_story_surfaces_explicit_action_and_timing():
     ]
 
 
+def test_related_timing_falls_back_to_when_after_placeholder_deadline():
+    record = _story("linked", ["yen"], "practical")
+    record["content"] = {"action": "WATCH", "deadline": "TBD", "when": "From October 1, 2026"}
+    assert related_story_action_cues(record) == [
+        ("Action", "WATCH"),
+        ("Timing", "From October 1, 2026"),
+    ]
+
+
 def test_related_action_cues_fail_closed_without_valid_practical_metadata():
     discover = _story("linked", ["yen"], "discover")
     discover["content"] = {"action": "APPLY", "deadline": "Tomorrow"}
