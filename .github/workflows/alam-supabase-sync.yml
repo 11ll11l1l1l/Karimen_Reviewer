@@ -50,8 +50,8 @@ jobs:
         run: |
           # Re-running an old Actions run after a newer content sync can otherwise
           # reconcile Supabase back to that old GitHub archive. Keep queued runs
-          # serialized, but fail closed before any database write when this checkout
-          # is no longer the current main head.
+          # serialized, but fail closed before expensive validation/setup when this
+          # checkout is already no longer the current main head.
           git fetch --no-tags origin main
           CURRENT_MAIN="$(git rev-parse origin/main)"
           if [[ "$GITHUB_SHA" != "$CURRENT_MAIN" ]]; then
@@ -81,6 +81,22 @@ jobs:
 
       - name: Install Supabase client
         run: pip install -r alam_app/requirements.txt
+
+      - name: Recheck main immediately before Supabase write
+        shell: bash
+        run: |
+          # Close the TOCTOU window between the early freshness check and the
+          # durable reconciliation write. A newer main commit can arrive while
+          # validation or dependency installation is running.
+          git fetch --no-tags origin main
+          CURRENT_MAIN="$(git rev-parse origin/main)"
+          if [[ "$GITHUB_SHA" != "$CURRENT_MAIN" ]]; then
+            echo "::error::Refusing superseded ALAM sync immediately before write: workflow SHA $GITHUB_SHA is not current main $CURRENT_MAIN."
+            echo "### Superseded Supabase sync rejected before write" >> "$GITHUB_STEP_SUMMARY"
+            echo "Main advanced after this run started. No durable Supabase reconciliation was attempted by this snapshot." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          echo "Pre-write sync snapshot still matches current main: $CURRENT_MAIN" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Sync verified ALAM records to Supabase
         env:
