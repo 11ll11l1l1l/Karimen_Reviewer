@@ -73,6 +73,23 @@ def _affected_note(record):
     return text[:150]
 
 
+def _risk_note(record):
+    """Expose only the Practical record's explicit consequence of inaction.
+
+    Today must not invent urgency from article prose or reader behavior. Only the
+    validated v5 ``risk_if_ignored`` string is eligible, and the preview is deliberately
+    short so action cards remain scannable on mobile. Full context remains in detail.
+    """
+    content = record.get("content") or {}
+    value = content.get("risk_if_ignored")
+    if not isinstance(value, str):
+        return ""
+    text = " ".join(value.split()).strip()
+    if not text or text.lower() in {"none", "n/a", "na", "not applicable", "unknown", "tbd"}:
+        return ""
+    return text[:140]
+
+
 def _importance_score(record):
     """Normalize loose importance values so Today never crashes on valid v5 labels."""
     value = record.get("importance")
@@ -265,8 +282,10 @@ def _render_deadline_queue(records, brief_rows, limit=2):
     for record in items:
         deadline = _deadline_note(record)
         affected = _affected_note(record)
+        risk = _risk_note(record)
         affected_html = f"<div class='intel-mini'>Affected · {escape(affected)}</div>" if affected else ""
-        st.markdown("<div class='intel-brief-card'>" f"<div class='intel-kicker'>{escape(_action_label(record))}</div>" f"<div class='intel-brief-head'>{escape(str(record.get('title') or ''))}</div>" f"<div class='intel-mini'><strong>Deadline · {escape(deadline)}</strong></div>{affected_html}</div>", unsafe_allow_html=True)
+        risk_html = f"<div class='intel-mini'><strong>If ignored · {escape(risk)}</strong></div>" if risk else ""
+        st.markdown("<div class='intel-brief-card'>" f"<div class='intel-kicker'>{escape(_action_label(record))}</div>" f"<div class='intel-brief-head'>{escape(str(record.get('title') or ''))}</div>" f"<div class='intel-mini'><strong>Deadline · {escape(deadline)}</strong></div>{affected_html}{risk_html}</div>", unsafe_allow_html=True)
         title = str(record.get("title") or "Action").strip(); button_title = title if len(title) <= 58 else title[:57].rstrip() + "…"
         if st.button(f"{_brief_open_label('DO', record)} · {button_title} →", key=f"today_deadline_{_story_id(record)}", use_container_width=True):
             _open_story(record)
@@ -281,10 +300,11 @@ def render_daily_brief(records, all_records):
     for label, record in rows:
         copy = str(_brief_copy(label, record, all_records) or "")[:190]
         reason = _why_selected(label, record); lifecycle = intelligence.story_lifecycle(record, all_records); relevance = intelligence.personal_relevance(record)
-        display_label = _display_label(label, record); deadline = _deadline_note(record) if label == "DO" else ""; affected = _affected_note(record) if label == "DO" else ""
+        display_label = _display_label(label, record); deadline = _deadline_note(record) if label == "DO" else ""; affected = _affected_note(record) if label == "DO" else ""; risk = _risk_note(record) if label == "DO" else ""
         deadline_html = f"<div class='intel-mini'><strong>Deadline · {escape(deadline)}</strong></div>" if deadline else ""
         affected_html = f"<div class='intel-mini'>Affected · {escape(affected)}</div>" if affected else ""
-        html.append("<div class='intel-brief-card'>" f"<div class='intel-kicker'>{escape(display_label)}</div>" f"<div class='intel-brief-head'>{escape(str(record.get('title') or ''))}</div>" f"<div class='intel-brief-copy'>{escape(copy)}</div>{deadline_html}{affected_html}" f"<div class='intel-mini'>{escape(reason)} · Relevance {relevance}/100 · {escape(lifecycle)}</div></div>")
+        risk_html = f"<div class='intel-mini'><strong>If ignored · {escape(risk)}</strong></div>" if risk else ""
+        html.append("<div class='intel-brief-card'>" f"<div class='intel-kicker'>{escape(display_label)}</div>" f"<div class='intel-brief-head'>{escape(str(record.get('title') or ''))}</div>" f"<div class='intel-brief-copy'>{escape(copy)}</div>{deadline_html}{affected_html}{risk_html}" f"<div class='intel-mini'>{escape(reason)} · Relevance {relevance}/100 · {escape(lifecycle)}</div></div>")
     html.append("</div>"); st.markdown("".join(html), unsafe_allow_html=True)
     for label, record in rows:
         title = str(record.get("title") or "Story").strip(); button_title = title if len(title) <= 52 else title[:51].rstrip() + "…"
