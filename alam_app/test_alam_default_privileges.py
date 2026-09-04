@@ -5,15 +5,17 @@ ROOT = Path(__file__).resolve().parent
 MIGRATION = ROOT.parent / "supabase" / "migrations" / "030_harden_public_default_privileges.sql"
 
 
-def test_future_public_objects_fail_closed_for_browser_roles():
+def test_future_application_owned_public_objects_fail_closed_for_browser_roles():
     sql = MIGRATION.read_text(encoding="utf-8").lower()
 
-    for owner in ("postgres", "supabase_admin"):
-        assert f"alter default privileges for role {owner} in schema public" in sql
-
+    assert "alter default privileges for role postgres in schema public" in sql
     assert "revoke all on tables from anon, authenticated" in sql
     assert "revoke all on sequences from anon, authenticated" in sql
     assert "revoke execute on functions from public, anon, authenticated" in sql
+
+    # Provider-owned supabase_admin defaults are not mutable from project migrations.
+    # Keep the migration scoped to the owner that creates ALAM application objects.
+    assert "alter default privileges for role supabase_admin" not in sql
 
     # Browser access to future durable state/RPCs must be an explicit opt-in in the
     # migration that creates the object, never an ambient default privilege.
