@@ -64,15 +64,12 @@ def test_practical_action_tradeoffs_show_only_explicit_article_metadata():
     ]
 
 
-def test_practical_action_tradeoffs_fail_closed_and_use_financial_fallback():
+def test_practical_action_tradeoffs_fail_closed_and_use_financial_fallback_when_effort_missing():
     assert _practical_action_tradeoffs({"_category": "discover", "content": {"effort": "LOW"}}) == []
-    record = {
+    malformed = {
         "_category": "practical",
-        "content": {
-            "potential_benefit": ["saving"],
-            "downside": "unknown",
-            "effort": "TBD",
-            "financial_impact": "MED",
-        },
+        "content": {"potential_benefit": ["saving"], "downside": "unknown", "effort": "TBD"},
     }
-    assert _practical_action_tradeoffs(record) == [("Effort / cost", "MED")]
+    assert _practical_action_tradeoffs(malformed) == []
+    fallback = {"_category": "practical", "content": {"financial_impact": "MED"}}
+    assert _practical_action_tradeoffs(fallback) == [("Effort / cost", "MED")]
