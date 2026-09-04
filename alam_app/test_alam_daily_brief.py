@@ -105,6 +105,18 @@ def main():
         relevance_fn=relevance,
     )] == ["saved"]
 
+    # Today may surface a deadline only when the validated Practical record explicitly
+    # publishes one. Do not infer dates from prose and do not stringify malformed
+    # structured values into user-facing instructions.
+    deadline_story = record("deadline", "practical", 90, "APPLY")
+    deadline_story["content"]["deadline"] = "2026-09-30"
+    assert brief._deadline_note(deadline_story) == "2026-09-30"
+    deadline_story["content"]["deadline"] = "  Apply by   September 30, 2026  "
+    assert brief._deadline_note(deadline_story) == "Apply by September 30, 2026"
+    for invalid in (None, "", "TBD", "unknown", {"date": "2026-09-30"}, ["2026-09-30"], True):
+        deadline_story["content"]["deadline"] = invalid
+        assert brief._deadline_note(deadline_story) == ""
+
     # v5 records can legitimately use semantic/nested score forms. Runtime safety
     # already hardens the main feed score, but the briefing's own fallback and
     # explanation paths must not reintroduce direct float() crashes.
