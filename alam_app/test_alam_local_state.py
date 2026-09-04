@@ -1,6 +1,7 @@
 import base64
 import json
 import zlib
+from types import SimpleNamespace
 
 import alam_local_state as local_state
 
@@ -73,3 +74,33 @@ def test_profile_alert_threshold_normalizes_corrupt_and_out_of_range_values():
     assert local_state._profile_alert_min({"bad": "shape"}) == 85
     assert local_state._profile_alert_min(999) == 100
     assert local_state._profile_alert_min(-4) == 0
+
+
+def test_restored_profile_booleans_do_not_use_python_string_truthiness(monkeypatch):
+    fake_streamlit = SimpleNamespace(session_state={})
+    monkeypatch.setattr(local_state, "st", fake_streamlit)
+    profile = local_state._default_profile()
+    profile["s"] = {
+        "interests": {"Japan": "false", "Family": "1", "AI": 0},
+        "alert_action": "false",
+        "alert_change": "0",
+        "dark": "true",
+    }
+
+    local_state._apply_settings(profile)
+
+    assert fake_streamlit.session_state["alam_interest_preferences"] == {
+        "Japan": False,
+        "Family": True,
+        "AI": False,
+    }
+    assert fake_streamlit.session_state["alam_alert_only_actionable"] is False
+    assert fake_streamlit.session_state["alam_alert_material_change"] is False
+    assert fake_streamlit.session_state["alam_dark_mode"] is True
+
+
+def test_profile_boolean_normalizer_falls_back_for_invalid_shapes():
+    assert local_state._profile_bool(True, False) is True
+    assert local_state._profile_bool(False, True) is False
+    assert local_state._profile_bool({"bad": "shape"}, False) is False
+    assert local_state._profile_bool([1], True) is True
