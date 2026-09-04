@@ -83,6 +83,21 @@ def _profile_minute(value):
         return None
 
 
+def _profile_alert_min(value, default=85):
+    """Normalize the browser-restored importance threshold to the UI's 0-100 domain.
+
+    Portable profile codes and cookies are untrusted persistence boundaries. A malformed
+    ``alert_min`` used to survive restore and later crash ``persist_settings`` when it
+    called ``int(...)`` on a dict/list. Numeric strings remain backward-compatible;
+    invalid values fall back to the existing default instead of breaking the session.
+    """
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError, OverflowError):
+        parsed = int(default)
+    return max(0, min(100, parsed))
+
+
 def _trim(profile):
     out = _default_profile()
     out["s"] = dict(profile.get("s") or {})
@@ -120,13 +135,14 @@ def _apply_settings(profile):
     if isinstance(interests, dict):
         st.session_state["alam_interest_preferences"] = {str(k): bool(v) for k, v in interests.items()}
     for key, target in (
-        ("alert_min", "alam_alert_min_importance"),
         ("alert_action", "alam_alert_only_actionable"),
         ("alert_change", "alam_alert_material_change"),
         ("dark", "alam_dark_mode"),
     ):
         if key in settings:
             st.session_state[target] = settings[key]
+    if "alert_min" in settings:
+        st.session_state["alam_alert_min_importance"] = _profile_alert_min(settings.get("alert_min"))
 
 
 def _native_profile_cookie():
@@ -177,7 +193,7 @@ def persist_settings(manager=None):
     profile = _profile()
     profile["s"] = {
         "interests": dict(st.session_state.get("alam_interest_preferences") or {}),
-        "alert_min": int(st.session_state.get("alam_alert_min_importance", 85)),
+        "alert_min": _profile_alert_min(st.session_state.get("alam_alert_min_importance", 85)),
         "alert_action": bool(st.session_state.get("alam_alert_only_actionable", False)),
         "alert_change": bool(st.session_state.get("alam_alert_material_change", True)),
         "dark": bool(st.session_state.get("alam_dark_mode", False)),
