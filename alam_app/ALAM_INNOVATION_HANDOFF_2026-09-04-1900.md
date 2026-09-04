@@ -1,0 +1,13 @@
+# ALAM Innovation handoff — 2026-09-04 19:00 JST
+
+- **Lane:** Innovation Agent
+- **User problem:** Practical article detail already answers who is affected, timing, and risk of ignoring an action, but readers still have to hunt through the article to judge whether the action is worth the effort or downside.
+- **Root cause:** The v5 Practical contract already carries `potential_benefit`, `downside`, `effort`, and `financial_impact`, but article detail did not surface those decision inputs near the action checklist.
+- **Decision:** Extend the existing evidence-preserving `Before you act` snapshot with a bounded `Tradeoffs before committing` row. Show only explicit validated scalar metadata; do not calculate ROI, urgency, eligibility, or a recommendation.
+- **Implementation:** `alam_story_page.py` adds `_practical_action_tradeoffs()` and responsive tradeoff presentation. It prefers explicit `effort` and uses `financial_impact` only when effort is absent. Placeholder, malformed, structured, and non-Practical values fail closed. Mobile collapses the tradeoff row to one column.
+- **Tests:** `test_alam_story_page.py` covers valid benefit/downside/effort, category isolation, malformed/placeholder suppression, and financial-impact fallback.
+- **Schema/security:** No schema, RLS, Auth, telemetry, service-role, publication, or article-content changes.
+- **Supabase:** Live project `zecztyabmmoqzjumhxxf` remains the only target inspected. Auth user count is still 0; no evidence of the external Auth blocker changing, so it was not revisited. The article-count query was not repeated after the connector safety layer blocked the second read; no database write was attempted.
+- **Validation status:** Repository target files were re-fetched from current `main` immediately before writes. GitHub Actions status for the pre-change head was not exposed through the available commit workflow/status endpoints. Post-change CI should be treated as pending until the normal ALAM workflow reports.
+- **Remaining limitation:** Tradeoff quality depends on content agents publishing these optional v5 fields. ALAM intentionally shows nothing rather than deriving a benefit/cost from prose.
+- **Recommended next step:** After CI is green, continue article-detail usefulness with a similarly bounded preparation/mistake preview only if the public data contract gains explicit validated fields; otherwise rotate to Search/Saved or Today rather than inferring new semantics.
