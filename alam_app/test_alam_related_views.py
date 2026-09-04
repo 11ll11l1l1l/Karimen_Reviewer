@@ -1,4 +1,4 @@
-from alam_related_views import related_story_candidates, related_story_selection
+from alam_related_views import related_story_candidates, related_story_decision_preview, related_story_selection
 
 
 def _story(story_id, tags, category="discover", importance=70):
@@ -69,3 +69,26 @@ def test_already_diverse_related_shelf_keeps_original_ranking_without_stretch_at
     selected, stretch_index = related_story_selection(base, rows, limit=3)
     assert [row[2]["id"] for row in selected] == ["money", "family", "discover"]
     assert stretch_index is None
+
+
+def test_related_story_decision_preview_uses_only_explicit_reader_impact():
+    record = _story("linked", ["yen"])
+    record["why_it_matters"] = "  Household budgets may face higher imported-food costs.  "
+    assert related_story_decision_preview(record) == "Household budgets may face higher imported-food costs."
+
+
+def test_related_story_decision_preview_fails_closed_for_missing_structured_and_placeholder_values():
+    record = _story("linked", ["yen"])
+    assert related_story_decision_preview(record) == ""
+    record["why_it_matters"] = {"generated": "Do this"}
+    assert related_story_decision_preview(record) == ""
+    record["why_it_matters"] = "TBD"
+    assert related_story_decision_preview(record) == ""
+
+
+def test_related_story_decision_preview_is_bounded_for_mobile_scanability():
+    record = _story("linked", ["yen"])
+    record["why_it_matters"] = "A" * 240
+    preview = related_story_decision_preview(record, limit=80)
+    assert len(preview) == 80
+    assert preview.endswith("…")
