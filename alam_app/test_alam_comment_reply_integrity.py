@@ -81,3 +81,35 @@ def test_migration_is_idempotent_and_non_destructive():
     assert "validate constraint agent_comments_reply_to_fkey" in normalized
     for destructive in ("drop table", "truncate", "delete from public.agent_comments"):
         assert destructive not in normalized
+
+
+def test_database_reply_graph_guard_prevents_malformed_updates():
+    migrations = validator.ROOT.parent / "supabase" / "migrations"
+    graph_guard = (migrations / "028_enforce_agent_comment_reply_graph.sql").read_text(
+        encoding="utf-8"
+    )
+    type_fix = (migrations / "029_fix_comment_reply_graph_id_type.sql").read_text(
+        encoding="utf-8"
+    )
+    normalized = (graph_guard + "\n" + type_fix).lower()
+
+    # The durable mirror must reject shapes that the FK alone cannot represent:
+    # self-links, cross-story edges, parent moves that strand children, and cycles.
+    assert "new.reply_to = new.id" in normalized
+    assert "child.reply_to = new.id" in normalized
+    assert "same article" in normalized
+    assert "with recursive ancestors" in normalized
+    assert "cannot contain a cycle" in normalized
+    assert "before insert or update of reply_to, article_id" in normalized
+    assert "execute function public.alam_enforce_comment_reply_graph()" in normalized
+
+    # Keep the trigger non-privileged and schema-stable. ALAM article/comment IDs are
+    # text today, so the corrective migration anchors the local variable to the table
+    # column type rather than assuming UUID and silently breaking valid replies.
+    assert "security invoker" in normalized
+    assert "set search_path = ''" in normalized
+    assert "public.agent_comments.article_id%type" in type_fix.lower()
+    assert "revoke all on function public.alam_enforce_comment_reply_graph() from public" in normalized
+
+    for destructive in ("drop table", "truncate", "delete from public.agent_comments"):
+        assert destructive not in normalized
