@@ -49,6 +49,14 @@ def test_sync_age_labels_are_compact_and_operational():
     assert _sync_freshness_label(0.5) == "Sync: 30 min ago"
     assert _sync_freshness_label(2.25) == "Sync: 2.2 h ago"
     assert _sync_freshness_label(48) == "Sync: 2.0 d ago"
+    # Browser/backend telemetry is persisted input, not a trusted Python float. Settings
+    # must omit impossible values instead of crashing or showing "nan/inf" diagnostics.
+    assert _sync_freshness_label(float("nan")) is None
+    assert _sync_freshness_label(float("inf")) is None
+    assert _sync_freshness_label("-inf") is None
+    assert _sync_freshness_label(10**10000) is None
+    # Preserve the existing safe behavior for small negative clock skew.
+    assert _sync_freshness_label(-2) == "Sync: just now"
 
 
 if __name__ == "__main__":
