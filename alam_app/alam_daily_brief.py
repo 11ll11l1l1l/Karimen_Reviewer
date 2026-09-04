@@ -99,6 +99,41 @@ def _balanced_fallback(records, relevance_fn, used_ids, used_categories):
     return max(candidates, key=score)
 
 
+def select_saved_updates(records, *, saved_update_predicate=None, relevance_fn=None, limit=3):
+    """Return the strongest unique Saved stories with material updates.
+
+    This is a return-value queue, not another recommendation surface. It reuses the
+    same material-change predicate as Saved/Today, deduplicates stable story IDs, and
+    ranks only among changed Saved stories. No unseen or merely old story is promoted
+    into the queue just to fill space.
+    """
+    if not records:
+        return []
+    try:
+        limit = max(0, int(limit))
+    except (TypeError, ValueError):
+        limit = 3
+    if limit == 0:
+        return []
+
+    saved_update_predicate = saved_update_predicate or localstate.saved_has_update
+    relevance_fn = relevance_fn or intelligence.personal_relevance
+    candidates = [record for record in records if saved_update_predicate(record)]
+    candidates.sort(key=lambda record: _rank(record, relevance_fn), reverse=True)
+
+    selected = []
+    used_ids = set()
+    for record in candidates:
+        story_id = _story_id(record)
+        if not story_id or story_id in used_ids:
+            continue
+        selected.append(record)
+        used_ids.add(story_id)
+        if len(selected) >= limit:
+            break
+    return selected
+
+
 def select_daily_brief_rows(records, *, saved_update_predicate=None, relevance_fn=None):
     """Return up to three unique ``(label, record)`` briefing rows.
 
@@ -179,6 +214,42 @@ def _brief_copy(label, record, all_records):
     return record.get("summary") or record.get("why_it_matters")
 
 
+def _open_story(record):
+    st.session_state["selected_story"] = _story_id(record)
+    st.rerun()
+
+
+def _render_saved_change_queue(records, all_records, primary_review=None, limit=3):
+    """Expose additional material Saved changes that cannot fit the 3-line brief."""
+    updates = select_saved_updates(records, limit=limit)
+    primary_id = _story_id(primary_review or {})
+    remaining = [record for record in updates if _story_id(record) != primary_id]
+    if not remaining:
+        return
+
+    st.markdown("<div class='intel-title'>More Saved changes</div>", unsafe_allow_html=True)
+    st.caption("Material updates since your last review. Open the changed evidence before relying on an older takeaway.")
+    for record in remaining:
+        change = intelligence.change_snapshot(record, all_records)
+        change_copy = str(change[1] if change else "A newer material version is available.")[:180]
+        st.markdown(
+            "<div class='intel-brief-card'>"
+            "<div class='intel-kicker'>SAVED UPDATE</div>"
+            f"<div class='intel-brief-head'>{escape(str(record.get('title') or ''))}</div>"
+            f"<div class='intel-brief-copy'>{escape(change_copy)}</div>"
+            "</div>",
+            unsafe_allow_html=True,
+        )
+        title = str(record.get("title") or "Changed Saved story").strip()
+        button_title = title if len(title) <= 64 else title[:63].rstrip() + "…"
+        if st.button(
+            f"Review update · {button_title} →",
+            key=f"today_saved_update_{_story_id(record)}",
+            use_container_width=True,
+        ):
+            _open_story(record)
+
+
 def render_daily_brief(records, all_records):
     rows = select_daily_brief_rows(records)
     if not rows:
@@ -208,5 +279,6 @@ def render_daily_brief(records, all_records):
         key=f"today_review_saved_{_story_id(review)}",
         use_container_width=True,
     ):
-        st.session_state["selected_story"] = _story_id(review)
-        st.rerun()
+        _open_story(review)
+
+    _render_saved_change_queue(records, all_records, primary_review=review)
