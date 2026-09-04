@@ -22,6 +22,8 @@ def record(story_id, category, importance=70, action=None):
 def relevance(item):
     return {
         "saved": 99,
+        "saved-two": 95,
+        "saved-three": 92,
         "practical": 90,
         "trend": 80,
         "discover": 70,
@@ -67,6 +69,42 @@ def main():
     assert len({item["id"] for _, item in rows}) == 3
     assert any(item["_category"] == "reflection" for _, item in rows), "Fallback must retain cross-category breadth."
 
+    # Multiple material Saved changes must remain available beyond the single REVIEW
+    # slot. Rank only changed Saved stories, dedupe stable IDs, and fail closed when
+    # there are zero changes rather than filling the queue with ordinary stories.
+    saved_records = [
+        record("saved-two", "trend", 82),
+        record("ordinary", "discover", 100),
+        record("saved", "discover", 95),
+        record("saved-three", "practical", 88, "PREPARE"),
+        record("saved-two", "trend", 20),
+    ]
+    changed_ids = {"saved", "saved-two", "saved-three"}
+    saved_updates = brief.select_saved_updates(
+        saved_records,
+        saved_update_predicate=lambda item: item["id"] in changed_ids,
+        relevance_fn=relevance,
+        limit=3,
+    )
+    assert [item["id"] for item in saved_updates] == ["saved", "saved-two", "saved-three"]
+    assert len({item["id"] for item in saved_updates}) == 3
+    assert brief.select_saved_updates(
+        saved_records,
+        saved_update_predicate=lambda item: False,
+        relevance_fn=relevance,
+    ) == []
+    assert brief.select_saved_updates(
+        saved_records,
+        saved_update_predicate=lambda item: True,
+        relevance_fn=relevance,
+        limit=0,
+    ) == []
+    assert [item["id"] for item in brief.select_saved_updates(
+        [record("saved", "discover", 95)],
+        saved_update_predicate=lambda item: True,
+        relevance_fn=relevance,
+    )] == ["saved"]
+
     # v5 records can legitimately use semantic/nested score forms. Runtime safety
     # already hardens the main feed score, but the briefing's own fallback and
     # explanation paths must not reintroduce direct float() crashes.
@@ -91,6 +129,7 @@ def main():
         brief.feed_score = original_feed_score
 
     assert brief.select_daily_brief_rows([], saved_update_predicate=lambda item: False, relevance_fn=relevance) == []
+    assert brief.select_saved_updates([], saved_update_predicate=lambda item: True, relevance_fn=relevance) == []
     print("ALAM daily briefing selection regression checks passed")
 
 
