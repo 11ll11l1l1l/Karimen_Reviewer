@@ -22,6 +22,10 @@ MAX_PROFILE_JSON_BYTES = 16 * 1024
 # Keep a generous encoded ceiling well above legitimate ALAM profiles so malformed
 # multi-megabyte pastes are rejected before Base64 decoding allocates their bytes.
 MAX_PROFILE_CODE_CHARS = 64 * 1024
+# Chromium rejects cookie name/value pairs above 4096 bytes. Leave headroom for the
+# cookie name and browser/component differences instead of letting a mature anonymous
+# profile silently stop persisting once its compressed payload crosses the hard limit.
+MAX_COOKIE_VALUE_CHARS = 3800
 
 VOTE_WEIGHT = {
     "MORE": 6,
@@ -163,6 +167,65 @@ def _trim(profile):
     return out
 
 
+def _fit_cookie_profile(profile):
+    """Bound only the persisted cookie copy while keeping the live session intact.
+
+    Read history is cheapest to reconstruct, followed by old feedback and mute history;
+    saved-version snapshots are retained longest because they drive explicit update
+    badges. Entries are removed oldest-first until the encoded value fits the browser
+    budget. A malformed imported settings blob is reduced to the known preference
+    fields only if history trimming alone cannot make the cookie safe.
+    """
+    fitted = _trim(profile)
+
+    def fits():
+        return len(_encode(fitted)) <= MAX_COOKIE_VALUE_CHARS
+
+    if fits():
+        return fitted
+
+    for key in ("r", "f"):
+        bucket = fitted.get(key) or {}
+        while bucket and not fits():
+            if key == "r":
+                bucket.pop(next(reversed(bucket)))
+            else:
+                bucket.pop(next(iter(bucket)))
+
+    muted = fitted.get("m") or []
+    while muted and not fits():
+        muted.pop(0)
+
+    bookmarks = fitted.get("b") or {}
+    while bookmarks and not fits():
+        bookmarks.pop(next(reversed(bookmarks)))
+
+    if not fits():
+        settings = fitted.get("s") or {}
+        safe_settings = {}
+        interests = settings.get("interests") if isinstance(settings, dict) else None
+        if isinstance(interests, dict):
+            safe_settings["interests"] = {
+                str(name)[:80]: _profile_bool(enabled, False)
+                for name, enabled in list(interests.items())[:32]
+            }
+        if isinstance(settings, dict):
+            if "alert_min" in settings:
+                safe_settings["alert_min"] = _profile_alert_min(settings.get("alert_min"))
+            for key, default in (
+                ("alert_action", False),
+                ("alert_change", True),
+                ("dark", False),
+            ):
+                if key in settings:
+                    safe_settings[key] = _profile_bool(settings.get(key), default)
+        fitted["s"] = safe_settings
+
+    if not fits():
+        fitted["s"] = {}
+    return fitted
+
+
 def _apply_settings(profile):
     settings = profile.get("s") or {}
     interests = settings.get("interests")
@@ -215,7 +278,7 @@ def _save(manager=None):
         try:
             manager.set(
                 COOKIE_NAME,
-                _encode(profile),
+                _encode(_fit_cookie_profile(profile)),
                 expires_at=datetime.now() + timedelta(days=365),
                 key="set_alam_local_profile",
             )
