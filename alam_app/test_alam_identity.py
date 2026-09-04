@@ -24,3 +24,25 @@ def test_parse_storage_result_keeps_false_ready_state_until_component_is_ready()
 def test_component_ready_invalid_shape_preserves_nonblocking_default():
     assert identity._component_ready({"unexpected": True}, True) is True
     assert identity._component_ready([False], False) is False
+
+
+def test_queue_storage_repair_requests_one_rerun_for_stale_storage():
+    current = "0f7f0d85-b58d-4d43-9042-76ef9f7464e8"
+    stale = "4fd38a3b-95a3-4ac9-a888-a15fd11548a6"
+    state = {}
+
+    assert identity._queue_storage_repair(state, current, stale) is True
+    assert state["alam_pending_device_storage"] == current
+
+    # A browser write that remains pending after a component/storage failure must not
+    # create an automatic rerun loop on every Streamlit render.
+    assert identity._queue_storage_repair(state, current, stale) is False
+
+
+def test_queue_storage_repair_skips_already_correct_or_invalid_identity():
+    current = "0f7f0d85-b58d-4d43-9042-76ef9f7464e8"
+    state = {}
+
+    assert identity._queue_storage_repair(state, current, current) is False
+    assert identity._queue_storage_repair(state, None, None) is False
+    assert state == {}
