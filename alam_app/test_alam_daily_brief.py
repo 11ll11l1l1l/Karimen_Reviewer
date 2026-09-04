@@ -129,6 +129,19 @@ def main():
         affected_story["content"]["who_is_affected"] = invalid
         assert brief._affected_note(affected_story) == ""
 
+    # Today may explain the cost of inaction only from the explicit v5 risk field.
+    # It must never manufacture urgency from prose/profile state or stringify malformed
+    # structures. Keep the preview short enough for mobile; detail retains full context.
+    risk_story = record("risk", "practical", 90, "DO NOW")
+    risk_story["content"]["risk_if_ignored"] = "  Miss the   filing window and lose eligibility.  "
+    assert brief._risk_note(risk_story) == "Miss the filing window and lose eligibility."
+    long_risk = "R" * 200
+    risk_story["content"]["risk_if_ignored"] = long_risk
+    assert brief._risk_note(risk_story) == "R" * 140
+    for invalid in (None, "", "TBD", "unknown", {"risk": "late"}, ["late"], True, 123):
+        risk_story["content"]["risk_if_ignored"] = invalid
+        assert brief._risk_note(risk_story) == ""
+
     # v5 records can legitimately use semantic/nested score forms. Runtime safety
     # already hardens the main feed score, but the briefing's own fallback and
     # explanation paths must not reintroduce direct float() crashes.
