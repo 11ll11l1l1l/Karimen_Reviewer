@@ -122,6 +122,21 @@ def _storage_expression(write_value: str | None = None) -> str:
     )
 
 
+def _component_ready(value, default=True) -> bool:
+    """Decode component readiness without Python string-truthiness surprises."""
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)) and value in (0, 1):
+        return bool(value)
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized in {"true", "1"}:
+            return True
+        if normalized in {"false", "0", ""}:
+            return False
+    return bool(default)
+
+
 def _parse_storage_result(raw) -> tuple[bool, str | None, str | None]:
     """Return (ready, device_id, error) from the browser component payload."""
     if raw is None:
@@ -132,7 +147,11 @@ def _parse_storage_result(raw) -> tuple[bool, str | None, str | None]:
         return True, None, "invalid_storage_response"
     if not isinstance(payload, dict):
         return True, None, "invalid_storage_response"
-    return bool(payload.get("ready", True)), _valid_device_id(payload.get("value")), payload.get("error")
+    return (
+        _component_ready(payload.get("ready", True), True),
+        _valid_device_id(payload.get("value")),
+        payload.get("error"),
+    )
 
 
 def _browser_storage_bridge() -> tuple[bool, str | None, str | None]:
