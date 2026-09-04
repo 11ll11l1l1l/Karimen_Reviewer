@@ -1,0 +1,129 @@
+{
+  "id": "japan-fake-jewelry-sites-caa-sep2026",
+  "agent": "practical",
+  "created_at": "2026-09-04T15:12:00+09:00",
+  "type": "scam_alert",
+  "title": "Fake Tanaka and Mikimoto ads are selling counterfeit gold and pearls",
+  "summary": "Japan’s Consumer Affairs Agency warned on September 3 about SNS ads impersonating TANAKA Precious Metals and MIKIMOTO that lead to fake shops selling counterfeit gold coins and pearl necklaces. The tested ‘24K’ coin was mainly copper and iron, and the pearl necklace was an imitation.",
+  "why_it_matters": "The scam looks safer than many online frauds because the sites use famous-brand names and cash-on-delivery, but COD does not verify authenticity and refunds can be difficult once the seller disappears. A few checks before ordering can prevent a five-figure loss and exposure of your name, address and phone number.",
+  "importance": 91,
+  "confidence": 99,
+  "tags": ["Japan", "Scam", "Fake Website", "Consumer Safety", "SNS Ads", "Cash on Delivery", "Gold", "Jewelry"],
+  "geography": ["Japan"],
+  "status": "NEW",
+  "sources": [
+    {"publisher": "消費者庁", "title": "大手貴金属・ジュエリーショップをかたり貴金属や宝飾品の偽物を販売する偽サイトに関する注意喚起", "url": "https://www.caa.go.jp/notice/entry/047423/", "published_at": "2026-09-03", "source_type": "official"},
+    {"publisher": "消費者庁", "title": "大手貴金属・ジュエリーショップをかたり貴金属や宝飾品の偽物を販売する偽サイトに関する注意喚起（公表資料）", "url": "https://www.caa.go.jp/notice/assets/consumer_policy_cms103_260903_01.pdf", "published_at": "2026-09-03", "source_type": "official"},
+    {"publisher": "国民生活センター", "title": "代引き配達を利用したインターネット通販のトラブルにご注意", "url": "https://www.kokusen.go.jp/news/data/n-20250820_1.html", "published_at": "2025-08-20", "source_type": "official"},
+    {"publisher": "田中貴金属", "title": "特殊詐欺・偽広告に注意", "url": "https://gold.tanaka.co.jp/info/special-fraud.html", "source_type": "primary"},
+    {"publisher": "MIKIMOTO", "title": "詐欺サイトや偽装アカウントにご注意ください", "url": "https://www.mikimoto.com/jp_jp/news-caution-phishing-site-jp", "source_type": "primary"},
+    {"publisher": "田中貴金属", "title": "貴金属価格情報", "url": "https://gold.tanaka.co.jp/commodity/souba/", "published_at": "2026-09-03", "source_type": "primary"}
+  ],
+  "claims": [
+    {"kind": "FACT", "text": "The Consumer Affairs Agency said it had received numerous consultations since October 2025 about SNS ads impersonating TANAKA Precious Metals or MIKIMOTO and purchases made through linked websites.", "source_refs": [1, 2], "basis": "CAA September 3 alert and detailed report"},
+    {"kind": "FACT", "text": "CAA identified the domains dccvd.com, dcvfert.top and mzisoe.top in the investigated scheme and found the operators' actual identities unknown.", "source_refs": [1, 2], "basis": "CAA investigation"},
+    {"kind": "FACT", "text": "The investigated sites accepted only cash on delivery; goods arrived roughly 10 days later from outside Japan, after which consumers reported difficulty contacting the seller for refunds.", "source_refs": [2], "basis": "CAA case description"},
+    {"kind": "FACT", "text": "CAA laboratory testing found the purported 24K gold coin was mainly about 70% copper and 20% iron, while the purported pearl necklace was an imitation pearl product.", "source_refs": [2], "basis": "CAA-commissioned product testing"},
+    {"kind": "FACT", "text": "National Consumer Affairs Center data show that cash-on-delivery e-commerce complaints involving problematic sales methods have remained substantial; in FY2024 there were 14,013 consultations, and 52.5% involved counterfeit goods, seller contact failure or similar issues.", "source_refs": [3], "basis": "PIO-NET data summarized by NCAC"},
+    {"kind": "FACT", "text": "TANAKA warns that fake ads using its name and logo have promoted supposed campaigns, discounts, time sales and limited quantities; MIKIMOTO states that its only operated online shop is on mikimoto.com.", "source_refs": [4, 5], "basis": "Company anti-fraud notices"},
+    {"kind": "ESTIMATE", "text": "The fake TANAKA ad's ¥15,000 price for a roughly quarter-ounce Maple Leaf coin was about 93% below TANAKA's official ¥216,576 retail price for a 1/4-ounce Maple Leaf coin on September 3, 2026.", "source_refs": [2, 6], "basis": "Calculated from CAA's captured fake-ad price and TANAKA's September 3 official coin price"},
+    {"kind": "INFERENCE", "text": "A famous logo, polished social-media ad and cash-on-delivery option should not be treated as authenticity checks; the strongest defense is independently reaching the brand's official website before ordering.", "source_refs": [2, 3, 4, 5], "basis": "Consumer-protection inference from the documented scam pattern and official guidance"}
+  ],
+  "editorial_visual": {
+    "style": "editorial",
+    "motif": "shield",
+    "secondary_motif": "yen",
+    "scene": "a restrained online-shopping safety illustration: a smartphone showing an anonymous luxury-style ad leading toward a counterfeit coin and imitation pearl necklace, blocked by a verification shield; no real company logos, no readable fake website text, no victim caricature",
+    "caption": "A famous-looking ad is not proof that the shop is real",
+    "silliness": 0,
+    "exaggeration": 32
+  },
+  "content": {
+    "key_message": "If a gold or jewelry deal arrives through an SNS ad, independently open the brand's official website before ordering—do not trust the logo, the ad account or cash on delivery as proof.",
+    "who_is_affected": "People in Japan who see social-media ads for discounted precious metals or jewelry, especially ads claiming to be TANAKA Precious Metals or MIKIMOTO. Anyone who has already ordered through dccvd.com, dcvfert.top or mzisoe.top should treat the transaction as affected. If you did not use these sites and are not considering precious-metal or jewelry purchases from SNS ads, there is no immediate action beyond remembering the warning signs.",
+    "when": "CAA issued the warning on September 3, 2026. The documented consultations have been arriving since October 2025. There is no application deadline; the action is before purchase, or immediately after discovering that you ordered from a suspicious site.",
+    "financial_impact": "The documented fake listings were around ¥14,800-¥15,000 per item. Loss can be higher if multiple items are ordered, and the buyer also supplies personal information such as name, address and phone number.",
+    "estimated_saving_yen": null,
+    "time_minutes": 10,
+    "travel_minutes": 0,
+    "risk_if_ignored": "You can pay cash for a counterfeit item and later find that the seller cannot be contacted. National Consumer Affairs Center warns that the delivery company is generally not the seller and it can be difficult to obtain a refund or compensation from the carrier after a COD payment.",
+    "action": "AVOID",
+    "deadline": "Before placing or paying for an order from an SNS-linked precious-metal or jewelry shop. If already affected, contact Consumer Hotline 188 promptly rather than waiting for the seller to respond indefinitely.",
+    "effort": "About 5-10 minutes to verify the URL and price before buying; longer only if you already need consumer-protection assistance.",
+    "potential_benefit": "Avoids paying for counterfeit goods and reduces the chance of giving personal information to an unidentified operator.",
+    "downside": "The three named domains are confirmed examples, not a complete blacklist. A different domain can use the same impersonation method, while an unusually low price by itself does not mathematically prove fraud.",
+    "what_would_change_mind": "A later CAA correction clearing one of the identified sites, verified evidence that a questioned seller is an authorized channel, or a material change in the brands' official online-sales arrangements would change the assessment for that seller.",
+    "usefulness": 98,
+    "novelty": 96,
+    "impact": {"money": "HIGH", "family": "MED", "career": "LOW", "japan": "HIGH", "urgency": "HIGH"},
+    "connection_tags": ["fake-shopping-sites", "sns-ad-scams", "cash-on-delivery", "consumer-protection", "brand-impersonation"],
+    "skeptical_view": "This warning concerns a specific investigated scheme, not every discounted jewelry advertisement and not every COD purchase. The named domains may also disappear quickly, so memorizing them alone is weaker protection than verifying the seller through an independently reached official brand site.",
+    "what_to_watch": "New CAA/NCAC alerts, the brand's own fraud notices, suspiciously large discounts, countdown or 'few left' pressure, COD-only payment, overseas or unrelated-looking domains, missing business identity details and unnatural Japanese.",
+    "recommendation": "For expensive items, navigate to the official company site yourself rather than following the ad link. If anything does not match, do not order. If you already ordered or paid and suspect fraud, save the evidence and call 188 promptly; CAA also lists police consultation #9110.",
+    "reading_levels": {
+      "30 sec": {
+        "what_happened": "CAA confirmed fake SNS-linked shops impersonating TANAKA and MIKIMOTO; tested goods were counterfeit.",
+        "why_it_matters": "The sites used COD and famous-brand imagery, which can create false confidence, while refunds may be hard after payment.",
+        "what_to_do_watch": "Do not buy through the ad link. Independently open the official brand site, compare the URL and price, and treat COD-only plus extreme discounts as red flags.",
+        "bottom_line": "Logo + SNS ad + cash on delivery does not equal a legitimate shop."
+      }
+    },
+    "learning": {
+      "outcomes": [
+        "Recognize the specific fake-jewelry pattern documented by Japan's Consumer Affairs Agency.",
+        "Explain why cash on delivery does not protect against counterfeit goods.",
+        "Verify a luxury or precious-metal seller without trusting the advertisement itself."
+      ],
+      "background": "Fake shopping sites increasingly copy the name, photos and visual style of real companies and buy advertisements on social networks. The ad is only the entry point: clicking it can send the buyer to a separate site controlled by an unrelated operator. In this case, CAA says the operators' actual identities were unknown.",
+      "terms": [
+        {"term": "Cash on delivery (代引き)", "meaning": "You pay the delivery company when the parcel arrives instead of paying the online seller in advance.", "why_it_matters": "It protects against the narrow problem of paying for a parcel that never arrives, but it does not prove that the item inside is genuine. The carrier is not normally the seller and may not be able to refund you."},
+        {"term": "Impersonation site", "meaning": "A website that copies or misuses a real company's name, logo, product photos or brand identity so buyers think it is official.", "why_it_matters": "A site can look professional and still have no business relationship with the real brand."}
+      ],
+      "how_it_works": [
+        {"title": "The ad creates trust", "explanation": "CAA documented Facebook and Instagram ads that appeared to sell genuine TANAKA or MIKIMOTO products and used scarcity or deep-discount language."},
+        {"title": "The link moves the buyer to the impostor shop", "explanation": "The buyer enters a name, address and phone number on a site whose operator is not the real brand. In the investigated cases, COD was the only payment method."},
+        {"title": "A parcel arrives, but authenticity is discovered too late", "explanation": "The buyer pays the courier and then opens the item. CAA testing showed the supposed 24K coin was mainly copper and iron and the supposed pearl necklace was an imitation."},
+        {"title": "Independent verification breaks the chain", "explanation": "Instead of trusting the ad's link, search for or manually open the company's official site, check its fraud notice and official sales channel, and compare the URL and price before ordering."}
+      ],
+      "example": "CAA captured a fake listing offering a roughly quarter-ounce '24K' Maple Leaf coin for ¥15,000. TANAKA's official September 3 price for a 1/4-ounce Maple Leaf coin was ¥216,576—about fourteen times higher. That gap is not a universal fraud formula, but it shows why an extreme discount on a commodity-linked product deserves immediate verification.",
+      "takeaways": [
+        "CAA confirmed counterfeit goods, not merely suspicious advertising.",
+        "The investigated sites were dccvd.com, dcvfert.top and mzisoe.top, but future fake sites can use different domains.",
+        "COD protects against non-delivery better than prepayment, not against a fake item inside the box.",
+        "Verify through the brand's independently reached official site, not the ad link.",
+        "If already affected, save evidence and call 188 promptly."
+      ]
+    },
+    "action_plan": {
+      "goal": "Avoid paying a fake SNS-linked jewelry seller, or preserve the best chance of assistance if you already transacted.",
+      "who_should_act": "Act now if you are considering a precious-metal/jewelry purchase reached through an SNS ad, or if you already ordered from dccvd.com, dcvfert.top, mzisoe.top or another site that appears to impersonate a real brand. Others can ignore the immediate checklist and keep the red flags for future purchases.",
+      "deadline": "Before ordering or paying whenever possible. If you already ordered or paid and suspect a fake site, contact Consumer Hotline 188 promptly.",
+      "prepare": [
+        "The full website URL/domain shown in your browser",
+        "Screenshots of the advertisement, product page, order confirmation and any messages",
+        "If delivered: parcel, product, delivery slip and payment receipt",
+        "Order date, amount paid and seller contact information shown on the site or parcel"
+      ],
+      "steps": [
+        {"step": "Leave the ad link", "action": "Do not complete the purchase while using the advertisement's link as your proof of identity.", "how": "Open a new browser tab and independently search for or type the company's official site.", "needed": ["Advertised brand name"], "time_minutes": 2, "cost_yen": 0, "done_when": "You are viewing the company's independently reached official domain rather than the landing page from the advertisement."},
+        {"step": "Compare the seller", "action": "Check whether the advertised URL, official sales channel, product and price match the real company's information.", "how": "Check the official brand fraud notice and online-shop information. For this alert, MIKIMOTO says its operated online shop is mikimoto.com, while TANAKA warns specifically about unauthorized discount, time-sale and limited-quantity ads using its name.", "needed": ["Suspicious-site URL", "Official brand site"], "time_minutes": 5, "cost_yen": 0, "done_when": "You can identify the seller as an official/authorized channel or you have stopped because the information does not match."},
+        {"step": "Run the red-flag check", "action": "Treat even one major mismatch as a reason not to proceed until independently verified.", "how": "CAA's checklist includes extreme discounting, COD-only or otherwise unusually restricted payment, an overseas/unrelated domain, missing company name/address/phone, and unnatural Japanese.", "needed": ["Product page", "Seller/company-information page"], "time_minutes": 3, "cost_yen": 0, "done_when": "No unresolved red flag remains before purchase—or you have abandoned the order."},
+        {"step": "If already affected, preserve evidence and seek help", "action": "Stop relying on the suspicious seller's promises alone and contact an official consumer-protection channel.", "how": "Save screenshots, messages, parcel/receipt details and the site URL, then call Consumer Hotline 188. CAA also lists police consultation #9110. If a different scam involved a bank/card payment, MIKIMOTO's general fraud guidance also recommends contacting the relevant payment institution promptly.", "needed": ["Screenshots", "Order/payment details", "Parcel and delivery slip if available"], "time_minutes": 15, "cost_yen": 0, "done_when": "You have a consumer-center or police consultation record and have preserved the transaction evidence for follow-up."}
+      ],
+      "mistakes_to_avoid": [
+        "Assuming an Instagram/Facebook advertisement has been authenticated by the platform.",
+        "Assuming a company logo, copied product photos or an official-looking account proves affiliation.",
+        "Assuming cash on delivery means the contents are genuine or that the courier guarantees a refund.",
+        "Checking only the three named domains; scam operators can move to new domains.",
+        "Throwing away the parcel, delivery slip, payment receipt or screenshots before a dispute is resolved."
+      ],
+      "decision_rules": [
+        {"if": "The URL is one of dccvd.com, dcvfert.top or mzisoe.top", "then": "Do not make a new purchase; if already affected, preserve evidence and contact 188."},
+        {"if": "The seller claims to be MIKIMOTO but the online shop is not on mikimoto.com", "then": "Do not treat it as MIKIMOTO's operated online shop; verify independently before any transaction."},
+        {"if": "The deal combines an extreme discount with urgency language, COD-only payment or an unrelated-looking domain", "then": "Stop the purchase and independently verify the seller through the real brand's official site."},
+        {"if": "You have no planned purchase and did not transact with a suspicious site", "then": "No immediate paperwork or report is required; simply keep the warning pattern in mind."}
+      ],
+      "follow_up": "After reporting a suspected loss, keep the item, packaging, receipts and screenshots until the consumer center, police, payment provider or other relevant party says they are no longer needed. Re-check CAA and the real brand's fraud-warning page if the seller changes domains or claims that an old warning no longer applies."
+    }
+  }
+}
