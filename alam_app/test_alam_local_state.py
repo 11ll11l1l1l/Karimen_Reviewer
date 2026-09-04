@@ -53,6 +53,20 @@ def test_corrupt_timestamp_entries_do_not_break_cookie_profile_normalization():
     assert trimmed["b"] == {"bookmark-good": 20}
 
 
+def test_profile_decoder_rejects_oversized_encoded_input_before_base64_decode(monkeypatch):
+    called = False
+
+    def fail_if_called(*args, **kwargs):
+        nonlocal called
+        called = True
+        raise AssertionError("Base64 decoder should not run for oversized input")
+
+    monkeypatch.setattr(local_state.base64, "urlsafe_b64decode", fail_if_called)
+
+    _assert_decode_rejected("A" * (local_state.MAX_PROFILE_CODE_CHARS + 1))
+    assert called is False
+
+
 def test_profile_decoder_rejects_oversized_decompressed_json():
     raw = json.dumps(
         {"v": local_state.COOKIE_VERSION, "s": {"blob": "x" * local_state.MAX_PROFILE_JSON_BYTES}},
