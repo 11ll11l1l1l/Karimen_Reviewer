@@ -37,6 +37,7 @@ except ModuleNotFoundError:
     create_client = None
 
 from alam_identity import _valid_device_id
+from alam_local_state import _profile_alert_min, _profile_bool, _profile_interests
 from alam_supabase import _safe_error
 
 EMAIL_RE = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
@@ -286,46 +287,51 @@ def _local_preferences_payload(user_id: str) -> dict:
     """Translate current browser settings into the existing RLS-backed preference row."""
     return {
         "user_id": str(user_id),
-        "interests": dict(st.session_state.get("alam_interest_preferences") or {}),
+        "interests": _profile_interests(st.session_state.get("alam_interest_preferences") or {}),
         "settings": {
-            "alert_min": int(st.session_state.get("alam_alert_min_importance", 85)),
-            "alert_action": bool(st.session_state.get("alam_alert_only_actionable", False)),
-            "alert_change": bool(st.session_state.get("alam_alert_material_change", True)),
-            "dark": bool(st.session_state.get("alam_dark_mode", False)),
+            "alert_min": _profile_alert_min(st.session_state.get("alam_alert_min_importance", 85)),
+            "alert_action": _profile_bool(st.session_state.get("alam_alert_only_actionable", False), False),
+            "alert_change": _profile_bool(st.session_state.get("alam_alert_material_change", True), True),
+            "dark": _profile_bool(st.session_state.get("alam_dark_mode", False), False),
         },
     }
 
 
 def _apply_cloud_preferences(row: dict) -> None:
-    """Hydrate this Streamlit session from account settings without deleting local history."""
+    """Hydrate account settings through the same defensive scalar rules as browser state.
+
+    ``user_preferences`` is RLS-protected, but it is still persisted JSON that can outlive
+    application versions. Never let legacy string booleans or malformed thresholds become
+    raw Streamlit widget state: Python's ``bool('false')`` is True and later ``int(...)``
+    calls can crash on structured values. Normalize at the restore boundary while keeping
+    unrelated local read/mute/feedback history untouched.
+    """
     row = dict(row or {})
     interests = row.get("interests")
     if isinstance(interests, dict):
-        st.session_state["alam_interest_preferences"] = {
-            str(key): bool(value) for key, value in interests.items()
-        }
+        st.session_state["alam_interest_preferences"] = _profile_interests(interests)
     settings = row.get("settings")
     settings = settings if isinstance(settings, dict) else {}
-    mapping = {
-        "alert_min": "alam_alert_min_importance",
-        "alert_action": "alam_alert_only_actionable",
-        "alert_change": "alam_alert_material_change",
-        "dark": "alam_dark_mode",
-    }
-    for source, target in mapping.items():
+    if "alert_min" in settings:
+        st.session_state["alam_alert_min_importance"] = _profile_alert_min(settings.get("alert_min"))
+    for source, target, default in (
+        ("alert_action", "alam_alert_only_actionable", False),
+        ("alert_change", "alam_alert_material_change", True),
+        ("dark", "alam_dark_mode", False),
+    ):
         if source in settings:
-            st.session_state[target] = settings[source]
+            st.session_state[target] = _profile_bool(settings.get(source), default)
 
     # Keep the existing portable profile coherent so a later browser-local save/export
     # carries the restored account settings even if the reader subsequently signs out.
     profile = st.session_state.get("alam_local_profile")
     if isinstance(profile, dict):
         profile["s"] = {
-            "interests": dict(st.session_state.get("alam_interest_preferences") or {}),
-            "alert_min": int(st.session_state.get("alam_alert_min_importance", 85)),
-            "alert_action": bool(st.session_state.get("alam_alert_only_actionable", False)),
-            "alert_change": bool(st.session_state.get("alam_alert_material_change", True)),
-            "dark": bool(st.session_state.get("alam_dark_mode", False)),
+            "interests": _profile_interests(st.session_state.get("alam_interest_preferences") or {}),
+            "alert_min": _profile_alert_min(st.session_state.get("alam_alert_min_importance", 85)),
+            "alert_action": _profile_bool(st.session_state.get("alam_alert_only_actionable", False), False),
+            "alert_change": _profile_bool(st.session_state.get("alam_alert_material_change", True), True),
+            "dark": _profile_bool(st.session_state.get("alam_dark_mode", False), False),
         }
 
 
