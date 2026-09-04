@@ -164,13 +164,22 @@ def _freshness_text(value):
 
 
 def _sync_freshness_label(age_hours):
-    """Turn operational sync age into compact copy without implying story freshness."""
+    """Turn operational sync age into compact copy without implying story freshness.
+
+    Sync-health values cross a persistence/runtime boundary. Treat malformed, extreme,
+    or non-finite values as unavailable instead of letting Settings render ``nan/inf``
+    or raise while formatting diagnostics. Valid negative clock-skew values retain the
+    established clamp-to-zero behavior.
+    """
     if age_hours is None:
         return None
     try:
-        age = max(0.0, float(age_hours))
-    except (TypeError, ValueError):
+        age = float(age_hours)
+    except (TypeError, ValueError, OverflowError):
         return None
+    if age != age or age in (float("inf"), float("-inf")):
+        return None
+    age = max(0.0, age)
     if age < (2 / 60):
         return "Sync: just now"
     if age < 1:
