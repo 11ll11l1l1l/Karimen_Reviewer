@@ -117,6 +117,18 @@ def main():
         deadline_story["content"]["deadline"] = invalid
         assert brief._deadline_note(deadline_story) == ""
 
+    # Today may answer "Am I affected?" only from the explicit v5 audience field.
+    # It must not infer eligibility from tags/profile state or stringify structures.
+    affected_story = record("affected", "practical", 90, "PREPARE")
+    affected_story["content"]["who_is_affected"] = "  Households   with children under age 3  "
+    assert brief._affected_note(affected_story) == "Households with children under age 3"
+    long_audience = "A" * 200
+    affected_story["content"]["who_is_affected"] = long_audience
+    assert brief._affected_note(affected_story) == "A" * 150
+    for invalid in (None, "", "TBD", "unknown", {"group": "families"}, ["families"], True, 123):
+        affected_story["content"]["who_is_affected"] = invalid
+        assert brief._affected_note(affected_story) == ""
+
     # v5 records can legitimately use semantic/nested score forms. Runtime safety
     # already hardens the main feed score, but the briefing's own fallback and
     # explanation paths must not reintroduce direct float() crashes.
