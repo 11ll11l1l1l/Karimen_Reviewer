@@ -173,15 +173,22 @@ def _auth_storage_bridge() -> tuple[bool, dict | None, str | None]:
         return True, None, "invalid_storage_response"
 
     ready = _component_ready(envelope.get("ready", True), True)
-    if clear and ready:
+    storage_error = envelope.get("error")
+    if clear and ready and not storage_error:
+        # A rendered component is not proof that localStorage accepted the mutation.
+        # Keep the clear queued across reruns when storage is blocked/unavailable so an
+        # old persisted refresh token cannot survive sign-out merely because the bridge
+        # returned a syntactically valid error envelope.
         st.session_state.pop("alam_clear_auth_storage", None)
         st.session_state.pop("alam_pending_auth_storage", None)
-        return True, None, envelope.get("error")
+        return True, None, None
+    if clear:
+        return ready, None, storage_error
 
     stored = _parse_persisted_session(envelope.get("value"))
     if pending and stored == pending:
         st.session_state.pop("alam_pending_auth_storage", None)
-    return ready, stored, envelope.get("error")
+    return ready, stored, storage_error
 
 
 def _queue_session_persistence(session) -> None:
