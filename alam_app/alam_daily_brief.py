@@ -41,6 +41,21 @@ def _actionable(record):
     return str((record.get("content") or {}).get("action") or "").strip().upper() in ACTIONABLE
 
 
+def _action_label(record):
+    """Expose the validated decision verb instead of flattening every action to DO.
+
+    Selection still uses the stable internal DO slot so ranking behavior does not
+    change. The reader-facing label comes only from the published structured action
+    field; unknown values fail back to DO rather than inferring urgency or advice.
+    """
+    action = str((record.get("content") or {}).get("action") or "").strip().upper()
+    return action if action in ACTIONABLE else "DO"
+
+
+def _display_label(label, record):
+    return _action_label(record) if str(label or "").upper() == "DO" else str(label or "").upper()
+
+
 def _importance_score(record):
     """Normalize loose importance values so Today never crashes on valid v5 labels."""
     value = record.get("importance")
@@ -70,22 +85,12 @@ def _rank(record, relevance_fn):
 
 
 def _best(records, predicate, relevance_fn, used_ids):
-    candidates = [
-        record
-        for record in records
-        if _story_id(record) not in used_ids and predicate(record)
-    ]
+    candidates = [record for record in records if _story_id(record) not in used_ids and predicate(record)]
     return max(candidates, key=lambda record: _rank(record, relevance_fn)) if candidates else None
 
 
 def _balanced_fallback(records, relevance_fn, used_ids, used_categories):
-    """Fill a missing slot without blindly repeating the reader's strongest lane.
-
-    Category novelty and public importance lead this fallback before personalized
-    relevance. It therefore acts as a small anti-filter-bubble guard only when a
-    normal KNOW/DO/WATCH slot is unavailable; it never displaces a saved material
-    update or a verified actionable item.
-    """
+    """Fill a missing slot without blindly repeating the reader's strongest lane."""
     candidates = [record for record in records if _story_id(record) not in used_ids]
     if not candidates:
         return None
@@ -100,13 +105,7 @@ def _balanced_fallback(records, relevance_fn, used_ids, used_categories):
 
 
 def select_saved_updates(records, *, saved_update_predicate=None, relevance_fn=None, limit=3):
-    """Return the strongest unique Saved stories with material updates.
-
-    This is a return-value queue, not another recommendation surface. It reuses the
-    same material-change predicate as Saved/Today, deduplicates stable story IDs, and
-    ranks only among changed Saved stories. No unseen or merely old story is promoted
-    into the queue just to fill space.
-    """
+    """Return the strongest unique Saved stories with material updates."""
     if not records:
         return []
     try:
@@ -135,13 +134,7 @@ def select_saved_updates(records, *, saved_update_predicate=None, relevance_fn=N
 
 
 def select_daily_brief_rows(records, *, saved_update_predicate=None, relevance_fn=None):
-    """Return up to three unique ``(label, record)`` briefing rows.
-
-    Selection order is intentionally product-driven rather than a generic top-three:
-    a changed Saved story is a reason to return, an actionable Practical item is a
-    reason to act, and KNOW/WATCH maintain breadth. When no Saved update exists the
-    familiar KNOW -> DO -> WATCH structure is preserved.
-    """
+    """Return up to three unique ``(label, record)`` briefing rows."""
     if not records:
         return []
 
@@ -157,13 +150,11 @@ def select_daily_brief_rows(records, *, saved_update_predicate=None, relevance_f
         desired.append(("WATCH", lambda record: record.get("_category") in WATCH_CATEGORIES))
         desired.append(("KNOW", lambda record: record.get("_category") == "discover"))
     else:
-        desired.extend(
-            [
-                ("KNOW", lambda record: record.get("_category") == "discover"),
-                ("DO", lambda record: record.get("_category") == "practical" and _actionable(record)),
-                ("WATCH", lambda record: record.get("_category") in WATCH_CATEGORIES),
-            ]
-        )
+        desired.extend([
+            ("KNOW", lambda record: record.get("_category") == "discover"),
+            ("DO", lambda record: record.get("_category") == "practical" and _actionable(record)),
+            ("WATCH", lambda record: record.get("_category") in WATCH_CATEGORIES),
+        ])
 
     rows = []
     used_ids = set()
@@ -194,8 +185,8 @@ def _why_selected(label, record):
     enabled_hits = [name for name in hits if prefs.get(name)]
     if label == "DO":
         if enabled_hits:
-            return f"Actionable now · matches {enabled_hits[0]}"
-        return "Actionable verified item"
+            return f"{_action_label(record).title()} · matches {enabled_hits[0]}"
+        return f"Verified action · {_action_label(record).title()}"
     if enabled_hits:
         return f"Matches {enabled_hits[0]}"
     if _importance_score(record) >= 80:
@@ -214,11 +205,20 @@ def _brief_copy(label, record, all_records):
     return record.get("summary") or record.get("why_it_matters")
 
 
-def _brief_open_label(label):
+def _brief_open_label(label, record=None):
     """Keep the three-line brief scannable while giving every line a clear next step."""
+    if str(label or "").upper() == "DO":
+        action = _action_label(record or {})
+        return {
+            "DO NOW": "Open now",
+            "APPLY": "Open application",
+            "AVOID": "Open what to avoid",
+            "PREPARE": "Open preparation",
+            "BUY": "Open buying guidance",
+            "WAIT": "Open why to wait",
+        }.get(action, "Open action")
     return {
         "REVIEW": "Review update",
-        "DO": "Open action",
         "WATCH": "Open watch",
         "KNOW": "Open story",
     }.get(str(label or "").upper(), "Open story")
@@ -272,9 +272,10 @@ def render_daily_brief(records, all_records):
         reason = _why_selected(label, record)
         lifecycle = intelligence.story_lifecycle(record, all_records)
         relevance = intelligence.personal_relevance(record)
+        display_label = _display_label(label, record)
         html.append(
             "<div class='intel-brief-card'>"
-            f"<div class='intel-kicker'>{escape(label)}</div>"
+            f"<div class='intel-kicker'>{escape(display_label)}</div>"
             f"<div class='intel-brief-head'>{escape(str(record.get('title') or ''))}</div>"
             f"<div class='intel-brief-copy'>{escape(copy)}</div>"
             f"<div class='intel-mini'>{escape(reason)} · Relevance {relevance}/100 · {escape(lifecycle)}</div>"
@@ -283,15 +284,11 @@ def render_daily_brief(records, all_records):
     html.append("</div>")
     st.markdown("".join(html), unsafe_allow_html=True)
 
-    # The brief previously explained three decisions but only the Saved REVIEW row
-    # could be opened from this module. Full-width controls keep all three decisions
-    # reachable with one mobile tap without making the HTML cards themselves depend
-    # on brittle Streamlit DOM/link behavior.
     for label, record in rows:
         title = str(record.get("title") or "Story").strip()
         button_title = title if len(title) <= 52 else title[:51].rstrip() + "…"
         if st.button(
-            f"{_brief_open_label(label)} · {button_title} →",
+            f"{_brief_open_label(label, record)} · {button_title} →",
             key=f"today_brief_open_{label.lower()}_{_story_id(record)}",
             use_container_width=True,
         ):
