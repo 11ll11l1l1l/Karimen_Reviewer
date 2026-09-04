@@ -2,34 +2,6 @@ name: ALAM Supabase sync
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - 'alam_app/data/discover/**'
-      - 'alam_app/data/practical/**'
-      - 'alam_app/data/reflection/**'
-      - 'alam_app/data/trend/**'
-      - 'alam_app/data/comments/**'
-      - 'alam_app/data/wisdom/**'
-      - 'alam_app/alam_lifecycle.py'
-      - 'alam_app/alam_supabase_ingest.py'
-      - 'alam_app/alam_supabase_reconcile.py'
-      - 'alam_app/alam_supabase_sync_job.py'
-      - 'alam_app/validate_alam_data.py'
-      - '.github/workflows/alam-supabase-sync.yml'
-
-concurrency:
-  group: alam-supabase-sync
-  cancel-in-progress: false
-
-permissions:
-  contents: read
-
-env:
-  # The project URL is public configuration, not a credential. Keeping it here
-  # removes one unnecessary secret and leaves only the trusted backend key to configure.
-  # Credential rotation retries are safe because the canonical sync job is idempotent.
-  SUPABASE_URL: https://zecztyabmmoqzjumhxxf.supabase.co
 
 jobs:
   sync:
