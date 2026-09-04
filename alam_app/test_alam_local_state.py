@@ -66,3 +66,10 @@ def test_profile_decoder_rejects_trailing_bytes_after_valid_zlib_stream():
     valid = json.dumps(local_state._default_profile(), separators=(",", ":")).encode("utf-8")
 
     _assert_decode_rejected(_encoded_payload(valid, b"trailing-junk"))
+
+
+def test_profile_alert_threshold_normalizes_corrupt_and_out_of_range_values():
+    assert local_state._profile_alert_min("92") == 92
+    assert local_state._profile_alert_min({"bad": "shape"}) == 85
+    assert local_state._profile_alert_min(999) == 100
+    assert local_state._profile_alert_min(-4) == 0
