@@ -1,0 +1,185 @@
+{
+  "id": "pb-free-negative-thermal-expansion-bico3-2026",
+  "agent": "discover",
+  "created_at": "2026-09-04T19:13:00+09:00",
+  "type": "meaningful_science",
+  "title": "A lead-free oxide shrank 6.1% when heated — a new route to cancel thermal expansion",
+  "summary": "Researchers in Japan demonstrated a 6.1% volumetric negative thermal expansion in lanthanoid-substituted BiCoO3, the largest reported for a lead-free negative-thermal-expansion material in the peer-reviewed study. Ang demonstrated result is a reversible crystal-structure transition under laboratory conditions; using it inside semiconductor tools, optical systems or commercial composites is still an engineering prospect, not a qualified application.",
+  "why_it_matters": "Tiny thermal expansion can shift precision stages, distort optical alignment and stress bonded interfaces in semiconductor and photonics hardware. Materials that contract as temperature rises can be mixed with ordinary expanding materials to suppress net dimensional drift. A much larger lead-free contraction could widen the design space, but only if the material can be produced, cycled and integrated reliably.",
+  "importance": 82,
+  "confidence": 93,
+  "tags": [
+    "Japan",
+    "Materials Science",
+    "Negative Thermal Expansion",
+    "Semiconductors",
+    "Precision Engineering",
+    "Perovskite Oxides",
+    "Lead-Free Materials"
+  ],
+  "geography": [
+    "Japan"
+  ],
+  "status": "NEW",
+  "sources": [
+    {
+      "publisher": "Science Tokyo",
+      "title": "再構成型相転移を利用した巨大負熱膨張物質の開発",
+      "url": "https://www.isct.ac.jp/ja/news/u1xcbnm4qj0s",
+      "published_at": "2026-09-04",
+      "source_type": "primary"
+    },
+    {
+      "publisher": "Japan Science and Technology Agency (JST)",
+      "title": "再構成型相転移を利用した巨大負熱膨張物質の開発～鉛を含まない負熱膨張物質で最大の体積収縮～",
+      "url": "https://www.jst.go.jp/pr/announce/20260904/index.html",
+      "published_at": "2026-09-04",
+      "source_type": "official"
+    },
+    {
+      "publisher": "Advanced Science",
+      "title": "6.1% Volumetric Negative Thermal Expansion Induced by the Reversible Reconstructive Phase Transition in Pb-Free Bi1−xLnxCoO3 (Ln: Lanthanoid)",
+      "url": "https://onlinelibrary.wiley.com/doi/10.1002/advs.77022",
+      "published_at": "2026-09-03",
+      "source_type": "research"
+    }
+  ],
+  "claims": [
+    {
+      "kind": "FACT",
+      "text": "Bi0.82Nd0.18CoO3 showed a 6.1% volumetric contraction on heating at ambient pressure, which the paper reports as the largest negative thermal expansion observed for a lead-free material of this class.",
+      "source_refs": [1, 2, 3],
+      "basis": "Science Tokyo/JST descriptions and the peer-reviewed Advanced Science paper."
+    },
+    {
+      "kind": "FACT",
+      "text": "The contraction is associated with a reconstructive phase transition in which the cobalt coordination changes from a CoO5 pyramidal environment to a CoO6 octahedral environment; synchrotron X-ray measurements were used to characterize the structural change.",
+      "source_refs": [1, 2, 3],
+      "basis": "Primary institutional report and peer-reviewed paper describe the structural mechanism and measurements."
+    },
+    {
+      "kind": "FACT",
+      "text": "Unlike many reconstructive transitions that do not reverse on cooling, the material family showed a reverse transition on cooling, with some compositions reported as fully reversible.",
+      "source_refs": [1, 2, 3],
+      "basis": "Science Tokyo and the paper explicitly report reversible reconstructive behavior."
+    },
+    {
+      "kind": "INFERENCE",
+      "text": "A large lead-free contraction could make it easier to formulate composites whose net thermal expansion is near zero, reducing dimensional drift or interface stress in precision hardware.",
+      "source_refs": [1, 2],
+      "basis": "This follows from the established use case of negative-thermal-expansion fillers, but the cited work did not demonstrate a finished semiconductor or optical component."
+    },
+    {
+      "kind": "ASSUMPTION",
+      "text": "The new oxide can be manufactured economically, repeatedly cycled, dispersed into compatible matrices and qualified over the temperature, humidity, contamination and lifetime requirements of semiconductor or optical equipment.",
+      "source_refs": [],
+      "basis": "Those are practical adoption requirements not established by the reported material demonstration."
+    }
+  ],
+  "editorial_visual": {
+    "style": "editorial",
+    "motif": "chip",
+    "secondary_motif": "crystal",
+    "scene": "a precision semiconductor stage and optical assembly beside a crystalline oxide block that subtly contracts as heat waves rise, while a conventional material expands in the opposite direction; technical editorial illustration, no text, no logos, no fake data plots",
+    "caption": "A material that contracts as the machine heats up",
+    "silliness": 10,
+    "exaggeration": 48
+  },
+  "content": {
+    "key_message": "Japan-based researchers demonstrated a record 6.1% lead-free negative thermal expansion using a reversible reconstructive phase transition. The material result is real; commercial thermal-compensation performance is not yet demonstrated.",
+    "whats_new": [
+      "The team substituted lanthanoid elements into BiCoO3 and induced a temperature-driven phase transition at ambient pressure that makes the crystal contract rather than expand when heated.",
+      "Bi0.82Nd0.18CoO3 reached 6.1% volumetric contraction, reported in the peer-reviewed paper as the largest observed for a lead-free negative-thermal-expansion material.",
+      "The important design idea is using a reconstructive transition — normally considered risky because it can be irreversible — in a composition where the transition can reverse on cooling."
+    ],
+    "skeptical_view": "A large percentage contraction is not automatically a better industrial compensator. Precision applications need the right transition temperature and expansion curve, low hysteresis, many stable thermal cycles, compatible particle size and chemistry, low contamination, predictable mechanical properties and scalable synthesis. The reported work establishes the material physics, not those production qualifications. It also does not show a semiconductor stage, package or optical assembly whose dimensional stability improved after adding this material.",
+    "pr_vs_reality": {
+      "official_claim": "The institutions say the material could contribute to thermal-expansion compensation in semiconductor manufacturing, optical communications and other precision systems.",
+      "demonstrated_reality": "The demonstrated result is a lead-free BiCoO3-based oxide with up to 6.1% volumetric negative thermal expansion through a reversible reconstructive structural transition. Device-level compensation and commercial manufacturability remain future work."
+    },
+    "what_next": "Watch for thermal-cycle endurance and hysteresis data, the usable temperature window, tunability of the transition, coefficient-of-thermal-expansion curves rather than only total volume change, scalable synthesis at lower pressure/cost, composite formulations, contamination testing and an actual precision component benchmark.",
+    "what_would_change_mind": "The industrial case would strengthen if repeated cycling shows stable low-hysteresis behavior and a composite or component achieves materially lower thermal drift without unacceptable stress, contamination or cost. It would weaken if the useful contraction occurs over an impractical temperature window, degrades with cycling, requires difficult high-pressure synthesis at scale, or causes mechanical incompatibility in composites.",
+    "recommendation": "Treat this as a notable materials-design advance for precision engineering, especially because it removes lead and exploits a reversible reconstructive transition. Do not treat the 6.1% number as proof that semiconductor equipment can use it immediately.",
+    "usefulness": 78,
+    "novelty": 89,
+    "impact": {
+      "money": "LOW",
+      "family": "LOW",
+      "career": "MED",
+      "japan": "MED",
+      "urgency": "LOW"
+    },
+    "connection_tags": [
+      "semiconductor-equipment",
+      "thermal-management",
+      "precision-engineering",
+      "advanced-materials",
+      "lead-free-materials"
+    ],
+    "reading_levels": {
+      "30 sec": {
+        "what_happened": "A Japan-based research team made a lead-free oxide that shrank 6.1% in volume when heated, using a reversible crystal phase transition.",
+        "why_it_matters": "Precision semiconductor and optical systems fight tiny temperature-driven dimensional changes; a contracting material can potentially cancel expansion elsewhere.",
+        "what_to_do_watch": "Watch for cycle life, hysteresis, operating-temperature range, scalable manufacturing and a real component test.",
+        "bottom_line": "The record material behavior is demonstrated. A production-ready thermal-compensation material is not."
+      },
+      "2_min": "Most solids expand when heated. In precision machinery that tiny movement can shift alignment or stress an interface. Negative-thermal-expansion materials do the opposite, so engineers can potentially combine them with ordinary materials and reduce the net dimensional change. The new BiCoO3-based oxide changes crystal structure when heated: cobalt moves from a five-coordinate pyramidal environment to a six-coordinate octahedral one, collapsing part of the lattice. In the neodymium-substituted composition Bi0.82Nd0.18CoO3, the measured volume decrease reached 6.1%. The unusual part is that this is a reconstructive transition involving bond rearrangement, a type that is often irreversible, yet the researchers observed a reverse transition on cooling and full reversibility in some compositions. That makes it a useful new design route. The remaining engineering question is whether that dramatic laboratory behavior can be turned into a stable, manufacturable filler or component with the right temperature range, low hysteresis and long cycle life."
+    },
+    "learning": {
+      "outcomes": [
+        "Explain why negative thermal expansion can help precision semiconductor and optical hardware.",
+        "Understand how a structural phase transition can make a solid contract when heated.",
+        "Separate the demonstrated 6.1% material result from unproven commercial integration claims."
+      ],
+      "background": "Ordinary materials generally expand as atoms vibrate more strongly with increasing temperature. In precision systems, different materials can expand by different amounts, shifting alignment or loading bonded interfaces. Engineers can compensate by mixing or pairing a normal positive-expansion material with one that contracts on heating.\n\nThe challenge is finding a negative-expansion material with enough effect, a useful temperature range, reversibility, acceptable chemistry and practical manufacturing. Earlier very large examples from this research line included lead, which is undesirable for many applications.",
+      "terms": [
+        {
+          "term": "Negative thermal expansion",
+          "meaning": "A material response in which length or volume decreases as temperature increases over a defined range.",
+          "why_it_matters": "It can counteract ordinary thermal expansion and reduce net dimensional drift."
+        },
+        {
+          "term": "Reconstructive phase transition",
+          "meaning": "A crystal-structure change that involves breaking and reforming bonds and changing atomic coordination.",
+          "why_it_matters": "Such transitions can produce very large volume changes, but are often hard to reverse; reversibility here is therefore important."
+        },
+        {
+          "term": "Perovskite-type oxide",
+          "meaning": "A broad family of crystalline oxides related to the ABO3 structural framework.",
+          "why_it_matters": "BiCoO3 is the parent material whose chemistry and structure were tuned to create the observed contraction."
+        },
+        {
+          "term": "Thermal-expansion compensation",
+          "meaning": "Combining materials so one material's temperature-driven dimensional change offsets another's.",
+          "why_it_matters": "It is the practical reason a strong negative-expansion material could matter for precision equipment."
+        }
+      ],
+      "how_it_works": [
+        {
+          "title": "Start with BiCoO3",
+          "explanation": "The parent oxide can switch between crystal structures with substantially different volumes."
+        },
+        {
+          "title": "Tune the chemistry",
+          "explanation": "Replacing some bismuth with lanthanoid ions makes the structural transition occur with heating at ambient pressure."
+        },
+        {
+          "title": "The cobalt coordination changes",
+          "explanation": "The structure changes from CoO5 pyramids toward CoO6 octahedra, producing a large lattice-volume collapse."
+        },
+        {
+          "title": "Cooling can reverse it",
+          "explanation": "The researchers observed the high-temperature phase returning toward the low-temperature phase on cooling, with some compositions fully reversible."
+        }
+      ],
+      "example": "Imagine a precision frame that grows slightly as a machine warms. If a carefully chosen filler contracts by the right amount over the same temperature range, the two effects can partially cancel. The 6.1% result says this oxide has a powerful contraction mechanism; it does not yet tell engineers the exact recipe for a stable zero-expansion machine part.",
+      "takeaways": [
+        "The measured 6.1% volume contraction is a demonstrated peer-reviewed result in a lead-free composition.",
+        "The contraction comes from a large crystal-structure rearrangement rather than ordinary bond vibration alone.",
+        "Reversibility is notable because reconstructive transitions are often irreversible.",
+        "Semiconductor and optical applications are plausible because thermal drift matters there, but no production component was demonstrated.",
+        "Cycle life, hysteresis, temperature range, scalable synthesis and composite/device validation are the next decisive evidence."
+      ]
+    }
+  }
+}
