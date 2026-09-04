@@ -1,0 +1,97 @@
+[
+  {
+    "id": "japan-otc-like-prescription-extra-charge-2027",
+    "agent": "practical",
+    "created_at": "2026-09-04T22:10:00+09:00",
+    "type": "health_cost",
+    "title": "Some prescription medicines will get an extra charge from March 2027",
+    "summary": "Japan plans a new extra charge for selected prescription medicines that can be substituted by OTC drugs, starting in March 2027. The current design uses an extra charge equal to 25% of the medicine price, but exemption details are still being finalized.",
+    "why_it_matters": "This can raise out-of-pocket costs for common medicines even when they are still prescribed through insurance. The September 3-4 discussions also clarified that some medical-need exemptions are planned, while broader low-income treatment remains contested.",
+    "importance": 90,
+    "confidence": 91,
+    "tags": ["Japan", "Healthcare", "Prescription Drugs", "OTC", "Health Insurance", "Household Costs"],
+    "geography": ["Japan"],
+    "status": "DEVELOPING",
+    "sources": [
+      {"publisher": "Ministry of Health, Labour and Welfare", "title": "上野大臣会見概要｜令和８年９月４日", "url": "https://www.mhlw.go.jp/stf/kaiken/daijin/0000194708_00965.html", "published_at": "2026-09-04", "source_type": "official"},
+      {"publisher": "Ministry of Health, Labour and Welfare", "title": "社会保障審議会（医療保険部会）", "url": "https://www.mhlw.go.jp/stf/newpage_28708.html", "published_at": "2026-09-03", "source_type": "official"},
+      {"publisher": "Ministry of Health, Labour and Welfare", "title": "ＯＴＣ類似薬の保険給付の見直しの実施に向けた技術的検討会", "url": "https://www.mhlw.go.jp/stf/shingi/other-hoken_282014_00001.html", "published_at": "2026-08-05", "source_type": "official"},
+      {"publisher": "Ministry of Health, Labour and Welfare", "title": "医療保険制度改正法が成立しました", "url": "https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/kenkou_iryou/iryouhoken/newpage_00014.html", "published_at": "2026-05-29", "source_type": "official"}
+    ],
+    "claims": [
+      {"kind": "FACT", "text": "Japan has enacted a medical-insurance reform that creates a separate out-of-insurance charge for selected prescription medicines considered highly substitutable by OTC medicines.", "source_refs": [2,4], "basis": "MHLW reform and medical-insurance committee records"},
+      {"kind": "FACT", "text": "The government has been preparing implementation during FY2026, with the working implementation timing stated as March 2027 and the extra charge set at one quarter of the medicine price.", "source_refs": [1,2,3], "basis": "MHLW implementation discussions and September 4 minister briefing"},
+      {"kind": "FACT", "text": "MHLW says exemptions are being prepared for medical-need situations including cancer or intractable-disease patients and people for whom long-term use of an affected medicine is medically necessary.", "source_refs": [1,3], "basis": "September 4 minister briefing and technical-review process"},
+      {"kind": "FACT", "text": "On September 4, MHLW said discussion is continuing over low-income treatment and did not state that all resident-tax-exempt households will automatically be exempt from the extra charge.", "source_refs": [1], "basis": "Minister response to questions about low-income exemption scope"},
+      {"kind": "INFERENCE", "text": "Households that regularly use prescription medicines with OTC equivalents should prepare to check the final covered-drug and exemption rules before March 2027 rather than assuming current copays will remain unchanged.", "source_refs": [1,2,3,4], "basis": "Enacted reform plus unresolved implementation details"}
+    ],
+    "content": {
+      "key_message": "A new prescription-drug charge is coming in March 2027; regular users of common OTC-like medicines should watch the final drug list and exemption rules.",
+      "what_changed": [
+        "The underlying health-insurance reform is already enacted; implementation details are now being finalized.",
+        "MHLW's current design adds a separate charge equal to 25% of the medicine price for selected OTC-like prescription drugs.",
+        "The September 3-4 discussion sharpened the exemption issue: medical-need exemptions are planned, but a blanket exemption for all resident-tax-exempt households is not confirmed."
+      ],
+      "who_is_affected": "People in Japan who receive prescription medicines that end up on the final OTC-like drug list. You are not automatically affected just because you use prescription medicine; the exact medicine and any medical-need exemption will matter.",
+      "when": "The government has been preparing implementation for March 2027. Final operational details are still under discussion as of September 4, 2026.",
+      "financial_impact": "Affected prescriptions would carry the usual insured patient share plus a separate charge based on 25% of the medicine price under the current design. The exact yen impact depends on the drug, quantity and final implementation rules.",
+      "risk_if_ignored": "You may be surprised by a higher pharmacy bill in 2027 or incorrectly stop/alter a medically necessary medicine without first checking whether an exemption applies.",
+      "action": "PREPARE",
+      "deadline": "No consumer application deadline is announced. The meaningful checkpoint is before the planned March 2027 start, after MHLW publishes the final covered-drug and exemption rules.",
+      "effort": "LOW",
+      "potential_benefit": "Avoid an unexpected pharmacy cost and know whether a medically necessary prescription qualifies for an exemption.",
+      "downside": "There is little value in changing medicine now because the final covered list and detailed exemption operation are not yet fully settled.",
+      "skeptical_view": "The reform does not mean all common prescriptions will suddenly become fully self-paid. The policy is a targeted extra charge, and exemptions for medical necessity are part of the implementation design. Final scope can still change before launch.",
+      "what_to_watch": "Watch MHLW's medical-insurance reform and OTC-like-drug pages for the final covered-drug list, exemption criteria, patient examples and confirmed start rules.",
+      "what_would_change_mind": "ALAM would revise this guidance if MHLW changes the March 2027 timing, the 25% charge design, materially narrows or expands the covered medicines, or publishes broader low-income exemptions.",
+      "bottom_line": "Do not change treatment now; if you use regular prescription medicines, check the final MHLW list and ask your doctor or pharmacist about exemption status before the March 2027 rollout.",
+      "impact": {"money": "MED", "family": "MED", "career": "LOW", "japan": "HIGH", "urgency": "MED"},
+      "connection_tags": ["health-insurance-reform", "medicine-costs", "otc-like-drugs", "household-costs"],
+      "reading_levels": {
+        "30 sec": [
+          "What happened: Japan is preparing an extra charge for selected prescription medicines that have close OTC alternatives.",
+          "Why it matters: the current design adds 25% of the medicine price on top of the normal insured patient share.",
+          "What to do: do not switch or stop medicine now; wait for the final MHLW list and exemption rules, then check regular prescriptions.",
+          "Bottom line: the rule is real, but the exact medicine-by-medicine and exemption details are still developing."
+        ],
+        "2_min": "Japan's 2026 medical-insurance reform creates a new category for selected prescription medicines that are considered highly substitutable by over-the-counter medicines. Under the current implementation design, an affected prescription remains within the medical system but carries a separate charge equal to 25% of the medicine price in addition to the normal insured patient share. MHLW has been preparing a March 2027 start. Exemptions are being designed for medically necessary cases such as some cancer, intractable-disease and long-term-use situations. The September 4 minister briefing also showed that the low-income boundary is still contentious: MHLW did not confirm a blanket exemption for every resident-tax-exempt household. The sensible action now is preparation, not self-directed switching."
+      },
+      "learning": {
+        "outcomes": ["Understand what an OTC-like prescription medicine means.", "Understand how the new extra charge differs from removing a medicine entirely from insurance.", "Know why the final exemption rules matter before changing treatment."],
+        "background": "Japan distinguishes medical-use prescription medicines from OTC medicines sold directly to consumers. Some prescription products have the same or very similar active ingredients and uses as OTC products. The new reform creates a separate extra-payment mechanism for a selected subset judged especially substitutable by OTC medicine rather than simply declaring every such prescription uninsured.",
+        "terms": [
+          {"term": "OTC medicine", "meaning": "An over-the-counter medicine that can be bought without a prescription.", "why_it_matters": "The reform targets selected prescription medicines for which an OTC alternative is considered highly substitutable."},
+          {"term": "Separate extra charge", "meaning": "A payment outside the normal insured copay that is added when an affected medicine is prescribed.", "why_it_matters": "It means the patient's pharmacy payment can rise even though the prescription still passes through insured medical care."}
+        ],
+        "how_it_works": [
+          {"title": "Normal prescription payment", "explanation": "A patient normally pays the insured copay percentage on the covered medicine and other eligible medical costs."},
+          {"title": "Affected OTC-like medicine", "explanation": "Under the current design, an affected medicine would also carry a separate charge based on one quarter of its medicine price."},
+          {"title": "Medical-need exception", "explanation": "If the final rules classify the patient's situation as medically necessary for exemption, that separate charge may not apply. The detailed boundary is still being finalized."}
+        ],
+        "example": "Illustrative mechanism only: if an affected medicine's listed medicine cost were ¥1,000, the current design's separate charge would be based on ¥250. The patient's total bill is not simply ¥250 because the ordinary insured copay and other prescription costs are calculated separately. This example is for understanding the mechanism, not a quote for any specific drug.",
+        "takeaways": ["The reform is enacted; the detailed implementation is still developing.", "It is an extra charge, not a blanket removal of every OTC-like medicine from insurance.", "Medical-need exemptions matter and can change whether the extra charge applies.", "Do not stop or switch prescribed medicine on your own to avoid a future fee.", "Re-check MHLW guidance before the planned March 2027 start."]
+      },
+      "action_plan": {
+        "goal": "Be ready to identify whether a regular prescription will be affected and whether an exemption applies once final rules are published.",
+        "who_should_act": "People in Japan who regularly receive prescription medicines, especially common medicines that may have OTC equivalents. People with no regular prescriptions can safely ignore this for now.",
+        "deadline": "Re-check before the planned March 2027 implementation. No consumer filing deadline has been announced.",
+        "prepare": ["A current medication list or medication notebook (お薬手帳)", "Exact medicine names and strengths for medicines you take regularly", "The reason each long-term medicine is prescribed, if known", "Any official MHLW update showing the final covered-drug list or exemption rules"],
+        "steps": [
+          {"step": "List regular medicines", "action": "Write down the exact names and strengths of medicines you receive repeatedly.", "how": "Use your お薬手帳, pharmacy printout or prescription history.", "needed": ["Medication list or お薬手帳"], "time_minutes": 10, "cost_yen": 0, "done_when": "You have an exact list rather than only symptoms or brand descriptions."},
+          {"step": "Wait for the final official list", "action": "Check MHLW's OTC-like-drug reform information once the final implementation list is published.", "how": "Use the Ministry of Health, Labour and Welfare website or ask your pharmacist to verify the official list.", "needed": ["Exact medicine names"], "time_minutes": 10, "cost_yen": 0, "done_when": "Each regular medicine is marked affected, unaffected or still unclear from official information."},
+          {"step": "Check exemption if affected", "action": "If a regular medicine is affected, ask the prescribing doctor or pharmacist whether your use falls under the final medical-need exemption criteria.", "how": "Bring the medication list and explain the treatment reason; rely on the final official criteria rather than social-media summaries.", "needed": ["Medication list", "Final MHLW exemption guidance"], "time_minutes": 10, "cost_yen": 0, "done_when": "You know whether the extra charge is expected to apply to that prescription under the final rule."},
+          {"step": "Compare safe options only with a professional", "action": "If the charge applies, ask whether continuing the prescription, using an OTC alternative or another medically appropriate option makes sense.", "how": "Discuss it with the prescribing doctor or pharmacist; do not self-switch chronic treatment solely for price.", "needed": ["Affected medicine information"], "time_minutes": 10, "cost_yen": 0, "done_when": "You have a medically appropriate plan for the first affected refill after rollout."}
+        ],
+        "mistakes_to_avoid": ["Assuming every prescription with an OTC equivalent is automatically affected.", "Treating the 25% figure as 25% of your entire clinic/pharmacy bill; it is tied to the affected medicine price under the current design.", "Assuming every resident-tax-exempt household is already confirmed exempt; MHLW was still debating this boundary on September 4.", "Stopping or reducing prescribed medicine without medical advice.", "Buying a large OTC stockpile months early before the final list and rules are settled."],
+        "decision_rules": [
+          {"if": "Your medicine is not on the final affected list", "then": "This specific extra charge does not apply to that medicine."},
+          {"if": "Your medicine is affected but your use meets a final medical-need exemption", "then": "Follow the exemption handling instructed by your doctor/pharmacist and official guidance."},
+          {"if": "Your medicine is affected and no exemption applies", "then": "Ask the pharmacist for the expected additional cost and discuss medically appropriate alternatives before changing treatment."},
+          {"if": "Final MHLW rules are not yet published", "then": "Prepare your medication list and wait; do not alter treatment based on draft discussions."}
+        ],
+        "follow_up": "Re-check MHLW guidance when the final covered-drug list and exemption criteria are released, and again shortly before the first refill after the rollout."
+      },
+      "editorial_visual": {"style": "editorial", "motif": "shield", "secondary_motif": "document", "scene": "a restrained pharmacy counter illustration with a prescription sheet, medicine blister packs and a small extra-cost receipt behind a transparent policy shield; no logos or readable drug names", "caption": "A new layer in the pharmacy bill", "silliness": 2, "exaggeration": 28}
+    }
+  }
+]
