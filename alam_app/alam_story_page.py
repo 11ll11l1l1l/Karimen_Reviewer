@@ -28,10 +28,10 @@ STORY_PAGE_CSS = r"""
 .story-answer-card{background:rgba(255,255,255,.94);border:1px solid rgba(23,32,42,.09);border-radius:17px;padding:13px 14px;min-height:116px}
 .story-answer-label{font-size:.65rem;font-weight:950;letter-spacing:.075em;text-transform:uppercase;color:#667085;margin-bottom:6px}.story-answer-value{font-size:.88rem;line-height:1.48;color:#344054}.story-answer-value strong{color:#17202A}
 .story-evidence-strong{color:#087D5B}.story-evidence-good{color:#2F6FB0}.story-evidence-early{color:#C95E19}.story-evidence-weak{color:#B42318}
-.story-action-snapshot{border:1px solid rgba(8,125,91,.14);background:rgba(8,125,91,.045);border-radius:17px;padding:13px 14px;margin:9px 0 12px}.story-action-snapshot-title{font-size:.70rem;font-weight:950;letter-spacing:.065em;text-transform:uppercase;color:#087454;margin-bottom:8px}.story-action-snapshot-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.story-action-snapshot-item{font-size:.80rem;line-height:1.44;color:#344054}.story-action-snapshot-item b{display:block;font-size:.64rem;letter-spacing:.05em;text-transform:uppercase;color:#667085;margin-bottom:3px}
+.story-action-snapshot{border:1px solid rgba(8,125,91,.14);background:rgba(8,125,91,.045);border-radius:17px;padding:13px 14px;margin:9px 0 12px}.story-action-snapshot-title{font-size:.70rem;font-weight:950;letter-spacing:.065em;text-transform:uppercase;color:#087454;margin-bottom:8px}.story-action-snapshot-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.story-action-snapshot-item{font-size:.80rem;line-height:1.44;color:#344054}.story-action-snapshot-item b{display:block;font-size:.64rem;letter-spacing:.05em;text-transform:uppercase;color:#667085;margin-bottom:3px}.story-action-tradeoffs{border-top:1px solid rgba(8,125,91,.12);margin-top:10px;padding-top:10px}.story-action-tradeoffs-title{font-size:.64rem;font-weight:950;letter-spacing:.05em;text-transform:uppercase;color:#667085;margin-bottom:6px}.story-action-tradeoffs-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.story-action-tradeoff{font-size:.78rem;line-height:1.42;color:#344054}.story-action-tradeoff b{display:block;font-size:.63rem;letter-spacing:.045em;text-transform:uppercase;color:#667085;margin-bottom:3px}
 .story-change-shell{border:1px solid rgba(89,104,242,.15);background:#F7F8FF;border-radius:17px;padding:13px 14px;margin:9px 0 12px}.story-change-title{font-size:.72rem;font-weight:950;letter-spacing:.065em;text-transform:uppercase;color:#5968F2;margin-bottom:8px}.story-change-grid{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:start}.story-change-block{font-size:.82rem;line-height:1.46;color:#344054}.story-change-block b{display:block;color:#17202A;margin-bottom:3px}.story-change-arrow{color:#98A2B3;font-weight:900;padding-top:17px}.story-change-why{border-top:1px solid rgba(89,104,242,.12);margin-top:9px;padding-top:9px;font-size:.82rem;line-height:1.45;color:#344054}
 .story-disagreement-note{border:1px solid #F5D995;background:#FFF7E8;border-radius:14px;padding:9px 11px;margin:8px 0 12px;font-size:.80rem;line-height:1.42;color:#6B4D16}.story-saved-update{border:1px solid rgba(89,104,242,.17);background:#EEF0FF;color:#4854C8;border-radius:14px;padding:9px 11px;margin:8px 0;font-size:.79rem;line-height:1.42}.story-view-label{font-size:.70rem;font-weight:900;color:#667085;margin:12px 0 6px}
-@media(max-width:760px){.story-answer-grid,.story-action-snapshot-grid{grid-template-columns:1fr}.story-answer-card{min-height:auto}.story-change-grid{grid-template-columns:1fr}.story-change-arrow{transform:rotate(90deg);text-align:center;padding:0}.story-view-label{margin-top:10px}}
+@media(max-width:760px){.story-answer-grid,.story-action-snapshot-grid,.story-action-tradeoffs-grid{grid-template-columns:1fr}.story-answer-card{min-height:auto}.story-change-grid{grid-template-columns:1fr}.story-change-arrow{transform:rotate(90deg);text-align:center;padding:0}.story-view-label{margin-top:10px}}
 </style>
 """
 
@@ -119,12 +119,30 @@ def _practical_action_snapshot(record):
     return [(label, text) for label, value, limit in candidates if (text := _safe_action_fact(value, limit))]
 
 
+def _practical_action_tradeoffs(record):
+    """Expose explicit cost/benefit/effort metadata without calculating a recommendation."""
+    if str(record.get("_category") or record.get("category") or "").lower() != "practical":
+        return []
+    content = record.get("content") if isinstance(record.get("content"), dict) else {}
+    candidates = (
+        ("Potential benefit", content.get("potential_benefit"), 200),
+        ("Downside", content.get("downside"), 200),
+        ("Effort / cost", content.get("effort") or content.get("financial_impact"), 180),
+    )
+    return [(label, text) for label, value, limit in candidates if (text := _safe_action_fact(value, limit))]
+
+
 def _render_action_snapshot(record):
     items = _practical_action_snapshot(record)
-    if not items:
+    tradeoffs = _practical_action_tradeoffs(record)
+    if not items and not tradeoffs:
         return
     cards = "".join(f"<div class='story-action-snapshot-item'><b>{esc(label)}</b>{esc(value)}</div>" for label, value in items)
-    st.markdown(f"<div class='story-action-snapshot'><div class='story-action-snapshot-title'>Before you act</div><div class='story-action-snapshot-grid'>{cards}</div></div>", unsafe_allow_html=True)
+    tradeoff_html = ""
+    if tradeoffs:
+        tradeoff_cards = "".join(f"<div class='story-action-tradeoff'><b>{esc(label)}</b>{esc(value)}</div>" for label, value in tradeoffs)
+        tradeoff_html = f"<div class='story-action-tradeoffs'><div class='story-action-tradeoffs-title'>Tradeoffs before committing</div><div class='story-action-tradeoffs-grid'>{tradeoff_cards}</div></div>"
+    st.markdown(f"<div class='story-action-snapshot'><div class='story-action-snapshot-title'>Before you act</div><div class='story-action-snapshot-grid'>{cards}</div>{tradeoff_html}</div>", unsafe_allow_html=True)
 
 
 def _render_answer_grid(record, all_records):
