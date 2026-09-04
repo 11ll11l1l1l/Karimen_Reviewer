@@ -17,7 +17,7 @@ import json
 import os
 import sys
 from contextlib import redirect_stdout
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from alam_lifecycle import lifecycle_rejections
 from alam_publication_quality import PublicationQualityError, persist_quality_rejections
@@ -25,6 +25,7 @@ from alam_supabase_ingest import _client, run as run_ingestion
 from alam_supabase_reconcile import prepare_public_archive, reconcile_public_archive
 
 SYNC_AGENT_ID = "alam_supabase_sync"
+STALE_SYNC_RUN_MINUTES = 30
 
 
 def _utc_now():
@@ -81,6 +82,35 @@ def _story_counts(stats):
     published = int(stats.get("article_published") or 0)
     rejected = int(stats.get("article_invalid") or 0) + int(stats.get("article_rejected") or 0)
     return found, published, rejected
+
+
+def _recover_stale_sync_runs(client):
+    """Finalize only abandoned trusted-sync telemetry left by a killed runner.
+
+    GitHub Actions gives the production sync job a 10-minute hard timeout. A hard
+    timeout, cancellation, or runner loss can terminate Python before ``_finish_run``
+    executes, leaving a durable ``running`` row forever. A later trusted sync can
+    safely recover only this sync agent's rows once they are well beyond that runner
+    window. Other agents and fresh sync runs are deliberately outside this update.
+    """
+    now = datetime.now(timezone.utc)
+    cutoff = (now - timedelta(minutes=STALE_SYNC_RUN_MINUTES)).isoformat()
+    response = (
+        client.table("agent_runs")
+        .update({
+            "finished_at": now.isoformat(),
+            "status": "failed",
+            "error_message": (
+                "ALAM Supabase sync did not finalize before the runner safety window; "
+                "recovered by a later trusted sync."
+            ),
+        })
+        .eq("agent_id", SYNC_AGENT_ID)
+        .eq("status", "running")
+        .lt("started_at", cutoff)
+        .execute()
+    )
+    return len(response.data or [])
 
 
 def _insert_run(client):
@@ -142,6 +172,18 @@ def _finish_run(client, run_id, exit_code, stats):
 def main():
     client = _client()
     run_id = None
+
+    try:
+        recovered_runs = _recover_stale_sync_runs(client)
+        if recovered_runs:
+            print(
+                f"SYNC AUDIT: recovered {recovered_runs} stale {SYNC_AGENT_ID} run(s).",
+                file=sys.stderr,
+            )
+    except Exception as exc:
+        # Recovery is operational hygiene, not permission to block reconciliation.
+        # A transient telemetry failure must not stop the trusted content mirror.
+        print(f"SYNC AUDIT WARNING: could not recover stale {SYNC_AGENT_ID} runs: {exc}", file=sys.stderr)
 
     try:
         run_id = _insert_run(client)
