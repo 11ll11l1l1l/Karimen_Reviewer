@@ -153,7 +153,9 @@ def open_grounded_recovery(record):
     # state from silently hiding valid evidence in unrelated searches.
     st.session_state["alam_ask_recovery_query"] = query
     st.session_state["alam_ask_excluded_story_ids"] = [str(record.get("id"))] if record.get("id") else []
-    st.session_state["alam_ask_lenses"] = []
+    # Preserve the cross-lens recovery contract for known categories while still
+    # replacing stale widget state with [] for unknown/legacy categories.
+    st.session_state["alam_ask_lenses"] = recovery_lenses(record)
     return True
 
 def render_action_checklist(record, manager=None):
