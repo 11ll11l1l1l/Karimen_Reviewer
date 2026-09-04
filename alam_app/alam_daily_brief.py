@@ -56,6 +56,23 @@ def _display_label(label, record):
     return _action_label(record) if str(label or "").upper() == "DO" else str(label or "").upper()
 
 
+def _deadline_note(record):
+    """Return only an explicitly published Practical deadline; never derive one.
+
+    Deadlines are high-value on a mobile briefing, but converting prose or timestamps
+    into a due date would create advice the publication gate never validated. Keep the
+    source value verbatim, reject structured/placeholder values, and cap display length.
+    """
+    content = record.get("content") or {}
+    value = content.get("deadline")
+    if isinstance(value, bool) or not isinstance(value, (str, int, float)):
+        return ""
+    text = " ".join(str(value).split()).strip()
+    if not text or text.lower() in {"none", "n/a", "na", "not applicable", "unknown", "tbd"}:
+        return ""
+    return text[:96]
+
+
 def _importance_score(record):
     """Normalize loose importance values so Today never crashes on valid v5 labels."""
     value = record.get("importance")
@@ -273,11 +290,14 @@ def render_daily_brief(records, all_records):
         lifecycle = intelligence.story_lifecycle(record, all_records)
         relevance = intelligence.personal_relevance(record)
         display_label = _display_label(label, record)
+        deadline = _deadline_note(record) if label == "DO" else ""
+        deadline_html = f"<div class='intel-mini'><strong>Deadline · {escape(deadline)}</strong></div>" if deadline else ""
         html.append(
             "<div class='intel-brief-card'>"
             f"<div class='intel-kicker'>{escape(display_label)}</div>"
             f"<div class='intel-brief-head'>{escape(str(record.get('title') or ''))}</div>"
             f"<div class='intel-brief-copy'>{escape(copy)}</div>"
+            f"{deadline_html}"
             f"<div class='intel-mini'>{escape(reason)} · Relevance {relevance}/100 · {escape(lifecycle)}</div>"
             "</div>"
         )
