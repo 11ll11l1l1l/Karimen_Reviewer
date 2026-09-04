@@ -1,0 +1,104 @@
+{
+  "id": "japan-2026-regional-minimum-wage-sep3",
+  "agent": "practical",
+  "created_at": "2026-09-04T14:12:00+09:00",
+  "type": "work_rights",
+  "title": "Japan’s 2026 minimum wages are nearly set—check your prefecture’s date",
+  "summary": "All 47 prefectural councils have now recommended their FY2026 regional minimum-wage revisions; the nationwide weighted average is ¥1,177 per hour, up ¥56. But a council recommendation is not automatically the legal start date everywhere, so check your prefectural Labor Bureau before judging a payslip.",
+  "why_it_matters": "Workers paid near the legal floor may need a wage adjustment when their prefecture’s new rate takes effect. Monthly gross pay can also look safely above minimum wage while the legal comparison still falls short because some allowances, bonuses and overtime-related pay are excluded from the calculation.",
+  "importance": 93,
+  "confidence": 98,
+  "tags": ["Japan", "Minimum Wage", "Work Rights", "Salary", "Employment", "Household Money", "2026"],
+  "geography": ["Japan"],
+  "status": "DEVELOPING",
+  "sources": [
+    {"publisher": "厚生労働省", "title": "全ての都道府県で地域別最低賃金の改定額が答申されました", "url": "https://www.mhlw.go.jp/stf/newpage_75950.html", "published_at": "2026-09-03", "source_type": "official"},
+    {"publisher": "東京労働局", "title": "最低賃金・各種助成金周知強化期間を実施します ～さいちんキャンペーン（TOKYO1280）～", "url": "https://jsite.mhlw.go.jp/tokyo-roudoukyoku/news_topics/houdou/20260901chinginka_00002.html", "published_at": "2026-09-01", "source_type": "official"},
+    {"publisher": "千葉労働局", "title": "千葉県最低賃金を時間額「1,195円」に引き上げ-効力発生日は令和8年10月1日-", "url": "https://jsite.mhlw.go.jp/chiba-roudoukyoku/news_topics/_20260901_chingin_00003.html", "published_at": "2026-09-01", "source_type": "official"},
+    {"publisher": "茨城労働局", "title": "茨城地方最低賃金審議会の意見に関する公示について", "url": "https://jsite.mhlw.go.jp/ibaraki-roudoukyoku/redirect/saichin_iken_kouji.html", "published_at": "2026-08-24", "source_type": "official"},
+    {"publisher": "厚生労働省", "title": "最低賃金の種類", "url": "https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/koyou_roudou/roudoukijun/chingin/newpage_43885.html", "source_type": "official"},
+    {"publisher": "厚生労働省", "title": "最低賃金額以上かどうかを確認する方法", "url": "https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/koyou_roudou/roudoukijun/chingin/newpage_43899.html", "source_type": "official"},
+    {"publisher": "厚生労働省", "title": "派遣労働者への適用", "url": "https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/koyou_roudou/roudoukijun/chingin/newpage_43892.html", "source_type": "official"},
+    {"publisher": "富山労働局", "title": "最低賃金制度", "url": "https://jsite.mhlw.go.jp/toyama-roudoukyoku/hourei_seido_tetsuzuki/tingin/saichinseido.html", "source_type": "official"}
+  ],
+  "claims": [
+    {"kind": "FACT", "text": "By September 3, 2026, all 47 prefectural minimum-wage councils had submitted FY2026 regional minimum-wage recommendations; the recommended nationwide weighted average is ¥1,177 per hour, ¥56 above the previous year.", "source_refs": [1], "basis": "MHLW nationwide compilation"},
+    {"kind": "FACT", "text": "Tokyo has confirmed a regional minimum wage of ¥1,280 per hour effective October 1, 2026, and Chiba has confirmed ¥1,195 effective October 1, 2026.", "source_refs": [2, 3], "basis": "Official Tokyo and Chiba Labor Bureau notices"},
+    {"kind": "FACT", "text": "The nationwide September 3 compilation is a set of local-council recommendations, not proof that every recommended rate is already legally final: Ibaraki was still accepting objections through September 8 after its August 24 recommendation.", "source_refs": [1, 4], "basis": "MHLW characterization of the figures as council recommendations plus Ibaraki's active objection procedure"},
+    {"kind": "FACT", "text": "Regional minimum wage applies to workers and employers in the prefecture regardless of industry or occupation; when a higher specific-industry minimum wage also applies, the higher applicable rate governs.", "source_refs": [5, 8], "basis": "MHLW minimum-wage system guidance"},
+    {"kind": "FACT", "text": "For dispatched workers, the minimum wage applicable at the dispatch destination applies, not simply the location of the dispatch agency.", "source_refs": [7], "basis": "MHLW dispatch-worker guidance"},
+    {"kind": "FACT", "text": "When checking minimum wage, bonuses, temporary payments, overtime/holiday/deep-night premium portions, perfect-attendance allowances, commuting allowances and family allowances are among the payments excluded from the comparison.", "source_refs": [8], "basis": "Labor Bureau minimum-wage calculation guidance"},
+    {"kind": "FACT", "text": "For a monthly-paid worker, MHLW's standard method is to remove excluded payments, convert the remaining qualifying wage to an hourly amount using scheduled working time, and compare that hourly equivalent with the applicable minimum wage.", "source_refs": [6], "basis": "MHLW calculation method"},
+    {"kind": "INFERENCE", "text": "Workers whose qualifying pay is close to the legal floor should calculate their hourly equivalent before the new local effective date instead of relying on gross monthly pay or the national ¥1,177 average.", "source_refs": [1, 5, 6, 8], "basis": "Decision-useful inference from the staggered local system and official calculation rules"}
+  ],
+  "editorial_visual": {
+    "style": "editorial",
+    "motif": "yen",
+    "secondary_motif": "document",
+    "scene": "a clean Japanese payslip and hourly wage card beside a prefecture map and a calendar, with one proposed rate stamped recommendation and another rate clearly crossing into an effective-date box; restrained labor-rights editorial illustration, no logos or people in distress",
+    "caption": "The number matters only when you know which prefecture and when it takes effect",
+    "silliness": 4,
+    "exaggeration": 34
+  },
+  "content": {
+    "key_message": "Do not use the national ¥1,177 figure as your personal legal minimum: check your workplace prefecture, the final official rate and its effective date, then calculate only the wage components that legally count.",
+    "who_is_affected": "Employees, part-timers, arubaito, fixed-term workers and other workers paid near their applicable minimum wage. Dispatched workers should check the prefecture of the dispatch destination. Workers whose qualifying hourly pay is already comfortably above both the current and finalized new local minimum can safely ignore the immediate payroll-check action.",
+    "when": "All 47 local councils had issued FY2026 recommendations by September 3. Final legal effective dates are prefecture-specific. Tokyo and Chiba have already confirmed October 1, 2026; other prefectures should be checked on the relevant Labor Bureau page because some local procedures are still underway.",
+    "financial_impact": "There is no single household-yen estimate because the effect depends on the local rate, qualifying wage and scheduled hours. For someone below the legally effective minimum, the gap applies to each covered working hour and can accumulate across a pay period.",
+    "estimated_saving_yen": null,
+    "time_minutes": 20,
+    "travel_minutes": 0,
+    "risk_if_ignored": "A worker can miss an underpayment if they compare the wrong prefecture, assume every new rate starts October 1, or use gross pay including components that do not count toward the minimum-wage test.",
+    "action": "PREPARE",
+    "deadline": "Before your prefecture's new minimum wage legally takes effect. Tokyo and Chiba: October 1, 2026. For other prefectures, use the final prefectural Labor Bureau notice rather than the national recommendation date.",
+    "effort": "About 20 minutes if you have your contract, payslip and scheduled-working-time information.",
+    "potential_benefit": "Catches payroll mistakes before they compound and prevents false reassurance from a gross salary figure that includes excluded allowances or overtime-related pay.",
+    "downside": "The ¥1,177 national weighted average is informative for policy but is not the legal rate for any worker by itself. Also, a council recommendation can precede the final local decision, so treating every proposed amount or date as already effective can create a false claim of underpayment.",
+    "what_would_change_mind": "A prefectural Labor Bureau final notice changing a recommended amount or effective date, or a finding that a higher specific-industry minimum applies to the worker, would change the comparison.",
+    "usefulness": 97,
+    "novelty": 91,
+    "impact": {"money": "HIGH", "family": "MED", "career": "MED", "japan": "HIGH", "urgency": "MED"},
+    "connection_tags": ["minimum-wage", "work-rights", "payroll", "prefectural-rules", "autumn-2026"],
+    "skeptical_view": "The headline national figure can overstate immediate personal relevance. ¥1,177 is a weighted average of recommended local rates, while a worker's legal floor comes from the applicable prefecture or higher specific-industry minimum and only after the relevant rate legally takes effect.",
+    "what_to_watch": "Your prefectural Labor Bureau's final minimum-wage notice, its effective date, and whether a specific-industry minimum wage higher than the regional rate applies to your job.",
+    "recommendation": "Check once now and once after the first payslip covering work performed on or after the new local effective date. If the calculated qualifying hourly wage is below the applicable rate, ask payroll/employer for the calculation and correction; if unresolved, use the prefectural Labor Bureau or Labor Standards Inspection Office.",
+    "reading_levels": {"30 sec": {"what_happened": "All 47 prefectural councils have recommended their 2026 minimum-wage revisions; the weighted average is ¥1,177/hour.", "why_it_matters": "Your own legal minimum is local, starts on a local effective date, and may be higher if a specific-industry minimum applies.", "what_to_do_watch": "Check your prefectural Labor Bureau, remove excluded pay items, and convert monthly qualifying pay to an hourly amount.", "bottom_line": "Do not compare gross monthly salary with the national average and assume you are compliant."}},
+    "learning": {
+      "outcomes": ["Distinguish a nationwide recommendation summary from the legally effective local minimum wage.", "Identify which prefecture's minimum wage applies, including for dispatched work.", "Calculate whether monthly pay clears the minimum-wage floor without counting excluded payments."],
+      "background": "Japan does not have one single statutory hourly minimum that applies identically everywhere. Each prefecture has a regional minimum wage, and some industries also have a higher specific minimum. Every year local minimum-wage councils deliberate and recommend revised rates, followed by the legal procedures that make the local rate effective.",
+      "terms": [
+        {"term": "Regional minimum wage", "meaning": "The prefecture-wide minimum hourly wage that applies regardless of industry or occupation to workers at establishments in that prefecture.", "why_it_matters": "This is usually the first rate a worker checks."},
+        {"term": "Specific-industry minimum wage", "meaning": "A separate minimum for certain industries and worker groups in a prefecture.", "why_it_matters": "If it applies and is higher than the regional minimum, the higher applicable rate controls."},
+        {"term": "Weighted national average", "meaning": "A national summary that gives more weight to prefectures with more workers.", "why_it_matters": "It describes the national wage floor trend but is not your personal statutory rate."}
+      ],
+      "how_it_works": [
+        {"title": "Find the correct jurisdiction", "explanation": "Use the prefecture where the workplace is located. If you are a dispatched worker, MHLW says to use the minimum wage that applies at the dispatch destination."},
+        {"title": "Confirm that the new rate is legally effective", "explanation": "A council recommendation is an important step, but workers should use the final Labor Bureau notice and effective date. Tokyo and Chiba, for example, have already confirmed October 1 rates, while Ibaraki still had an objection procedure open after its recommendation."},
+        {"title": "Strip out pay that does not count", "explanation": "Do not simply divide gross pay by hours. Certain payments such as commuting and family allowances, bonuses, temporary payments, and overtime/holiday/deep-night premium portions are excluded from the minimum-wage comparison."},
+        {"title": "Convert the remaining wage to hourly", "explanation": "For monthly pay, convert the qualifying monthly wage using scheduled working time, following MHLW's calculation method, then compare it with the applicable hourly minimum."}
+      ],
+      "example": "MHLW's worked example shows why gross pay can mislead: a monthly worker with ¥220,000 total pay first removes a ¥5,000 commuting allowance and ¥35,000 overtime pay, leaving ¥180,000 that counts. With 250 scheduled days × 8 hours, (¥180,000 × 12) ÷ 2,000 hours = ¥1,080/hour for the minimum-wage test.",
+      "takeaways": ["¥1,177 is a national weighted average of recommendations, not your personal legal rate.", "Final rate and effective date must be checked prefecture by prefecture.", "Tokyo is ¥1,280 and Chiba ¥1,195 from October 1, 2026.", "Dispatched workers use the destination workplace's applicable minimum wage.", "Gross salary can hide a shortfall because several pay components do not count."]
+    },
+    "action_plan": {
+      "goal": "Verify that your qualifying pay will meet the legally effective 2026 minimum wage that actually applies to your workplace.",
+      "who_should_act": "Workers paid near the minimum wage, including hourly, daily or monthly-paid staff and dispatched workers. You can ignore this checklist for immediate action if your qualifying hourly wage is clearly above the finalized new applicable minimum, but still verify the effective rate if your pay structure changes.",
+      "deadline": "Complete the check before the new local rate takes effect and repeat it on the first payslip covering work performed after that date. Tokyo and Chiba: October 1, 2026; elsewhere, confirm the final date with the prefectural Labor Bureau.",
+      "prepare": ["Latest employment contract or wage notice", "Recent payslip showing each wage/allowance separately", "Workplace prefecture; for dispatched work, the dispatch destination prefecture", "Scheduled workdays and scheduled hours from your contract/company calendar", "Industry/job information in case a specific-industry minimum wage applies"],
+      "steps": [
+        {"step": "Confirm the final local rate and effective date", "action": "Open the official prefectural Labor Bureau minimum-wage page and identify the final 2026 regional rate and the date it becomes effective.", "how": "Use the Labor Bureau/MHLW official site, not a social-media graphic or the national ¥1,177 average.", "needed": ["Workplace prefecture"], "time_minutes": 5, "cost_yen": 0, "done_when": "You have the exact hourly rate and its official effective date."},
+        {"step": "Check whether a higher industry minimum applies", "action": "Look for a specific-industry minimum wage for your industry and worker category.", "how": "Use the prefectural Labor Bureau or MHLW minimum-wage page; when both legally apply, use the higher applicable rate.", "needed": ["Industry/job information"], "time_minutes": 3, "cost_yen": 0, "done_when": "You know the single hourly minimum you must compare against."},
+        {"step": "Identify only wage components that count", "action": "Separate qualifying ordinary wage from excluded payments before calculating.", "how": "Following official guidance, exclude items such as commuting/family/perfect-attendance allowances, bonuses, temporary payments and overtime/holiday/deep-night premium portions when they fall within the official exclusion categories.", "needed": ["Itemized payslip or wage notice"], "time_minutes": 4, "cost_yen": 0, "done_when": "You have a yen amount containing only the pay that counts for the minimum-wage test."},
+        {"step": "Convert and compare", "action": "For hourly pay, compare directly. For monthly pay, convert qualifying pay to an hourly amount using scheduled working time under MHLW's method.", "how": "Use the official calculation method; do not substitute actual overtime hours for scheduled working time in a monthly-wage conversion.", "needed": ["Qualifying wage amount", "Scheduled working time"], "time_minutes": 5, "cost_yen": 0, "done_when": "You have a calculated qualifying hourly amount and know whether it is at or above the applicable minimum."},
+        {"step": "Resolve a shortfall", "action": "If the first pay covering work after the effective date is below the applicable minimum, ask the employer/payroll for its calculation and correction.", "how": "Keep the payslip and calculation. If the issue is not resolved, consult the prefectural Labor Bureau or the nearest Labor Standards Inspection Office.", "needed": ["Payslip", "Your calculation", "Official rate/effective-date reference"], "time_minutes": 5, "cost_yen": 0, "done_when": "The pay calculation is corrected or you have formally escalated the unresolved minimum-wage question to an official labor channel."}
+      ],
+      "mistakes_to_avoid": ["Treating ¥1,177 as the legal minimum everywhere.", "Assuming every prefecture's new rate begins October 1.", "Using gross pay without removing excluded allowances and overtime-related payments.", "For dispatched work, checking the dispatch agency's prefecture instead of the dispatch destination.", "Ignoring a higher specific-industry minimum wage where one applies."],
+      "decision_rules": [
+        {"if": "Your prefecture has only a council recommendation and the final Labor Bureau decision/effective date is not yet published", "then": "Prepare the calculation but do not claim a legal underpayment based only on the recommendation."},
+        {"if": "Your qualifying hourly wage is at or above the higher applicable finalized minimum", "then": "No minimum-wage correction is needed on that calculation."},
+        {"if": "Your qualifying hourly wage is below the applicable minimum for work performed after its effective date", "then": "Ask for correction and retain the official rate, payslip and your calculation; escalate to an official labor channel if unresolved."}
+      ],
+      "follow_up": "Re-check the first payslip that includes work performed on or after the new rate's effective date. If your prefecture was still in the recommendation stage when you first checked, revisit its Labor Bureau page after the local procedure is complete."
+    }
+  }
+}
