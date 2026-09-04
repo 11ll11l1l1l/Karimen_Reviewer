@@ -21,13 +21,14 @@ def test_every_sync_event_fails_closed_without_trusted_credential():
     assert "exit 0" not in text
 
 
-def test_database_write_step_occurs_after_stale_snapshot_and_credential_gates():
+def test_database_write_step_occurs_after_freshness_and_credential_gates():
     text = _workflow_text()
     stale = text.index("- name: Reject stale main snapshot")
     gate = text.index("- name: Require trusted Supabase credential")
     install = text.index("- name: Install Supabase client")
+    prewrite = text.index("- name: Recheck main immediately before Supabase write")
     sync = text.index("- name: Sync verified ALAM records to Supabase")
-    assert stale < gate < install < sync
+    assert stale < gate < install < prewrite < sync
     assert "run: python alam_app/alam_supabase_sync_job.py" in text
     assert "SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}" in text
     assert "SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" in text
@@ -36,12 +37,28 @@ def test_database_write_step_occurs_after_stale_snapshot_and_credential_gates():
 def test_stale_rerun_cannot_reconcile_older_archive_into_supabase():
     text = _workflow_text()
     assert "fetch-depth: 0" in text
-    assert "git fetch --no-tags origin main" in text
-    assert 'CURRENT_MAIN="$(git rev-parse origin/main)"' in text
-    assert 'if [[ "$GITHUB_SHA" != "$CURRENT_MAIN" ]]; then' in text
+    assert text.count("git fetch --no-tags origin main") >= 2
+    assert text.count('CURRENT_MAIN="$(git rev-parse origin/main)"') >= 2
+    assert text.count('if [[ "$GITHUB_SHA" != "$CURRENT_MAIN" ]]; then') >= 2
     assert "::error::Refusing stale ALAM sync" in text
     assert "newer main commit exists" in text.lower()
     assert "exit 1" in text
+
+
+def test_prewrite_freshness_gate_closes_validation_install_toctou_window():
+    text = _workflow_text()
+    install = text.index("- name: Install Supabase client")
+    prewrite = text.index("- name: Recheck main immediately before Supabase write")
+    sync = text.index("- name: Sync verified ALAM records to Supabase")
+    prewrite_block = text[prewrite:sync]
+
+    assert install < prewrite < sync
+    assert "git fetch --no-tags origin main" in prewrite_block
+    assert 'CURRENT_MAIN="$(git rev-parse origin/main)"' in prewrite_block
+    assert 'if [[ "$GITHUB_SHA" != "$CURRENT_MAIN" ]]; then' in prewrite_block
+    assert "::error::Refusing superseded ALAM sync immediately before write" in prewrite_block
+    assert "No durable Supabase reconciliation was attempted" in prewrite_block
+    assert "exit 1" in prewrite_block
 
 
 def test_sync_is_pinned_to_alam_project():
