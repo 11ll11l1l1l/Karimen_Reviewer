@@ -28,9 +28,10 @@ STORY_PAGE_CSS = r"""
 .story-answer-card{background:rgba(255,255,255,.94);border:1px solid rgba(23,32,42,.09);border-radius:17px;padding:13px 14px;min-height:116px}
 .story-answer-label{font-size:.65rem;font-weight:950;letter-spacing:.075em;text-transform:uppercase;color:#667085;margin-bottom:6px}.story-answer-value{font-size:.88rem;line-height:1.48;color:#344054}.story-answer-value strong{color:#17202A}
 .story-evidence-strong{color:#087D5B}.story-evidence-good{color:#2F6FB0}.story-evidence-early{color:#C95E19}.story-evidence-weak{color:#B42318}
+.story-action-snapshot{border:1px solid rgba(8,125,91,.14);background:rgba(8,125,91,.045);border-radius:17px;padding:13px 14px;margin:9px 0 12px}.story-action-snapshot-title{font-size:.70rem;font-weight:950;letter-spacing:.065em;text-transform:uppercase;color:#087454;margin-bottom:8px}.story-action-snapshot-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.story-action-snapshot-item{font-size:.80rem;line-height:1.44;color:#344054}.story-action-snapshot-item b{display:block;font-size:.64rem;letter-spacing:.05em;text-transform:uppercase;color:#667085;margin-bottom:3px}
 .story-change-shell{border:1px solid rgba(89,104,242,.15);background:#F7F8FF;border-radius:17px;padding:13px 14px;margin:9px 0 12px}.story-change-title{font-size:.72rem;font-weight:950;letter-spacing:.065em;text-transform:uppercase;color:#5968F2;margin-bottom:8px}.story-change-grid{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:start}.story-change-block{font-size:.82rem;line-height:1.46;color:#344054}.story-change-block b{display:block;color:#17202A;margin-bottom:3px}.story-change-arrow{color:#98A2B3;font-weight:900;padding-top:17px}.story-change-why{border-top:1px solid rgba(89,104,242,.12);margin-top:9px;padding-top:9px;font-size:.82rem;line-height:1.45;color:#344054}
 .story-disagreement-note{border:1px solid #F5D995;background:#FFF7E8;border-radius:14px;padding:9px 11px;margin:8px 0 12px;font-size:.80rem;line-height:1.42;color:#6B4D16}.story-saved-update{border:1px solid rgba(89,104,242,.17);background:#EEF0FF;color:#4854C8;border-radius:14px;padding:9px 11px;margin:8px 0;font-size:.79rem;line-height:1.42}.story-view-label{font-size:.70rem;font-weight:900;color:#667085;margin:12px 0 6px}
-@media(max-width:760px){.story-answer-grid{grid-template-columns:1fr}.story-answer-card{min-height:auto}.story-change-grid{grid-template-columns:1fr}.story-change-arrow{transform:rotate(90deg);text-align:center;padding:0}.story-view-label{margin-top:10px}}
+@media(max-width:760px){.story-answer-grid,.story-action-snapshot-grid{grid-template-columns:1fr}.story-answer-card{min-height:auto}.story-change-grid{grid-template-columns:1fr}.story-change-arrow{transform:rotate(90deg);text-align:center;padding:0}.story-view-label{margin-top:10px}}
 </style>
 """
 
@@ -49,12 +50,7 @@ SCORE_LABELS = {
 
 
 def _score_value(value, default=0.0):
-    """Normalize valid ALAM v5 score shapes before article-detail rendering.
-
-    Current records may carry numeric scores, semantic labels, or nested score
-    objects. The detail route must not crash merely because a valid record uses a
-    richer representation than a plain number.
-    """
+    """Normalize valid ALAM v5 score shapes before article-detail rendering."""
     if value is None:
         return float(default)
     if isinstance(value, bool):
@@ -98,6 +94,37 @@ def _action_answer(record):
 
 def _why_answer(record):
     return _compact(record.get("why_it_matters") or summarize_so_what(record) or record.get("summary") or "The record does not yet state a separate impact conclusion.", 320)
+
+
+def _safe_action_fact(value, limit):
+    """Normalize only explicit scalar action metadata; structured/placeholder values fail closed."""
+    if not isinstance(value, str):
+        return ""
+    text = " ".join(value.split()).strip()
+    if not text or text.lower() in {"none", "n/a", "na", "not applicable", "unknown", "tbd"}:
+        return ""
+    return _compact(text, limit)
+
+
+def _practical_action_snapshot(record):
+    """Return article-supplied decision context without inferring eligibility or urgency."""
+    if str(record.get("_category") or record.get("category") or "").lower() != "practical":
+        return []
+    content = record.get("content") if isinstance(record.get("content"), dict) else {}
+    candidates = (
+        ("Affected", content.get("who_is_affected"), 220),
+        ("Deadline / timing", content.get("deadline") or content.get("when"), 180),
+        ("If ignored", content.get("risk_if_ignored"), 240),
+    )
+    return [(label, text) for label, value, limit in candidates if (text := _safe_action_fact(value, limit))]
+
+
+def _render_action_snapshot(record):
+    items = _practical_action_snapshot(record)
+    if not items:
+        return
+    cards = "".join(f"<div class='story-action-snapshot-item'><b>{esc(label)}</b>{esc(value)}</div>" for label, value in items)
+    st.markdown(f"<div class='story-action-snapshot'><div class='story-action-snapshot-title'>Before you act</div><div class='story-action-snapshot-grid'>{cards}</div></div>", unsafe_allow_html=True)
 
 
 def _render_answer_grid(record, all_records):
@@ -158,14 +185,12 @@ def render_story_page(all_records, record, comments, manager=None):
         st.rerun()
 
     _render_answer_grid(normalized_record, all_records)
+    _render_action_snapshot(record)
     action_checklist.render_action_checklist(record, manager)
     _render_change(record, all_records)
     _render_disagreement_signal(record, comments)
     learning_views.render_learning_section(record)
 
-    # Keep related intelligence on the opened-story route only. Connections come
-    # from explicit ALAM tags/signals and are labelled as context rather than causal
-    # claims, so this improves discovery without bypassing the evidence gate.
     related_views.render_related_stories(record, all_records)
 
     st.markdown("<div class='story-view-label'>More ways to explore this story</div>", unsafe_allow_html=True)
