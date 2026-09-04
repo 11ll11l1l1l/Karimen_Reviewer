@@ -142,6 +142,14 @@ def _assert_auth_storage_readiness_is_normalized():
         assert ready is False and stored is None and error is None
         assert fake_state["alam_clear_auth_storage"] is True
 
+        # A completed component render is not a successful storage mutation. If the
+        # browser reports storage unavailable, the sign-out clear must remain queued so
+        # a later Settings rerun can retry instead of leaving stale tokens persisted.
+        alam_auth.streamlit_js_eval = lambda **_kwargs: '{"ready":true,"value":null,"error":"storage_unavailable"}'
+        ready, stored, error = alam_auth._auth_storage_bridge()
+        assert ready is True and stored is None and error == "storage_unavailable"
+        assert fake_state["alam_clear_auth_storage"] is True
+
         alam_auth.streamlit_js_eval = lambda **_kwargs: '{"ready":"true","value":null,"error":null}'
         ready, stored, error = alam_auth._auth_storage_bridge()
         assert ready is True and stored is None and error is None
