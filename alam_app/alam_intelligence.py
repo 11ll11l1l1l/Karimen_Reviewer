@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 import streamlit as st
 
 import alam_local_state as localstate
-from alam_core import feed_score, parse_dt, source_quality, story_versions
+from alam_core import esc, feed_score, parse_dt, source_quality, story_versions
 from alam_personas import comments_for_story
 
 
@@ -265,8 +265,8 @@ def render_daily_brief(records, all_records):
         text = (r.get("content") or {}).get("action") if label == "DO" else r.get("summary")
         html.append(
             f"<div class='intel-brief-card'><div class='intel-kicker'>{label}</div>"
-            f"<div class='intel-brief-head'>{r.get('title','')}</div>"
-            f"<div class='intel-brief-copy'>{str(text or r.get('why_it_matters',''))[:190]}</div>"
+            f"<div class='intel-brief-head'>{esc(str(r.get('title', '')))}</div>"
+            f"<div class='intel-brief-copy'>{esc(str(text or r.get('why_it_matters', ''))[:190])}</div>"
             f"<div class='intel-mini'>Relevance {personal_relevance(r)}/100 · {story_lifecycle(r, all_records)}</div></div>"
         )
     html.append("</div>")
@@ -279,7 +279,7 @@ def render_alert_ribbon(records, all_records):
         return
     top = matches[0]
     st.markdown(
-        f"<div class='intel-alert'><strong>🔔 Rule match:</strong> {top.get('title','')} "
+        f"<div class='intel-alert'><strong>🔔 Rule match:</strong> {esc(str(top.get('title', '')))} "
         f"<span>Importance {int(top.get('importance',0) or 0)} · Relevance {personal_relevance(top)}/100</span></div>",
         unsafe_allow_html=True,
     )
@@ -299,13 +299,13 @@ def render_story_snapshot(record, all_records, records, comments):
     st.markdown(" ".join(f"**{k}:** {v}" for k, v in impacts.items()))
     if change:
         st.markdown(
-            f"<div class='intel-change'><div><strong>Before</strong><br>{change[0]}</div>"
-            f"<div class='intel-arrow'>→</div><div><strong>Now</strong><br>{change[1]}</div></div>",
+            f"<div class='intel-change'><div><strong>Before</strong><br>{esc(str(change[0]))}</div>"
+            f"<div class='intel-arrow'>→</div><div><strong>Now</strong><br>{esc(str(change[1]))}</div></div>",
             unsafe_allow_html=True,
         )
     if disagreement:
         st.markdown(
-            f"<div class='intel-disagree'>⚡ <strong>ALAM disagreement: {disagreement[0]}</strong> — {disagreement[1]}</div>",
+            f"<div class='intel-disagree'>⚡ <strong>ALAM disagreement: {esc(str(disagreement[0]))}</strong> — {esc(str(disagreement[1]))}</div>",
             unsafe_allow_html=True,
         )
     connected = connected_stories(record, records)
