@@ -171,6 +171,48 @@ def _assert_cloud_preferences_do_not_delete_local_history():
         alam_auth.st = original_st
 
 
+def _assert_cloud_preferences_normalize_legacy_or_malformed_scalars():
+    original_st = alam_auth.st
+    profile = {"r": {"keep": 1}, "m": [], "f": {}, "s": {}}
+    fake_state = {"alam_local_profile": profile}
+    alam_auth.st = SimpleNamespace(session_state=fake_state)
+    try:
+        alam_auth._apply_cloud_preferences(
+            {
+                "interests": {
+                    "practical": "false",
+                    "trend": "1",
+                    "discover": {"unexpected": True},
+                },
+                "settings": {
+                    "alert_min": {"broken": 100},
+                    "alert_action": "false",
+                    "alert_change": "0",
+                    "dark": "true",
+                },
+            }
+        )
+        assert fake_state["alam_interest_preferences"] == {
+            "practical": False,
+            "trend": True,
+            "discover": False,
+        }
+        assert fake_state["alam_alert_min_importance"] == 85
+        assert fake_state["alam_alert_only_actionable"] is False
+        assert fake_state["alam_alert_material_change"] is False
+        assert fake_state["alam_dark_mode"] is True
+        assert profile["r"] == {"keep": 1}
+        assert profile["s"] == {
+            "interests": {"practical": False, "trend": True, "discover": False},
+            "alert_min": 85,
+            "alert_action": False,
+            "alert_change": False,
+            "dark": True,
+        }
+    finally:
+        alam_auth.st = original_st
+
+
 def main():
     auth_source = inspect.getsource(alam_auth)
     client_source = inspect.getsource(alam_auth.get_auth_client)
@@ -212,6 +254,7 @@ def main():
     _assert_sign_out_queues_browser_clear()
     _assert_saved_normalization_is_bounded_and_stable()
     _assert_cloud_preferences_do_not_delete_local_history()
+    _assert_cloud_preferences_normalize_legacy_or_malformed_scalars()
 
     migration = (
         Path(__file__).resolve().parents[1] / "supabase" / "migrations" / "010_account_identity_bridge.sql"
