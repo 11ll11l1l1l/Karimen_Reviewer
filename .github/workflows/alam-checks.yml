@@ -1,21 +1,7 @@
 name: ALAM app checks
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'alam_app/**'
-      - 'supabase/migrations/**'
-      - '.github/workflows/alam-checks.yml'
-      - '.github/workflows/alam-editorial-images.yml'
-      - '.github/workflows/alam-supabase-sync.yml'
-  pull_request:
-    paths:
-      - 'alam_app/**'
-      - 'supabase/migrations/**'
-      - '.github/workflows/alam-checks.yml'
-      - '.github/workflows/alam-editorial-images.yml'
-      - '.github/workflows/alam-supabase-sync.yml'
+  workflow_dispatch:
 
 jobs:
   validate-alam:
