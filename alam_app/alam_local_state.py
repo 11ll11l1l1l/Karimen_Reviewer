@@ -18,6 +18,10 @@ MAX_FEEDBACK = 30
 MAX_MUTED = 24
 MAX_SAVED_SNAPSHOTS = 48
 MAX_PROFILE_JSON_BYTES = 16 * 1024
+# Manual profile import is browser-controlled text, not a cookie-size-bounded input.
+# Keep a generous encoded ceiling well above legitimate ALAM profiles so malformed
+# multi-megabyte pastes are rejected before Base64 decoding allocates their bytes.
+MAX_PROFILE_CODE_CHARS = 64 * 1024
 
 VOTE_WEIGHT = {
     "MORE": 6,
@@ -48,6 +52,8 @@ def _decode(code):
     value = str(code or "").strip()
     if not value:
         return _default_profile()
+    if len(value) > MAX_PROFILE_CODE_CHARS:
+        raise ValueError("Profile code is too large")
     padded = value + "=" * (-len(value) % 4)
     packed = base64.urlsafe_b64decode(padded.encode("ascii"))
     inflater = zlib.decompressobj()
