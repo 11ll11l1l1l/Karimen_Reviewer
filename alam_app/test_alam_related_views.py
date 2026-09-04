@@ -1,4 +1,4 @@
-from alam_related_views import related_story_candidates, related_story_decision_preview, related_story_selection
+from alam_related_views import related_story_action_cues, related_story_candidates, related_story_decision_preview, related_story_selection
 
 
 def _story(story_id, tags, category="discover", importance=70):
@@ -92,3 +92,23 @@ def test_related_story_decision_preview_is_bounded_for_mobile_scanability():
     preview = related_story_decision_preview(record, limit=80)
     assert len(preview) == 80
     assert preview.endswith("…")
+
+
+def test_related_practical_story_surfaces_explicit_action_and_timing():
+    record = _story("linked", ["yen"], "practical")
+    record["content"] = {"action": " prepare ", "deadline": " September 30, 2026 "}
+    assert related_story_action_cues(record) == [
+        ("Action", "PREPARE"),
+        ("Timing", "September 30, 2026"),
+    ]
+
+
+def test_related_action_cues_fail_closed_without_valid_practical_metadata():
+    discover = _story("linked", ["yen"], "discover")
+    discover["content"] = {"action": "APPLY", "deadline": "Tomorrow"}
+    assert related_story_action_cues(discover) == []
+    practical = _story("linked", ["yen"], "practical")
+    practical["content"] = {"action": "HURRY", "deadline": {"date": "2026-09-30"}}
+    assert related_story_action_cues(practical) == []
+    practical["content"] = {"action": "TBD", "when": "unknown"}
+    assert related_story_action_cues(practical) == []
