@@ -214,6 +214,16 @@ def _brief_copy(label, record, all_records):
     return record.get("summary") or record.get("why_it_matters")
 
 
+def _brief_open_label(label):
+    """Keep the three-line brief scannable while giving every line a clear next step."""
+    return {
+        "REVIEW": "Review update",
+        "DO": "Open action",
+        "WATCH": "Open watch",
+        "KNOW": "Open story",
+    }.get(str(label or "").upper(), "Open story")
+
+
 def _open_story(record):
     st.session_state["selected_story"] = _story_id(record)
     st.rerun()
@@ -273,12 +283,19 @@ def render_daily_brief(records, all_records):
     html.append("</div>")
     st.markdown("".join(html), unsafe_allow_html=True)
 
-    review = next((record for label, record in rows if label == "REVIEW"), None)
-    if review and st.button(
-        "Review changed Saved story →",
-        key=f"today_review_saved_{_story_id(review)}",
-        use_container_width=True,
-    ):
-        _open_story(review)
+    # The brief previously explained three decisions but only the Saved REVIEW row
+    # could be opened from this module. Full-width controls keep all three decisions
+    # reachable with one mobile tap without making the HTML cards themselves depend
+    # on brittle Streamlit DOM/link behavior.
+    for label, record in rows:
+        title = str(record.get("title") or "Story").strip()
+        button_title = title if len(title) <= 52 else title[:51].rstrip() + "…"
+        if st.button(
+            f"{_brief_open_label(label)} · {button_title} →",
+            key=f"today_brief_open_{label.lower()}_{_story_id(record)}",
+            use_container_width=True,
+        ):
+            _open_story(record)
 
+    review = next((record for label, record in rows if label == "REVIEW"), None)
     _render_saved_change_queue(records, all_records, primary_review=review)
