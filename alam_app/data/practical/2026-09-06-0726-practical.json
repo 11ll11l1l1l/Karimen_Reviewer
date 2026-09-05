@@ -1,0 +1,278 @@
+[
+  {
+    "id": "jp-permanent-residence-max-period-2027",
+    "agent": "practical",
+    "created_at": "2026-09-06T07:26:00+09:00",
+    "type": "immigration",
+    "title": "Planning permanent residence? A 3-year stay stops counting as ‘maximum’ in 2027",
+    "summary": "Kung naka-3-year period of stay ka at planning 永住, may important rule change on April 1, 2027: Japan will stop automatically treating 3 years as the ‘maximum period’ required by the PR guideline. May transition protection for people holding a 3-year period on March 31, 2027, so hindi ibig sabihin na kailangan mag-panic-submit before April.",
+    "why_it_matters": "For many common work statuses, the legal maximum period is longer than 3 years. A resident who otherwise looks PR-ready can therefore face a preventable timing problem if they assume the old 3-year treatment continues after April 2027.",
+    "importance": 93,
+    "confidence": 97,
+    "tags": [
+      "Japan",
+      "Immigration",
+      "Permanent residence",
+      "永住許可",
+      "在留期間",
+      "Administrative deadline"
+    ],
+    "geography": ["Japan"],
+    "status": "NEW",
+    "sources": [
+      {
+        "publisher": "Immigration Services Agency of Japan",
+        "title": "永住許可（入管法第22条） — 『永住許可に関するガイドライン』の一部変更について",
+        "url": "https://www.moj.go.jp/isa/applications/procedures/eizyuu_00001.html",
+        "published_at": "2026-02-24",
+        "source_type": "official"
+      },
+      {
+        "publisher": "Immigration Services Agency of Japan",
+        "title": "永住許可申請",
+        "url": "https://www.moj.go.jp/isa/applications/procedures/16-4.html",
+        "source_type": "official"
+      },
+      {
+        "publisher": "留学生新聞",
+        "title": "永住ガイドライン変更　申請時の『在留期間』要件見直し",
+        "url": "https://mediachina.jp/info/6674326",
+        "published_at": "2026-03-09",
+        "source_type": "news"
+      },
+      {
+        "publisher": "Immigration Services Agency of Japan",
+        "title": "『永住者』の適正化に係るパブリック・コメントの実施について",
+        "url": "https://www.moj.go.jp/isa/11_00112.html",
+        "published_at": "2026-08-04",
+        "source_type": "official"
+      }
+    ],
+    "claims": [
+      {
+        "kind": "FACT",
+        "text": "From April 1, 2027, the Immigration Services Agency will end the practice of treating a 3-year period of stay as satisfying the permanent-residence guideline's requirement to hold the maximum period for the applicant's residence status.",
+        "source_refs": [1],
+        "basis": "Official Immigration Services Agency notice dated February 24, 2026"
+      },
+      {
+        "kind": "FACT",
+        "text": "A transition rule applies to a person who holds a 3-year period of stay on March 31, 2027: for the first permanent-residence application only, the person may still be treated as holding the maximum period if a decision on that application is received within that same 3-year period of stay.",
+        "source_refs": [1],
+        "basis": "Official transition wording in the Immigration Services Agency notice"
+      },
+      {
+        "kind": "FACT",
+        "text": "The Immigration Services Agency publishes a standard processing period of 4 to 6 months for permanent-residence applications.",
+        "source_refs": [2],
+        "basis": "Official permanent-residence procedure page"
+      },
+      {
+        "kind": "FACT",
+        "text": "For the common Engineer/Specialist in Humanities/International Services status, specialist reporting describes 5 years as the statutory maximum period, which is why a 3-year holder can be affected by the April 2027 change.",
+        "source_refs": [3],
+        "basis": "Japanese specialist reporting explaining the official guideline change"
+      },
+      {
+        "kind": "INFERENCE",
+        "text": "The transition rule creates a timing risk for some 3-year holders whose current period expires not long after April 1, 2027, because the rule is tied to receiving the PR decision within the current period rather than merely filing the application before expiry.",
+        "source_refs": [1, 2],
+        "basis": "Official transition condition combined with the published 4–6 month standard processing period"
+      },
+      {
+        "kind": "FACT",
+        "text": "A separate 2026 public-comment process proposes additional changes to permanent-residence guidance; those proposals are distinct from the already announced April 2027 treatment of the 3-year period and should not be treated as final until the Immigration Services Agency publishes the final rules.",
+        "source_refs": [4],
+        "basis": "Official Immigration Services Agency public-comment notice"
+      }
+    ],
+    "content": {
+      "key_message": "If your residence card says 3 years and you are planning 永住, check your timing now—but do not confuse March 31, 2027 with a universal PR filing deadline.",
+      "policy_status": "GUIDANCE — officially announced February 24, 2026; new handling takes effect April 1, 2027.",
+      "who_is_affected": "Foreign residents planning permanent residence who currently hold a 3-year period of stay under a residence status whose statutory maximum is longer. A common example is 技術・人文知識・国際業務. People already holding the actual maximum period do not have a new problem from this specific change. Spouse, Long-Term Resident and highly skilled routes have separate residence-duration rules, so their full eligibility should be checked under the applicable PR guideline rather than inferred from this one condition.",
+      "when": "Key dates: March 31, 2027 is the snapshot date for the transition rule; April 1, 2027 is when the old automatic treatment of 3 years as ‘maximum’ ends. For someone relying on the transition, the official wording requires the PR decision to be received within the person's current 3-year period of stay, and the relief applies only to the first PR application under this transition.",
+      "financial_impact": "This is not a new fee. The practical cost is delay: if the maximum-period condition is not met and the transition cannot be used, a resident may have to wait for a future status renewal that grants the actual maximum period before the PR guideline can be satisfied on this point.",
+      "estimated_saving_yen": null,
+      "time_minutes": 20,
+      "travel_minutes": 0,
+      "risk_if_ignored": "HIGH for an otherwise PR-ready 3-year holder near a renewal boundary: the person can mis-time the application or assume that filing alone preserves the transition when the official rule refers to receiving the decision within the current period.",
+      "action": "PREPARE",
+      "deadline": "There is no universal requirement to submit PR by March 31, 2027. The important transition condition is whether you hold a 3-year period on March 31 and, if relying on that relief, whether the first PR application is decided before that current 3-year period expires.",
+      "effort": "LOW-MED",
+      "potential_benefit": "Avoid a preventable PR timing delay and know whether you can rely on the transition or should wait for/plan around the actual maximum period for your residence status.",
+      "downside": "Holding the maximum period does not guarantee permanent residence; all other applicable PR requirements still matter. A later residence-status renewal also does not guarantee that Immigration will grant the longest possible period.",
+      "common_mistake": "Thinking ‘I must file before March 31, 2027’ or, conversely, ‘I have 3 years so nothing changes.’ The official transition is more specific: you must hold 3 years on March 31, it applies only for the first use, and the decision must come before that current period expires.",
+      "fact_vs_inference": {
+        "fact": "The April 1, 2027 change, March 31 snapshot, first-application limitation and within-current-period disposition condition are explicitly stated by the Immigration Services Agency. The agency also publishes a 4–6 month standard PR processing period.",
+        "inference": "The highest practical risk falls on 3-year holders whose current period expires relatively soon after April 2027, because their available decision window may be tight. Actual processing can differ by case, so 4–6 months is a planning reference, not a guaranteed timetable."
+      },
+      "strongest_counterinterpretation": "This is not a blanket rule that ‘everyone needs a 5-year visa for PR from April 2027.’ The rule is to hold the maximum period applicable to the person's own residence status, and the government created transitional relief for people already holding 3 years on March 31. Other PR eligibility routes and exceptions also remain relevant to the overall application.",
+      "what_remains_uncertain": "The Immigration Services Agency ran a separate public consultation in August–September 2026 on broader permanent-residence guidance and related policy. Until final wording is published, those additional proposals should not be treated as enacted requirements. Individual renewal periods and actual PR processing times also remain case-specific.",
+      "what_would_change_mind": "An official notice postponing the April 1, 2027 effective date, restoring 3-year equivalence, broadening the transition beyond the current wording, or a final 2026 PR guideline that supersedes this treatment would require an update.",
+      "usefulness": 98,
+      "novelty": 95,
+      "impact": {
+        "money": "LOW",
+        "family": "HIGH",
+        "career": "MED",
+        "japan": "MED",
+        "urgency": "MED"
+      },
+      "connection_tags": [
+        "immigration",
+        "permanent-residence",
+        "status-renewal",
+        "administrative-timing"
+      ],
+      "reading_levels": {
+        "30 sec": [
+          "What happened: from April 1, 2027, Japan stops automatically counting a 3-year period of stay as the ‘maximum period’ required by the PR guideline.",
+          "Why it matters: many common work statuses have a longer maximum, so some 3-year holders can become unable to satisfy this PR condition without the transition rule or a later longer renewal.",
+          "What to do: check the period and expiry date on your residence card, then compare them with your status's official maximum and your PR timeline.",
+          "Bottom line: March 31 is not a universal filing deadline; the transition protects qualifying 3-year holders, but the first PR decision must arrive within that current period."
+        ],
+        "2_min": "Japan's PR guideline has long said an applicant should be staying under the maximum period allowed for their current residence status, but Immigration previously treated a 3-year period as if it were the maximum. That operational shortcut ends April 1, 2027. There is a useful transition: if you hold a 3-year period on March 31, 2027, your first PR application can still be treated as satisfying the maximum-period condition if the decision arrives before that current period expires. Since Immigration lists 4–6 months as the standard PR processing time, people close to their expiry date should plan carefully rather than relying on the headline date alone."
+      },
+      "learning": {
+        "outcomes": [
+          "Understand the difference between a residence status and the period of stay printed on the residence card.",
+          "Explain why a 3-year card that used to be acceptable for this PR condition can become insufficient after April 2027.",
+          "Use the transition rule without mistaking March 31 for a universal filing deadline."
+        ],
+        "background": "A Japanese residence status—such as 技術・人文知識・国際業務—defines the legal basis for your stay and work. Separately, Immigration grants a period of stay, such as 1 year, 3 years or 5 years. Permanent-residence guidance includes a condition that the applicant be staying under the maximum period allowed for the relevant status. Until now, Immigration's guideline note treated a 3-year period as if it satisfied that maximum-period condition even when a longer period existed. That special treatment ends in 2027.",
+        "terms": [
+          {
+            "term": "在留資格",
+            "meaning": "Residence status—the legal category that permits your activities in Japan, such as a work, family or other status.",
+            "why_it_matters": "Different residence statuses can have different permitted periods and different PR-related routes."
+          },
+          {
+            "term": "在留期間",
+            "meaning": "Period of stay—the length of permission currently granted, shown on the residence card.",
+            "why_it_matters": "The April 2027 change is about whether the period currently granted counts as the maximum for the PR guideline."
+          },
+          {
+            "term": "移行措置",
+            "meaning": "Transition measure—a temporary rule protecting people caught between the old and new treatment.",
+            "why_it_matters": "It prevents every existing 3-year holder from becoming automatically ineligible on April 1, but it has exact conditions."
+          }
+        ],
+        "how_it_works": [
+          {
+            "title": "Old handling",
+            "explanation": "The PR guideline said applicants should hold the maximum period, but Immigration's note treated a 3-year period as satisfying that requirement."
+          },
+          {
+            "title": "From April 1, 2027",
+            "explanation": "Immigration returns to the literal rule: the period must be the actual maximum for the applicant's residence status rather than automatically accepting 3 years."
+          },
+          {
+            "title": "Transition for existing 3-year holders",
+            "explanation": "If you hold a 3-year period on March 31, 2027, the first PR application can still receive the old treatment if the decision is made within that same current 3-year period."
+          },
+          {
+            "title": "Why expiry timing matters",
+            "explanation": "The condition is tied to the date of the PR decision, not simply the date the application is filed. Immigration's published standard PR processing time is 4–6 months, so an approaching expiry can reduce the practical buffer."
+          }
+        ],
+        "example": "Example: suppose your 3-year period is valid on March 31, 2027 and expires September 30, 2027. You can potentially use the transition even if you file after April 1, but the official condition says the PR decision must come before September 30 for that first application to receive the 3-year-as-maximum treatment. The 4–6 month standard processing period is therefore relevant to planning, but it is not a promise that your case will finish within that time.",
+        "takeaways": [
+          "The change is effective April 1, 2027 and is already officially announced.",
+          "Three years will no longer automatically count as the maximum period for PR purposes.",
+          "Holding 3 years on March 31, 2027 can qualify for transitional treatment.",
+          "The transition is for the first PR application and depends on receiving the decision before the current period expires.",
+          "Separate 2026 PR proposals are still a different policy track until final rules are published."
+        ]
+      },
+      "action_plan": {
+        "goal": "Know whether the April 2027 maximum-period change affects your PR timeline and avoid relying on the transition incorrectly.",
+        "who_should_act": "Act if you are considering permanent residence and your residence card currently shows a 3-year period of stay, especially if the maximum for your status is longer. You can ignore this specific issue if you already have permanent residence or already hold the actual maximum period, although other PR rules may still matter.",
+        "deadline": "No universal PR filing deadline. Check your position before March 31, 2027; if relying on the transition, the decisive deadline is the expiry of the 3-year period you hold on March 31 because the PR decision must arrive within that period.",
+        "prepare": [
+          "Your residence card showing current residence status, period of stay and expiry date",
+          "The Immigration Services Agency's current PR guideline for your application route",
+          "The official list or guidance showing the maximum period available for your specific residence status",
+          "Your planned status-renewal and PR timeline"
+        ],
+        "steps": [
+          {
+            "step": "Read the period on your residence card",
+            "action": "Confirm whether your current period of stay is 3 years and note its exact expiry date.",
+            "how": "Use the period and expiry fields on the physical residence card; do not rely on memory or the length of time you have lived in Japan.",
+            "needed": ["Residence card"],
+            "time_minutes": 2,
+            "cost_yen": 0,
+            "done_when": "You have written down your current status, period of stay and expiry date."
+          },
+          {
+            "step": "Check the maximum for your status",
+            "action": "Confirm the longest period legally available for your exact residence status using Immigration Services Agency guidance.",
+            "how": "Start from the official 在留手続 / 在留資格 pages and the status list rather than a social-media summary.",
+            "needed": ["Exact residence-status name"],
+            "time_minutes": 5,
+            "cost_yen": 0,
+            "done_when": "You know whether 3 years is already the actual maximum or a shorter period than the maximum for your status."
+          },
+          {
+            "step": "Check whether the transition can cover you",
+            "action": "If you will hold a 3-year period on March 31, 2027, compare your expiry date with your realistic PR timeline.",
+            "how": "Use the official transition rule and treat Immigration's 4–6 month standard processing period only as a planning reference. The rule requires the decision within the current 3-year period.",
+            "needed": ["Current expiry date", "Official PR transition notice"],
+            "time_minutes": 5,
+            "cost_yen": 0,
+            "done_when": "You know the last date by which the transition requires a decision and whether your timing has a comfortable or tight buffer."
+          },
+          {
+            "step": "Re-check the final PR guidance before filing",
+            "action": "Confirm that no later Immigration Services Agency notice has changed the PR guideline or transition wording.",
+            "how": "Check the official 永住許可 page, particularly because a separate 2026 public-comment process is considering broader PR-guideline revisions.",
+            "needed": ["Current official PR page"],
+            "time_minutes": 5,
+            "cost_yen": 0,
+            "done_when": "You are working from the current official guideline, not an older screenshot or article."
+          },
+          {
+            "step": "File only when the whole PR case is ready",
+            "action": "Do not submit solely to beat March 31 if other requirements or documents are not ready.",
+            "how": "Use the Immigration Services Agency checklist for your PR route and, where needed, obtain case-specific advice from the official consultation channel or a qualified immigration professional.",
+            "needed": ["Current PR checklist for your route"],
+            "time_minutes": 0,
+            "cost_yen": 0,
+            "done_when": "Your filing decision reflects all applicable PR conditions, not only the maximum-period issue."
+          }
+        ],
+        "mistakes_to_avoid": [
+          "Treating March 31, 2027 as a universal submission deadline.",
+          "Assuming that filing before your current period expires is enough; the transition wording refers to receiving the PR decision within that period.",
+          "Assuming every residence status has a 5-year maximum.",
+          "Assuming the next renewal will automatically grant the longest period.",
+          "Mixing the already announced April 2027 3-year rule with separate 2026 PR proposals that are not yet final."
+        ],
+        "decision_rules": [
+          {
+            "if": "you already hold the actual maximum period for your residence status",
+            "then": "this specific April 2027 change does not create a new maximum-period problem; continue checking the other PR requirements."
+          },
+          {
+            "if": "you hold a 3-year period on March 31, 2027 and the maximum for your status is longer",
+            "then": "you may be able to use the transition for the first PR application, but plan around the requirement that the decision arrive before that current 3-year period expires."
+          },
+          {
+            "if": "you do not qualify for the transition and 3 years is shorter than your status's actual maximum",
+            "then": "do not assume the old 3-year equivalence remains available after April 1; check the current official guideline and your renewal/PR options before filing."
+          }
+        ],
+        "follow_up": "Re-check the Immigration Services Agency's permanent-residence page before any application and again around April 1, 2027. Also watch for the final outcome of the separate 2026 permanent-residence guideline public consultation, because it may add or clarify other requirements without changing the core 3-year transition described here."
+      },
+      "editorial_visual": {
+        "style": "editorial",
+        "motif": "document",
+        "secondary_motif": "shield",
+        "scene": "a residence permit card approaching a calendar gate, with one protected transition lane continuing past the date and a longer-permit lane ahead; restrained legal-policy symbolism, no readable text, no logos and no documentary claim",
+        "caption": "The transition rule matters more than the headline date",
+        "silliness": 0,
+        "exaggeration": 30
+      }
+    }
+  }
+]
