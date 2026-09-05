@@ -1,0 +1,12 @@
+# The first build reads the database URL from EMS_DATABASE_URL.
+# Example production value:
+# postgresql+psycopg://ems_user:CHANGE_THIS@192.168.1.50:5432/equipment_management
+
+[database]
+host = "192.168.1.50"
+port = 5432
+name = "equipment_management"
+
+[files]
+root = "\\\\FILESERVER\\EquipmentManagement"
+controlled_documents = "\\\\FILESERVER\\ControlledDocuments"
