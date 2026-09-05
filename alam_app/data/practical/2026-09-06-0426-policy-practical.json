@@ -1,0 +1,142 @@
+[
+  {
+    "id": "japan-2027-kosei-nenkin-standard-remuneration-cap-rise",
+    "agent": "practical",
+    "created_at": "2026-09-06T04:26:00+09:00",
+    "type": "social_insurance_policy",
+    "title": "High earners: pension deductions start climbing in September 2027",
+    "summary": "ENACTED: Hindi tataas ang 18.3%厚生年金 rate, pero tataas ang salary ceiling na ginagamit sa premium calculation. From September 2027, the maximum 標準報酬月額 rises from ¥650,000 to ¥680,000, then ¥710,000 in September 2028 and ¥750,000 in September 2029. For people at the top band, the employee-side premium eventually rises by about ¥9,100 per month versus today.",
+    "why_it_matters": "Madaling ma-miss ito dahil walang headline na 'pension tax rate hike.' The rate stays 18.3%; what changes is the maximum salary amount to which that rate is applied. For affected salaried workers and company officers, the result is a real take-home-pay reduction, while employers also pay the matching half. The change begins one year from now, so households and payroll teams have time to plan rather than discovering it from a September payslip.",
+    "importance": 86,
+    "confidence": 99,
+    "tags": ["Japan", "厚生年金", "social insurance", "salary", "take-home pay", "pension", "payroll", "2027"],
+    "geography": ["Japan"],
+    "status": "NEW",
+    "sources": [
+      {
+        "publisher": "Ministry of Health, Labour and Welfare (厚生労働省)",
+        "title": "厚生年金等の標準報酬月額の上限の段階的引上げについて",
+        "url": "https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/0000147284_00024.html",
+        "published_at": "2025-06-13",
+        "source_type": "official"
+      },
+      {
+        "publisher": "Ministry of Health, Labour and Welfare (厚生労働省)",
+        "title": "I 4 厚生年金保険等の標準報酬月額の上限の段階的引上げ",
+        "url": "https://www.mhlw.go.jp/content/12401000/001523466.pdf",
+        "published_at": "2025",
+        "source_type": "official"
+      },
+      {
+        "publisher": "Asahi Shimbun / ツギノジダイ",
+        "title": "年金制度改正法が成立 106万円の壁撤廃・遺族年金の見直しなど",
+        "url": "https://smbiz.asahi.com/article/15771907",
+        "published_at": "2025-06",
+        "source_type": "strong_secondary"
+      }
+    ],
+    "claims": [
+      {
+        "kind": "FACT",
+        "text": "The pension reform law passed the Diet on June 13, 2025. The standard monthly remuneration ceiling used for Employees' Pension Insurance will rise from ¥650,000 to ¥680,000 in September 2027, ¥710,000 in September 2028 and ¥750,000 in September 2029.",
+        "source_refs": [1, 2, 3],
+        "basis": "MHLW implementation page and official reform material; independently reported by Asahi's business publication."
+      },
+      {
+        "kind": "FACT",
+        "text": "The pension insurance rate remains 18.3%, split equally between worker and employer. The reform changes the upper standard-remuneration band, not the statutory rate itself.",
+        "source_refs": [1],
+        "basis": "MHLW explains the 18.3% rate and equal worker-employer split alongside the ceiling reform."
+      },
+      {
+        "kind": "FACT",
+        "text": "Under MHLW's official band table, monthly remuneration excluding bonuses of ¥665,000 to under ¥695,000 maps to a ¥680,000 standard remuneration; ¥695,000 to under ¥730,000 maps to ¥710,000; and ¥730,000 or more maps to ¥750,000 once the relevant stages are implemented.",
+        "source_refs": [2],
+        "basis": "Official MHLW reform table."
+      },
+      {
+        "kind": "FACT",
+        "text": "At the final ¥750,000 band, the employee pension premium is ¥68,625 per month versus ¥59,475 under today's ¥650,000 ceiling, an increase of ¥9,150 per month before tax-deduction effects. The employer bears the same increase.",
+        "source_refs": [1, 2],
+        "basis": "MHLW official premium examples and statutory 50/50 contribution split."
+      },
+      {
+        "kind": "FACT",
+        "text": "MHLW estimates that, assuming its stated tax assumptions, the effective monthly burden increase at the final band is about ¥6,100 after the social-insurance deduction. Ten years at the ¥750,000 band would increase the person's pension by about ¥5,100 per month for life before the ministry's illustrative pension-tax adjustment.",
+        "source_refs": [1, 2],
+        "basis": "MHLW official illustrative calculation; actual tax and pension outcomes vary by household and career."
+      },
+      {
+        "kind": "INFERENCE",
+        "text": "Because the headline insurance rate does not change, some affected workers may interpret the later payslip increase as a payroll error or an unexplained company deduction unless employers explain the new ceiling in advance.",
+        "source_refs": [1, 2],
+        "basis": "Inference from the mechanism: unchanged rate, higher contribution base, and staged September implementation."
+      }
+    ],
+    "content": {
+      "key_message": "ENACTED na ito, pero hindi pa effective. If your monthly remuneration excluding bonuses is around ¥665,000 or higher, check this before September 2027. The pension rate itself stays 18.3%; the amount of salary exposed to that rate increases in three September steps.",
+      "policy_status": "ENACTED — the underlying pension reform law passed on June 13, 2025. First implementation step: September 2027. Later statutory steps: September 2028 and September 2029.",
+      "who_is_affected": "Employees' Pension Insurance members with relatively high monthly remuneration, including salaried employees and company officers, especially from roughly ¥665,000/month excluding bonuses upward. Employers also pay a matching contribution increase. People below the new upper bands do not get this direct premium increase from the ceiling change.",
+      "when": "September 2027: ceiling ¥680,000. September 2028: ¥710,000. September 2029: ¥750,000.",
+      "thresholds": "Official MHLW table: ¥635,000–under ¥665,000 remains at the ¥650,000 band; ¥665,000–under ¥695,000 enters the ¥680,000 band; ¥695,000–under ¥730,000 enters the ¥710,000 band; ¥730,000+ enters the ¥750,000 band as the stages take effect. These figures refer to monthly remuneration excluding bonuses, not simply annual salary divided by 12.",
+      "financial_impact": "At the final top band, employee contribution rises from ¥59,475 to ¥68,625 per month: +¥9,150/month or ¥109,800 over 12 months before tax-deduction effects. MHLW's illustrative after-deduction burden is about +¥6,100/month. Employer cost rises by the same nominal ¥9,150/month for that worker. Future pension accrual also increases.",
+      "risk_if_ignored": "MEDIUM. There is no application deadline for the worker, but affected households can experience a noticeable take-home-pay drop and employers can face higher payroll costs if they budget using today's ceiling.",
+      "action": "PLAN_AHEAD",
+      "deadline": "No worker filing deadline is currently required for the ceiling change itself. The first payroll-impact date is September 2027.",
+      "effort": "LOW",
+      "potential_benefit": "Early budgeting avoids a surprise reduction in net salary. The higher contributions also buy higher future earnings-related pension benefits under the statutory formula.",
+      "downside": "Higher mandatory current contributions for affected workers and matching higher labor cost for employers.",
+      "what_to_do_now": "Check your payslip's 標準報酬月額 or ask payroll/HR what band you are currently in. If your non-bonus monthly remuneration is near ¥665,000 or above, include the 2027–2029 increases in household cash-flow planning. Employers should flag affected staff and future personnel-cost impact in payroll forecasts.",
+      "what_to_wait_for": "Do not change compensation arrangements solely because of this story. Wait for Japan Pension Service/MHLW operational notices and your employer's payroll implementation details closer to September 2027. Bonuses use a separate pension calculation, so avoid assuming that annual salary alone tells you the exact impact.",
+      "common_mistake": "Thinking 'the pension rate is still 18.3%, so my deduction cannot rise.' The rate stays the same, but the maximum standard remuneration multiplied by that rate rises.",
+      "strongest_counterinterpretation": "Calling this only a 'take-home pay cut' is incomplete. The worker receives additional earnings-related pension accrual, the employer contributes the other half, and MHLW argues the higher ceiling also improves fairness because workers above today's cap currently pay a smaller pension contribution as a share of actual monthly remuneration. Social-insurance tax deductions also soften the immediate net-cash effect.",
+      "what_would_change_mind": "A later law delaying or repealing the September 2027/2028/2029 schedule, a revised official band table, or an operational rule materially changing which remuneration is counted would require an update. If Japan Pension Service issues implementation guidance inconsistent with the current MHLW schedule, this story should be revised.",
+      "usefulness": 89,
+      "novelty": 87,
+      "impact": {
+        "money": "HIGH_FOR_AFFECTED",
+        "family": "MEDIUM",
+        "career": "MEDIUM",
+        "japan": "HIGH",
+        "urgency": "LOW_NOW_RISING_IN_2027"
+      },
+      "connection_tags": ["take-home-pay", "social-insurance", "salary-band", "pension-reform", "payroll"],
+      "reading_levels": {
+        "30 sec": {
+          "what_happened": "Japan already enacted a higher salary ceiling for 厚生年金 premiums: ¥650k today → ¥680k in Sep 2027 → ¥710k in Sep 2028 → ¥750k in Sep 2029.",
+          "why_it_matters": "For the highest band, the employee-side premium eventually becomes about ¥9,150/month higher than today, while the employer pays the same extra amount.",
+          "what_to_do_watch": "If monthly remuneration excluding bonuses is around ¥665k+, check your 標準報酬月額 and budget before September 2027. No application is needed now.",
+          "bottom_line": "Hindi rate hike ang madaling makita sa headline; contribution-base ceiling ang tumataas. That still means less current take-home pay for affected workers."
+        },
+        "2_min": "FACT: the reform is enacted. The pension rate remains 18.3%, split between employee and employer, but the maximum 標準報酬月額 rises in September of 2027, 2028 and 2029. MHLW's official table shows the new bands beginning at ¥665,000 monthly remuneration excluding bonuses. At the final ¥750,000 band, the employee premium is ¥68,625 instead of today's ¥59,475, a ¥9,150 nominal monthly increase. FACT: future pension accrual also rises; MHLW estimates ten years in the final band adds about ¥5,100/month to pension under its assumptions. INFERENCE: because the rate itself stays unchanged, many people may not notice the reform until payroll starts using the higher ceiling."
+      },
+      "learning": {
+        "outcomes": [
+          "Understand that the reform changes the premium base ceiling, not the 18.3% rate.",
+          "Know the September 2027, 2028 and 2029 implementation dates and official remuneration bands.",
+          "Estimate whether household take-home pay or employer labor cost may be affected."
+        ],
+        "background": "厚生年金 premiums are calculated using standardized monthly remuneration bands rather than every exact yen of salary. The present upper band is ¥650,000, so salary above that ceiling does not currently increase the monthly pension premium. The enacted reform creates three higher bands over three years.",
+        "terms": [
+          {
+            "term": "標準報酬月額",
+            "meaning": "The standardized monthly remuneration band used to calculate Employees' Pension Insurance premiums and benefits.",
+            "why_it_matters": "The reform raises its maximum value, which is why deductions can rise without changing the 18.3% rate."
+          },
+          {
+            "term": "報酬月額",
+            "meaning": "Monthly remuneration used to place a worker into a standard-remuneration band; the official reform illustration labels these figures as wages excluding bonuses.",
+            "why_it_matters": "The new top bands begin around ¥665,000/month, not simply at an annual-salary headline figure."
+          }
+        ],
+        "takeaways": [
+          "The reform is law, not a proposal.",
+          "Nothing changes from this ceiling reform before September 2027.",
+          "The first directly affected official band begins at ¥665,000/month in the MHLW illustration.",
+          "Employee and employer both carry higher contributions.",
+          "Higher premiums also create higher future pension accrual, so it is not purely a tax-like loss."
+        ]
+      }
+    }
+  }
+]
