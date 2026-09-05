@@ -1,0 +1,244 @@
+{
+  "id": "japan-social-insurance-wage-test-removal-2026-10",
+  "agent": "practical",
+  "created_at": "2026-09-06T00:01:00+09:00",
+  "type": "social_insurance",
+  "title": "From October, the ¥88,000 test disappears — watch the 20-hour line",
+  "summary": "Starting in October 2026, Japan removes the monthly ¥88,000 wage requirement from the short-hours social-insurance test. For many part-time workers at covered employers, the overlooked question becomes whether their scheduled work is at least 20 hours a week — not whether they stay below roughly ¥1.06 million a year.",
+  "why_it_matters": "A worker who has been planning family finances around the old ¥88,000/month threshold can become subject to workplace health insurance and employees' pension even with lower monthly pay, if the remaining conditions are met. That can reduce current take-home pay but also adds workplace health-insurance and pension coverage, so families should check contracts before October rather than discover the change on a payslip.",
+  "importance": 95,
+  "confidence": 97,
+  "tags": ["Japan", "Social Insurance", "Part-time Work", "Family Budget", "Dependents", "Pension", "Health Insurance", "October 2026"],
+  "geography": ["Japan"],
+  "status": "CONFIRMED",
+  "sources": [
+    {
+      "publisher": "Ministry of Health, Labour and Welfare (MHLW)",
+      "title": "「年収の壁」への対応",
+      "url": "https://www.mhlw.go.jp/stf/taiou_001_00002.html",
+      "published_at": "2026-09-05",
+      "source_type": "official"
+    },
+    {
+      "publisher": "Ministry of Health, Labour and Welfare (MHLW)",
+      "title": "社会保険加入の要件",
+      "url": "https://www.mhlw.go.jp/tekiyoukakudai/jugyouin/taisho/",
+      "published_at": "2026-08-01",
+      "source_type": "official"
+    },
+    {
+      "publisher": "Japan Pension Service",
+      "title": "短時間労働者に対する健康保険・厚生年金保険の適用の拡大",
+      "url": "https://www.nenkin.go.jp/service/kounen/tekiyo/jigyosho/tanjikan.html",
+      "published_at": "2026-05-01",
+      "source_type": "official"
+    },
+    {
+      "publisher": "HR BrEdge社会保険労務士法人",
+      "title": "扶養内で働くなら要注意！週20時間の壁と社会保険加入の境界線を徹底解説",
+      "url": "https://www.office-nabe.com/column_sr447",
+      "published_at": "2026-05-01",
+      "source_type": "analysis"
+    }
+  ],
+  "claims": [
+    {
+      "kind": "FACT",
+      "text": "MHLW says the monthly scheduled-wage requirement of ¥88,000, commonly expressed as the roughly ¥1.06 million annual-income wall, is scheduled to be removed in October 2026.",
+      "source_refs": [1, 2, 3],
+      "basis": "Current MHLW and Japan Pension Service guidance"
+    },
+    {
+      "kind": "FACT",
+      "text": "After the wage requirement is removed, the remaining main tests for short-hours workers include scheduled work of at least 20 hours per week, an employment expectation exceeding two months, non-student status, and coverage by an applicable workplace.",
+      "source_refs": [2, 3],
+      "basis": "MHLW eligibility guidance and Japan Pension Service rules"
+    },
+    {
+      "kind": "FACT",
+      "text": "For the general company-size expansion schedule, workplaces with 51 or more covered employees remain the threshold through September 2027; the threshold falls to 36 employees from October 2027 and then decreases in stages through 2035.",
+      "source_refs": [2],
+      "basis": "MHLW social-insurance expansion schedule"
+    },
+    {
+      "kind": "FACT",
+      "text": "The separate roughly ¥1.3 million dependent-coverage threshold does not disappear merely because the ¥88,000 wage requirement is removed.",
+      "source_refs": [1],
+      "basis": "MHLW distinguishes the roughly ¥1.06 million workplace-coverage test from the roughly ¥1.3 million dependent-coverage threshold"
+    },
+    {
+      "kind": "FACT",
+      "text": "For the 20-hour test, the starting point is scheduled working time stated in work rules or the employment contract rather than simply adding every occasional overtime hour.",
+      "source_refs": [2, 3],
+      "basis": "MHLW and Japan Pension Service definition of scheduled working time"
+    },
+    {
+      "kind": "INFERENCE",
+      "text": "For affected households, the practical planning boundary shifts away from trying only to keep monthly scheduled wages under ¥88,000 and toward checking weekly contracted hours, employer coverage and the remaining eligibility conditions together.",
+      "source_refs": [1, 2, 3, 4],
+      "basis": "Direct consequence of removing one eligibility test while retaining the other tests"
+    }
+  ],
+  "content": {
+    "key_message": "Hindi nawawala lahat ng 'income walls': sa October, mawawala ang ¥88,000/month test for this workplace social-insurance rule, pero mananatili ang 20 scheduled hours/week test and other conditions.",
+    "who_is_affected": "Part-time and short-hours workers in Japan who are not already enrolled through their job, especially people working around 20 scheduled hours per week at employers covered by the short-hours social-insurance rules. Spouses and households planning around dependent coverage should also re-check because this change can alter which insurance system covers the worker.",
+    "when": "The wage requirement is scheduled to be removed in October 2026. The general employer-size threshold remains 51 or more covered employees through September 2027, then drops in stages beginning October 2027.",
+    "financial_impact": "Potentially meaningful for household cash flow. Newly covered workers generally begin paying employee shares of workplace health-insurance and employees' pension contributions through payroll, while gaining those systems' coverage and pension accrual. The exact yen effect depends on remuneration, health-insurance scheme, age and other factors, so ALAM does not use a generic take-home estimate.",
+    "risk_if_ignored": "A household may budget using the old ¥88,000/month line and then see payroll deductions or a dependent-status change it did not plan for. The opposite mistake is also possible: cutting work unnecessarily because someone incorrectly believes every worker at 20 hours automatically qualifies regardless of employer size, student status or employment duration.",
+    "action": "PREPARE",
+    "deadline": "Review the employment contract and employer coverage before October 2026 if scheduled hours are near or above 20 per week. There is no separate nationwide worker application deadline stated in the cited guidance; the employer handles the qualification filing when a worker becomes covered.",
+    "effort": "Low; mainly a contract/payroll check with the employer, followed by a household-budget update if coverage changes.",
+    "potential_benefit": "Avoid a surprise drop in take-home pay, avoid unnecessary work-hour cuts based on the wrong threshold, and understand the additional health-insurance and employees' pension coverage before deciding work hours.",
+    "downside": "Joining can lower immediate take-home pay because employee contributions are deducted. Whether that is better or worse for a particular household cannot be decided from the income threshold alone because coverage, benefits, pension accrual and family circumstances differ.",
+    "skeptical_view": "The phrase '106万円の壁撤廃' can sound broader than the actual change. Only the ¥88,000 scheduled-wage requirement in this short-hours workplace social-insurance test is being removed; the 20-hour rule, employment-duration rule, student exclusion, employer-coverage rules and the separate dependent-coverage threshold still matter.",
+    "what_would_change_mind": "A new MHLW or Japan Pension Service implementation notice changing the October 2026 timing, the 20-hour test, employer-size schedule, student treatment or dependent-coverage interaction would require an immediate update.",
+    "usefulness": "High for households with part-time workers who intentionally manage hours or income around social-insurance/dependent thresholds.",
+    "novelty": "The headline '106万円の壁 is disappearing' is increasingly reported, but the practical fine print — that the wage test disappears while the weekly-hours and employer-coverage tests remain — is the part most likely to cause household planning mistakes.",
+    "impact": {
+      "money": "HIGH",
+      "family": "HIGH",
+      "career": "MED",
+      "japan": "HIGH",
+      "urgency": "HIGH"
+    },
+    "connection_tags": ["social-insurance", "part-time-work", "dependent-coverage", "household-budget", "labor-shortage"],
+    "reading_levels": {
+      "30 sec": {
+        "what_happened": "From October 2026, the ¥88,000/month wage test for short-hours workplace social insurance is removed.",
+        "why_it_matters": "If the other conditions apply, 20 scheduled hours per week can matter even when monthly pay is below the old threshold.",
+        "what_to_do_watch": "Check your contract's scheduled weekly hours and ask payroll/HR whether your workplace is covered before October.",
+        "bottom_line": "Do not assume all income walls disappeared, and do not keep planning only around ¥88,000 per month."
+      },
+      "2_min": "Until September 2026, one of the tests for certain part-time workers is scheduled pay of at least ¥88,000 per month. MHLW says that wage test is removed in October. The 20-hours-per-week scheduled-work test remains, along with other conditions such as employment expected to exceed two months, non-student status and workplace coverage. The general company-size threshold stays at 51 or more covered employees through September 2027. Separately, the roughly ¥1.3 million dependent-coverage threshold has not simply vanished. If your family has been controlling monthly pay to stay under ¥88,000, check the employment contract now: after the change, weekly scheduled hours and the other eligibility conditions are the more important questions for this rule."
+    },
+    "learning": {
+      "outcomes": [
+        "Explain which 'income wall' is actually changing in October 2026.",
+        "Check whether weekly scheduled hours and employer coverage could make a part-time worker subject to workplace social insurance.",
+        "Avoid confusing the removed ¥88,000 wage test with the separate dependent-coverage threshold."
+      ],
+      "background": "Japan has several different thresholds that people casually call '年収の壁' or income walls. They do not all belong to the same tax or insurance rule. This October change concerns one wage condition used to decide whether certain short-hours workers must join their employer's health insurance and employees' pension.\n\nUntil the change, a covered short-hours worker generally has to satisfy several conditions together, including scheduled weekly hours and scheduled monthly pay. Removing the pay condition does not erase the other conditions.",
+      "terms": [
+        {
+          "term": "所定労働時間",
+          "meaning": "Scheduled working time — the regular hours set by the employment contract or work rules, rather than simply every occasional overtime hour.",
+          "why_it_matters": "The surviving 20-hour test is based primarily on this scheduled-work concept."
+        },
+        {
+          "term": "社会保険",
+          "meaning": "In this story, mainly workplace health insurance and Employees' Pension Insurance (厚生年金).",
+          "why_it_matters": "Enrollment can reduce current take-home pay through contributions while also changing health coverage and future pension accrual."
+        },
+        {
+          "term": "106万円の壁",
+          "meaning": "A common shorthand for the ¥88,000/month scheduled-wage condition in the short-hours social-insurance rules; it is not every tax or dependent threshold in Japan.",
+          "why_it_matters": "The shorthand can mislead people into thinking every income-related boundary disappears in October."
+        }
+      ],
+      "how_it_works": [
+        {
+          "title": "Before October",
+          "explanation": "For covered short-hours workers, both the weekly-hours test and the ¥88,000 scheduled-wage test are among the conditions considered, together with the other eligibility rules."
+        },
+        {
+          "title": "From October",
+          "explanation": "The ¥88,000 wage condition is removed. That makes the weekly scheduled-hours test and the remaining eligibility conditions the important checks for workers who previously stayed below the wage line."
+        },
+        {
+          "title": "Employer size still matters",
+          "explanation": "The broad statutory expansion does not jump to every tiny employer in October 2026. MHLW's schedule keeps the general 51-or-more threshold through September 2027 before reducing it gradually."
+        }
+      ],
+      "example": "Example: a non-student employee at a generally covered 51+ employee workplace who is expected to stay more than two months and is contracted for 20 hours a week may no longer avoid workplace social-insurance coverage simply because scheduled monthly pay is under ¥88,000 after the wage condition is removed. This example illustrates the rule structure; actual qualification should be confirmed with the employer or Japan Pension Service.",
+      "takeaways": [
+        "October removes the ¥88,000/month test, not every 'income wall.'",
+        "20 scheduled hours per week becomes more important for affected part-time workers.",
+        "The general 51+ employer threshold remains through September 2027.",
+        "The roughly ¥1.3 million dependent-coverage threshold is a separate rule.",
+        "Check the contract and employer coverage before changing work hours."
+      ]
+    },
+    "action_plan": {
+      "goal": "Know before October whether the worker's current contract is likely to trigger workplace social-insurance coverage and adjust the household budget without unnecessary work-hour cuts.",
+      "who_should_act": "Part-time/short-hours workers near or above 20 scheduled hours per week who are not already enrolled through the job, plus households relying on a spouse's dependent coverage. Workers already enrolled or clearly outside the remaining conditions can usually ignore the ¥88,000-rule change itself.",
+      "deadline": "Before October 2026 if the worker is near the 20-hour line or has been intentionally keeping scheduled monthly pay below ¥88,000.",
+      "prepare": [
+        "Employment contract or labor-conditions notice showing scheduled weekly hours",
+        "Recent payslip for budgeting",
+        "Employer/HR confirmation of whether the workplace is covered by the short-hours social-insurance rules",
+        "Current dependent-insurance information if the worker is covered through a spouse or family member"
+      ],
+      "steps": [
+        {
+          "step": "Check scheduled weekly hours",
+          "action": "Read the contract or labor-conditions notice and identify the normal scheduled hours per week.",
+          "how": "Use the written scheduled hours as the starting point; do not decide based only on one unusually busy week's overtime.",
+          "needed": ["Employment contract or labor-conditions notice"],
+          "time_minutes": 5,
+          "cost_yen": 0,
+          "done_when": "You can state whether the written schedule is below, equal to, or above 20 hours per week."
+        },
+        {
+          "step": "Confirm workplace coverage",
+          "action": "Ask payroll or HR whether the workplace is a covered applicable workplace for short-hours employees and whether the October wage-test removal changes your enrollment status.",
+          "how": "Use the MHLW/Japan Pension Service rule pages if you need a common reference during the conversation.",
+          "needed": ["Employer name", "Scheduled weekly hours"],
+          "time_minutes": 10,
+          "cost_yen": 0,
+          "done_when": "Payroll/HR gives a clear answer on expected coverage or identifies what remaining fact must be checked."
+        },
+        {
+          "step": "Check the other conditions",
+          "action": "Confirm employment is expected to exceed two months and whether the student exclusion applies; if dependent coverage is involved, separately check that system's rule rather than assuming the ¥1.06 million change settles it.",
+          "how": "Confirm with HR/insurer or Japan Pension Service using the current official rules.",
+          "needed": ["Employment duration", "Student status if relevant", "Dependent-insurance details if relevant"],
+          "time_minutes": 10,
+          "cost_yen": 0,
+          "done_when": "You know whether a remaining eligibility condition keeps you outside or brings you within workplace coverage."
+        },
+        {
+          "step": "Budget before changing hours",
+          "action": "If enrollment is expected, ask payroll for the employer-specific expected deduction or use the official simulation tools before deciding whether to change scheduled hours.",
+          "how": "Do not use a generic percentage from social media as your final household budget number.",
+          "needed": ["Recent payslip", "Employer-specific insurance information"],
+          "time_minutes": 15,
+          "cost_yen": 0,
+          "done_when": "The household has a realistic post-change take-home estimate and understands what coverage is gained."
+        }
+      ],
+      "mistakes_to_avoid": [
+        "Assuming '106万円の壁撤廃' means all tax, dependent and social-insurance thresholds disappeared.",
+        "Looking only at monthly pay and ignoring scheduled weekly hours.",
+        "Assuming every 20-hour worker at every company automatically becomes covered in October.",
+        "Cutting hours before confirming employer coverage and the other eligibility conditions.",
+        "Using occasional overtime alone as if it were automatically the written scheduled-hours figure."
+      ],
+      "decision_rules": [
+        {
+          "if": "Your written scheduled hours are at least 20 per week and the employer says the remaining coverage conditions apply",
+          "then": "Prepare for workplace social-insurance enrollment and update the household budget before October."
+        },
+        {
+          "if": "Your written schedule is below 20 hours or another remaining eligibility condition clearly excludes you",
+          "then": "Do not assume the October wage-test removal alone makes you covered; confirm only if actual work patterns or contract terms change."
+        },
+        {
+          "if": "You are trying to remain a dependent under a spouse/family member's insurance",
+          "then": "Check the dependent-coverage rule separately; do not use the removed ¥88,000 test as a substitute for that check."
+        }
+      ],
+      "follow_up": "Re-check the first October/November payslip and insurance enrollment notice. If the actual treatment differs from HR's pre-change explanation, ask payroll or Japan Pension Service promptly rather than waiting until year-end."
+    },
+    "bottom_line": "For many part-time households, October turns the planning question from 'Am I under ¥88,000 a month?' into 'What are my scheduled weekly hours, is my employer covered, and do the other conditions apply?'",
+    "confidence_reason": "High: the core timing, surviving 20-hour test and employer-size schedule are stated directly in current MHLW/Japan Pension Service guidance; individual payroll impact still depends on the worker and insurer."
+  },
+  "editorial_visual": {
+    "style": "editorial",
+    "motif": "document",
+    "secondary_motif": "family",
+    "scene": "a household budget sheet where a large old 88,000-yen gate fades away while a sturdy 20-hours-per-week clock gate remains in front of a family reviewing a work contract",
+    "caption": "The money line moves; the hours line stays",
+    "silliness": 20,
+    "exaggeration": 55
+  }
+}
