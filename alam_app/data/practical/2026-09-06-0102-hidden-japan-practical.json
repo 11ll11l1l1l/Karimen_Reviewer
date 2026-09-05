@@ -1,0 +1,246 @@
+[
+  {
+    "id": "japan-national-pension-childcare-exemption-2026",
+    "agent": "practical",
+    "created_at": "2026-09-06T01:02:31+09:00",
+    "type": "benefit",
+    "title": "From October, some parents can stop paying National Pension for baby care",
+    "summary": "Starting October 2026, eligible National Pension Category 1 parents raising a child under age 1 can have premiums waived without reducing their future basic pension. The overlooked part: both eligible parents can qualify, income does not disqualify you, and even babies born before October may still create a short exemption window.",
+    "why_it_matters": "For self-employed, freelance, farming, student or otherwise Category 1 parents, this can remove a real monthly bill during a high-cost first year of childcare. The FY2026 National Pension premium is ¥17,920 per month per person, so missing the application could mean paying premiums that the new system is designed to waive.",
+    "importance": 88,
+    "confidence": 95,
+    "tags": ["Japan", "National Pension", "childcare", "benefits", "self-employed", "freelance", "family"],
+    "geography": ["Japan"],
+    "status": "CONFIRMED",
+    "sources": [
+      {
+        "publisher": "Japan Pension Service",
+        "title": "令和8年（2026年）10月から国民年金保険料の育児免除制度が始まります!",
+        "url": "https://www.nenkin.go.jp/tokusetsu/ikujimenjo.html",
+        "published_at": "2026-04-01",
+        "source_type": "official"
+      },
+      {
+        "publisher": "Ministry of Health, Labour and Welfare",
+        "title": "国民年金第1号被保険者の育児期間に係る国民年金保険料免除制度の周知について",
+        "url": "https://www.mhlw.go.jp/web/t_doc?dataId=00tc9818&dataType=1&pageNo=1",
+        "published_at": "2026-03-06",
+        "source_type": "official"
+      },
+      {
+        "publisher": "Japan Pension Service",
+        "title": "国民年金保険料の前納",
+        "url": "https://www.nenkin.go.jp/service/kokunen/hokenryo/zenno.html",
+        "published_at": "2026-09-04",
+        "source_type": "official"
+      },
+      {
+        "publisher": "AEON Bank",
+        "title": "【2026年10月から】国民年金保険料の育児免除制度で年金は減る？保険料の負担はいくら減るのか",
+        "url": "https://www.aeonbank.co.jp/column/pension/kokuminnenkinhokenryo/ikujimenjo/",
+        "published_at": "2026-07-15",
+        "source_type": "analysis"
+      }
+    ],
+    "claims": [
+      {
+        "kind": "FACT",
+        "text": "The new childcare exemption starts October 1, 2026 for National Pension Category 1 insured parents raising a child under age 1.",
+        "source_refs": [1, 2],
+        "basis": "Japan Pension Service and MHLW implementation guidance"
+      },
+      {
+        "kind": "FACT",
+        "text": "There is no income test, and eligible biological or adoptive parents must maintain the parent-child relationship and share the same address with the child.",
+        "source_refs": [1],
+        "basis": "Japan Pension Service eligibility rules"
+      },
+      {
+        "kind": "FACT",
+        "text": "If both parents are Category 1 insured and each meets the childcare requirements, both can receive the exemption.",
+        "source_refs": [1],
+        "basis": "Japan Pension Service benefit guidance"
+      },
+      {
+        "kind": "FACT",
+        "text": "Exempt months are treated as paid months when calculating the future Old-age Basic Pension.",
+        "source_refs": [1, 2],
+        "basis": "Official pension guidance"
+      },
+      {
+        "kind": "FACT",
+        "text": "The FY2026 National Pension premium is ¥17,920 per month.",
+        "source_refs": [3],
+        "basis": "Japan Pension Service FY2026 premium table"
+      },
+      {
+        "kind": "FACT",
+        "text": "Parents already raising a child born before October 2026 can still qualify for months from October onward while the child remains under age 1.",
+        "source_refs": [1],
+        "basis": "Japan Pension Service transition examples"
+      },
+      {
+        "kind": "INFERENCE",
+        "text": "Families most likely to overlook this are those outside standard employee social-insurance/childcare-leave systems, because the benefit targets Category 1 National Pension members rather than ordinary employees enrolled in Employees' Pension Insurance.",
+        "source_refs": [1, 2],
+        "basis": "Eligibility structure of the new system"
+      }
+    ],
+    "editorial_visual": {
+      "style": "editorial",
+      "motif": "family",
+      "secondary_motif": "yen",
+      "scene": "a young family beside a baby crib while a monthly pension bill visibly shrinks into a small stack of coins, illustrated as a clean Japanese magazine-style policy explainer",
+      "caption": "A new first-year childcare break for some National Pension parents",
+      "silliness": 18,
+      "exaggeration": 45
+    },
+    "content": {
+      "key_message": "If you pay National Pension yourself and have a baby under age 1, check this before paying October premiums: the new exemption may apply even if your child was born before the launch date.",
+      "who_is_affected": "National Pension Category 1 insured people age 20 to under 60 who are raising an eligible child under age 1 and meet the parent-child and same-address requirements. This commonly includes self-employed people, sole proprietors, freelancers, farmers, students and some unemployed people. Category 2 employees/public servants and Category 3 dependent spouses are not covered by this specific exemption.",
+      "when": "Effective October 1, 2026. Only months from October 2026 onward can be covered under the new childcare exemption.",
+      "financial_impact": "For FY2026, each exempt month removes a ¥17,920 National Pension premium obligation per eligible parent. Actual total savings depend on the child's age, parental category and the months that fall inside the exemption window; premiums spanning later fiscal years may differ.",
+      "estimated_saving_yen": null,
+      "time_minutes": null,
+      "travel_minutes": null,
+      "risk_if_ignored": "You may continue paying National Pension premiums during months that could qualify for the new childcare exemption. The Japan Pension Service says already-paid qualifying premiums can be credited or refunded after the childcare exemption is recorded.",
+      "action": "PREPARE",
+      "deadline": "The system begins October 1, 2026. Check eligibility before or around the October launch, especially if your child will still be under age 1 then.",
+      "effort": "LOW-MED",
+      "potential_benefit": "Lower cash outflow during the child's first year without reducing the Old-age Basic Pension calculation for those exempt months.",
+      "downside": "This is not a universal childcare cash payment. It does not apply to Category 2 or Category 3 members under this specific scheme, and the exact number of exempt months varies. Do not stop paying premiums merely because you have a child; first confirm that the exemption has been properly recorded.",
+      "usefulness": 95,
+      "novelty": 91,
+      "impact": {
+        "money": "HIGH",
+        "family": "HIGH",
+        "career": "LOW",
+        "japan": "MED",
+        "urgency": "HIGH"
+      },
+      "connection_tags": ["childcare-costs", "national-pension", "self-employed-family-support"],
+      "what_would_change_mind": "A later Japan Pension Service implementation notice that materially changes eligibility, required co-residence, covered months or treatment of already-paid premiums would require an update. The current official special page does not yet spell out a complete application-channel checklist, so ALAM should update this record when those operational instructions are published.",
+      "reading_levels": {
+        "30_sec": {
+          "what_happened": "Japan starts a new National Pension childcare premium exemption on October 1, 2026 for eligible Category 1 parents with children under age 1.",
+          "why_it_matters": "FY2026 premiums are ¥17,920 a month per person, and eligible months still count as paid for future basic pension calculations.",
+          "what_to_do_watch": "Check whether you are Category 1, whether your child is still under age 1 in October, and watch the Japan Pension Service page for the final application procedure.",
+          "bottom_line": "This is a real benefit worth checking; do not assume it is only for babies born after October."
+        }
+      },
+      "learning": {
+        "outcomes": [
+          "Identify whether this specific childcare exemption applies to your National Pension category.",
+          "Understand why the exemption does not reduce the future basic pension for covered months.",
+          "Recognize the October transition rule for babies born before the system starts."
+        ],
+        "background": "Japan's public pension system divides insured people into categories. Many company employees and public servants are Category 2 and pay through Employees' Pension Insurance. Category 1 generally covers people who pay National Pension directly, including many self-employed people, freelancers, farmers, students and unemployed people. Until now, Category 1 parents had a maternity-period exemption but much less support for the following childcare period than employees using maternity/childcare leave systems. The October 2026 reform fills part of that gap.",
+        "terms": [
+          {
+            "term": "Category 1 insured person",
+            "meaning": "A National Pension member who is not an Employees' Pension member and not a dependent Category 3 spouse; this often includes self-employed people, freelancers, farmers, students and unemployed people.",
+            "why_it_matters": "This new childcare exemption is specifically targeted to Category 1 parents."
+          },
+          {
+            "term": "treated as paid",
+            "meaning": "The exempt childcare month is counted as if the normal National Pension premium had been paid when the Old-age Basic Pension amount is calculated.",
+            "why_it_matters": "The benefit reduces today's premium burden without creating the usual future-pension reduction associated with some other unpaid periods."
+          }
+        ],
+        "how_it_works": [
+          {
+            "title": "Check the parent's pension category",
+            "explanation": "The benefit is not based simply on having a baby. The parent must be a National Pension Category 1 insured person during the relevant period."
+          },
+          {
+            "title": "Check the child's age and household status",
+            "explanation": "The parent must be raising an eligible child under age 1 and meet the continuing parent-child relationship and same-address conditions."
+          },
+          {
+            "title": "The exemption replaces the premium, not the pension record",
+            "explanation": "For approved childcare-exemption months, the normal premium is waived but the months are still reflected as paid months for the Old-age Basic Pension calculation."
+          }
+        ],
+        "example": "Example from the Japan Pension Service: if a child was born January 1, 2026 and is still under age 1 when the system begins, an eligible father or adoptive parent can have October through December 2026 treated as childcare-exemption months. For the biological mother, the interaction with the existing maternity exemption determines the covered period.",
+        "takeaways": [
+          "The launch date is October 1, 2026.",
+          "It targets Category 1 National Pension parents, not every parent in Japan.",
+          "There is no income test under the official eligibility rules.",
+          "Both eligible Category 1 parents can qualify.",
+          "Babies born before October can still create eligible months after October if they remain under age 1."
+        ]
+      },
+      "action_plan": {
+        "goal": "Avoid paying National Pension premiums for months that are officially eligible for the new childcare exemption while keeping the future pension record intact.",
+        "who_should_act": "Parents with a child who will be under age 1 on or after October 1, 2026 who currently pay National Pension directly or believe they are Category 1. Ordinary Category 2 employees/public servants and Category 3 dependent spouses can ignore this specific scheme and should instead check the separate employee/dependent rules that apply to them.",
+        "deadline": "The exemption begins October 1, 2026. Operational application instructions should be checked on the Japan Pension Service official page as launch approaches.",
+        "prepare": [
+          "Your current National Pension category or enrollment record",
+          "Child's date of birth",
+          "Confirmation that you and the child share the same registered address",
+          "Any recent National Pension payment or prepayment records, especially if you have already paid months that may later qualify"
+        ],
+        "steps": [
+          {
+            "step": "Confirm you are Category 1",
+            "action": "Check your current National Pension enrollment category before assuming the benefit applies.",
+            "how": "Use your pension records/ねんきんネット or confirm with the Japan Pension Service or your municipal pension counter.",
+            "needed": ["Pension enrollment information"],
+            "time_minutes": null,
+            "cost_yen": 0,
+            "done_when": "You have confirmed that you are Category 1 for the months you want exempted."
+          },
+          {
+            "step": "Map the possible eligible months",
+            "action": "Compare the child's first birthday with October 1, 2026 and the official rules for biological mothers versus fathers/adoptive parents.",
+            "how": "Use the examples on the Japan Pension Service childcare-exemption page. Biological mothers should account for the existing maternity exemption first.",
+            "needed": ["Child's date of birth"],
+            "time_minutes": null,
+            "cost_yen": 0,
+            "done_when": "You know which months may fall inside your official exemption window."
+          },
+          {
+            "step": "Check the final filing procedure",
+            "action": "Before stopping or changing payments, confirm the official filing channel and that the childcare exemption has been recorded.",
+            "how": "Use the Japan Pension Service special page or an official pension/municipal counter. The current special page explains eligibility and covered months but does not yet provide a complete launch-day filing checklist.",
+            "needed": ["Eligibility information", "Any documents later required by the official procedure"],
+            "time_minutes": null,
+            "cost_yen": 0,
+            "done_when": "You have official confirmation that your childcare exemption filing has been accepted or recorded."
+          },
+          {
+            "step": "Check already-paid months",
+            "action": "If you prepaid or already paid a month that becomes eligible, ask how the credit or refund will be handled after the exemption is recorded.",
+            "how": "Japan Pension Service guidance states that already-paid qualifying premiums can be credited or refunded.",
+            "needed": ["Payment/prepayment record"],
+            "time_minutes": null,
+            "cost_yen": 0,
+            "done_when": "You can see the adjustment/refund or have official confirmation of how it will be processed."
+          }
+        ],
+        "mistakes_to_avoid": [
+          "Assuming the benefit applies to all parents regardless of pension category.",
+          "Assuming only children born after October 1 qualify.",
+          "Stopping premium payments before the exemption is officially recorded.",
+          "Assuming an income ceiling exists; the official rules say there is no income requirement.",
+          "For biological mothers, ignoring the interaction with the existing maternity-period exemption."
+        ],
+        "decision_rules": [
+          {
+            "if": "You are Category 1 and your child is under age 1 during a month from October 2026 onward",
+            "then": "Check that month against the official childcare-exemption rules and complete the official filing once the launch procedure is confirmed."
+          },
+          {
+            "if": "You are Category 2 or Category 3",
+            "then": "Do not use this specific Category 1 exemption; check the employee/dependent social-insurance rules that apply to your category."
+          },
+          {
+            "if": "You already prepaid premiums covering potentially eligible months",
+            "then": "Do not assume the money is lost; the official guidance says paid qualifying premiums can be credited or refunded after the childcare exemption is recorded."
+          }
+        ],
+        "follow_up": "Re-check the Japan Pension Service special page around the October launch for the final filing form/channel and any document details, then confirm the exemption appears correctly in your pension record."
+      }
+    }
+  }
+]
