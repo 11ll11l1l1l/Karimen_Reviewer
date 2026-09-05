@@ -7,4 +7,4 @@ if not exist .venv (
 ) else (
   call .venv\Scripts\activate
 )
-python main.py
+python smart_app.py
