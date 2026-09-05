@@ -4,9 +4,8 @@ import math
 import os
 import re
 import shutil
-import stat
+import subprocess
 import tempfile
-from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -14,279 +13,175 @@ from typing import Any
 import pandas as pd
 
 
-ALIASES = {
-    "equipment_id": ["equipment id", "equipment_id", "eq id", "tool id", "machine id", "asset id"],
-    "pm_id": ["pm id", "pm_id", "pm code", "maintenance id"],
-    "pm_name": ["pm name", "pm", "maintenance", "activity name"],
-    "original_due_date": ["original due date", "due date", "due", "pm due"],
-    "scheduled_date": ["scheduled date", "schedule date", "planned date"],
-    "last_completion_date": ["last completion date", "last pm", "last completed", "completion date"],
-    "status": ["status", "pm status"],
-    "assigned_to": ["assigned", "assigned to", "owner", "technician"],
-    "estimated_hours": ["estimated hours", "hours", "duration hr", "duration hours"],
-    "priority": ["priority"],
-    "deferral_reason": ["deferral reason", "reason", "remarks", "comments"],
-    "sop_path": ["sop", "sop path", "procedure path"],
-    "report_path": ["report", "report path"],
-    "step_no": ["step", "step no", "step number", "item", "no"],
-    "activity": ["activity", "step activity", "check item", "procedure", "description"],
-    "method": ["method", "measurement method", "check method"],
-    "spec": ["spec", "specification", "criteria", "acceptance", "control spec"],
-    "unit": ["unit", "units"],
-    "target": ["target", "nominal"],
-    "warning_low": ["warning low", "wl", "warn low"],
-    "warning_high": ["warning high", "wh", "warn high"],
-    "control_low": ["control low", "cl", "lcl", "control lower"],
-    "control_high": ["control high", "ch", "ucl", "control upper"],
-    "spec_low": ["spec low", "lsl", "lower spec", "minimum"],
-    "spec_high": ["spec high", "usl", "upper spec", "maximum"],
-    "reaction_plan": ["reaction plan", "reaction", "out of spec action"],
-    "sop_page": ["sop page", "page"],
-    "sop_section": ["sop section", "section"],
-}
-
-
-def normalize_col(value: Any) -> str:
-    return re.sub(r"\s+", " ", str(value).strip().lower().replace("_", " "))
-
-
-def auto_mapping(columns: list[str]) -> dict[str, str]:
-    normalized = {normalize_col(c): c for c in columns}
-    result: dict[str, str] = {}
-    for target, aliases in ALIASES.items():
-        for alias in aliases:
-            if normalize_col(alias) in normalized:
-                result[target] = normalized[normalize_col(alias)]
-                break
-    return result
-
-
-def read_table(path: str, sheet_name: str | int | None = 0) -> pd.DataFrame:
-    suffix = Path(path).suffix.lower()
-    if suffix == ".csv":
-        return pd.read_csv(path)
-    return pd.read_excel(path, sheet_name=sheet_name)
-
-
 def workbook_sheets(path: str) -> list[str]:
-    if Path(path).suffix.lower() == ".csv":
-        return ["CSV"]
+    p=Path(path)
+    if p.suffix.lower()=='.csv': return ['CSV']
     return list(pd.ExcelFile(path).sheet_names)
 
 
-def clean_text(value: Any) -> str:
-    if value is None or (isinstance(value, float) and math.isnan(value)):
-        return ""
-    return str(value).strip()
+def read_table(path: str, sheet: str|int=0) -> pd.DataFrame:
+    p=Path(path)
+    if p.suffix.lower()=='.csv': return pd.read_csv(path)
+    return pd.read_excel(path, sheet_name=sheet)
 
 
-def parse_date(value: Any) -> datetime | None:
-    if value is None or clean_text(value) == "":
-        return None
-    try:
-        ts = pd.to_datetime(value, errors="coerce")
-        if pd.isna(ts):
-            return None
-        return ts.to_pydatetime()
-    except Exception:
-        return None
+def _norm(s: Any) -> str:
+    return re.sub(r'[^a-z0-9]+','_',str(s).strip().lower()).strip('_')
 
 
-def parse_float(value: Any) -> float | None:
-    if value is None or clean_text(value) == "":
-        return None
-    try:
-        return float(value)
-    except Exception:
-        return None
+ALIASES={
+'equipment_id':['equipment','equipment_id','eq_id','tool_id','machine_id','asset_id'],
+'pm_id':['pm_id','pm_code','maintenance_id'], 'pm_name':['pm_name','pm','maintenance','activity_name'],
+'original_due_date':['original_due','original_due_date','due_date','due'], 'scheduled_date':['scheduled','scheduled_date','plan_date'],
+'last_completion_date':['last_completion','last_completion_date','last_pm','completed_date'], 'status':['status','state'],
+'assigned_to':['assigned','assigned_to','owner','technician'], 'estimated_hours':['estimated_hours','hours','duration_hr','duration'],
+'priority':['priority','prio'], 'deferral_reason':['deferral_reason','defer_reason','reason'], 'sop_path':['sop','sop_path'], 'report_path':['report','report_path'],
+'step_no':['step','step_no','step_number','no'], 'activity':['activity','step_description','description','check_item','item'],
+'method':['method','measurement_method'], 'spec':['spec','specification','criteria','acceptance'], 'unit':['unit','units'],
+'warning_low':['warning_low','wl','warn_low'], 'warning_high':['warning_high','wh','warn_high'],
+'control_low':['control_low','cl','control_lsl'], 'control_high':['control_high','ch','control_usl'],
+'spec_low':['spec_low','lsl','lower_spec'], 'spec_high':['spec_high','usl','upper_spec'], 'target':['target','nominal','setpoint'],
+'reaction_plan':['reaction_plan','reaction','action_if_fail'], 'sop_page':['sop_page','page'], 'sop_section':['sop_section','section']}
 
 
-@dataclass
-class ParsedSpec:
-    input_type: str = "Text"
-    target: float | None = None
-    spec_low: float | None = None
-    spec_high: float | None = None
-    acceptance_text: str = ""
-    ambiguous: bool = False
+def auto_mapping(columns: list[Any]) -> dict[str,str]:
+    normalized={_norm(c):str(c) for c in columns}; out={}
+    for field,names in ALIASES.items():
+        for n in names:
+            if n in normalized: out[field]=normalized[n]; break
+    return out
 
 
-def parse_specification(text: Any) -> ParsedSpec:
-    raw = clean_text(text)
-    if not raw:
-        return ParsedSpec()
-    s = raw.replace("−", "-").replace("–", "-").replace("—", "-").replace("＋", "+").strip()
-    lowered = s.lower()
-
-    if lowered in {"ok", "pass", "no damage", "no leak", "good", "acceptable"} or any(
-        token in lowered for token in ["no damage", "no leak", "visual"]
-    ):
-        return ParsedSpec(input_type="Pass/Fail", acceptance_text=raw)
-
-    m = re.fullmatch(r"\s*(-?\d+(?:\.\d+)?)\s*(?:±|\+/-)\s*(\d+(?:\.\d+)?)\s*", s)
-    if m:
-        target = float(m.group(1)); tol = float(m.group(2))
-        return ParsedSpec(input_type="Numeric", target=target, spec_low=target - tol, spec_high=target + tol)
-
-    m = re.fullmatch(r"\s*(-?\d+(?:\.\d+)?)\s*(?:-|~|to)\s*(-?\d+(?:\.\d+)?)\s*", lowered)
-    if m:
-        lo, hi = float(m.group(1)), float(m.group(2))
-        return ParsedSpec(input_type="Numeric", spec_low=min(lo, hi), spec_high=max(lo, hi))
-
-    m = re.fullmatch(r"\s*(?:<=|≤)\s*(-?\d+(?:\.\d+)?)\s*", s)
-    if m:
-        return ParsedSpec(input_type="Numeric", spec_high=float(m.group(1)))
-    m = re.fullmatch(r"\s*(?:>=|≥)\s*(-?\d+(?:\.\d+)?)\s*", s)
-    if m:
-        return ParsedSpec(input_type="Numeric", spec_low=float(m.group(1)))
-    m = re.fullmatch(r"\s*(-?\d+(?:\.\d+)?)\s*(?:max|maximum)\s*", lowered)
-    if m:
-        return ParsedSpec(input_type="Numeric", spec_high=float(m.group(1)))
-    m = re.fullmatch(r"\s*(-?\d+(?:\.\d+)?)\s*(?:min|minimum)\s*", lowered)
-    if m:
-        return ParsedSpec(input_type="Numeric", spec_low=float(m.group(1)))
-    m = re.fullmatch(r"\s*(-?\d+(?:\.\d+)?)\s*", s)
-    if m:
-        val = float(m.group(1))
-        return ParsedSpec(input_type="Numeric", target=val)
-
-    if any(word in lowered for word in ["approx", "about", "around", "typ", "reference"]):
-        return ParsedSpec(input_type="Text", acceptance_text=raw, ambiguous=True)
-    return ParsedSpec(input_type="Text", acceptance_text=raw)
+def _dt(v):
+    if v is None or (isinstance(v,float) and math.isnan(v)) or pd.isna(v): return None
+    x=pd.to_datetime(v,errors='coerce')
+    return None if pd.isna(x) else x.to_pydatetime()
 
 
-def dataframe_to_pm_backlog(df: pd.DataFrame, mapping: dict[str, str]) -> tuple[list[dict[str, Any]], list[str]]:
-    rows: list[dict[str, Any]] = []
-    errors: list[str] = []
-    for idx, row in df.iterrows():
-        eq = clean_text(row.get(mapping.get("equipment_id", "")))
-        pm_id = clean_text(row.get(mapping.get("pm_id", ""))) or clean_text(row.get(mapping.get("pm_name", "")))
-        pm_name = clean_text(row.get(mapping.get("pm_name", ""))) or pm_id
-        if not eq or not pm_id:
-            errors.append(f"Row {idx + 2}: missing Equipment ID or PM ID/Name")
-            continue
-        data = {
-            "equipment_id": eq,
-            "pm_id": pm_id,
-            "pm_name": pm_name,
-            "original_due_date": parse_date(row.get(mapping.get("original_due_date", ""))),
-            "scheduled_date": parse_date(row.get(mapping.get("scheduled_date", ""))),
-            "last_completion_date": parse_date(row.get(mapping.get("last_completion_date", ""))),
-            "status": clean_text(row.get(mapping.get("status", ""))) or "Pending",
-            "assigned_to": clean_text(row.get(mapping.get("assigned_to", ""))),
-            "estimated_hours": parse_float(row.get(mapping.get("estimated_hours", ""))) or 0.0,
-            "priority": clean_text(row.get(mapping.get("priority", ""))) or "Normal",
-            "deferral_reason": clean_text(row.get(mapping.get("deferral_reason", ""))),
-            "sop_path": clean_text(row.get(mapping.get("sop_path", ""))),
-            "report_path": clean_text(row.get(mapping.get("report_path", ""))),
-        }
-        if data["status"].lower() in {"open", "pending"} and data["original_due_date"] and data["original_due_date"] < datetime.now():
-            data["status"] = "Overdue"
+def _text(v):
+    if v is None or pd.isna(v): return ''
+    return str(v).strip()
+
+
+def _num(v):
+    if v is None or pd.isna(v) or str(v).strip()=='': return None
+    try:return float(v)
+    except:return None
+
+
+def normalize_pm_status(v: str) -> str:
+    s=_norm(v)
+    return {'open':'Pending','pending':'Pending','plan':'Scheduled','planned':'Scheduled','scheduled':'Scheduled','wip':'In Progress','in_progress':'In Progress','delay':'Overdue','late':'Overdue','overdue':'Overdue','defer':'Deferred','deferred':'Deferred','done':'Completed','complete':'Completed','completed':'Completed','cancel':'Cancelled','cancelled':'Cancelled'}.get(s,v.strip().title() or 'Pending')
+
+
+def dataframe_to_pm_backlog(df: pd.DataFrame,mapping:dict[str,str]):
+    rows=[]; errors=[]
+    for idx,r in df.iterrows():
+        eq=_text(r.get(mapping.get('equipment_id',''))); pm=_text(r.get(mapping.get('pm_id',''))); name=_text(r.get(mapping.get('pm_name','')))
+        if not eq or not (pm or name): errors.append(f'Row {idx+2}: equipment and PM identifier/name required'); continue
+        if not pm: pm=re.sub(r'\W+','_',name.upper()).strip('_')[:100]
+        due=_dt(r.get(mapping.get('original_due_date','')))
+        data={'equipment_id':eq,'pm_id':pm,'pm_name':name or pm,'original_due_date':due,'scheduled_date':_dt(r.get(mapping.get('scheduled_date',''))),'last_completion_date':_dt(r.get(mapping.get('last_completion_date',''))),'status':normalize_pm_status(_text(r.get(mapping.get('status','Pending')))),'assigned_to':_text(r.get(mapping.get('assigned_to',''))),'estimated_hours':_num(r.get(mapping.get('estimated_hours',''))) or 0.0,'priority':_text(r.get(mapping.get('priority','Normal'))) or 'Normal','deferral_reason':_text(r.get(mapping.get('deferral_reason',''))),'sop_path':_text(r.get(mapping.get('sop_path',''))),'report_path':_text(r.get(mapping.get('report_path','')))}
         rows.append(data)
-    return rows, errors
+    return rows,errors
 
 
-def dataframe_to_pm_specs(df: pd.DataFrame, mapping: dict[str, str], default_pm_id: str = "") -> tuple[list[dict[str, Any]], list[str]]:
-    rows: list[dict[str, Any]] = []
-    warnings: list[str] = []
-    for idx, row in df.iterrows():
-        pm_id = clean_text(row.get(mapping.get("pm_id", ""))) or default_pm_id
-        step_val = row.get(mapping.get("step_no", ""))
-        try:
-            step_no = int(float(step_val)) if clean_text(step_val) else idx + 1
-        except Exception:
-            step_no = idx + 1
-        activity = clean_text(row.get(mapping.get("activity", "")))
-        if not pm_id or not activity:
-            warnings.append(f"Row {idx + 2}: missing PM ID or activity")
-            continue
-
-        parsed = parse_specification(row.get(mapping.get("spec", ""))) if mapping.get("spec") else ParsedSpec()
-        if parsed.ambiguous:
-            warnings.append(f"Row {idx + 2}: ambiguous specification kept as text: {parsed.acceptance_text}")
-
-        def mapped_float(key: str, fallback: float | None = None) -> float | None:
-            if mapping.get(key):
-                val = parse_float(row.get(mapping[key]))
-                return fallback if val is None else val
-            return fallback
-
-        data = {
-            "pm_id": pm_id,
-            "step_no": step_no,
-            "activity": activity,
-            "method": clean_text(row.get(mapping.get("method", ""))),
-            "input_type": parsed.input_type,
-            "unit": clean_text(row.get(mapping.get("unit", ""))),
-            "target": mapped_float("target", parsed.target),
-            "warning_low": mapped_float("warning_low"),
-            "warning_high": mapped_float("warning_high"),
-            "control_low": mapped_float("control_low"),
-            "control_high": mapped_float("control_high"),
-            "spec_low": mapped_float("spec_low", parsed.spec_low),
-            "spec_high": mapped_float("spec_high", parsed.spec_high),
-            "acceptance_text": parsed.acceptance_text,
-            "reaction_plan": clean_text(row.get(mapping.get("reaction_plan", ""))),
-            "sop_path": clean_text(row.get(mapping.get("sop_path", ""))),
-            "sop_page": clean_text(row.get(mapping.get("sop_page", ""))),
-            "sop_section": clean_text(row.get(mapping.get("sop_section", ""))),
-        }
-        if data["control_low"] is not None and data["control_high"] is not None and data["control_low"] > data["control_high"]:
-            warnings.append(f"Row {idx + 2}: control low is above control high")
-        if data["spec_low"] is not None and data["spec_high"] is not None and data["spec_low"] > data["spec_high"]:
-            warnings.append(f"Row {idx + 2}: spec low is above spec high")
-        rows.append(data)
-    return rows, warnings
+NUM=r'[-+]?\d+(?:\.\d+)?'
+def parse_spec(text: Any) -> dict[str,Any]:
+    raw=_text(text); s=raw.lower().replace('−','-').replace('–','-').replace('~','-').replace('＋','+')
+    if not raw:return {'input_type':'Text','acceptance_text':''}
+    if any(k in s for k in ['pass','ok','no damage','no leak','visual']): return {'input_type':'Pass / Fail','acceptance_text':raw}
+    m=re.search(rf'({NUM})\s*(?:±|\+/-)\s*({NUM})',s)
+    if m:
+        t=float(m.group(1)); tol=abs(float(m.group(2))); return {'input_type':'Numeric','target':t,'spec_low':t-tol,'spec_high':t+tol}
+    m=re.search(rf'^\s*({NUM})\s*(?:-|to)\s*({NUM})\s*$',s)
+    if m:return {'input_type':'Numeric','spec_low':float(m.group(1)),'spec_high':float(m.group(2))}
+    m=re.search(rf'(?:<=|≤|max(?:imum)?)\s*({NUM})|({NUM})\s*max',s)
+    if m:return {'input_type':'Numeric','spec_high':float(m.group(1) or m.group(2))}
+    m=re.search(rf'(?:>=|≥|min(?:imum)?)\s*({NUM})|({NUM})\s*min',s)
+    if m:return {'input_type':'Numeric','spec_low':float(m.group(1) or m.group(2))}
+    m=re.fullmatch(rf'\s*({NUM})\s*',s)
+    if m:return {'input_type':'Numeric','target':float(m.group(1))}
+    return {'input_type':'Text','acceptance_text':raw,'ambiguous':True}
 
 
-def evaluate_measurement(value: float, spec: dict[str, float | None]) -> str:
-    sl, sh = spec.get("spec_low"), spec.get("spec_high")
-    cl, ch = spec.get("control_low"), spec.get("control_high")
-    wl, wh = spec.get("warning_low"), spec.get("warning_high")
-    if sl is not None and value < sl or sh is not None and value > sh:
-        return "SPEC FAILURE"
-    if cl is not None and value < cl or ch is not None and value > ch:
-        return "CONTROL FAILURE"
-    if wl is not None and value < wl or wh is not None and value > wh:
-        return "WARNING"
-    return "NORMAL"
+def dataframe_to_pm_specs(df:pd.DataFrame,mapping:dict[str,str],default_pm_id:str=''):
+    rows=[]; warnings=[]
+    for idx,r in df.iterrows():
+        pm=_text(r.get(mapping.get('pm_id',''))) or default_pm_id; activity=_text(r.get(mapping.get('activity','')))
+        if not pm or not activity: warnings.append(f'Row {idx+2}: PM ID and activity required'); continue
+        step_raw=r.get(mapping.get('step_no','')); step=int(_num(step_raw) or len(rows)+1)
+        parsed=parse_spec(r.get(mapping.get('spec','')))
+        row={'pm_id':pm,'step_no':step,'activity':activity,'method':_text(r.get(mapping.get('method',''))),'unit':_text(r.get(mapping.get('unit',''))),'reaction_plan':_text(r.get(mapping.get('reaction_plan',''))),'sop_path':_text(r.get(mapping.get('sop_path',''))),'sop_page':_text(r.get(mapping.get('sop_page',''))),'sop_section':_text(r.get(mapping.get('sop_section','')))}
+        row.update({k:v for k,v in parsed.items() if k!='ambiguous'})
+        for f in ['target','warning_low','warning_high','control_low','control_high','spec_low','spec_high']:
+            if f in mapping and _num(r.get(mapping[f])) is not None: row[f]=_num(r.get(mapping[f])); row['input_type']='Numeric'
+        if parsed.get('ambiguous'): warnings.append(f'Row {idx+2}: specification kept as text: {parsed.get("acceptance_text","")}')
+        if row.get('spec_low') is not None and row.get('spec_high') is not None and row['spec_low']>row['spec_high']:
+            warnings.append(f'Row {idx+2}: lower limit exceeds upper limit'); continue
+        rows.append(row)
+    return rows,warnings
 
 
-def calculate_next_due(last_due: datetime, completion: datetime, value: float, unit: str, basis: str = "original") -> datetime:
-    start = last_due if basis.lower().startswith("original") else completion
-    unit = unit.lower()
-    if unit.startswith("day"):
-        return start + timedelta(days=value)
-    if unit.startswith("week"):
-        return start + timedelta(weeks=value)
-    if unit.startswith("month"):
-        return (pd.Timestamp(start) + pd.DateOffset(months=int(value))).to_pydatetime()
-    if unit.startswith("year"):
-        return start.replace(year=start.year + int(value))
-    return start + timedelta(days=value)
+def evaluate_measurement(spec:Any,value_text:str,value_numeric:float|None) -> str:
+    if getattr(spec,'input_type','Text')=='Numeric':
+        if value_numeric is None:return 'INVALID'
+        v=value_numeric
+        if spec.spec_low is not None and v<spec.spec_low or spec.spec_high is not None and v>spec.spec_high:return 'SPECIFICATION FAILURE'
+        if spec.control_low is not None and v<spec.control_low or spec.control_high is not None and v>spec.control_high:return 'CONTROL FAILURE'
+        if spec.warning_low is not None and v<spec.warning_low or spec.warning_high is not None and v>spec.warning_high:return 'WARNING'
+        return 'PASS'
+    if getattr(spec,'input_type','')=='Pass / Fail':
+        return 'PASS' if _norm(value_text) in {'pass','ok','yes','good','acceptable'} else 'FAIL'
+    return 'RECORDED' if _text(value_text) else 'INVALID'
 
 
-def readonly_open_copy(path: str) -> str:
-    src = Path(path)
-    if not src.exists():
-        raise FileNotFoundError(path)
-    temp_dir = Path(tempfile.gettempdir()) / "EquipmentManager" / "readonly"
-    temp_dir.mkdir(parents=True, exist_ok=True)
-    dest = temp_dir / src.name
-    if dest.exists():
-        try:
-            dest.chmod(stat.S_IWRITE | stat.S_IREAD)
-            dest.unlink()
-        except Exception:
-            dest = temp_dir / f"{src.stem}_{datetime.now().strftime('%Y%m%d_%H%M%S')}{src.suffix}"
-    shutil.copy2(src, dest)
-    dest.chmod(stat.S_IREAD)
-    os.startfile(str(dest))
-    return str(dest)
+def calculate_next_due(schedule_type:str,frequency_value:float|None,frequency_unit:str,anchor_mode:str,original_due:datetime|None,last_completion:datetime|None,now:datetime|None=None) -> datetime|None:
+    now=now or datetime.now(); base=original_due if anchor_mode=='Original Due' else last_completion
+    if schedule_type in {'One Time','Event Triggered'}: return original_due
+    if not base:return original_due
+    n=frequency_value or 0
+    units=frequency_unit.lower()
+    if units.startswith('day'): delta=timedelta(days=n)
+    elif units.startswith('week'): delta=timedelta(weeks=n)
+    elif units.startswith('hour'): delta=timedelta(hours=n)
+    elif units.startswith('month'):
+        months=max(1,int(n)); y=base.year+(base.month-1+months)//12; m=(base.month-1+months)%12+1
+        import calendar; d=min(base.day,calendar.monthrange(y,m)[1]); return base.replace(year=y,month=m,day=d)
+    elif units.startswith('year'):
+        try:return base.replace(year=base.year+max(1,int(n)))
+        except ValueError:return base.replace(month=2,day=28,year=base.year+max(1,int(n)))
+    else:return None
+    return base+delta
 
 
-def safe_path_exists(path: str) -> bool:
-    try:
-        return bool(path) and Path(path).exists()
-    except Exception:
-        return False
+def pm_window(due:datetime,early_days:int=0,grace_days:int=0):
+    return due-timedelta(days=max(0,early_days)), due+timedelta(days=max(0,grace_days))
+
+
+def workload_by_day(tasks:list[Any]):
+    out={}
+    for t in tasks:
+        d=t.scheduled_date or t.original_due_date
+        if not d:continue
+        key=d.date().isoformat(); out[key]=out.get(key,0.0)+float(t.estimated_hours or 0)
+    return out
+
+
+def readonly_open_copy(path:str) -> str:
+    src=Path(path)
+    if not src.exists(): raise FileNotFoundError(path)
+    root=Path(tempfile.gettempdir())/'EquipmentManagerReadOnly'; root.mkdir(parents=True,exist_ok=True)
+    dst=root/f'{datetime.now():%Y%m%d_%H%M%S_%f}_{src.name}'; shutil.copy2(src,dst)
+    try: os.chmod(dst,0o444)
+    except OSError: pass
+    if os.name=='nt': os.startfile(str(dst))
+    elif shutil.which('xdg-open'): subprocess.Popen(['xdg-open',str(dst)],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+    return str(dst)
+
+
+def copy_clipboard_image(image, root:str, entity_type:str, entity_key:str) -> str:
+    folder=Path(root)/'Attachments'/entity_type/entity_key; folder.mkdir(parents=True,exist_ok=True)
+    path=folder/f'{datetime.now():%Y%m%d_%H%M%S_%f}_clipboard.png'
+    if not image.save(str(path),'PNG'): raise IOError('Could not save clipboard image')
+    return str(path)
