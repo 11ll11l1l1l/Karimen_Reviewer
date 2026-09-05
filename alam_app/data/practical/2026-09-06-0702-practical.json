@@ -1,0 +1,250 @@
+[
+  {
+    "id": "jp-pension-life-support-green-envelope-2026",
+    "agent": "practical",
+    "created_at": "2026-09-06T07:02:05+09:00",
+    "type": "benefits",
+    "title": "Green pension envelope? Ignoring it can cost months of support",
+    "summary": "May bagong green envelope ngayong September para sa ilang pensioners na newly eligible sa 年金生活者支援給付金. Hindi ito automatic: kailangang mag-claim, at completing the procedure by January 4, 2027 preserves eligibility back to October 2026.",
+    "why_it_matters": "For eligible low-income pensioners, this is recurring money added to the pension, not a one-time handout. The FY2026 old-age benefit uses ¥5,620/month as its base amount, so throwing away an unfamiliar envelope can mean losing meaningful household support.",
+    "importance": 88,
+    "confidence": 96,
+    "tags": [
+      "Japan",
+      "Pension",
+      "Benefits",
+      "Administrative deadline",
+      "Low-income households",
+      "年金生活者支援給付金"
+    ],
+    "geography": ["Japan"],
+    "status": "NEW",
+    "sources": [
+      {
+        "publisher": "Japan Pension Service",
+        "title": "令和8年度の年金生活者支援給付金請求書（はがき型）の送付について",
+        "url": "https://www.nenkin.go.jp/oshirase/taisetu/kojin/2026/202609/0901.html",
+        "published_at": "2026-09-01",
+        "source_type": "official"
+      },
+      {
+        "publisher": "Ministry of Health, Labour and Welfare",
+        "title": "年金生活者支援給付金制度について",
+        "url": "https://www.mhlw.go.jp/nenkinkyuufukin/system.html",
+        "published_at": "2026-09-01",
+        "source_type": "official"
+      },
+      {
+        "publisher": "Kodaira City",
+        "title": "市報こだいら：2026年9月5日号 3面（年金生活者支援給付金制度）",
+        "url": "https://www.city.kodaira.tokyo.jp/shihou/130/130420.html",
+        "published_at": "2026-09-05",
+        "source_type": "official"
+      },
+      {
+        "publisher": "Japan Pension Service",
+        "title": "年金生活者支援給付金請求書（はがき型）が届いた方へ",
+        "url": "https://www.nenkin.go.jp/service/jukyu/tetsuduki/sonota-kyufu/shienkyufukin/seikyu/ta.html",
+        "published_at": "2026-09-01",
+        "source_type": "official"
+      }
+    ],
+    "claims": [
+      {
+        "kind": "FACT",
+        "text": "Japan Pension Service began sending claim forms from September 1, 2026 to basic-pension recipients who newly qualify for the pensioner support benefit.",
+        "source_refs": [1, 4],
+        "basis": "Japan Pension Service mailing notice and procedure page"
+      },
+      {
+        "kind": "FACT",
+        "text": "The benefit is not automatically paid to newly eligible recipients; a claim is required, either electronically when eligible or by returning the claim form.",
+        "source_refs": [1, 3, 4],
+        "basis": "Japan Pension Service procedure plus municipal implementation notice"
+      },
+      {
+        "kind": "FACT",
+        "text": "Kodaira City's 2026 notice states that completing the claim by January 4, 2027 allows eligible recipients to receive the benefit retroactively from October 2026.",
+        "source_refs": [3],
+        "basis": "Official municipal notice applying the national scheme"
+      },
+      {
+        "kind": "FACT",
+        "text": "For FY2026, the old-age pensioner support benefit uses ¥5,620 per month as its base amount; the actual amount depends on the person's pension contribution record and applicable calculation rules.",
+        "source_refs": [2],
+        "basis": "MHLW benefit rules and FY2026 amount"
+      },
+      {
+        "kind": "FACT",
+        "text": "For old-age basic pension recipients, eligibility includes being age 65 or older, having every household member exempt from municipal resident tax, and meeting the specified prior-year pension-plus-other-income ceiling; from October 2026 the published ceiling is ¥926,500 for people born on or after April 2, 1956 and ¥924,100 for those born on or before April 1, 1956, with a supplementary-benefit band below those ceilings.",
+        "source_refs": [2],
+        "basis": "MHLW eligibility criteria effective October 2026"
+      },
+      {
+        "kind": "INFERENCE",
+        "text": "Because the notice can look like routine pension mail and newly eligible people must actively claim, households that ignore the green envelope face a preventable risk of delayed or lost support for earlier months.",
+        "source_refs": [1, 3, 4],
+        "basis": "Claim requirement plus retroactive-payment cutoff"
+      }
+    ],
+    "content": {
+      "key_message": "Kung may green envelope from Japan Pension Service this September, huwag itapon: for newly eligible pensioners, that small claim can unlock recurring support added to the pension.",
+      "who_is_affected": "Primarily basic-pension recipients whom Japan Pension Service identifies as newly eligible for 年金生活者支援給付金. For the old-age version, the core group is age 65+, living in a household where everyone is municipal-resident-tax exempt, with prior-year pension/other income under the statutory ceiling. Disability and survivor basic-pension recipients have separate income tests under the same program.",
+      "when": "Japan Pension Service started sending the FY2026 claim forms on September 1, 2026. The new annual eligibility period begins with October 2026 benefits. An official municipal notice states that completing the procedure by January 4, 2027 preserves payment back to October 2026.",
+      "financial_impact": "For old-age recipients, ¥5,620/month is the FY2026 base amount, or ¥67,440 over 12 months at that base before individual calculation differences. The actual amount printed on the claim notice can be lower or otherwise different depending on contribution history and whether the supplementary old-age benefit formula applies.",
+      "estimated_saving_yen": null,
+      "time_minutes": 10,
+      "travel_minutes": 0,
+      "risk_if_ignored": "MED-HIGH — the benefit requires a claim for newly eligible people. Missing the retroactive-claim window can mean you do not receive all of the earlier eligible months even if you later qualify.",
+      "action": "DO NOW",
+      "deadline": "If the green claim envelope arrives, act promptly. January 4, 2027 is the verified cutoff cited by Kodaira City for completing the procedure and receiving FY2026 support retroactively from October 2026; follow any instructions or date printed on your own official notice if they are more specific.",
+      "effort": "LOW",
+      "potential_benefit": "Recurring pension top-up while eligibility continues, rather than a one-time payment.",
+      "downside": "Not everyone with a pension qualifies, and ¥5,620 is a base amount rather than a guaranteed flat payment for every recipient. Existing recipients generally do not need to submit a new annual postcard merely because September arrives.",
+      "common_mistake": "Assuming that because Japan Pension Service already knows your income and pension record, the money will start automatically. For people newly judged eligible, the claim itself is still required.",
+      "fact_vs_inference": {
+        "fact": "The September 2026 mailing, claim requirement, FY2026 base amount and eligibility criteria are stated by Japan Pension Service/MHLW; Kodaira City states the January 4, 2027 retroactive-payment cutoff.",
+        "inference": "The practical risk is highest for older households that treat unfamiliar government mail as generic information and delay opening or returning it. The sources establish the procedure and cutoff, but do not quantify how many eligible people will fail to claim this year."
+      },
+      "strongest_counterinterpretation": "This is not a newly created universal pension bonus, and it is not evidence that every low-pension household is entitled to ¥5,620 a month. The scheme has existed since 2019, eligibility is means-tested, and September's importance is the annual identification and claim window for people who became newly eligible based on the relevant income/tax data.",
+      "what_remains_uncertain": "The exact payment amount and first deposit timing for an individual claimant depend on their record and processing date. A person who expects eligibility but receives no envelope may need an individual eligibility check rather than assuming the mailing was lost.",
+      "what_would_change_mind": "A Japan Pension Service or MHLW notice changing the FY2026 claim requirement, retroactive-payment treatment, eligibility thresholds, or January 2027 processing rule would require an update. Evidence that newly eligible recipients are automatically enrolled without a claim would overturn the central action recommendation.",
+      "usefulness": 96,
+      "novelty": 86,
+      "impact": {
+        "money": "HIGH",
+        "family": "MED",
+        "career": "LOW",
+        "japan": "MED",
+        "urgency": "MED"
+      },
+      "connection_tags": [
+        "pension-benefits",
+        "resident-tax-exemption",
+        "administrative-deadline",
+        "household-support"
+      ],
+      "reading_levels": {
+        "30 sec": [
+          "What happened: Japan Pension Service started sending green claim envelopes on September 1 to pensioners who newly qualify for 年金生活者支援給付金.",
+          "Why it matters: newly eligible people must claim; the old-age FY2026 benefit uses ¥5,620/month as its base amount.",
+          "What to do: open the green envelope and submit the claim promptly, electronically if available or by returning the form.",
+          "Bottom line: January 4, 2027 is the verified cutoff cited for preserving payment back to October 2026, so huwag i-delay ang simpleng form."
+        ],
+        "2_min": "This is an existing national benefit for lower-income pensioners, but September matters because Japan Pension Service rechecks eligibility and mails claim forms to people who newly qualify. For old-age basic pension recipients, the published October 2026 rules require age 65+, every household member to be municipal-resident-tax exempt, and pension plus other income below the relevant ceiling. The FY2026 old-age benefit uses ¥5,620/month as a base, but the actual amount varies. The key practical point: newly eligible people still need to claim. If the green envelope arrives, follow it now rather than assuming payment is automatic."
+      },
+      "learning": {
+        "outcomes": [
+          "Understand what 年金生活者支援給付金 is and why a September envelope matters.",
+          "Recognize that newly eligible recipients must claim rather than wait for an automatic deposit.",
+          "Know the basic old-age eligibility screen and the verified retroactive-payment cutoff."
+        ],
+        "background": "年金生活者支援給付金 is a national pensioner-support payment introduced in 2019. It sits on top of the regular pension for people whose income is low enough to meet the program's rules. Eligibility is reassessed using income and household tax information, so someone who did not qualify last year can become newly eligible this year. Japan Pension Service then sends a claim form rather than simply switching the payment on automatically.",
+        "terms": [
+          {
+            "term": "年金生活者支援給付金",
+            "meaning": "A government benefit paid on top of eligible old-age, disability or survivor basic pensions for people meeting the program's income rules.",
+            "why_it_matters": "It is recurring support while eligible, so missing the claim can cost more than a one-time subsidy."
+          },
+          {
+            "term": "市町村民税非課税",
+            "meaning": "Exempt from the municipal portion of resident tax under the applicable local tax rules.",
+            "why_it_matters": "For the old-age support benefit, every member of the household must meet this non-taxable condition."
+          }
+        ],
+        "how_it_works": [
+          {
+            "title": "Eligibility is checked from government data",
+            "explanation": "Japan Pension Service uses pension, income and municipal tax information to identify people who appear newly eligible."
+          },
+          {
+            "title": "A claim is still required",
+            "explanation": "Newly eligible recipients receive a green envelope with a postcard-style claim form. Eligible users can also submit electronically; submitting electronically means the paper form does not also need to be mailed."
+          },
+          {
+            "title": "Timing affects how far payments go back",
+            "explanation": "The 2026 annual benefit period starts with October benefits. Kodaira City's official notice states that completing the procedure by January 4, 2027 preserves payment back to October 2026."
+          }
+        ],
+        "example": "If an eligible old-age pensioner receives the full ¥5,620 monthly base for 12 months, that is ¥67,440 over a year. This is only an illustration: the actual old-age amount depends on contribution history and the statutory calculation.",
+        "takeaways": [
+          "Green envelope from Japan Pension Service = open it, not junk mail.",
+          "Newly eligible recipients must submit a claim.",
+          "¥5,620/month is a base amount, not a guaranteed flat amount for everyone.",
+          "Old-age eligibility includes household resident-tax and income tests.",
+          "January 4, 2027 is the verified cutoff for preserving October 2026 retroactivity in the official municipal notice."
+        ]
+      },
+      "action_plan": {
+        "goal": "Claim the pensioner support benefit correctly and preserve any eligible retroactive months.",
+        "who_should_act": "Act if a green Japan Pension Service envelope containing a 年金生活者支援給付金 claim arrives, or if you are a basic-pension recipient who believes you newly meet the income/tax rules but receives no notice. Existing recipients who remain eligible normally do not need this new-eligibility postcard procedure.",
+        "deadline": "Submit promptly; January 4, 2027 is the verified official municipal cutoff for completing the claim and receiving FY2026 support back to October 2026. Also follow any more specific instruction printed on your own notice.",
+        "prepare": [
+          "The green Japan Pension Service envelope and enclosed claim form",
+          "Your pension notice/details so you can confirm the addressee and expected monthly amount",
+          "For electronic submission, the authentication/setup specified in the official electronic-application instructions"
+        ],
+        "steps": [
+          {
+            "step": "Confirm the envelope is genuine",
+            "action": "Check that the sender and documents are from Japan Pension Service and that the form is for 年金生活者支援給付金.",
+            "how": "Compare the document with the Japan Pension Service official procedure page and envelope examples.",
+            "needed": ["Received envelope"],
+            "time_minutes": 2,
+            "cost_yen": 0,
+            "done_when": "You have confirmed it is the official pension-support claim and identified the estimated monthly amount printed on the form."
+          },
+          {
+            "step": "Choose electronic or postal submission",
+            "action": "Submit electronically if the official instructions show you are eligible to do so, otherwise fill in and return the postcard-style claim form.",
+            "how": "Use the Japan Pension Service electronic procedure or write the required details on the enclosed form, apply the privacy sticker and post it as instructed.",
+            "needed": ["Official claim form or electronic-application instructions"],
+            "time_minutes": 5,
+            "cost_yen": 0,
+            "done_when": "The electronic submission shows completion, or the completed paper claim has been posted."
+          },
+          {
+            "step": "Keep proof and watch the pension account",
+            "action": "Keep the notice and any electronic completion record, then check subsequent pension payment information for the support benefit.",
+            "how": "Use your pension records/notices and official Japan Pension Service channels if the expected benefit does not appear after processing.",
+            "needed": ["Copy/photo of the notice or electronic completion record"],
+            "time_minutes": 3,
+            "cost_yen": 0,
+            "done_when": "You can document that you submitted the claim and later confirm the benefit decision/payment."
+          }
+        ],
+        "mistakes_to_avoid": [
+          "Throwing away the green envelope because it looks like routine pension information.",
+          "Assuming a low pension alone guarantees eligibility; household resident-tax status and income limits also matter for the old-age benefit.",
+          "Assuming ¥5,620 is a flat amount for everyone.",
+          "Submitting both electronically and by post after the electronic claim is already complete; Japan Pension Service says the postal submission is unnecessary in that case.",
+          "Waiting until after the retroactive-payment cutoff without checking the date on the official notice."
+        ],
+        "decision_rules": [
+          {
+            "if": "You received the official green claim envelope",
+            "then": "Submit the claim promptly rather than waiting for an automatic payment."
+          },
+          {
+            "if": "You already receive 年金生活者支援給付金 and no new claim form arrives",
+            "then": "Do not assume something is wrong solely because there is no September postcard; the mailing discussed here targets newly eligible recipients."
+          },
+          {
+            "if": "You think you newly qualify but no envelope arrives",
+            "then": "Use Japan Pension Service's official benefit page or pension office to check individual eligibility instead of relying on a third-party site."
+          }
+        ],
+        "follow_up": "After submission, retain your record and check the benefit decision/payment. Re-check Japan Pension Service guidance if your household tax status or income data were corrected, because those changes can affect eligibility."
+      },
+      "editorial_visual": {
+        "style": "editorial",
+        "motif": "document",
+        "secondary_motif": "yen",
+        "scene": "a modest green government envelope sitting beside a pension passbook while several small yen coins slip toward a calendar deadline, emphasizing that a simple piece of mail controls access to recurring support",
+        "caption": "One small pension form can protect months of support",
+        "silliness": 8,
+        "exaggeration": 34
+      }
+    }
+  }
+]
