@@ -1,0 +1,227 @@
+{
+  "id": "japan-customer-harassment-duty-2026-10",
+  "agent": "practical",
+  "created_at": "2026-09-05T22:20:00+09:00",
+  "type": "work_rights",
+  "title": "From October 1, all employers must address customer harassment",
+  "summary": "Simula October 1, 2026, lahat ng employers sa Japan—kahit maliit ang company—must take formal measures against customer harassment and sexual harassment targeting job applicants. Hindi ito simpleng awareness campaign: may required prevention, consultation and response duties na dapat ihanda ng employers.",
+  "why_it_matters": "Para sa workers na humaharap sa abusive customers, clients, patients or other outside parties, mas malinaw na ang company cannot simply treat the problem as 'part of the job.' Job applicants also gain a clearer protection framework against sexual conduct during recruitment-related interactions.",
+  "importance": 89,
+  "confidence": 96,
+  "tags": ["Japan", "work rights", "customer harassment", "job seekers", "labor law", "October 2026"],
+  "geography": ["Japan"],
+  "status": "CONFIRMED",
+  "sources": [
+    {
+      "publisher": "Tottori Labour Bureau / Ministry of Health, Labour and Welfare",
+      "title": "カスタマーハラスメント及び求職者等に対するセクシュアルハラスメント対策が事業主の義務となります！",
+      "url": "https://jsite.mhlw.go.jp/tottori-roudoukyoku/newpage_01503.html",
+      "published_at": "2026-09-04",
+      "source_type": "official"
+    },
+    {
+      "publisher": "Ministry of Health, Labour and Welfare",
+      "title": "職場におけるハラスメントの防止のために",
+      "url": "https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/koyou_roudou/koyoukintou/seisaku06/",
+      "published_at": "2026-09-05",
+      "source_type": "official"
+    },
+    {
+      "publisher": "Yamaguchi Labour Bureau / Ministry of Health, Labour and Welfare",
+      "title": "総合的ハラスメント対策の推進",
+      "url": "https://jsite.mhlw.go.jp/yamaguchi-roudoukyoku/hourei_seido_tetsuzuki/koyou_kintou/harassment.html",
+      "published_at": "2026-09-05",
+      "source_type": "official"
+    }
+  ],
+  "claims": [
+    {
+      "kind": "FACT",
+      "text": "From October 1, 2026, employers must implement measures against customer harassment and sexual harassment directed at job seekers.",
+      "source_refs": [1, 2, 3],
+      "basis": "MHLW and Labour Bureau implementation guidance for the amended laws."
+    },
+    {
+      "kind": "FACT",
+      "text": "The obligation applies regardless of industry or employer size.",
+      "source_refs": [3],
+      "basis": "Yamaguchi Labour Bureau states that all employers, regardless of industry or scale, must implement the required measures."
+    },
+    {
+      "kind": "FACT",
+      "text": "Customer harassment requires all three elements: conduct by a customer or other interested party, conduct beyond what is socially acceptable, and harm to the worker's working environment.",
+      "source_refs": [1],
+      "basis": "Official Labour Bureau definition."
+    },
+    {
+      "kind": "FACT",
+      "text": "Employers are expected to establish consultation channels and respond appropriately when harassment is reported; workers may also consult prefectural Labour Bureau employment-environment/equal-opportunity offices when company handling is inadequate.",
+      "source_refs": [2, 3],
+      "basis": "MHLW harassment prevention guidance and Labour Bureau worker guidance."
+    },
+    {
+      "kind": "INFERENCE",
+      "text": "The change gives frontline workers a stronger practical basis to demand a documented company response instead of accepting abusive outside conduct as an unavoidable part of customer-facing work.",
+      "source_refs": [1, 2, 3],
+      "basis": "Inference from the shift from voluntary or fragmented handling to a nationwide employer duty."
+    }
+  ],
+  "content": {
+    "key_message": "October 1 changes the company-side duty: workers facing qualifying customer harassment should have a formal internal route for reporting and response, while job applicants gain a new employer duty covering recruitment-related sexual harassment.",
+    "who_is_affected": "Employees in Japan, especially customer-facing workers; employers of every size; and job seekers interacting with company employees during recruitment. People experiencing ordinary complaints that remain within socially acceptable bounds should not assume every difficult interaction legally qualifies as customer harassment.",
+    "when": "Effective October 1, 2026. The underlying amended law was promulgated in 2025, and the detailed MHLW guidelines were issued in February 2026.",
+    "financial_impact": "No automatic payment or compensation amount is created by this rule. The practical value is stronger prevention, escalation and response obligations at work.",
+    "estimated_saving_yen": null,
+    "time_minutes": 15,
+    "travel_minutes": 0,
+    "risk_if_ignored": "A worker may continue tolerating repeated abusive behavior without using the new internal escalation framework. Employers that fail to prepare may face Labour Bureau guidance or other enforcement under the amended framework.",
+    "action": "PREPARE",
+    "deadline": "2026-10-01",
+    "effort": "LOW",
+    "potential_benefit": "Know the company's reporting route before an incident occurs and preserve a contemporaneous record if repeated abusive conduct happens.",
+    "downside": "Not every rude, demanding or unreasonable customer interaction qualifies. The legal definition still requires conduct beyond socially acceptable limits that harms the working environment, so context matters.",
+    "what_would_change_mind": "Material revisions to MHLW guidance, later court decisions that substantially narrow or broaden the definition, or new official enforcement guidance after implementation.",
+    "usefulness": 94,
+    "novelty": 91,
+    "impact": {
+      "money": "LOW",
+      "family": "MED",
+      "career": "HIGH",
+      "japan": "HIGH",
+      "urgency": "HIGH"
+    },
+    "connection_tags": ["labor-rights", "customer-facing-work", "foreign-workers", "job-seekers"],
+    "strongest_counterinterpretation": "This is primarily an employer prevention-and-response duty, not a blanket legal ban on all customer conflict and not an automatic right to compensation after any unpleasant interaction.",
+    "what_to_do_or_watch": "Before October 1, check where your company's harassment consultation contact is. If an incident occurs, keep factual notes of what happened, when, who was present and how work was affected, then use the internal route. If the employer does not respond appropriately, the MHLW directs workers to the relevant prefectural Labour Bureau employment-environment/equal-opportunity office.",
+    "bottom_line": "The fine print matters because the October rule applies to every employer size and turns customer-harassment handling into a formal company obligation rather than merely recommended good practice.",
+    "confidence_reason": "High confidence: effective date, scope and core duties are stated in multiple MHLW and Labour Bureau sources.",
+    "reading_levels": {
+      "30_sec": {
+        "what_happened": "Japan makes customer-harassment and job-seeker sexual-harassment countermeasures mandatory for all employers from October 1, 2026.",
+        "why_it_matters": "Frontline workers and applicants get a clearer formal protection and consultation framework.",
+        "what_to_do_watch": "Know your company's reporting contact and use factual records if an incident happens.",
+        "bottom_line": "Hindi na puwedeng basta i-dismiss ng employer as normal customer trouble ang qualifying harassment."
+      }
+    },
+    "learning": {
+      "outcomes": [
+        "Recognize the three elements used in the official customer-harassment definition.",
+        "Understand what changes on October 1 and what does not.",
+        "Know the first practical escalation route if a company does not respond."
+      ],
+      "background": "Japan already requires employers to address several forms of workplace harassment. The October 2026 amendment adds a specific nationwide duty for customer harassment and for sexual harassment affecting job seekers. The important distinction is that the legal duty sits on the employer: companies must prepare prevention, consultation and response measures rather than leaving individual workers to absorb the problem alone.",
+      "terms": [
+        {
+          "term": "Customer harassment / カスタマーハラスメント",
+          "meaning": "Under the official definition, it involves conduct by a customer, client, facility user or other interested party that goes beyond socially acceptable limits and harms a worker's working environment.",
+          "why_it_matters": "A difficult complaint alone is not enough; all elements matter."
+        },
+        {
+          "term": "求職者等セクハラ",
+          "meaning": "Sexual conduct by people working for an employer that interferes with a job seeker's recruitment or job-search activity.",
+          "why_it_matters": "The protection framework now explicitly reaches recruitment interactions, not only people already employed."
+        }
+      ],
+      "how_it_works": [
+        {
+          "title": "Employer prepares the system",
+          "explanation": "The company must establish prevention and consultation measures consistent with the law and MHLW guidelines."
+        },
+        {
+          "title": "Worker or applicant reports the problem",
+          "explanation": "The internal consultation route becomes the first formal place to raise a qualifying incident and request an appropriate response."
+        },
+        {
+          "title": "External escalation remains available",
+          "explanation": "If the company does not deal with the problem appropriately, workers can consult the relevant prefectural Labour Bureau employment-environment/equal-opportunity office."
+        }
+      ],
+      "example": "Example: a customer calmly disputing a bill is not automatically customer harassment. Repeated threats, severe abusive language or other conduct beyond socially acceptable limits that materially damages the worker's ability to work may fall within the official framework depending on the facts.",
+      "takeaways": [
+        "Effective date: October 1, 2026.",
+        "All employer sizes are covered.",
+        "Not every customer complaint qualifies.",
+        "Know the company's consultation route before you need it.",
+        "Labour Bureau consultation is available if internal handling fails."
+      ]
+    },
+    "action_plan": {
+      "goal": "Be ready to use the new harassment-response framework without guessing where to start.",
+      "who_should_act": "Customer-facing employees, workers who routinely deal with clients/patients/users, job seekers concerned about recruitment-related sexual conduct, and supervisors/HR staff. People with no customer-facing or recruitment exposure can simply know the policy exists.",
+      "deadline": "Check the company route by October 1, 2026; use it whenever a relevant incident occurs after implementation.",
+      "prepare": [
+        "Company handbook, intranet or HR contact details for harassment consultation.",
+        "If an incident occurs: factual notes of date, time, location, what was said or done, witnesses and how work was affected.",
+        "Any relevant messages, emails or other records that can be preserved lawfully."
+      ],
+      "steps": [
+        {
+          "step": "Find the internal route",
+          "action": "Check the company's harassment consultation contact or ask HR/supervisor where reports should be made.",
+          "how": "Use the official company handbook, intranet, posted notice or HR contact.",
+          "needed": ["Employee access to company policy or HR contact"],
+          "time_minutes": 10,
+          "cost_yen": 0,
+          "done_when": "You know the specific contact or channel to use."
+        },
+        {
+          "step": "Document a qualifying incident",
+          "action": "Record factual details soon after the event without exaggeration or speculation.",
+          "how": "Note who, what, when, where, witnesses and effect on work; preserve relevant lawful records.",
+          "needed": ["Incident facts"],
+          "time_minutes": 10,
+          "cost_yen": 0,
+          "done_when": "You have a clear chronological record."
+        },
+        {
+          "step": "Use the company consultation channel",
+          "action": "Report the incident and ask what response or protective measure will be taken.",
+          "how": "Use the employer's designated harassment consultation route.",
+          "needed": ["Incident record", "Internal contact"],
+          "time_minutes": 15,
+          "cost_yen": 0,
+          "done_when": "The report has been received and you know the next response step."
+        },
+        {
+          "step": "Escalate if internal handling fails",
+          "action": "Consult the prefectural Labour Bureau employment-environment/equal-opportunity office.",
+          "how": "Use the MHLW/Labour Bureau official consultation channel for your prefecture.",
+          "needed": ["Incident chronology", "Record of company response if available"],
+          "time_minutes": 30,
+          "cost_yen": 0,
+          "done_when": "You have received official consultation or guidance on the next available route."
+        }
+      ],
+      "mistakes_to_avoid": [
+        "Assuming every rude customer automatically meets the legal definition.",
+        "Waiting until repeated incidents make the chronology hard to reconstruct.",
+        "Posting sensitive incident details publicly instead of first preserving evidence and using the formal route.",
+        "Assuming only large companies are covered."
+      ],
+      "decision_rules": [
+        {
+          "if": "the conduct is merely a normal complaint within socially acceptable bounds",
+          "then": "use ordinary customer-service procedures rather than automatically labeling it customer harassment"
+        },
+        {
+          "if": "conduct goes beyond socially acceptable limits and harms the working environment",
+          "then": "document it and use the employer's harassment consultation route"
+        },
+        {
+          "if": "the employer does not respond appropriately",
+          "then": "consult the relevant prefectural Labour Bureau employment-environment/equal-opportunity office"
+        }
+      ],
+      "follow_up": "After October 1, check whether the employer has actually published the required consultation route and policy. MHLW may also issue further Q&A or enforcement guidance after implementation."
+    },
+    "editorial_visual": {
+      "style": "editorial",
+      "motif": "shield",
+      "secondary_motif": "document",
+      "scene": "a frontline worker standing behind a newly installed transparent shield while a formal policy document locks into place beside the service counter",
+      "caption": "Customer abuse is no longer just something staff are expected to absorb",
+      "silliness": 2,
+      "exaggeration": 32
+    }
+  }
+}
