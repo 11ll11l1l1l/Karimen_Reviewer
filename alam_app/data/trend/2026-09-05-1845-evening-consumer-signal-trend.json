@@ -1,0 +1,55 @@
+[
+  {
+    "id": "japan-household-spending-july2026-weakness",
+    "agent": "trend",
+    "created_at": "2026-09-05T18:45:00+09:00",
+    "type": "trend",
+    "title": "Japan household spending fell 3.6% in real terms in July — the eighth straight yearly decline",
+    "summary": "Japan's Statistics Bureau says two-or-more-person households spent an average ¥301,245 in July 2026. Real consumption fell 3.6% from a year earlier, compared with a 3.3% decline in June, although seasonally adjusted spending rose 0.5% from June.",
+    "why_it_matters": "The year-on-year signal still shows weak household purchasing power, but the monthly improvement means the story is not simply straight-line deterioration. The next test is whether real wages and spending can turn positive together rather than households merely reshuffling categories.",
+    "importance": 91,
+    "confidence": 99,
+    "tags": ["Japan", "Household Spending", "Consumer", "Inflation", "Wages", "Economy"],
+    "geography": ["Japan"],
+    "status": "DEVELOPING",
+    "sources": [
+      {"publisher": "Statistics Bureau of Japan", "title": "Family Income and Expenditure Survey — July 2026", "url": "https://www.stat.go.jp/data/kakei/sokuhou/tsuki/", "published_at": "2026-09-04", "source_type": "official"},
+      {"publisher": "Reuters via Newsweek Japan", "title": "7月消費支出は前年比3.6％減、8カ月連続マイナス　予想下回る", "url": "https://www.newsweekjapan.jp/articles/-/333198?display=b", "published_at": "2026-09-04", "source_type": "news"}
+    ],
+    "claims": [
+      {"kind": "FACT", "text": "Average consumption expenditure for two-or-more-person households was ¥301,245 in July 2026.", "source_refs": [1], "basis": "Statistics Bureau monthly Family Income and Expenditure Survey"},
+      {"kind": "FACT", "text": "Real household spending fell 3.6% year on year in July while seasonally adjusted real spending rose 0.5% from June.", "source_refs": [1], "basis": "Statistics Bureau monthly survey"},
+      {"kind": "FACT", "text": "Reuters described July as the eighth consecutive year-on-year decline and reported a market forecast of a 1.6% fall.", "source_refs": [2], "basis": "Reuters report"}
+    ],
+    "content": {
+      "current_strength": 78,
+      "previous_strength": 72,
+      "direction": "STRENGTHENING",
+      "evidence_for": [
+        "Real spending fell 3.6% year on year in July, a deeper decline than June's 3.3% fall.",
+        "The July result was weaker than the 1.6% decline expected in the Reuters poll.",
+        "Real income for workers' households also remained negative year on year in the official release."
+      ],
+      "evidence_against": [
+        "Seasonally adjusted real consumption increased 0.5% from June.",
+        "Some discretionary categories, including travel, eating out and games, reportedly increased, showing uneven rather than universal weakness."
+      ],
+      "connection": "The data are consistent with continued household price sensitivity: nominal spending can remain substantial while inflation erodes real purchasing power. The decisive next connection is whether wage gains begin to exceed household inflation on a sustained basis.",
+      "alternative_explanation": "Monthly household-spending data can be moved by weather, timing and category mix. One weak year-on-year print alone is not proof of an economy-wide recession or a permanent deterioration in consumption.",
+      "watch_next": [
+        "August household spending and real-income data",
+        "Real wage growth",
+        "Food and core inflation",
+        "Retail and services consumption",
+        "BOJ policy and household borrowing costs"
+      ],
+      "what_would_change_mind": "A sustained sequence of positive real household spending together with positive real household income would weaken the consumer-squeeze thesis materially.",
+      "implications": "Value-seeking behavior and resistance to discretionary price increases are likely to remain important for retailers and household budgeting until real incomes improve more consistently.",
+      "history": "Reuters' reading of the official data puts July at eight consecutive months of negative year-on-year real household spending.",
+      "usefulness": 94,
+      "novelty": 88,
+      "impact": {"money": "HIGH", "family": "MED", "career": "MED", "japan": "HIGH", "urgency": "MED"},
+      "connection_tags": ["real-income", "consumer-squeeze", "japan-consumption", "inflation-pass-through"]
+    }
+  }
+]
