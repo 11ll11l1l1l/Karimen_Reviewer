@@ -1,0 +1,244 @@
+{
+  "id": "jp-ideco-2026-december-cap-and-age-reform",
+  "agent": "practical",
+  "created_at": "2026-09-06T02:27:00+09:00",
+  "type": "policy",
+  "title": "iDeCo expands in December — but the ¥62,000 cap is not automatic",
+  "summary": "ENACTED: From December 1, 2026, iDeCo contribution limits rise and eligibility expands toward age 70. Pero the usable amount depends on your pension category and company pension, and some providers already have special pre-change paperwork for the first higher contribution month.",
+  "why_it_matters": "For workers and self-employed residents who already use iDeCo, knowing the fine print now can prevent a missed first-month increase or an incorrect assumption that everyone can simply contribute ¥62,000. The reform can materially increase tax-deductible retirement saving, but only if the person is eligible and deliberately changes the contribution amount.",
+  "importance": 84,
+  "confidence": 95,
+  "tags": ["Japan", "iDeCo", "pension", "tax", "retirement", "policy", "household finance"],
+  "geography": ["Japan"],
+  "status": "NEW",
+  "sources": [
+    {
+      "publisher": "Ministry of Health, Labour and Welfare",
+      "title": "2025年の制度改正",
+      "url": "https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/nenkin/nenkin/kyoshutsu/2025kaisei.html",
+      "published_at": "2025-06-13",
+      "source_type": "official"
+    },
+    {
+      "publisher": "Monex Securities",
+      "title": "2026年12月iDeCo制度改正に伴う掛金変更事前申込み受付開始",
+      "url": "https://info.monex.co.jp/news/2026/20260901_04.html",
+      "published_at": "2026-09-01",
+      "source_type": "primary"
+    },
+    {
+      "publisher": "Japan Post Bank",
+      "title": "2026年12月のiDeCo制度改正および拠出限度額の引き上げ手続きのご案内",
+      "url": "https://www.jp-bank.japanpost.jp/kojin/shisanunyou/kakutei/news/kj_suy_kt_ns_d0004.html",
+      "published_at": "2026-09-01",
+      "source_type": "primary"
+    },
+    {
+      "publisher": "Rakuten Securities",
+      "title": "【2026年12月制度改正】iDeCoの加入可能年齢・拠出限度額が引き上げ",
+      "url": "https://dc.rakuten-sec.co.jp/about/revised/202505/",
+      "published_at": "2026-09-01",
+      "source_type": "primary"
+    }
+  ],
+  "claims": [
+    {
+      "kind": "FACT",
+      "text": "The reform is enacted and the relevant iDeCo changes are scheduled for December 1, 2026; MHLW cites the implementing Cabinet Orders and ministerial rules for that date.",
+      "source_refs": [1],
+      "basis": "MHLW reform page and implementing-law references"
+    },
+    {
+      "kind": "FACT",
+      "text": "For Category 2 participants such as company employees and public servants, the common contribution ceiling becomes ¥62,000 per month, but employer pension contributions count toward that same ceiling where applicable.",
+      "source_refs": [1],
+      "basis": "MHLW official reform description"
+    },
+    {
+      "kind": "FACT",
+      "text": "For Category 1 participants such as self-employed people and freelancers, the common iDeCo/National Pension Fund ceiling becomes ¥75,000 per month.",
+      "source_refs": [1],
+      "basis": "MHLW official reform description"
+    },
+    {
+      "kind": "FACT",
+      "text": "The reform also permits qualifying people aged 60 to under 70 who are outside National Pension insured status to join or continue iDeCo if they satisfy the specified conditions and are not already receiving the Old-age Basic Pension or iDeCo old-age benefits.",
+      "source_refs": [1],
+      "basis": "MHLW official eligibility rules"
+    },
+    {
+      "kind": "FACT",
+      "text": "There is a three-year transitional rule after implementation allowing some people aged 60 to under 70 who do not meet the ordinary prior-iDeCo/transfer conditions to join during the transition period, subject to the other statutory conditions.",
+      "source_refs": [1],
+      "basis": "MHLW transition rule"
+    },
+    {
+      "kind": "FACT",
+      "text": "Several providers have already opened special advance procedures for members who want the higher contribution amount reflected from the December 2026 contribution month, which is generally withdrawn in January 2027.",
+      "source_refs": [2,3,4],
+      "basis": "Current provider implementation notices"
+    },
+    {
+      "kind": "INFERENCE",
+      "text": "The practical deadline is becoming a provider-procedure issue before the legal effective date, so waiting until December may delay use of the higher limit even though eligibility itself is not lost permanently.",
+      "source_refs": [2,3,4],
+      "basis": "Multiple providers are already operating pre-change windows and separate processing routes"
+    }
+  ],
+  "content": {
+    "key_message": "December 1 changes the legal ceiling, not your contribution automatically: check your actual usable limit and your provider's change procedure now if you want the higher amount from the first eligible month.",
+    "policy_status": "ENACTED; effective December 1, 2026 under implementing Cabinet Orders/rules cited by MHLW.",
+    "who_is_affected": "Existing or prospective iDeCo users, especially company employees/public servants, self-employed people/freelancers, and qualifying people aged 60 to under 70. People with employer pension plans need extra care because the ¥62,000 figure is a combined ceiling, not always an iDeCo-only allowance.",
+    "when": "Legal effective date: December 1, 2026. The higher December contribution is generally collected in January 2027. Some providers opened advance contribution-change procedures on September 1, 2026; exact processing deadlines depend on the provider and contribution method.",
+    "financial_impact": "Potentially meaningful but individual. iDeCo contributions are tax-deductible under existing rules, so a larger allowed contribution can increase the deduction, but the actual tax benefit depends on taxable income and the amount voluntarily contributed. Larger contributions also reduce current cash liquidity because iDeCo is retirement money with withdrawal restrictions.",
+    "risk_if_ignored": "You do not lose the reform itself, but you may miss the first month of the higher contribution if your provider requires advance processing. A bigger mistake is assuming ¥62,000 is available entirely to iDeCo when employer pension contributions may reduce the remaining room.",
+    "action": "PREPARE",
+    "deadline": "No single nationwide filing deadline applies to every provider. If you want the new higher amount from the first eligible month, check your own iDeCo provider now; several providers are using special advance windows before December.",
+    "effort": "LOW-MED",
+    "potential_benefit": "Higher tax-deductible retirement saving capacity and, for qualifying older participants, additional years to contribute.",
+    "downside": "Higher iDeCo contributions are voluntary and lock more cash into retirement savings. The maximum legal ceiling is not necessarily the appropriate household contribution amount.",
+    "strongest_counterinterpretation": "This is not a universal '¥62,000 tax break.' People with employer pensions may have much less iDeCo room, Category 1 participants have a different ceiling, and increasing contributions may be unattractive for households that need liquidity. Missing a provider's advance window normally delays the increase rather than eliminating future eligibility.",
+    "what_remains_uncertain": "Provider-specific workflow, document requirements, electronic versus paper processing and cut-off dates vary. Readers should use their own provider's current notice rather than copying another institution's deadline or form.",
+    "what_would_change_mind": "A later MHLW or National Pension Fund Association notice changing the December 1 implementation date, contribution ceilings, transitional eligibility, or national processing rules would require an update. A provider extending or replacing its special pre-change process would change only the operational advice for that provider, not the underlying law.",
+    "impact": {
+      "money": "HIGH",
+      "family": "MED",
+      "career": "LOW",
+      "japan": "MED",
+      "urgency": "MED"
+    },
+    "connection_tags": ["ideco", "pension-reform", "tax-deduction", "retirement-savings"],
+    "reading_levels": {
+      "30 sec": {
+        "what_happened": "FACT: iDeCo limits rise from December 1, 2026. Category 2's common ceiling becomes ¥62,000/month; Category 1's common ceiling becomes ¥75,000/month, and eligibility expands toward age 70 under conditions.",
+        "why_it_matters": "The headline ceiling is not automatically your usable iDeCo amount, and existing contributions do not necessarily increase by themselves.",
+        "what_to_do_watch": "If you want to raise contributions from the first eligible month, check your own provider's current advance-change procedure now and confirm employer-pension deductions from your available ceiling.",
+        "bottom_line": "Good opportunity, but verify your personal ceiling and paperwork before treating ¥62,000 as money you can simply add to iDeCo."
+      },
+      "2_min": "The reform is already enacted. From December 1, 2026, the common monthly ceiling for Category 2 participants becomes ¥62,000 and for Category 1 participants ¥75,000. The most important fine print is that company pension contributions can consume part of the Category 2 ceiling. The age extension also has eligibility conditions and a three-year transition rule. Several providers began advance contribution-change procedures in September so members can use the new ceiling from the first eligible contribution month. This is operationally useful now, but it is not a reason to maximize contributions blindly because iDeCo money is retirement money and household liquidity still matters."
+    },
+    "learning": {
+      "outcomes": [
+        "Explain why the new ¥62,000 figure is a combined ceiling for many employees rather than a guaranteed iDeCo-only allowance.",
+        "Know which facts to check before requesting a higher contribution.",
+        "Understand that the age-70 expansion has conditions and a transitional rule."
+      ],
+      "background": "iDeCo is Japan's individual defined-contribution pension. You voluntarily contribute money into a retirement account, choose investments, and receive tax advantages under the existing system, but access to the money is restricted until retirement conditions are met. The December reform mainly expands how much some people may contribute and who may continue contributing at older ages.",
+      "terms": [
+        {
+          "term": "Category 2 participant",
+          "meaning": "A National Pension Category 2 insured person, typically a company employee or public servant covered by Employees' Pension Insurance.",
+          "why_it_matters": "The new common monthly ceiling is ¥62,000, but employer pension contributions may use part of that room."
+        },
+        {
+          "term": "Common contribution ceiling",
+          "meaning": "A shared maximum that can include both iDeCo and specified employer pension contributions rather than an iDeCo-only maximum.",
+          "why_it_matters": "This is the main reason two employees can have different usable iDeCo limits even though both hear the same ¥62,000 headline."
+        }
+      ],
+      "how_it_works": [
+        {
+          "title": "First, identify your pension category",
+          "explanation": "Self-employed/freelance Category 1 participants and employee/public-servant Category 2 participants are subject to different ceilings."
+        },
+        {
+          "title": "Then subtract the employer-pension effect where required",
+          "explanation": "For employees with qualifying employer pension arrangements, the company-side pension amount counts toward the common ¥62,000 ceiling, so the remaining iDeCo room may be below ¥62,000."
+        },
+        {
+          "title": "Finally, change the contribution through your provider",
+          "explanation": "The legal ceiling rising does not mean the amount withdrawn from your bank account automatically rises. Providers are publishing their own procedures for members who want the higher amount from the first eligible contribution month."
+        }
+      ],
+      "example": "Example: an employee should not start from 'I can put ¥62,000 into iDeCo.' The correct sequence is: confirm Category 2 status, check whether the employer has a pension arrangement and the amount that counts against the common ceiling, then ask the iDeCo provider what contribution amount is actually permitted and how to change it.",
+      "takeaways": [
+        "The reform is enacted and starts December 1, 2026.",
+        "¥62,000 is not automatically an iDeCo-only allowance for every employee.",
+        "Existing contribution amounts do not necessarily rise automatically.",
+        "Some providers already have advance-change procedures before December.",
+        "More tax-deductible capacity is useful only if the household can afford to lock away the extra cash."
+      ]
+    },
+    "action_plan": {
+      "goal": "Use the December reform correctly without overcontributing, missing the first-month processing window, or locking away more cash than intended.",
+      "who_should_act": "Act now if you already have iDeCo and want to increase contributions from the first eligible month, or if you are 60 to under 70 and may qualify under the expanded rules. If you do not plan to change contributions, there is no urgent filing just because the law changes.",
+      "deadline": "Check your provider now. Provider-specific advance windows differ; do not assume another provider's date applies to you.",
+      "prepare": [
+        "Your iDeCo provider/account information",
+        "Your National Pension category",
+        "Information on employer pension arrangements if you are an employee/public servant",
+        "Your current monthly iDeCo contribution",
+        "A household cash-flow amount you are comfortable locking into retirement savings"
+      ],
+      "steps": [
+        {
+          "step": "Confirm your category and ceiling",
+          "action": "Identify whether you are Category 1, Category 2 or another eligible category and whether an employer pension reduces your usable iDeCo room.",
+          "how": "Use MHLW's reform information and your employer/pension administrator information; if the employer-pension amount is unclear, ask HR or the plan administrator before selecting a new iDeCo amount.",
+          "needed": ["employment/pension status", "employer pension information if applicable"],
+          "time_minutes": 15,
+          "cost_yen": 0,
+          "done_when": "You know the maximum amount actually available to your iDeCo, not just the headline statutory ceiling."
+        },
+        {
+          "step": "Check your own provider's implementation notice",
+          "action": "Look for the December 2026 reform contribution-change or advance-application instructions from your iDeCo provider.",
+          "how": "Use the provider's official website/account or customer support. Confirm whether your contribution method is eligible for advance processing and whether the procedure is online or paper.",
+          "needed": ["provider name", "account/login or customer number"],
+          "time_minutes": 10,
+          "cost_yen": 0,
+          "done_when": "You have the provider's current procedure and cut-off date for your account type."
+        },
+        {
+          "step": "Choose the amount based on cash flow, not the legal maximum",
+          "action": "Decide whether and how much to increase after preserving near-term household liquidity.",
+          "how": "Compare the proposed monthly contribution with regular expenses and emergency cash needs. The maximum is optional, not a requirement.",
+          "needed": ["monthly household budget"],
+          "time_minutes": 15,
+          "cost_yen": 0,
+          "done_when": "You have a contribution amount that is both legally permitted and affordable."
+        },
+        {
+          "step": "Submit and verify",
+          "action": "File the provider's required contribution-change request and later confirm the new amount was accepted.",
+          "how": "Follow only your provider's official instructions. After processing, check the account notice or contribution record rather than assuming submission equals completion.",
+          "needed": ["provider's required form or online process"],
+          "time_minutes": 15,
+          "cost_yen": 0,
+          "done_when": "The provider confirms the revised contribution amount and effective contribution month."
+        }
+      ],
+      "mistakes_to_avoid": [
+        "Treating ¥62,000 as a guaranteed iDeCo-only allowance for every company employee.",
+        "Assuming your existing contribution automatically increases on December 1.",
+        "Copying another provider's filing deadline or form.",
+        "Maxing the contribution solely for tax savings without considering restricted access to iDeCo money.",
+        "Assuming every person aged 60 to under 70 becomes eligible without the statutory conditions."
+      ],
+      "decision_rules": [
+        {
+          "if": "you want the higher contribution from the first eligible month",
+          "then": "check and use your provider's advance-change procedure now if offered"
+        },
+        {
+          "if": "you have an employer pension",
+          "then": "confirm the amount that counts toward the common ¥62,000 ceiling before choosing an iDeCo amount"
+        },
+        {
+          "if": "higher contributions would strain emergency cash or near-term expenses",
+          "then": "do not treat the legal maximum as a target; a lower voluntary contribution is valid"
+        }
+      ],
+      "follow_up": "Re-check the provider account after December processing and verify the actual contribution recorded for the December 2026 contribution month / January 2027 collection cycle."
+    },
+    "editorial_visual": {
+      "style": "editorial",
+      "motif": "document",
+      "secondary_motif": "yen",
+      "scene": "a retirement-savings document opening a larger gate marked only by abstract numeric shapes, while a smaller side gate represents the remaining allowance after employer pension contributions",
+      "caption": "A bigger ceiling does not mean everyone gets the whole space",
+      "silliness": 28,
+      "exaggeration": 62
+    }
+  }
+}
