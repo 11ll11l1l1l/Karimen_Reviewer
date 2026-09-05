@@ -1,0 +1,252 @@
+[
+  {
+    "id": "japan-2026-income-tax-178man-year-end-catchup",
+    "agent": "practical",
+    "created_at": "2026-09-06T03:22:00+09:00",
+    "type": "tax",
+    "title": "Your 2026 tax cut may not show up until year-end adjustment",
+    "summary": "ENACTED: Japan's 2026 income-tax deduction increase applies to 2026 income, but payroll withholding stays on the old monthly treatment through November. Sa December year-end adjustment pa ise-settle ang malaking bahagi ng change, so don't assume your payslip is already showing the full benefit.",
+    "why_it_matters": "This affects a broad group of employees and part-time workers and can change December withholding/refunds. The headline '¥1.78 million tax-free threshold' also has important fine print: it is an income-tax threshold under specific assumptions, it does not erase social-insurance or resident-tax thresholds, and the largest temporary deduction levels are currently for 2026-2027 rather than permanently fixed forever.",
+    "importance": 88,
+    "confidence": 96,
+    "tags": [
+      "Japan",
+      "tax",
+      "income tax",
+      "year-end adjustment",
+      "年末調整",
+      "基礎控除",
+      "給与所得控除",
+      "178万円の壁"
+    ],
+    "geography": ["Japan"],
+    "status": "NEW",
+    "sources": [
+      {
+        "publisher": "National Tax Agency (国税庁)",
+        "title": "令和８年度税制改正による所得税の基礎控除の引上げ等について",
+        "url": "https://www.nta.go.jp/users/gensen/2026kiso/index.htm",
+        "published_at": "2026-04-20",
+        "source_type": "official"
+      },
+      {
+        "publisher": "Ministry of Finance (財務省)",
+        "title": "特集 令和8年度 税制改正（国税）等について",
+        "url": "https://www.mof.go.jp/public_relations/finance/202604/202604c.html",
+        "published_at": "2026-04-01",
+        "source_type": "official"
+      },
+      {
+        "publisher": "National Tax Agency (国税庁)",
+        "title": "令和8年分 年末調整のしかた",
+        "url": "https://www.nta.go.jp/publication/pamph/gensen/nencho2026/01.htm",
+        "published_at": "2026-08-01",
+        "source_type": "official"
+      },
+      {
+        "publisher": "National Tax Agency (国税庁)",
+        "title": "家族と税",
+        "url": "https://www.nta.go.jp/publication/pamph/koho/kurashi/html/02_2.htm",
+        "published_at": "2026-08-01",
+        "source_type": "official"
+      }
+    ],
+    "claims": [
+      {
+        "kind": "FACT",
+        "text": "The 2026 income-tax reform was enacted on March 31, 2026 and the relevant basic-deduction/payroll-deduction changes generally take effect December 1, 2026 while applying to 2026 income.",
+        "source_refs": [1, 2],
+        "basis": "NTA implementation notice and MOF enacted-tax-reform explanation."
+      },
+      {
+        "kind": "FACT",
+        "text": "NTA states that withholding work through November 2026 is unchanged; the new rules affect December year-end adjustment and other withholding work from December onward.",
+        "source_refs": [1, 3],
+        "basis": "NTA's 2026 reform page and 2026 year-end-adjustment materials."
+      },
+      {
+        "kind": "FACT",
+        "text": "For 2026 and 2027, the payroll-income deduction minimum is ¥740,000 and the basic deduction can be as high as ¥1.04 million, producing a ¥1.78 million income-tax starting point for a person whose only income is salary and who meets the stated conditions.",
+        "source_refs": [2, 4],
+        "basis": "MOF's reform explanation and NTA's current family-tax guidance."
+      },
+      {
+        "kind": "FACT",
+        "text": "The ¥1.78 million figure does not mean all taxes and social-insurance contributions disappear below that amount; NTA separately shows a different resident-tax threshold in its example, while social-insurance eligibility is governed by separate rules.",
+        "source_refs": [4],
+        "basis": "NTA expressly distinguishes the income-tax and resident-tax thresholds; social insurance is legally separate from income tax."
+      },
+      {
+        "kind": "FACT",
+        "text": "The enlarged temporary basic-deduction treatment is not permanently fixed at the same 2026-2027 levels: MOF describes the additional middle/low-income increases as a 2026-2027 temporary measure and establishes future inflation-linked reviews of the permanent components.",
+        "source_refs": [2],
+        "basis": "MOF tax-reform explanation."
+      },
+      {
+        "kind": "INFERENCE",
+        "text": "Some employees may see an unusually favorable December tax settlement compared with earlier 2026 payslips because monthly withholding through November does not fully reflect the newly enacted annual deductions.",
+        "source_refs": [1, 3],
+        "basis": "Year-end adjustment reconciles annual tax against amounts already withheld; the exact result depends on each taxpayer's income, deductions and withholding history."
+      }
+    ],
+    "content": {
+      "key_message": "ENACTED na ang 2026 income-tax cut, pero huwag hanapin lahat ng benefit sa monthly payslip: the government deliberately leaves withholding unchanged through November and settles the new annual rules at year-end.",
+      "policy_status": "ENACTED — law passed March 31, 2026; relevant provisions generally effective December 1, 2026 and applicable to 2026 income.",
+      "who_is_affected": "Employees whose employers perform year-end adjustment, especially lower- and middle-income workers, part-timers near income-tax thresholds, and households estimating whether a spouse or family member owes income tax. People with salary above ¥20 million, multiple-income situations or other reasons they are outside ordinary year-end adjustment may need separate tax-filing treatment.",
+      "when": "The revised deductions apply to 2026 income. Ordinary payroll withholding through November 2026 is not changed by this reform; December 2026 year-end adjustment is the key settlement point for many employees.",
+      "financial_impact": "Varies materially by income and deductions. Do not convert the ¥1.78 million threshold into a universal refund amount. The reform increases deductions, but the actual yen benefit equals the reduction in taxable income multiplied through the taxpayer's applicable tax calculation and can be zero for someone who owed no income tax in the first place.",
+      "risk_if_ignored": "MED — most ordinary employees will still be processed by their employer, but wrong income estimates or incomplete year-end forms can cause a missed/incorrect deduction or later correction. The bigger practical risk is planning work hours around the wrong 'wall' because income tax, resident tax and social insurance use different rules.",
+      "action": "PREPARE",
+      "deadline": "Follow your employer's 2026 year-end-adjustment submission deadline; the tax-law change itself generally takes effect December 1, 2026.",
+      "effort": "LOW",
+      "potential_benefit": "Correct year-end tax calculation and avoidance of unnecessary work-hour decisions based on the wrong threshold.",
+      "downside": "No reason to spend money or alter work hours solely because of the headline threshold. Increasing income can still affect resident tax, social insurance, employer benefits or household-dependent status under separate rules.",
+      "what_to_do_now": "Keep your expected full-year 2026 gross salary and other income updated, and watch for your employer's year-end-adjustment forms. If a spouse/dependent's income is close to a threshold, use projected full-year income rather than one month's take-home pay.",
+      "what_to_wait_for": "Wait for your employer's formal 2026 year-end-adjustment instructions before submitting forms. NTA has already released the 2026 year-end-adjustment guide, but each employer sets its practical document-collection deadline.",
+      "common_mistake": "Thinking '¥1.78 million wall' means you can earn ¥1.78 million with no consequences anywhere. It is an income-tax starting point under specific salary-only assumptions. Resident tax, social insurance and dependent-related rules are separate.",
+      "strongest_counterinterpretation": "For many salaried workers this is administratively routine rather than a crisis: employers normally perform year-end adjustment automatically once employees return the required forms. A December refund is also not guaranteed; someone with little or no income tax withheld may see little cash difference.",
+      "what_would_change_mind": "A new NTA ordinance/Q&A changing the December implementation method, another enacted tax amendment changing the 2026 deductions, or official guidance showing that the new annual calculation is being applied earlier than stated would require an update.",
+      "usefulness": 94,
+      "novelty": 87,
+      "impact": {
+        "money": "MED",
+        "family": "MED",
+        "career": "LOW",
+        "japan": "HIGH",
+        "urgency": "MED"
+      },
+      "connection_tags": [
+        "2026-tax-reform",
+        "year-end-adjustment",
+        "income-walls",
+        "household-budget"
+      ],
+      "reading_levels": {
+        "30 sec": {
+          "what_happened": "Japan enacted a bigger 2026 income-tax basic deduction/payroll deduction, but monthly withholding stays unchanged through November.",
+          "why_it_matters": "For many employees, December year-end adjustment is when the new annual tax rules finally show up. The widely quoted ¥1.78 million figure is income tax only, not a universal tax/social-insurance wall.",
+          "what_to_do_watch": "Check your projected 2026 income and return your employer's year-end forms accurately; don't cut or increase work hours using ¥1.78 million alone.",
+          "bottom_line": "Possible December tax relief is real, but the fine print matters more than the headline number."
+        },
+        "2_min": "FACT: The law is enacted. Relevant 2026 deduction changes generally start December 1 and apply to 2026 income, while NTA says normal withholding through November is unchanged. For 2026-2027 the minimum salary-income deduction is ¥740,000 and the basic deduction can reach ¥1.04 million, which is why NTA describes ¥1.78 million as an income-tax threshold for a salary-only taxpayer with no other income. INFERENCE: because employers reconcile annual tax at year-end, some workers may see a larger-than-usual December adjustment. But it is not a guaranteed refund and it does not replace separate resident-tax/social-insurance rules."
+      },
+      "learning": {
+        "outcomes": [
+          "Explain why a 2026 tax cut can apply to the whole year even though monthly withholding is unchanged through November.",
+          "Distinguish the ¥1.78 million income-tax threshold from resident-tax and social-insurance thresholds.",
+          "Know what information to prepare for 2026 year-end adjustment."
+        ],
+        "background": "Japan normally withholds income tax from salary during the year, then the employer performs 年末調整 (year-end adjustment) to reconcile the tax already withheld with the employee's correct annual income tax. The 2026 reform is unusual in timing: lawmakers changed the annual deductions for 2026, but to reduce payroll-system burden they did not require employers to redo ordinary monthly withholding through November. The annual correction is therefore pushed to the year-end process for many employees.",
+        "terms": [
+          {
+            "term": "基礎控除 (basic deduction)",
+            "meaning": "An amount deducted from taxable income before income tax is calculated, subject to the taxpayer's total-income level.",
+            "why_it_matters": "A larger deduction can reduce taxable income and therefore income tax."
+          },
+          {
+            "term": "給与所得控除 (salary-income deduction)",
+            "meaning": "A statutory deduction used to convert gross salary into taxable salary income; it is not an expense receipt that employees must prove individually.",
+            "why_it_matters": "Together with the basic deduction, it helps determine the salary level at which income tax begins."
+          },
+          {
+            "term": "年末調整 (year-end adjustment)",
+            "meaning": "The employer's annual reconciliation of income tax already withheld from salary against the employee's final annual tax calculation.",
+            "why_it_matters": "This is where the 2026 reform is designed to be reflected for many ordinary employees."
+          }
+        ],
+        "how_it_works": [
+          {
+            "title": "January-November can look almost normal",
+            "explanation": "NTA says the reform does not change ordinary withholding work through November 2026. So a worker should not expect every 2026 monthly payslip to immediately display the final annual tax benefit."
+          },
+          {
+            "title": "December recalculates the annual liability",
+            "explanation": "During year-end adjustment, the employer uses the new annual deduction rules, compares the correct annual income tax with tax already withheld, and collects or refunds the difference as appropriate."
+          },
+          {
+            "title": "¥1.78 million is one wall, not every wall",
+            "explanation": "For a salary-only person meeting the assumptions, ¥740,000 minimum salary-income deduction plus a maximum ¥1.04 million basic deduction gives ¥1.78 million before income tax begins. Resident tax and social-insurance coverage have their own thresholds and tests, so household decisions need more than this single number."
+          }
+        ],
+        "example": "Example only: a part-time worker with salary income near ¥1.7 million and no other income may be below the 2026 income-tax starting point described by NTA. That does not automatically mean zero resident tax or zero social-insurance obligation; those systems must be checked separately.",
+        "takeaways": [
+          "The reform is enacted, not merely proposed.",
+          "For many workers the visible settlement comes at December year-end adjustment, not month-by-month earlier in 2026.",
+          "¥1.78 million is an income-tax figure under specific assumptions, not a universal work-income wall.",
+          "The enlarged 2026-2027 deduction treatment includes temporary components; do not assume today's exact thresholds are permanent.",
+          "Accurate projected annual income matters more than one month's take-home pay when completing year-end forms."
+        ]
+      },
+      "action_plan": {
+        "goal": "Have the correct 2026 income-tax deductions applied without making unnecessary work-hour decisions based on the wrong threshold.",
+        "who_should_act": "Employees who expect their employer to perform 2026 year-end adjustment, especially anyone whose own, spouse's or dependent's income changed during the year. People clearly outside ordinary year-end adjustment should follow NTA filing rules instead.",
+        "deadline": "Your employer's own 2026 year-end-adjustment form deadline; tax-law implementation is generally December 1, 2026.",
+        "prepare": [
+          "Projected full-year 2026 gross salary from all relevant employment",
+          "Expected non-salary income if applicable",
+          "Spouse/dependent projected full-year income when relevant to a deduction",
+          "The year-end-adjustment forms and supporting certificates your employer normally requests"
+        ],
+        "steps": [
+          {
+            "step": "Estimate full-year income",
+            "action": "Add expected gross pay for the entire 2026 calendar year rather than using current monthly take-home pay.",
+            "how": "Use payslips/employer payroll records plus expected remaining 2026 salary or bonuses. Include other income when the form asks for it.",
+            "needed": ["2026 payslips or payroll totals", "expected remaining salary/bonus"],
+            "time_minutes": 10,
+            "cost_yen": 0,
+            "done_when": "You have a defensible full-year income estimate for the relevant people on the form."
+          },
+          {
+            "step": "Read your employer's year-end notice",
+            "action": "Use the forms and submission method your employer provides for 2026.",
+            "how": "Check the HR/payroll notice and compare unfamiliar fields with NTA's 2026 year-end-adjustment guide rather than an old form or old threshold chart.",
+            "needed": ["2026 employer instructions"],
+            "time_minutes": 10,
+            "cost_yen": 0,
+            "done_when": "You know the employer deadline and which forms apply to you."
+          },
+          {
+            "step": "Check separate walls before changing work hours",
+            "action": "If you are planning income around a threshold, identify whether the issue is income tax, resident tax, social insurance, employer family allowance, or dependent status.",
+            "how": "Use NTA guidance for income tax and the relevant health-insurance/pension or employer rules for the other systems; do not substitute the ¥1.78 million income-tax number for all of them.",
+            "needed": ["the specific benefit/coverage rule you are trying to preserve"],
+            "time_minutes": 15,
+            "cost_yen": 0,
+            "done_when": "You can name the exact system and threshold that actually drives your decision."
+          }
+        ],
+        "mistakes_to_avoid": [
+          "Using take-home pay instead of gross/full-year income where the tax form asks for income.",
+          "Assuming no December refund means the reform was not applied; the final effect depends on tax already withheld and the person's full tax calculation.",
+          "Treating ¥1.78 million as the social-insurance threshold.",
+          "Using a 2025 form or deduction table for the 2026 year-end calculation."
+        ],
+        "decision_rules": [
+          {
+            "if": "Your employer performs year-end adjustment and your income situation is straightforward",
+            "then": "Prepare accurate 2026 information and use the employer process; no separate application to NTA is required solely because this reform exists."
+          },
+          {
+            "if": "You have multiple jobs, substantial non-salary income, salary above the ordinary year-end-adjustment limit, or another filing trigger",
+            "then": "Do not assume employer year-end adjustment finishes your tax; check the NTA filing rules for your situation."
+          },
+          {
+            "if": "You are considering reducing work solely to stay below ¥1.78 million",
+            "then": "First identify the separate social-insurance, resident-tax and employer-benefit rules; ¥1.78 million alone is not enough to make that decision."
+          }
+        ],
+        "follow_up": "After year-end adjustment, check the withholding/tax information on your December payroll and annual withholding slip. If the employer did not apply information you submitted or your situation later changed, check whether a correction or tax return is required under NTA rules."
+      },
+      "editorial_visual": {
+        "style": "editorial",
+        "motif": "document",
+        "secondary_motif": "yen",
+        "scene": "a stack of January-to-November payslips marching unchanged toward a large December year-end adjustment folder that catches a bundle of yen receipts at the finish line",
+        "caption": "The 2026 tax change arrives at the annual finish line",
+        "silliness": 38,
+        "exaggeration": 68
+      }
+    }
+  }
+]
