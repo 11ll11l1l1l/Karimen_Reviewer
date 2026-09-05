@@ -1,0 +1,239 @@
+[
+  {
+    "id": "japan-employment-insurance-10-hour-threshold-2028",
+    "agent": "practical",
+    "created_at": "2026-09-06T01:21:14+09:00",
+    "type": "labor_policy",
+    "title": "In 2028, Japan’s unemployment-insurance line drops from 20 hours to 10",
+    "summary": "ENACTED: from October 1, 2028, Japan lowers the Employment Insurance weekly scheduled-hours threshold from 20 hours to 10. The fine print matters for short-hour and multi-job workers because some benefit, contribution and unemployment-status rules change with it, while several operating details are still being finalized.",
+    "why_it_matters": "Workers with contracts around 10–19 scheduled hours a week may enter Employment Insurance even though they are outside it today. That can open access to unemployment, training and childcare-leave benefits, but it also means payroll contributions and different treatment when claiming unemployment benefits; this is separate from the 2026–2027 health/pension social-insurance changes.",
+    "importance": 87,
+    "confidence": 94,
+    "tags": ["Japan", "Employment Insurance", "part-time", "side jobs", "labor law", "unemployment benefits", "2028"],
+    "geography": ["Japan"],
+    "status": "CONFIRMED",
+    "sources": [
+      {
+        "publisher": "Ministry of Health, Labour and Welfare",
+        "title": "令和６年雇用保険法等改正について（第211回雇用保険部会 資料3）",
+        "url": "https://www.mhlw.go.jp/content/11601000/001745358.pdf",
+        "published_at": "2026-09-04",
+        "source_type": "official"
+      },
+      {
+        "publisher": "Ministry of Health, Labour and Welfare",
+        "title": "令和６年雇用保険制度改正（令和10年10月１日施行分）について（第210回雇用保険部会 資料1）",
+        "url": "https://www.mhlw.go.jp/content/11601000/001739198.pdf",
+        "published_at": "2026-03-11",
+        "source_type": "official"
+      },
+      {
+        "publisher": "Japan Institute for Labour Policy and Training",
+        "title": "「教育訓練休暇給付金」や訓練のための融資制度の創設などを予定",
+        "url": "https://www.jil.go.jp/kokunai/blt/backnumber/2024/03/special_01.html",
+        "published_at": "2024-03-01",
+        "source_type": "research"
+      }
+    ],
+    "claims": [
+      {
+        "kind": "FACT",
+        "text": "The 2024 amended Employment Insurance Act lowers the weekly scheduled working-time threshold for insured status from 20 hours to 10 hours, effective October 1, 2028.",
+        "source_refs": [1, 2, 3],
+        "basis": "Enacted-law summaries and MHLW implementation materials"
+      },
+      {
+        "kind": "FACT",
+        "text": "MHLW's March 2026 implementation material describes the post-reform insured-person test as at least 10 scheduled hours per week plus an expected employment period of at least 31 days.",
+        "source_refs": [2],
+        "basis": "MHLW Employment Insurance Committee implementation material"
+      },
+      {
+        "kind": "FACT",
+        "text": "Workers newly covered by the lower hours threshold are intended to receive the same categories of Employment Insurance benefits as current insured workers, including basic unemployment allowance, education/training benefits and childcare-leave benefits when the relevant benefit conditions are met.",
+        "source_refs": [1, 2, 3],
+        "basis": "Official reform summary and JILPT policy explanation"
+      },
+      {
+        "kind": "FACT",
+        "text": "A person scheduled for 10 to under 20 hours per week on October 1, 2028 is treated by the enacted transition provisions as acquiring insured status on that effective date.",
+        "source_refs": [2],
+        "basis": "MHLW table explaining statutory transition provisions"
+      },
+      {
+        "kind": "FACT",
+        "text": "For the special transition case where a person was receiving basic unemployment allowance because their working time was under the old 20-hour threshold, MHLW says the basic allowance is paid only through September 30, 2028 and that case is outside the reemployment-allowance treatment shown in the transition table.",
+        "source_refs": [2],
+        "basis": "MHLW statutory-transition table"
+      },
+      {
+        "kind": "FACT",
+        "text": "For people who meet the insured-person conditions at two or more employers, MHLW's current approach is to insure only the employment relationship providing the main wage; the ministry is still working on the operational confirmation process for the 2028 expansion.",
+        "source_refs": [2, 3],
+        "basis": "Existing multi-job rule plus proposed implementation clarification"
+      },
+      {
+        "kind": "FACT",
+        "text": "MHLW's reference chart based on the 2023 Labour Force Survey shows about 5.06 million employed people actually working 10–19 hours per week, but this is not an estimate that all 5.06 million will become insured because the legal test uses scheduled hours and other eligibility conditions.",
+        "source_refs": [2],
+        "basis": "MHLW chart using Statistics Bureau Labour Force Survey data"
+      },
+      {
+        "kind": "INFERENCE",
+        "text": "The practical effect could be large for short-hour workers, but the eventual newly insured population will be smaller than the raw 10–19-hour Labour Force Survey count and will depend on contracts, exclusions and labor-market responses before 2028.",
+        "source_refs": [1, 2],
+        "basis": "Difference between the statutory scheduled-hours test and the survey's actual-hours population"
+      }
+    ],
+    "editorial_visual": {
+      "style": "editorial",
+      "motif": "document",
+      "secondary_motif": "yen",
+      "scene": "a Japanese part-time work contract with a bold hour scale sliding from 20 toward 10, beside a small safety-net symbol and a pay envelope, rendered as a clear magazine policy illustration",
+      "caption": "A lower hours line will pull more short-hour workers into Employment Insurance",
+      "silliness": 12,
+      "exaggeration": 42
+    },
+    "content": {
+      "policy_status": "ENACTED — the 10-hour threshold is in law and is scheduled to take effect October 1, 2028. Some implementation details remain under ministry discussion and are not final yet.",
+      "key_message": "If your contract is around 10–19 scheduled hours a week, this is a real 2028 rule change worth tracking—but there is nothing to apply for now and no reason to cut hours today.",
+      "who_is_affected": "Employees who, from October 1, 2028, are scheduled to work at least 10 but under 20 hours per week and otherwise meet Employment Insurance eligibility, including the expected-employment-period rule. It is especially relevant to part-time workers and people with more than one job. People already working 20+ scheduled hours and insured today are not the newly added group.",
+      "when": "The statutory threshold change is effective October 1, 2028. MHLW is using the period before then to settle forms, multi-job handling, unemployment-recognition rules and transition administration.",
+      "financial_impact": "Newly insured workers will enter an insurance system funded by worker and employer contributions, so take-home pay can be slightly lower than without Employment Insurance while benefit protection expands. Do not use today's premium rate to budget a precise 2028 deduction because the applicable rate can change before launch.",
+      "estimated_saving_yen": null,
+      "time_minutes": null,
+      "travel_minutes": null,
+      "risk_if_ignored": "A short-hour worker could wrongly assume that staying below 20 hours permanently avoids Employment Insurance, or could confuse this 2028 Employment Insurance reform with the separate health/pension social-insurance rules. Multi-job workers may also assume both jobs automatically become insured even though the current approach identifies one main-wage employment relationship.",
+      "action": "WATCH",
+      "deadline": "No worker filing deadline now. Re-check official MHLW/Hello Work guidance well before October 1, 2028, especially if your scheduled hours are 10–19 per week or you work multiple jobs.",
+      "effort": "LOW",
+      "potential_benefit": "Broader access to the Employment Insurance safety net for workers who are currently below the 20-hour line, subject to each benefit's own qualifying conditions.",
+      "downside": "Coverage is not a free cash benefit: contributions apply, not every 10–19-hour worker will qualify, and some detailed operating rules remain unsettled. The strongest counterinterpretation is that the headline population looks huge but the real newly covered count may be materially smaller because the legal test is scheduled hours, not simply one week's actual hours, and workers/employers may change schedules before 2028.",
+      "what_to_do_now": "Keep or check your employment contract and know your scheduled weekly hours. If you have multiple jobs, note which job is your main wage source. Do not change hours or file anything solely because of this reform yet.",
+      "what_to_wait_for": "Wait for final MHLW ordinances, forms and Hello Work operating guidance on multi-job confirmation, unemployment recognition and transition filing. Those are the details most likely to affect procedure rather than the enacted October 1, 2028 threshold itself.",
+      "strongest_counterinterpretation": "This is a major statutory coverage expansion, but it is two years away and the 5.06 million people shown in MHLW's reference chart are not a guaranteed newly insured count. Final practical impact depends on scheduled-hour contracts, other eligibility rules and labor-market adjustments.",
+      "what_would_change_mind": "A law delaying or reversing the October 1, 2028 effective date, or final implementing rules that materially alter eligibility or transition treatment, would require a new ALAM update. Final MHLW rules on multi-job declarations and unemployment-recognition thresholds could also materially change the action checklist even if the 10-hour threshold remains intact.",
+      "usefulness": 93,
+      "novelty": 90,
+      "impact": {
+        "money": "MED",
+        "family": "MED",
+        "career": "HIGH",
+        "japan": "HIGH",
+        "urgency": "LOW"
+      },
+      "connection_tags": ["short-hour-work", "employment-insurance", "part-time-workers", "multi-job", "2028-labor-reform"],
+      "reading_levels": {
+        "30_sec": {
+          "what_happened": "Japan has enacted a rule lowering the Employment Insurance threshold from 20 scheduled hours a week to 10, starting October 1, 2028.",
+          "why_it_matters": "Some workers now outside Employment Insurance will enter it, gaining insurance protection but also contribution obligations and new benefit-status rules.",
+          "what_to_do_watch": "If your contract is 10–19 hours a week, know your scheduled hours and watch final MHLW/Hello Work implementation guidance; do not change anything now.",
+          "bottom_line": "The 10-hour line is enacted; the remaining uncertainty is mostly how the 2028 transition will be administered."
+        }
+      },
+      "learning": {
+        "outcomes": [
+          "Distinguish Employment Insurance from health insurance and Employees' Pension rules.",
+          "Know why the 10-hour threshold is real but does not mean every person who sometimes works 10 hours is automatically covered.",
+          "Recognize the special transition issue for people receiving unemployment benefits while working below the old 20-hour line."
+        ],
+        "background": "Employment Insurance is Japan's worker safety-net system covering unemployment-related benefits, certain education/training benefits and childcare-leave benefits. Today, one central coverage condition is at least 20 scheduled working hours per week. The 2024 amended law cuts that hours threshold in half from October 2028. This is not the same system as Employees' Health Insurance or Employees' Pension, whose short-time-worker expansion follows different thresholds and dates.",
+        "terms": [
+          {
+            "term": "scheduled weekly working hours (週所定労働時間)",
+            "meaning": "The regular weekly hours set by the employment contract or work rules, rather than simply the hours you happened to work in one particular week.",
+            "why_it_matters": "The 2028 Employment Insurance threshold is based on scheduled hours."
+          },
+          {
+            "term": "insured person (被保険者)",
+            "meaning": "A worker formally covered by Employment Insurance.",
+            "why_it_matters": "Being insured creates contribution obligations and can build eligibility for Employment Insurance benefits."
+          }
+        ],
+        "how_it_works": [
+          {
+            "title": "The threshold changes on one fixed date",
+            "explanation": "On October 1, 2028, the statutory scheduled-hours requirement moves from 20 hours to 10 hours. MHLW's transition guidance says a person then scheduled for 10 to under 20 hours who otherwise qualifies acquires insured status from that date."
+          },
+          {
+            "title": "Benefits do not become automatic cash payments",
+            "explanation": "Newly covered workers enter the same Employment Insurance framework, but each unemployment, training or childcare-leave benefit still has its own conditions. Coverage is the gateway, not automatic entitlement to every benefit."
+          },
+          {
+            "title": "Multi-job workers need special handling",
+            "explanation": "Lowering the line to 10 hours makes it more likely that two separate jobs each satisfy the hours test. MHLW's current approach still identifies one main-wage employment relationship for ordinary coverage, and the ministry is working on how employers and workers will confirm that in practice."
+          }
+        ],
+        "example": "Example: a worker has a continuing contract for 14 scheduled hours a week. Under today's 20-hour hours test, that contract is below the Employment Insurance line. If the same arrangement remains in place on October 1, 2028 and the worker meets the other eligibility conditions, the new 10-hour rule can bring that employment into Employment Insurance from the effective date.",
+        "takeaways": [
+          "The new line is 10 scheduled hours per week.",
+          "The effective date is October 1, 2028.",
+          "It is Employment Insurance, not the separate health/pension system.",
+          "The 5.06 million short-hour statistic is a scale indicator, not a guaranteed newly insured count.",
+          "The law is settled, but some forms and transition procedures are still being worked out."
+        ]
+      },
+      "action_plan": {
+        "goal": "Know whether the 2028 Employment Insurance expansion is likely to affect you without making premature work-schedule changes.",
+        "who_should_act": "Workers with one or more jobs scheduled around 10–19 hours per week should track this. Workers already insured through a 20+ hour job generally do not need to do anything now solely because of this threshold change.",
+        "deadline": "No action deadline now. The statutory change takes effect October 1, 2028.",
+        "prepare": [
+          "Your current employment contract or work rules showing scheduled weekly hours",
+          "If you have multiple jobs, each contract and a basic record of which job pays the main wage",
+          "Any future MHLW or Hello Work notice from your employer as the 2028 launch approaches"
+        ],
+        "steps": [
+          {
+            "step": "Check the contract hours",
+            "action": "Find the weekly scheduled-hours figure in your employment contract or applicable work rules.",
+            "how": "Use the contractual/scheduled figure, not a single unusually busy or quiet week's actual hours.",
+            "needed": ["Employment contract or work rules"],
+            "time_minutes": null,
+            "cost_yen": 0,
+            "done_when": "You know whether the job is below 10, between 10 and 19, or 20+ scheduled hours a week."
+          },
+          {
+            "step": "Separate Employment Insurance from social insurance",
+            "action": "Do not apply health/pension '20-hour wall' assumptions to this 2028 rule.",
+            "how": "Treat Employment Insurance and Employees' Health Insurance/Pension as different systems with different rules and timelines.",
+            "needed": [],
+            "time_minutes": null,
+            "cost_yen": 0,
+            "done_when": "You are not using one system's threshold to make decisions about the other."
+          },
+          {
+            "step": "Re-check final implementation before launch",
+            "action": "Review MHLW/Hello Work guidance and your employer's notice as October 2028 approaches.",
+            "how": "Confirm the final rules for qualification filing, multi-job handling and any transition issue relevant to an existing unemployment-benefit claim.",
+            "needed": ["Current official MHLW or Hello Work guidance at that time"],
+            "time_minutes": null,
+            "cost_yen": 0,
+            "done_when": "You know whether your job will be enrolled and whether any special transition rule applies to you."
+          }
+        ],
+        "mistakes_to_avoid": [
+          "Assuming the 10-hour rule starts in 2026; it starts October 1, 2028.",
+          "Assuming every person who actually works 10 hours in a week is automatically covered; the statute uses scheduled weekly hours and other eligibility conditions.",
+          "Confusing Employment Insurance with Employees' Health Insurance and Employees' Pension.",
+          "Assuming two qualifying jobs automatically create two ordinary Employment Insurance enrollments.",
+          "Cutting work hours now based on a 2028 rule whose operational details are still being finalized."
+        ],
+        "decision_rules": [
+          {
+            "if": "Your scheduled hours are 10–19 per week and the job is expected to continue at least 31 days",
+            "then": "Treat yourself as potentially newly covered from October 1, 2028 and re-check final official guidance before launch."
+          },
+          {
+            "if": "You have two or more jobs that may each satisfy the future threshold",
+            "then": "Do not assume both are ordinary insured relationships; wait for the final MHLW confirmation process for identifying the main-wage job."
+          },
+          {
+            "if": "You are receiving basic unemployment allowance near October 2028 while working under the old 20-hour threshold",
+            "then": "Ask Hello Work specifically about the statutory transition before the effective date because MHLW's transition table can cut off that allowance at September 30 for the described case."
+          }
+        ],
+        "follow_up": "ALAM should re-check this story when MHLW publishes the final ordinances/forms and again in the months immediately before October 1, 2028."
+      }
+    }
+  }
+]
