@@ -1,0 +1,219 @@
+[
+  {
+    "id": "anker-powercore-soundcore-recall-still-active-2026",
+    "agent": "practical",
+    "created_at": "2026-09-06T02:00:00+09:00",
+    "type": "consumer_safety",
+    "title": "Check old Anker batteries and speakers: the recall is still active",
+    "summary": "May lumang Anker PowerCore o Soundcore sa bahay? Japan's Consumer Affairs Agency is still flagging recalled Anker battery products in major-accident releases, while Anker's exchange program remains open. Check the model and serial now instead of assuming an old recall is already irrelevant.",
+    "why_it_matters": "These are common portable products that can sit for years in drawers, cars, work bags or children's gear. A five-minute serial check can identify a recalled unit and lead to a free replacement rather than continued use of a lithium-battery product covered by an active safety recall.",
+    "importance": 91,
+    "confidence": 96,
+    "tags": ["Japan", "recall", "Anker", "mobile battery", "Soundcore", "consumer safety", "fire risk"],
+    "geography": ["Japan"],
+    "status": "CONFIRMED",
+    "sources": [
+      {
+        "publisher": "Anker Japan",
+        "title": "モバイルバッテリー / スピーカー回収受付フォーム",
+        "url": "https://www.ankerjapan.com/pages/202510-support",
+        "published_at": "2025-10-21",
+        "source_type": "primary"
+      },
+      {
+        "publisher": "Consumer Affairs Agency",
+        "title": "消費生活用製品の重大製品事故:リコール製品で火災等(高圧洗浄機(充電式)、リチウム電池内蔵充電器)(9月4日)",
+        "url": "https://www.caa.go.jp/notice/entry/047427/",
+        "published_at": "2026-09-04",
+        "source_type": "official"
+      },
+      {
+        "publisher": "Consumer Affairs Agency",
+        "title": "消費生活用製品の重大製品事故:リコール製品で火災等(リチウム電池内蔵充電器)(8月21日)",
+        "url": "https://www.caa.go.jp/notice/entry/047276/",
+        "published_at": "2026-08-21",
+        "source_type": "official"
+      },
+      {
+        "publisher": "Anker Japan",
+        "title": "Ankerグループ4製品に関するお詫びと自主回収のお知らせ",
+        "url": "https://corp.ankerjapan.com/posts/579",
+        "published_at": "2025-10-21",
+        "source_type": "primary"
+      }
+    ],
+    "claims": [
+      {
+        "kind": "FACT",
+        "text": "Anker Japan's active recall page covers Anker PowerCore 10000 (A1263), Soundcore 3 (A3117), Anker PowerConf S500 (A3305), and Soundcore Motion X600 (A3130), subject to the listed sale periods and serial-number check; the white Motion X600 is excluded.",
+        "source_refs": [1, 4],
+        "basis": "Current Anker Japan recall and exchange pages"
+      },
+      {
+        "kind": "FACT",
+        "text": "Anker says the recall followed a problem found in the battery-cell manufacturing process and is intended to prevent accidents.",
+        "source_refs": [4],
+        "basis": "Anker Japan recall announcement"
+      },
+      {
+        "kind": "FACT",
+        "text": "On September 4, 2026, Japan's Consumer Affairs Agency again published a major-product-accident notice that specifically identified an Anker Japan recalled lithium-battery charger among the recall products covered by the release.",
+        "source_refs": [2],
+        "basis": "Consumer Affairs Agency major-product-accident release"
+      },
+      {
+        "kind": "FACT",
+        "text": "A separate Consumer Affairs Agency release on August 21, 2026 also specifically highlighted an Anker Japan recalled lithium-battery charger.",
+        "source_refs": [3],
+        "basis": "Consumer Affairs Agency major-product-accident release"
+      },
+      {
+        "kind": "INFERENCE",
+        "text": "The repeated appearance of the recalled Anker battery product in fresh official accident reporting makes this an active household-safety check, not merely stale 2025 recall news.",
+        "source_refs": [1, 2, 3],
+        "basis": "Active recall plus repeated recent official accident notices"
+      }
+    ],
+    "editorial_visual": {
+      "style": "editorial",
+      "motif": "battery",
+      "secondary_motif": "shield",
+      "scene": "a restrained editorial illustration of several small portable batteries and speakers on a household shelf, one separated into a clearly marked safety-check tray while a shield symbol protects the home; no flames, logos or dramatic damage",
+      "caption": "Old rechargeable gear deserves a serial-number check",
+      "silliness": 0,
+      "exaggeration": 28
+    },
+    "content": {
+      "key_message": "If you own an older Anker PowerCore 10000 or certain Soundcore/PowerConf speakers bought in Japan, check the exact model and serial today; the free recall-and-exchange route is still available.",
+      "who_is_affected": "People in Japan who own Anker PowerCore 10000 model A1263, Soundcore 3 model A3117, Anker PowerConf S500 model A3305, or Soundcore Motion X600 model A3130 bought during the recall periods. Motion X600 white units are excluded from this recall. The official serial-number checker determines whether a specific Japan-sold unit is affected.",
+      "when": "The recall began October 21, 2025 and Anker's official recall/return page remains active as of September 6, 2026. Fresh Consumer Affairs Agency notices on August 21 and September 4, 2026 again referenced the recalled Anker lithium-battery product in major-product-accident reporting.",
+      "financial_impact": "The official route is a recall and exchange, not a paid repair. Anker says affected PowerCore 10000 units are exchanged for a newer Anker Power Bank (10000mAh, 30W), while the affected speaker products receive replacement units under the recall process.",
+      "estimated_saving_yen": null,
+      "time_minutes": 5,
+      "travel_minutes": 0,
+      "risk_if_ignored": "Continued use of a unit that Anker has recalled because of a battery-cell manufacturing problem leaves the household exposed to a preventable lithium-battery safety risk. The Consumer Affairs Agency's continued accident notices are a reason to re-check units that were never returned.",
+      "action": "DO NOW",
+      "deadline": "No recall closing date is stated on the current Anker Japan page. Act while the official exchange route is active rather than waiting for a deadline announcement.",
+      "effort": "LOW",
+      "potential_benefit": "Remove an affected rechargeable product from normal use and receive the official replacement without paying for a new device.",
+      "downside": "Do not assume every Anker battery or Soundcore speaker is defective. The recall is model-, sale-period- and serial-specific, and some visually similar products are explicitly excluded.",
+      "usefulness": 97,
+      "novelty": 89,
+      "impact": {
+        "money": "MED",
+        "family": "HIGH",
+        "career": "LOW",
+        "japan": "MED",
+        "urgency": "HIGH"
+      },
+      "connection_tags": ["lithium-battery-safety", "consumer-recall", "household-fire-prevention"],
+      "what_would_change_mind": "This article should be updated if Anker closes or changes the exchange program, expands or narrows the affected serial ranges/models, or the Consumer Affairs Agency/NITE publishes a materially different causal finding. Fresh accident notices do not by themselves prove that every incident was caused by the recalled defect, so ALAM should not attribute individual fires to that defect unless the official investigation does so.",
+      "reading_levels": {
+        "30 sec": {
+          "what_happened": "A 2025 Anker recall is still operational, and the Consumer Affairs Agency was still flagging the recalled battery product in major-accident notices in August and September 2026.",
+          "why_it_matters": "Old power banks and speakers are easy to forget in drawers or bags, but an affected unit can still be exchanged through Anker's official process.",
+          "what_to_do_watch": "Check the model number, then enter the serial number on Anker Japan's official recall page. If it is affected, follow the return-kit process instead of continuing normal use.",
+          "bottom_line": "Huwag i-assume na tapos na dahil luma ang recall; check the actual device."
+        }
+      },
+      "learning": {
+        "outcomes": [
+          "Recognize the four product families covered by the recall.",
+          "Understand why the serial number matters more than brand name alone.",
+          "Know the official return-and-replacement process without guessing."
+        ],
+        "background": "Anker announced the four-product recall in October 2025 after finding a problem in the manufacturing process of battery cells used in the affected products. A recall can remain practically important long after the announcement because rechargeable devices often stay in homes for years. Japan's Consumer Affairs Agency was still highlighting the recalled Anker battery product in major-product-accident releases in August and September 2026, which is why this deserves a fresh check now.",
+        "terms": [
+          {
+            "term": "serial-number recall",
+            "meaning": "Not every unit with the same brand is affected. The manufacturer uses the product model, sale period and individual serial number to identify the specific units covered.",
+            "why_it_matters": "Checking only the brand or appearance can produce both false alarms and missed recalls."
+          }
+        ],
+        "how_it_works": [
+          {
+            "title": "Identify the exact model",
+            "explanation": "The recall covers A1263, A3117, A3305 and A3130 under their stated sale periods. Similar-looking Anker products may not be covered."
+          },
+          {
+            "title": "Use the official serial checker",
+            "explanation": "Anker's Japan recall page asks for the serial printed on the product and tells the owner whether that Japan-sold unit is in the recall population."
+          },
+          {
+            "title": "Return using the supplied kit",
+            "explanation": "After registration, Anker sends a return kit with shipping instructions and protective material. The owner returns the product; accessories and retail box are not required under the current instructions."
+          }
+        ],
+        "example": "Example: seeing 'Anker PowerCore 10000' is not enough by itself. Check that the model is A1263, then use the serial-number checker. Anker notes that some A1263 units with an 8-digit serial were sold before the affected recall period and are excluded.",
+        "takeaways": [
+          "The recall is still active, despite originating in 2025.",
+          "Four product families are named, but the serial check decides whether your specific unit is affected.",
+          "The official process provides a return kit and replacement.",
+          "Similar-looking products can be outside the recall, so verify instead of guessing.",
+          "Recent official accident reporting makes forgotten recalled units worth checking now."
+        ]
+      },
+      "action_plan": {
+        "goal": "Identify and remove any affected recalled Anker battery or speaker from normal household use and complete the official free exchange process.",
+        "who_should_act": "Anyone in Japan with an older Anker PowerCore 10000, Soundcore 3, PowerConf S500 or Soundcore Motion X600. Owners of other Anker products do not need to assume they are recalled; check the official list first.",
+        "deadline": "No closing date is stated on the current recall page; the exchange route is active now.",
+        "prepare": [
+          "The physical product",
+          "Model number printed on the side or bottom",
+          "Serial number printed after 'SN:' on the product",
+          "Approximate purchase period if the serial is unreadable"
+        ],
+        "steps": [
+          {
+            "step": "Check the model",
+            "action": "Look for A1263, A3117, A3305 or A3130 on the product body and compare the product with Anker's official recall page.",
+            "how": "Use Anker Japan's official recall page at https://www.ankerjapan.com/pages/202510-support.",
+            "needed": ["Physical product"],
+            "time_minutes": 2,
+            "cost_yen": 0,
+            "done_when": "You know whether the product family and sale period could fall within the recall."
+          },
+          {
+            "step": "Check the serial number",
+            "action": "Enter the product's serial into Anker's official checker for Japan-sold units.",
+            "how": "Use the serial box on the recall page. If the serial is rubbed off or unreadable, use Anker's official support contact rather than guessing.",
+            "needed": ["Serial number"],
+            "time_minutes": 2,
+            "cost_yen": 0,
+            "done_when": "The official checker states whether the unit is affected, or Anker support has accepted the case for manual confirmation."
+          },
+          {
+            "step": "Register the recall if affected",
+            "action": "Submit the return-kit form and follow the official packing and shipping instructions when the kit arrives.",
+            "how": "Anker says the kit contains shipping instructions plus a return shipping method and protective fire-resistant material. Do not invent your own disposal or shipping method for the recalled lithium-battery product.",
+            "needed": ["Return address and requested form information"],
+            "time_minutes": null,
+            "cost_yen": 0,
+            "done_when": "The recalled unit has been returned through Anker's official process and the replacement procedure is underway."
+          }
+        ],
+        "mistakes_to_avoid": [
+          "Checking only the Anker brand instead of the exact model and serial number.",
+          "Assuming an old recall has expired because you never received an email.",
+          "Throwing a recalled lithium-battery product into ordinary household trash instead of using the manufacturer's recall route.",
+          "Assuming every major-accident notice proves the recalled manufacturing defect caused that specific incident; official investigations may still distinguish causes."
+        ],
+        "decision_rules": [
+          {
+            "if": "The official serial checker says the unit is affected",
+            "then": "Follow Anker's recall/return process and do not keep treating the product as an ordinary in-service device."
+          },
+          {
+            "if": "The product looks similar but its model or serial is outside the recall",
+            "then": "Do not label it recalled based on appearance alone; follow the official result."
+          },
+          {
+            "if": "The serial cannot be read",
+            "then": "Contact Anker's recall support using the official recall page and have purchase-period information available."
+          }
+        ],
+        "follow_up": "Keep the recall submission/return record until the replacement arrives. Re-check Anker's product-recall page if additional models or serial ranges are announced."
+      }
+    }
+  }
+]
