@@ -1,0 +1,145 @@
+{
+  "id": "jp-tokyo-gas-2026-november-structural-price-rise",
+  "agent": "practical",
+  "created_at": "2026-09-06T03:01:00+09:00",
+  "type": "household_cost",
+  "title": "Tokyo Gas bills get a permanent bump in November — just as the summer subsidy disappears",
+  "summary": "FACT: Tokyo Gas is raising household gas tariffs from October 1, 2026, applied from November meter readings. In the main Tokyo-area tariff, the structural increase is ¥150 per month for a standard 30 m³ household. Separately, the government's summer gas discount ends after the October meter-reading cycle, so November bills lose that temporary support too.",
+  "why_it_matters": "This is easy to misread as a simple ¥150 increase. The actual November bill can move by more because two different mechanisms overlap: Tokyo Gas's permanent tariff revision and the end of the temporary government gas discount. Knowing that distinction helps households avoid assuming a sudden bill jump is a billing error and gives them time to compare plans before winter demand rises.",
+  "importance": 82,
+  "confidence": 96,
+  "tags": ["Japan", "Tokyo Gas", "utilities", "gas", "household bills", "inflation", "Kanto"],
+  "geography": ["Tokyo", "Kanagawa", "Chiba", "Saitama", "Tochigi", "Ibaraki", "Gunma"],
+  "status": "NEW",
+  "sources": [
+    {
+      "publisher": "Tokyo Gas",
+      "title": "（東京地区等）ガス料金の改定について",
+      "url": "https://www.tokyo-gas.co.jp/news/press/20260427-03.html",
+      "published_at": "2026-04-27",
+      "source_type": "primary"
+    },
+    {
+      "publisher": "Tokyo Gas",
+      "title": "原料費調整制度に基づく2026年10月検針分のガス料金について",
+      "url": "https://www.tokyo-gas.co.jp/news/press/20260828-02.html",
+      "published_at": "2026-08-28",
+      "source_type": "primary"
+    },
+    {
+      "publisher": "Ministry of Economy, Trade and Industry",
+      "title": "2026年7月、8月及び9月使用分の電気・ガス料金支援の実施に伴い、電気・都市ガス料金の値引きを行うことができる特例認可・承認を行いました",
+      "url": "https://www.meti.go.jp/press/2026/06/20260612003/20260612003.html",
+      "published_at": "2026-06-12",
+      "source_type": "official"
+    },
+    {
+      "publisher": "Impress Watch",
+      "title": "東京ガス、基本料金を150円値上げ　11月検針分から",
+      "url": "https://www.watch.impress.co.jp/docs/news/2105230.html",
+      "published_at": "2026-04-28",
+      "source_type": "secondary"
+    }
+  ],
+  "claims": [
+    {
+      "kind": "FACT",
+      "text": "Tokyo Gas's tariff revision takes effect October 1, 2026 and is reflected from November 2026 meter readings for the affected household menus.",
+      "source_refs": [1],
+      "basis": "Tokyo Gas tariff revision notice"
+    },
+    {
+      "kind": "FACT",
+      "text": "For the main Tokyo-area general tariff, a standard household using 30 m³ per month has a structural increase of ¥150 per month under the new tariff, before future monthly raw-material adjustments and subsidies are considered.",
+      "source_refs": [1,4],
+      "basis": "Tokyo Gas tariff table and corroborating Japanese coverage"
+    },
+    {
+      "kind": "FACT",
+      "text": "In the Gunma area, the standard-household example rises by ¥241 per month because both the basic charge and base unit price change.",
+      "source_refs": [4],
+      "basis": "Published tariff comparison based on Tokyo Gas materials"
+    },
+    {
+      "kind": "FACT",
+      "text": "The government's 2026 summer gas support applies to July, August and September usage, with Tokyo Gas reflecting the final 14 yen/m³ discount in the October 2026 meter-reading cycle.",
+      "source_refs": [2,3],
+      "basis": "METI support period and Tokyo Gas October billing notice"
+    },
+    {
+      "kind": "INFERENCE",
+      "text": "A household comparing October and November bills may see a change larger than the permanent ¥150 tariff revision because the November bill no longer contains the temporary summer subsidy; however, the exact bill difference cannot be known yet because raw-material adjustments and actual usage also move monthly.",
+      "source_refs": [1,2,3],
+      "basis": "Two independently verified pricing mechanisms overlap across adjacent billing cycles"
+    }
+  ],
+  "content": {
+    "key_message": "Kung Tokyo Gas customer ka, do not budget for only a ¥150 November increase. The ¥150 is the permanent tariff change for the standard Tokyo-area household; the temporary government gas discount also ends after the October meter-reading cycle, while raw-material adjustments and winter usage can move the total further.",
+    "policy_status": "APPROVED/ANNOUNCED COMPANY TARIFF CHANGE: Tokyo Gas's revised tariffs take effect October 1, 2026 and apply from November meter readings. The separate national summer gas-support program covers July-September 2026 usage and therefore does not continue into the November meter-reading cycle under the currently announced program.",
+    "who_is_affected": "Tokyo Gas customers on general and specified household gas plans in its affected Tokyo-area and Gunma service areas. The company says the revision also covers many business plans. Exact impact depends on district, tariff menu and usage.",
+    "when": "October 2026 meter readings still reflect the final summer-support discount. The revised Tokyo Gas tariff applies from November 2026 meter readings. This makes the October-to-November comparison especially easy to misinterpret.",
+    "financial_impact": "Tokyo-area standard household example: +¥150/month from the structural tariff revision at 30 m³/month. Gunma standard household example: +¥241/month at 36 m³/month. The actual November bill may differ materially because the temporary subsidy is gone, raw-material adjustment changes monthly and household gas use usually rises into colder weather.",
+    "risk_if_ignored": "Households may under-budget winter utility costs or assume a larger November jump is an unexplained Tokyo Gas price hike when part of the difference is actually the end of government support. The opposite mistake is also possible: treating the October-to-November bill difference as the permanent tariff increase even though commodity adjustment and usage are moving too.",
+    "action": "CHECK",
+    "deadline": "Before the November 2026 meter reading if you want time to compare Tokyo Gas plans or competing gas retailers. There is no mandatory filing deadline and existing customers do not need to submit a form merely because the tariff changes.",
+    "effort": "LOW",
+    "potential_benefit": "Better winter budgeting and a chance to compare whether the current tariff remains competitive for your actual gas usage pattern.",
+    "downside": "Switching solely because of one month's bill can backfire if a competing plan has different fuel adjustment, discounts, cancellation conditions or bundled-service requirements.",
+    "strongest_counterinterpretation": "This is not evidence that Tokyo Gas is secretly adding the lost subsidy to its own price. The permanent company tariff revision and the government subsidy are separate. Also, the ¥150 standard-household figure is not a forecast of the exact October-to-November bill change.",
+    "what_remains_uncertain": "The exact November 2026 unit price after raw-material adjustment had not yet been fixed in the verified sources at publication time. Household usage, weather and any later government support extension could materially change the final bill.",
+    "what_would_change_mind": "A new government decision extending gas subsidies into October usage or later, a Tokyo Gas revision of the October 1 tariff change, or a newly published November raw-material adjustment materially changing the expected bill would require an update.",
+    "impact": {
+      "money": "MED-HIGH",
+      "family": "MED",
+      "career": "LOW",
+      "japan": "MED",
+      "urgency": "MED"
+    },
+    "connection_tags": ["tokyo-gas", "utility-bills", "gas-subsidy", "winter-costs", "kanto"],
+    "reading_levels": {
+      "30 sec": {
+        "what_happened": "FACT: Tokyo Gas's new household tariff starts October 1 and appears from November meter readings. Standard Tokyo-area household impact from the tariff revision itself is +¥150/month.",
+        "why_it_matters": "The government summer gas discount ends after the October meter-reading cycle, so the next bill comparison can look worse than ¥150 even before colder-weather usage.",
+        "what_to_do_watch": "Check which Tokyo Gas plan and district you are on, then compare the November unit price when it is published rather than comparing only total yen bills.",
+        "bottom_line": "May dalawang magkaibang epekto: permanent Tokyo Gas tariff increase plus expiry of the temporary subsidy. Do not mix them together."
+      },
+      "2_min": "Tokyo Gas announced a structural household gas-tariff increase effective October 1, 2026, applied from November meter readings. For the main Tokyo-area general tariff, its standard 30 m³ household example rises by ¥150 per month; the Gunma standard example rises by ¥241. Separately, the national summer-support program covers July-September gas usage, with the final Tokyo Gas discount reflected in October meter readings. That means the October-to-November bill comparison is unusually noisy: the new company tariff starts, the subsidy disappears, raw-material adjustment changes, and winter usage may rise. FACT: the tariff increase and subsidy schedule are confirmed. INFERENCE: the November total may rise by more than ¥150, but the exact amount cannot be stated until Tokyo Gas publishes the applicable November unit price and the household's actual usage is known."
+    },
+    "action_plan": {
+      "goal": "Avoid being surprised by the November gas bill and compare plans using the correct numbers.",
+      "who_should_act": "Tokyo Gas households, especially families with gas water heating, floor heating, older gas appliances or typically high winter consumption.",
+      "deadline": "No legal filing deadline. Check before November if you want to compare suppliers before winter usage increases.",
+      "prepare": ["latest Tokyo Gas bill", "tariff/menu name", "monthly m³ usage for the last winter", "whether gas is bundled with electricity or other discounts"],
+      "steps": [
+        {
+          "step": "Identify your actual tariff",
+          "action": "Check the plan name and district on your Tokyo Gas bill or account.",
+          "how": "Do not assume the standard Tokyo-area example applies to Gunma or to every special household menu.",
+          "needed": ["bill or online account"],
+          "time_minutes": 5,
+          "cost_yen": 0,
+          "done_when": "You know the exact plan and service district."
+        },
+        {
+          "step": "Separate usage from price",
+          "action": "Compare m³ used and unit-price components, not only the total yen amount, when the November bill arrives.",
+          "how": "A higher total can come from colder-weather consumption, raw-material adjustment, the new tariff and the vanished subsidy at the same time.",
+          "needed": ["October and November statements"],
+          "time_minutes": 10,
+          "cost_yen": 0,
+          "done_when": "You can tell which part of the change is consumption versus price."
+        },
+        {
+          "step": "Compare before switching",
+          "action": "If the increase matters to your household, compare Tokyo Gas's available plans and competing retailers using your own annual usage.",
+          "how": "Include bundled discounts, adjustment formulas, cancellation conditions and promotional expiry dates rather than comparing only headline base rates.",
+          "needed": ["12 months of usage if available"],
+          "time_minutes": 20,
+          "cost_yen": 0,
+          "done_when": "You know whether switching produces a real annual saving rather than a promotional first-month saving."
+        }
+      ],
+      "common_mistake": "Seeing a November bill increase and saying 'Tokyo Gas raised me by this whole amount.' Only part of the change may be the permanent tariff revision; subsidy expiry, raw-material adjustment and usage are separate variables."
+    }
+  }
+}
