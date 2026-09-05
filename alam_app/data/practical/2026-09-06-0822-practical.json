@@ -1,0 +1,166 @@
+[
+  {
+    "id": "jp-residence-permit-fee-overhaul-2026",
+    "agent": "practical",
+    "created_at": "2026-09-06T08:22:00+09:00",
+    "type": "immigration",
+    "title": "Visa renewal after Oct 1 can cost up to ¥75,000 — and filing date decides which fee you pay",
+    "summary": "FACT: Japan's residence-permit fees change sharply for applications accepted from October 1, 2026. Window applications for extension/change will cost ¥10,000 to ¥75,000 depending on the period of stay granted; permanent residence rises to ¥200,000. Applications accepted by September 30 keep the old fee even if approval comes later.",
+    "why_it_matters": "For foreign households, this is no longer a small paperwork charge. A family with several residence renewals can face tens of thousands of yen more per person, and permanent-residence applicants face a ¥190,000 increase versus the current ¥10,000 fee. The decisive transition rule is the application acceptance date, not the approval date.",
+    "importance": 99,
+    "confidence": 99,
+    "tags": ["Japan", "Immigration", "Residence card", "Visa renewal", "Permanent residence", "Fees", "October 2026"],
+    "geography": ["Japan"],
+    "status": "NEW",
+    "sources": [
+      {
+        "publisher": "Immigration Services Agency of Japan",
+        "title": "令和８年１０月１日付け在留許可手数料の額の改定等について",
+        "url": "https://www.moj.go.jp/isa/01_00644.html",
+        "published_at": "2026-08-28",
+        "source_type": "official"
+      },
+      {
+        "publisher": "Immigration Services Agency of Japan",
+        "title": "オンライン申請における手数料額及び手数料納付方法について(２０２６年１０月１日以降の申請分のみに適用)",
+        "url": "https://www.moj.go.jp/isa/11_00107.html",
+        "published_at": "2026-08-28",
+        "source_type": "official"
+      },
+      {
+        "publisher": "Immigration Services Agency of Japan",
+        "title": "収入印紙の購入について",
+        "url": "https://www.moj.go.jp/isa/01_00646.html",
+        "published_at": "2026-08-28",
+        "source_type": "official"
+      },
+      {
+        "publisher": "Ministry of Justice",
+        "title": "法務大臣閣議後記者会見の概要（令和8年8月25日）",
+        "url": "https://www.moj.go.jp/hisho/kouhou/hisho08_00966.html",
+        "published_at": "2026-08-25",
+        "source_type": "official"
+      }
+    ],
+    "claims": [
+      {
+        "kind": "FACT",
+        "text": "The revised fees are enacted and effective October 1, 2026. They apply to residence-status change, period-of-stay extension and permanent-residence applications accepted on or after that date.",
+        "source_refs": [1, 4],
+        "basis": "ISA implementation notice and MOJ announcement following Cabinet approval"
+      },
+      {
+        "kind": "FACT",
+        "text": "For window applications, the new extension/change fees are ¥10,000 for up to 3 months, ¥18,000 for over 3 to 6 months, ¥25,000 for over 6 months to under 1 year, ¥33,000 for 1 year, ¥48,000 for over 1 to under 3 years, ¥64,000 for 3 to under 5 years, and ¥75,000 for 5 years or more. Permanent residence is ¥200,000.",
+        "source_refs": [3],
+        "basis": "ISA official revenue-stamp table"
+      },
+      {
+        "kind": "FACT",
+        "text": "Online extension/change applications are cheaper than window applications but add payment-processing fees: ¥10,000 to ¥65,000 before a ¥330 or ¥550 processing fee depending on the amount. Online applications from October 1 can no longer use revenue stamps; payment is by designated convenience-store or bank settlement.",
+        "source_refs": [2],
+        "basis": "ISA online payment table and Q&A"
+      },
+      {
+        "kind": "FACT",
+        "text": "Applications accepted by September 30, 2026 keep the pre-revision fee even when the decision or permit is issued on or after October 1.",
+        "source_refs": [1, 2],
+        "basis": "Explicit transition rule in ISA notices"
+      },
+      {
+        "kind": "FACT",
+        "text": "A new reduction mechanism exists for qualifying people in serious economic difficulty or other special circumstances, but online filing does not support the reduction process; applicants seeking a reduction must file at the immigration counter with supporting evidence.",
+        "source_refs": [1, 2],
+        "basis": "ISA reduction/exemption notice and online-system limitation"
+      },
+      {
+        "kind": "INFERENCE",
+        "text": "For people who are already legally eligible to file before October 1, the transition rule can materially reduce household cost. But applicants should not file prematurely or with incomplete documents solely to beat the fee increase because eligibility and filing-window rules still apply.",
+        "source_refs": [1, 2],
+        "basis": "Fee transition rule combined with ordinary application timing requirements"
+      }
+    ],
+    "content": {
+      "key_message": "Kung renewal/change/PR mo is coming soon, check the filing date now. The big fee jump is tied to applications accepted from October 1, 2026 — hindi sa approval date.",
+      "who_is_affected": "Foreign residents applying to extend a period of stay, change residence status, or obtain permanent residence. The actual extension/change fee depends on the period of stay granted. Permanent-residence applicants face the largest single increase.",
+      "when": "ENACTED. Effective October 1, 2026. Applications accepted through September 30 use the old fee even if immigration decides them later.",
+      "financial_impact": "HIGH. Window extension/change fees rise to as much as ¥75,000. Permanent residence rises from ¥10,000 to ¥200,000. Online extension/change fees are lower than window rates but include a separate processing fee.",
+      "estimated_saving_yen": null,
+      "time_minutes": 20,
+      "travel_minutes": null,
+      "risk_if_ignored": "HIGH if you are already eligible to file before October 1 and unnecessarily wait past the transition date. Also high if you assume every renewal costs the same after October; the granted period determines the fee.",
+      "action": "CHECK YOUR ELIGIBLE FILING WINDOW NOW",
+      "deadline": "September 30, 2026 is the last acceptance date for the old fee. This is not permission to file before you are eligible; ordinary immigration filing rules still apply.",
+      "effort": "LOW-MED",
+      "potential_benefit": "Potentially tens of thousands of yen per extension/change application and up to ¥190,000 difference for permanent residence if a person is already eligible and can validly file before the transition date.",
+      "downside": "Do not rush an incomplete or premature application just to chase the old fee. Filing eligibility, required documents and substantive approval criteria do not become easier because the price is changing.",
+      "common_mistake": "Thinking 'October 1 approval = new fee.' The official rule is based on when the application was accepted. A September 30 application can still pay the old fee even if approval comes in October or later.",
+      "fact_vs_inference": {
+        "fact": "The October 1 fee schedule, permanent-residence fee, online payment method, September 30 transition rule and reduction-process limitation are all stated by the Immigration Services Agency.",
+        "inference": "The largest practical household impact will fall on families with multiple foreign members renewing around the same time and on permanent-residence applicants who cross the October 1 filing boundary. ISA has not published a household-level cost estimate."
+      },
+      "strongest_counterinterpretation": "A longer residence period can still be economically better despite the higher one-time fee because it reduces the frequency of future renewals. The new schedule therefore should not be read as 'a 5-year permit is bad'; it is a higher upfront charge for fewer renewal cycles.",
+      "what_remains_uncertain": "The final granted period is determined by immigration, so an extension applicant may not know the exact fee in advance. Reduction eligibility is fact-specific and requires evidence. Future operational FAQs could further clarify borderline reduction cases or payment handling.",
+      "what_would_change_mind": "A new ISA notice delaying the October 1 effective date, changing the fee table, expanding online reduction handling, or altering the September 30 transition rule would require an immediate update.",
+      "usefulness": 99,
+      "novelty": 96,
+      "impact": {
+        "money": "VERY HIGH",
+        "family": "HIGH",
+        "career": "MED",
+        "japan": "HIGH",
+        "urgency": "VERY HIGH"
+      },
+      "connection_tags": ["immigration-fees", "visa-renewal", "permanent-residence", "october-2026", "foreign-residents"],
+      "reading_levels": {
+        "30 sec": [
+          "FACT: New immigration fees apply to applications accepted from October 1, 2026.",
+          "Window renewal/change: ¥10,000 to ¥75,000 depending on granted stay length; PR: ¥200,000.",
+          "Applications accepted by September 30 keep the old fee even if approval comes later.",
+          "Action: if you are already legally eligible to file before October 1, check your documents and filing window now."
+        ],
+        "2_min": "Japan is replacing the current near-flat residence-permit charge with a duration-based system. For counter applications, a 1-year extension/change will cost ¥33,000, 3-to-under-5 years ¥64,000, and 5 years or more ¥75,000. Permanent residence becomes ¥200,000. Online extension/change applications are somewhat cheaper but add payment-processing fees. The transition rule is the buried practical point: September 30-or-earlier accepted applications stay on the old fee even if approval is later. For people already eligible to file, timing can therefore matter materially. But do not submit prematurely or incompletely. Reduction is possible for certain hardship cases, and anyone seeking that reduction must currently use the counter rather than online filing."
+      },
+      "action_plan": {
+        "goal": "Avoid an unnecessary fee jump while keeping the immigration application valid and complete.",
+        "who_should_act": "Anyone whose extension/change/PR filing window is already open before October 1, 2026, especially families with multiple applications and people preparing permanent residence.",
+        "deadline": "September 30, 2026 for old-fee treatment, only if the application is otherwise eligible to be accepted.",
+        "prepare": [
+          "Current residence card and passport",
+          "Application-specific supporting documents",
+          "Employer/family/tax/social-insurance documents required for your status",
+          "Hardship evidence if you believe you qualify for fee reduction"
+        ],
+        "steps": [
+          {
+            "step": "Check whether your filing window is already open",
+            "action": "Confirm the ordinary eligibility/timing rule for your application type.",
+            "how": "Do not treat September 30 as a universal early-filing exception.",
+            "needed": ["Residence-card expiry date", "Application type"],
+            "time_minutes": 5,
+            "cost_yen": 0,
+            "done_when": "You know whether immigration can validly accept the application before October 1."
+          },
+          {
+            "step": "Compare counter versus online route",
+            "action": "If reduction is not needed, compare the official fee schedule and payment method.",
+            "how": "Online extension/change rates are lower but have settlement fees; reduction requests must currently be made at the counter.",
+            "needed": ["ISA fee table"],
+            "time_minutes": 10,
+            "cost_yen": 0,
+            "done_when": "You know which route is appropriate and the likely fee range."
+          },
+          {
+            "step": "File complete documents before the transition only if ready and eligible",
+            "action": "Aim for acceptance by September 30 if doing so is valid and practical.",
+            "how": "Keep proof of the application acceptance date or online receipt number.",
+            "needed": ["Complete application package"],
+            "time_minutes": 30,
+            "cost_yen": 0,
+            "done_when": "The application has been officially accepted and you can verify the acceptance date."
+          }
+        ]
+      }
+    }
+  }
+]
