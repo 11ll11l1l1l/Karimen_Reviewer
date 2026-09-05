@@ -1,0 +1,223 @@
+[
+  {
+    "id": "japan-australia-frigate-nagasaki-workload-2026",
+    "agent": "discover",
+    "created_at": "2026-09-06T06:10:00+09:00",
+    "type": "industry",
+    "title": "Nagasaki's naval workload has a new export layer through 2029",
+    "summary": "Hindi lang defense-export headline ang Australia frigate deal. Mitsubishi Heavy Industries now has a signed contract to build the first three upgraded Mogami-class frigates at Nagasaki, with the first ship due in December 2029, while the yard is still completing Japan's current Mogami run and Japan is moving into a follow-on New FFM program. The useful worker signal is a longer naval construction and systems-integration runway, not proof of immediate overtime.",
+    "why_it_matters": "For welders, pipefitters, electrical and control technicians, marine-equipment suppliers, test/commissioning engineers and defense-electronics firms, the export contract adds a clearly dated production program on top of an already active domestic naval pipeline. It can support workload and supplier qualification for years, but automation, scheduling and overseas production of later ships mean the effect will not be uniform across all workers or suppliers.",
+    "importance": 88,
+    "confidence": 92,
+    "tags": ["Japan", "Nagasaki", "shipbuilding", "Mitsubishi Heavy Industries", "Australia", "frigate", "defense industry", "welding", "systems integration", "factory workload"],
+    "geography": ["Nagasaki", "Japan", "Australia"],
+    "status": "NEW",
+    "sources": [
+      {
+        "publisher": "Mitsubishi Heavy Industries",
+        "title": "豪州政府と次期汎用フリゲートの共同開発・生産に関する契約締結",
+        "url": "https://www.mhi.com/jp/news/260418.html",
+        "published_at": "2026-04-18",
+        "source_type": "primary"
+      },
+      {
+        "publisher": "JETRO",
+        "title": "オーストラリア、能力向上型『もがみ』フリゲート3隻について日本と正式契約",
+        "url": "https://www.jetro.go.jp/biznews/2026/05/0855e2aed6313832.html",
+        "published_at": "2026-05-07",
+        "source_type": "official"
+      },
+      {
+        "publisher": "Australian Department of Defence - Ministers",
+        "title": "Australia locks in delivery of our first three general purpose frigates",
+        "url": "https://www.minister.defence.gov.au/media-releases/2026-04-18/australia-locks-delivery-our-first-three-general-purpose-frigates",
+        "published_at": "2026-04-18",
+        "source_type": "official"
+      },
+      {
+        "publisher": "Mitsubishi Heavy Industries",
+        "title": "防衛省向け3,900トン型護衛艦『ながら』を長崎にて引渡し",
+        "url": "https://www.mhi.com/jp/news/26062902.html",
+        "published_at": "2026-06-29",
+        "source_type": "primary"
+      },
+      {
+        "publisher": "Mitsubishi Heavy Industries",
+        "title": "決算短信・決算説明会 - 2026年度第1四半期決算",
+        "url": "https://www.mhi.com/jp/finance/library/result",
+        "published_at": "2026-08-04",
+        "source_type": "filing"
+      },
+      {
+        "publisher": "航空新聞社 WING",
+        "title": "三菱重工第1Q、航空・防衛・宇宙事業が堅調に拡大",
+        "url": "https://www.jwing.net/news/111684",
+        "published_at": "2026-08-05",
+        "source_type": "news"
+      },
+      {
+        "publisher": "NCC長崎文化放送",
+        "title": "【長崎】三菱重工長崎造船所で建造 最新護衛艦『ながら』引渡式",
+        "url": "https://www.ncctv.co.jp/news/article/16683761",
+        "published_at": "2026-06-29",
+        "source_type": "news"
+      }
+    ],
+    "claims": [
+      {
+        "kind": "FACT",
+        "text": "Mitsubishi Heavy Industries signed a contract with the Australian government for three upgraded Mogami-class general-purpose frigates, to be built at MHI's Nagasaki shipyard, with the first delivery targeted for December 2029.",
+        "source_refs": [1,2,3],
+        "basis": "MHI contract announcement corroborated by JETRO and the Australian Defence Minister's official release"
+      },
+      {
+        "kind": "FACT",
+        "text": "Australia's first three ships are to be built in Japan; later ships in the program are planned for construction in Western Australia rather than Japan.",
+        "source_refs": [2,3],
+        "basis": "Official Australian program description and JETRO reporting"
+      },
+      {
+        "kind": "FACT",
+        "text": "The contract is broader than hull fabrication alone: JETRO reports that Mitsubishi Electric separately contracted for onboard systems and NEC is supplying underwater equipment including sonar plus communications/navigation equipment for the three ships.",
+        "source_refs": [2],
+        "basis": "JETRO summary of supplier-level contracts announced with the frigate agreement"
+      },
+      {
+        "kind": "FACT",
+        "text": "Nagasaki was still delivering Japan's current Mogami-class vessels in 2026: MHI delivered the 10th ship, Nagara, on June 29, while local reporting said the 11th and 12th ships were still in outfitting work.",
+        "source_refs": [4,7],
+        "basis": "MHI delivery record corroborated by Nagasaki local reporting"
+      },
+      {
+        "kind": "FACT",
+        "text": "MHI's group first-quarter 2026 order intake reached ¥2.0224 trillion, up ¥413.2 billion year on year; independent aerospace/defense trade reporting said the aircraft-defense-space segment's sales and profit rose as previously booked defense work progressed, despite lower new orders versus a large prior-year comparison.",
+        "source_refs": [5,6],
+        "basis": "MHI filing plus specialist trade reporting on segment composition"
+      },
+      {
+        "kind": "INFERENCE",
+        "text": "The Australia contract extends the visible naval workload runway in Nagasaki beyond completion of the present Mogami run and creates second-order demand in welding, outfitting, electrical/control integration, piping, testing, quality assurance and supplier coordination through the 2029 delivery window.",
+        "source_refs": [1,2,3,4,7],
+        "basis": "Signed three-ship Nagasaki build with a fixed delivery schedule layered onto an active domestic shipbuilding line and multiple onboard-system suppliers"
+      },
+      {
+        "kind": "INFERENCE",
+        "text": "The strongest near-term labor signal is continuity and scheduling pressure rather than guaranteed broad overtime: the yard can use automation, subcontracting and production sequencing, while later Australian ships are explicitly planned to shift to Australia.",
+        "source_refs": [1,2,3,4],
+        "basis": "Program structure supports sustained work but does not disclose staffing, overtime or Japan-only production volumes"
+      }
+    ],
+    "content": {
+      "key_message": "A signed Australian frigate program gives Nagasaki a dated export-production layer through 2029, and the work reaches Japanese electronics and naval-systems suppliers as well as the shipyard itself.",
+      "whats_new": [
+        "The Australia program has moved from selection to signed execution: three upgraded Mogami frigates are contracted for construction at MHI Nagasaki.",
+        "The first delivery is targeted for December 2029, creating a concrete multi-year production clock rather than an open-ended sales prospect.",
+        "The supply chain is already broader than hull steel: JETRO reports separate Australian contracts involving Mitsubishi Electric and NEC for onboard sensing, sonar, communications and navigation systems.",
+        "MHI's existing Japanese defense work is already converting backlog into revenue and profit, so the export program is arriving on top of active work rather than an idle line."
+      ],
+      "hidden_connection": "The visible headline is 'Japan exports warships.' The worker-level connection is different. A frigate is a multi-year integration project: hull blocks and welding are only one layer, followed by piping, cable routing, switchboards, propulsion auxiliaries, weapons/sensor foundations, coatings, inspection, software and combat-system integration, harbor trials and sea trials. Because the first three Australian ships are explicitly assigned to Nagasaki and other Japanese companies have separate equipment contracts, the demand can propagate into marine fabrication, electrical work, precision equipment, testing and supplier QA before the first ship is delivered in 2029.",
+      "evidence_for": [
+        "The three Japanese-built ships are under signed contract, not merely preferred-supplier status or a memorandum about future sales.",
+        "MHI names Nagasaki as the construction site and gives a specific first-delivery target of December 2029.",
+        "JETRO identifies additional Japanese systems suppliers, showing that value and workload extend beyond MHI's hull assembly.",
+        "Nagasaki was still completing domestic Mogami vessels in mid-2026, demonstrating an active naval production base onto which the export work is being layered.",
+        "MHI's latest results show previously booked defense projects progressing into actual sales and profit, supporting the interpretation that the defense backlog is executable work rather than only headline order value."
+      ],
+      "evidence_against": [
+        "Neither MHI nor the cited official releases disclose Nagasaki headcount additions, overtime hours or the exact labor content of the Australian ships, so an immediate OT surge cannot be stated as fact.",
+        "Only the first three frigates are planned to be built in Japan; the subsequent eight are intended for Western Australian construction, limiting how much of the full program becomes Japanese yard work.",
+        "The Australian government states up to A$20 billion of decade investment for the broader general-purpose-frigate program, but that figure is not the contract value of the three Japanese-built ships and includes wider program spending; it should not be treated as Japanese factory revenue.",
+        "Naval production is increasingly automated and modular, so a larger order book does not translate one-for-one into labor hours or employment.",
+        "Defense programs carry schedule, specification, export-control and technology-transfer risks that can alter supplier workload."
+      ],
+      "likely_time_horizon": "Engineering, long-lead procurement and supplier preparation matter now through 2027; hull construction, outfitting and systems integration should become increasingly visible during 2027-2029 if the published delivery schedule holds. The first Australian ship is targeted for December 2029. Follow-on work after that increasingly shifts toward Australian construction and sustainment, although Japanese design, systems and technical-support content may continue.",
+      "who_benefits": [
+        "Nagasaki naval fabrication, welding, outfitting and production-engineering teams",
+        "Marine electrical, cable, panel, piping and auxiliary-equipment suppliers that qualify into MHI's naval supply chain",
+        "Mitsubishi Electric and NEC defense-system teams plus specialized sensor, communications and test suppliers",
+        "Quality, configuration-management, cybersecurity, systems-integration and commissioning engineers",
+        "Japanese firms able to support Australian training, sustainment and technology transfer after ship delivery"
+      ],
+      "who_loses_or_is_left_out": [
+        "Suppliers without defense qualification, documentation discipline or export-control capability may not participate even if located near the shipyard",
+        "General commercial shipbuilding workers cannot assume naval orders automatically transfer to their lines or skills",
+        "Japanese suppliers expecting all 11 Australian ships to be built domestically would be wrong; later hull construction is planned for Western Australia",
+        "Smaller suppliers can face working-capital and compliance pressure if defense requirements expand faster than their staffing or QA systems"
+      ],
+      "skeptical_view": "This is not evidence that every Nagasaki worker will suddenly receive overtime or that Japan captures the whole Australian A$20 billion program. The defensible conclusion is narrower: a signed three-ship export build with a 2029 delivery target adds several years of visible naval workload to Nagasaki and brings multiple Japanese systems suppliers into the program. Labor intensity and supplier distribution still need to be observed rather than assumed.",
+      "what_next": [
+        "MHI disclosures on keel/start-of-construction milestones for the first Australian frigate and whether the December 2029 delivery target changes.",
+        "Nagasaki hiring, subcontractor recruitment, overtime or shift changes specifically tied to naval construction rather than general MHI activity.",
+        "New supplier awards for propulsion auxiliaries, switchboards, cabling, weapons foundations, sensors, coatings, test gear and shipyard automation.",
+        "MHI aircraft-defense-space backlog conversion in the November 2026 half-year results, especially commentary on naval work and capacity constraints.",
+        "Australian decisions on local construction of ships 4-11 and the scale of Japanese engineering, training and sustainment participation after production transfers to Henderson.",
+        "Any delivery slippage, redesign or export-control issue that pushes procurement and fabrication schedules to the right."
+      ],
+      "what_would_change_mind": "The workload thesis would weaken if MHI delays the first ship materially beyond 2029, transfers significant portions of the first three hull builds outside Nagasaki, reports under-utilization rather than capacity pressure, or if supplier awards show that Japanese content is much narrower than current contracts indicate. It would strengthen if MHI or local suppliers disclose hiring, extra shifts, overtime, new tooling or long-lead procurement specifically for the Australian program.",
+      "recommendation": "For workers and engineers, treat the deal as a multi-year demand map rather than an OT promise. The highest-value signals are actual hiring, supplier qualification, tooling, long-lead purchases and build milestones at Nagasaki and its electronics/ship-equipment suppliers. Those will show where the contract is becoming real workload.",
+      "usefulness": "Explains why a defense-export contract can matter to ordinary industrial workers years before delivery and identifies the specific evidence needed to distinguish genuine workload from a political or corporate headline.",
+      "novelty": "Most coverage focuses on the diplomatic significance of Japan exporting frigates. The industrial signal is that the first three ships have a fixed Nagasaki build location and 2029 delivery target while Japanese sensor, sonar, communications and navigation suppliers already have related contracts, creating a broader and longer domestic workload chain.",
+      "impact": {
+        "money": "MED",
+        "family": "LOW",
+        "career": "HIGH",
+        "japan": "HIGH",
+        "urgency": "MED"
+      },
+      "connection_tags": ["defense-capex", "nagasaki-shipbuilding", "naval-systems", "welding-outfitting", "supplier-qualification", "export-production"],
+      "reading_levels": {
+        "30_sec": [
+          "FACT: Australia has signed for three upgraded Mogami frigates to be built at MHI Nagasaki; first delivery is targeted for December 2029.",
+          "FACT: Japanese systems suppliers are also in the program, including Mitsubishi Electric and NEC according to JETRO.",
+          "INFERENCE: this extends visible naval workload into welding, outfitting, electrical integration, test and QA for several years.",
+          "Caution: there is no published proof yet of a broad overtime surge, and ships after the first three are planned for Australian construction."
+        ],
+        "2_min": "The important industrial point is not simply that Japan won a warship export. The first three Australian upgraded Mogami frigates are now under signed contract, MHI says they will be built at Nagasaki, and the first ship is due in December 2029. That creates a concrete production window layered onto a yard that was still delivering and outfitting Japan's own Mogami-class ships in 2026. JETRO also reports separate contracts involving Mitsubishi Electric and NEC for onboard systems, meaning the work spreads into sensors, sonar, communications, navigation and systems integration. For welders, electricians, pipefitters, QA staff and engineers, this supports a multi-year workload thesis. But ALAM does not call it an overtime boom yet: no official source has disclosed extra shifts or OT, automation can absorb some volume, and the later eight Australian ships are planned to be built in Western Australia. Watch hiring, long-lead procurement, subcontractor awards and construction milestones to see where the order turns into actual labor demand."
+      },
+      "learning": {
+        "outcomes": [
+          "Understand why a naval export contract creates work beyond hull fabrication.",
+          "Separate signed production demand from political announcements and large headline program values.",
+          "Know which hiring, supplier and schedule signals would confirm an actual factory workload increase."
+        ],
+        "background": "Modern frigates are systems-integration projects. The hull is fabricated and welded, but a large share of production effort comes later through outfitting: machinery, piping, electrical distribution, communications, sensors, weapons interfaces, software integration, testing and sea trials. Those stages pull in specialized suppliers over several years.",
+        "terms": [
+          {
+            "term": "outfitting / 艤装",
+            "meaning": "Installing and integrating machinery, piping, electrical systems, accommodation, sensors and other equipment after major hull construction.",
+            "why_it_matters": "A launched hull can still represent a large amount of remaining skilled work before delivery."
+          },
+          {
+            "term": "long-lead item",
+            "meaning": "Equipment that must be ordered well before installation because manufacturing, certification or delivery takes a long time.",
+            "why_it_matters": "Long-lead procurement can create supplier workload years before the ship itself is delivered."
+          },
+          {
+            "term": "systems integration",
+            "meaning": "Making propulsion, electrical, sensors, communications, weapons and software function together as one verified ship system.",
+            "why_it_matters": "This is why electronics, test and engineering firms can benefit from a shipbuilding contract even when they do not fabricate hull steel."
+          }
+        ],
+        "how_it_works": [
+          {
+            "title": "A signed ship order triggers engineering and procurement",
+            "explanation": "Design adaptation, documentation and long-lead equipment orders begin before peak hull fabrication."
+          },
+          {
+            "title": "Hull work pulls a fabrication supply chain",
+            "explanation": "Steel processing, welding, blocks, foundations and structural inspection create work inside the yard and among qualified suppliers."
+          },
+          {
+            "title": "Outfitting broadens the workload",
+            "explanation": "Piping, electrical panels, cable routing, sensors, communications and auxiliary machinery add many specialized supplier and technician hours."
+          },
+          {
+            "title": "Testing continues after installation",
+            "explanation": "Harbor tests, integration checks and sea trials require engineering and QA effort up to final delivery, so workload can persist long after the hull is assembled."
+          }
+        ],
+        "example": "A small Japanese company may never build a ship hull. But if it supplies qualified switchboards, cable assemblies, pumps, precision mounts or test fixtures to a naval prime, the Australian frigate schedule can create orders for that company well before the first ship leaves Nagasaki in 2029."
+      }
+    }
+  }
+]
