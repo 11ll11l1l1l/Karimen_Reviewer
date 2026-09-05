@@ -1,0 +1,252 @@
+[
+  {
+    "id": "japan-residence-renewal-fees-oct2026-deadline",
+    "agent": "practical",
+    "created_at": "2026-09-05T10:56:00+09:00",
+    "type": "important",
+    "title": "Major: Japan residence renewal/change fees jump from Oct. 1 — Sept. 30 filing keeps the old fee",
+    "summary": "Japan's Immigration Services Agency says applications for residence-status changes and period renewals accepted from October 1, 2026 will move to a new fee schedule based on the permitted stay. For online applications, the current ¥5,500 fee becomes ¥10,000 to ¥65,000 before payment-processing charges. Applications accepted by September 30 keep the old fee even if approval comes later.",
+    "why_it_matters": "This creates a real deadline for foreign residents whose renewal or status-change filing window is already open. Filing a valid application by September 30 can mean a large difference in administrative cost, especially for longer periods of stay. Do not file early unless you are actually eligible and ready; the useful step is to check your permitted filing window now.",
+    "importance": 99,
+    "confidence": 100,
+    "tags": ["Japan", "Immigration", "Residence Card", "Visa Renewal", "Foreign Residents", "October 2026", "Household Costs"],
+    "geography": ["Japan"],
+    "status": "NEW",
+    "sources": [
+      {
+        "publisher": "Immigration Services Agency of Japan",
+        "title": "令和８年１０月１日付け在留許可手数料の額の改定等について",
+        "url": "https://www.moj.go.jp/isa/01_00644.html",
+        "published_at": "2026-08-28",
+        "source_type": "official"
+      },
+      {
+        "publisher": "Immigration Services Agency of Japan",
+        "title": "オンライン申請における手数料額及び手数料納付方法について（2026年10月1日以降の申請分）",
+        "url": "https://www.moj.go.jp/isa/11_00107.html",
+        "published_at": "2026-08-28",
+        "source_type": "official"
+      },
+      {
+        "publisher": "Immigration Services Agency of Japan",
+        "title": "令和８年１０月１日付け在留許可手数料の額の改定等に関するQ&A",
+        "url": "https://www.moj.go.jp/isa/applications/faq/01_00650.html",
+        "published_at": "2026-08-28",
+        "source_type": "official"
+      }
+    ],
+    "claims": [
+      {
+        "kind": "FACT",
+        "text": "The revised residence-permission fee schedule applies to applications accepted on or after October 1, 2026.",
+        "source_refs": [1, 2, 3],
+        "basis": "Immigration Services Agency official announcement and Q&A"
+      },
+      {
+        "kind": "FACT",
+        "text": "Applications accepted by September 30, 2026 remain subject to the pre-revision fee even if permission is granted after October 1.",
+        "source_refs": [1, 2, 3],
+        "basis": "Immigration Services Agency transition rule"
+      },
+      {
+        "kind": "FACT",
+        "text": "For online change/renewal applications, the current ¥5,500 fee becomes ¥10,000 for a stay of three months or less, ¥15,000 for over three to six months, ¥21,000 for over six months to under one year, ¥27,000 for one year, ¥42,000 for over one to under three years, ¥56,000 for three to under five years, and ¥65,000 for five years or more, plus the stated payment-processing charge.",
+        "source_refs": [2],
+        "basis": "Official online-application fee table"
+      },
+      {
+        "kind": "FACT",
+        "text": "From October 1, online application payments move to convenience-store or bank payment; credit cards and QR-code payment are not supported under the published procedure.",
+        "source_refs": [2],
+        "basis": "Official online payment guidance"
+      }
+    ],
+    "editorial_visual": {
+      "style": "editorial",
+      "motif": "document",
+      "secondary_motif": "calendar",
+      "scene": "a residence card beside a September-to-October calendar and a rising fee receipt",
+      "caption": "September 30 is the key cutoff for the old residence-permission fee",
+      "silliness": 5,
+      "exaggeration": 35
+    },
+    "content": {
+      "key_message": "If your lawful renewal or status-change filing window is already open, check whether filing by September 30 is practical because October 1 changes the fee schedule.",
+      "who_is_affected": "Foreign residents in Japan who will apply for a change of status of residence or extension of period of stay, plus permanent-residence applicants affected by the broader fee revision.",
+      "when": "New schedule: applications accepted October 1, 2026 onward. Old schedule: applications accepted through September 30, 2026.",
+      "financial_impact": "For online change/renewal applications, the published base fee rises from ¥5,500 to a stay-length-based ¥10,000–¥65,000, with an additional payment-processing fee.",
+      "risk_if_ignored": "Someone who is already eligible to file and waits past September 30 may fall under the higher fee schedule. Someone who files before being legally eligible or before documents are ready can create a different problem, so the cutoff is not a reason to submit an invalid or premature application.",
+      "action": "DO NOW",
+      "deadline": "September 30, 2026, but only if your normal filing window is already open and your application can be submitted correctly.",
+      "effort": "Low to medium: confirm your expiry date, filing window and required documents on the official Immigration Services Agency site or with the competent immigration office.",
+      "potential_benefit": "Potentially avoiding a substantial increase in the residence-permission fee for an application you were already eligible to file in September.",
+      "downside": "The exact new amount depends on the permission/stay period and procedure. Do not treat this as advice to submit early outside the permitted filing window.",
+      "usefulness": 100,
+      "novelty": 98,
+      "impact": {"money": "HIGH", "family": "HIGH", "career": "HIGH", "japan": "HIGH", "urgency": "HIGH"},
+      "connection_tags": ["immigration-fees", "residence-renewal", "foreign-residents", "september-deadline", "japan-costs"],
+      "reading_levels": {
+        "30 sec": "Japan changes residence renewal/status-change fees on October 1. Applications accepted by September 30 keep the old fee. If your normal filing window is already open, check now rather than discovering the higher fee later.",
+        "2 min": "Japan's Immigration Services Agency has published a new October 1 fee schedule for residence-status changes and extensions. The transition rule is unusually important: the applicable fee is determined by when the application is accepted, not when the final permission is issued. An application accepted by September 30 stays under the old schedule even if approval comes later. For online change/renewal filings, the present ¥5,500 fee becomes a stay-length-based ¥10,000 to ¥65,000 before processing charges. This is actionable only for people whose lawful filing window is already open and whose documents are ready."
+      }
+    }
+  },
+  {
+    "id": "japan-typhoon24-heavy-rain-sep5-2026",
+    "agent": "practical",
+    "created_at": "2026-09-05T10:56:00+09:00",
+    "type": "risk",
+    "title": "Today: JMA is still tracking heavy rain and strong winds from the front and Typhoon No. 24",
+    "summary": "The Japan Meteorological Agency's current disaster-period dataset covers September 2–5 and attributes the ongoing heavy-rain and strong-wind episode to a front and Typhoon No. 24. This is a short-life safety story: conditions and warnings can change by the hour, so the useful source is JMA's live warning and risk maps rather than yesterday's headline.",
+    "why_it_matters": "Weather stories become dangerous when they remain prominent after conditions change. ALAM should surface this while the event is active, then let it fall away quickly. People in affected areas should rely on current municipal/JMA warnings, especially for flooding, landslide and transport risk.",
+    "importance": 96,
+    "confidence": 100,
+    "tags": ["Japan", "Typhoon 24", "Heavy Rain", "Flooding", "Weather", "Safety", "September 5"],
+    "geography": ["Japan"],
+    "status": "DEVELOPING",
+    "sources": [
+      {
+        "publisher": "Japan Meteorological Agency",
+        "title": "最新の気象データ — 2026年9月2日～9月5日（前線や令和8年台風第24号に伴う大雨や暴風）",
+        "url": "https://www.data.jma.go.jp/stats/data/mdrr/periodstat/index.html",
+        "published_at": "2026-09-05",
+        "source_type": "official"
+      },
+      {
+        "publisher": "Japan Meteorological Agency",
+        "title": "警報・注意報",
+        "url": "https://www.jma.go.jp/bosai/warning/",
+        "published_at": "2026-09-05",
+        "source_type": "official"
+      },
+      {
+        "publisher": "Japan Meteorological Agency",
+        "title": "キキクル（危険度分布）",
+        "url": "https://www.jma.go.jp/bosai/risk/",
+        "published_at": "2026-09-05",
+        "source_type": "official"
+      }
+    ],
+    "claims": [
+      {
+        "kind": "FACT",
+        "text": "JMA is maintaining a special-period dataset for September 2–5, 2026 covering heavy rain and strong winds associated with a front and Typhoon No. 24.",
+        "source_refs": [1],
+        "basis": "JMA current special-period weather dataset"
+      },
+      {
+        "kind": "FACT",
+        "text": "JMA provides live warning/advisory and risk-distribution pages that should be checked for current local conditions.",
+        "source_refs": [2, 3],
+        "basis": "JMA live disaster-information services"
+      }
+    ],
+    "editorial_visual": {
+      "style": "editorial",
+      "motif": "weather",
+      "secondary_motif": "map",
+      "scene": "a Japan weather map under heavy rain bands with a phone showing a live warning screen",
+      "caption": "Use live JMA warnings; this story should age out fast",
+      "silliness": 0,
+      "exaggeration": 20
+    },
+    "content": {
+      "key_message": "Check the live JMA warning/risk map for your location before travel or outdoor plans today; do not rely on a static article for rapidly changing weather.",
+      "who_is_affected": "People in areas under or near heavy rain, flood, landslide or strong-wind warnings/advisories, plus anyone traveling through affected corridors.",
+      "when": "Active September 5, 2026. Recheck live conditions because the situation can change within hours.",
+      "risk_if_ignored": "Outdated weather information can understate or overstate actual local risk. Flooding and landslide danger can also remain after the heaviest rain moves away.",
+      "action": "DO NOW",
+      "deadline": "Today; reassess before each trip or outdoor activity while warnings remain active.",
+      "effort": "Very low: check JMA warnings and Kikikuru for your municipality/route.",
+      "potential_benefit": "Avoiding unnecessary travel into hazardous conditions or identifying when a route/area is no longer under elevated risk.",
+      "downside": "National-level summaries are intentionally broad; local JMA and municipal information overrides this article.",
+      "usefulness": 98,
+      "novelty": 94,
+      "impact": {"money": "MED", "family": "HIGH", "career": "MED", "japan": "HIGH", "urgency": "HIGH"},
+      "connection_tags": ["typhoon24", "heavy-rain", "jma", "flood-risk", "short-life-story"],
+      "reading_levels": {
+        "30 sec": "JMA is still tracking the Sep. 2–5 heavy-rain/strong-wind episode tied to a front and Typhoon No. 24. Check the live warning and Kikikuru maps for your location; this is not a story to keep pinned after conditions change.",
+        "2 min": "JMA's current special-period weather dataset remains active through September 5 for heavy rain and strong winds associated with a front and Typhoon No. 24. The practical point is not to memorize a national forecast: use the live warning/advisory page and Kikikuru risk map for the municipality and route you actually care about. Weather articles should have short shelf lives because both danger and false alarm can result from stale information."
+      }
+    }
+  },
+  {
+    "id": "japan-september-electricity-gas-support-2026",
+    "agent": "practical",
+    "created_at": "2026-09-05T10:56:00+09:00",
+    "type": "saving",
+    "title": "September utility support is still active: standard households are getting automatic electricity/gas discounts",
+    "summary": "Government guidance published September 3 says the July–September electricity and gas support is still being applied automatically. It estimates roughly ¥5,000 of total relief over the three months for a standard household. For September usage, the published discount is ¥3.5/kWh for low-voltage electricity and ¥14.0/m³ for city gas.",
+    "why_it_matters": "This is small compared with rent or food costs, but it is immediate household cash-flow relief and requires no application. It is also a useful bill-check item: households can verify the discount on their monthly statement instead of assuming a separate cash payment will arrive.",
+    "importance": 88,
+    "confidence": 100,
+    "tags": ["Japan", "Electricity", "Gas", "Subsidy", "Household Costs", "September 2026", "Savings"],
+    "geography": ["Japan"],
+    "status": "NEW",
+    "sources": [
+      {
+        "publisher": "Government of Japan Public Relations Office",
+        "title": "まだ暑いから。安心して冷房を使える9月へ。",
+        "url": "https://www.gov-online.go.jp/newspaper/kijishita/202609/newspaper-2057.html",
+        "published_at": "2026-09-03",
+        "source_type": "official"
+      },
+      {
+        "publisher": "Agency for Natural Resources and Energy",
+        "title": "エネルギー価格の支援について",
+        "url": "https://www.enecho.meti.go.jp/category/gekihen_lp/index.html",
+        "published_at": "2026-06-01",
+        "source_type": "official"
+      }
+    ],
+    "claims": [
+      {
+        "kind": "FACT",
+        "text": "Japan's July–September 2026 electricity and gas price support is applied automatically and does not require a household application.",
+        "source_refs": [1, 2],
+        "basis": "Government public-relations and energy-agency guidance"
+      },
+      {
+        "kind": "FACT",
+        "text": "Government guidance estimates about ¥5,000 of total July–September relief for a standard household.",
+        "source_refs": [1],
+        "basis": "September 3 government guidance"
+      },
+      {
+        "kind": "FACT",
+        "text": "For September usage, the published discount is ¥3.5 per kWh for low-voltage electricity and ¥14.0 per cubic meter for city gas.",
+        "source_refs": [1],
+        "basis": "September 3 government guidance"
+      }
+    ],
+    "editorial_visual": {
+      "style": "editorial",
+      "motif": "home",
+      "secondary_motif": "utility-bill",
+      "scene": "a family using air conditioning while an electricity bill shows an automatic government discount line",
+      "caption": "The September discount should appear on the bill automatically",
+      "silliness": 12,
+      "exaggeration": 35
+    },
+    "content": {
+      "key_message": "No application is needed; check your electricity/gas statement to confirm the September support is reflected.",
+      "who_is_affected": "Households covered by the national electricity/gas support program, including ordinary low-voltage residential electricity users and eligible city-gas users.",
+      "when": "Support covers July through September 2026 usage; this article focuses on the September portion.",
+      "financial_impact": "Government guidance estimates about ¥5,000 total over July–September for a standard household. Actual savings vary with usage and contract type.",
+      "risk_if_ignored": "Mostly missed awareness rather than lost eligibility because the discount is automatic. The practical risk is misunderstanding the bill or over-cutting cooling use during continued heat because you expect no support.",
+      "action": "WATCH",
+      "deadline": "Check the statement covering September usage when it arrives.",
+      "effort": "Very low.",
+      "potential_benefit": "Confirming the automatic discount and understanding the actual household energy-cost reduction.",
+      "downside": "The ¥5,000 figure is a standard-household estimate, not a guaranteed payment to every household.",
+      "usefulness": 95,
+      "novelty": 90,
+      "impact": {"money": "MED", "family": "HIGH", "career": "LOW", "japan": "HIGH", "urgency": "LOW"},
+      "connection_tags": ["utility-support", "electricity-bill", "gas-bill", "cost-of-living", "september-2026"],
+      "reading_levels": {
+        "30 sec": "Japan's July–September utility support is still active. No application is needed. September's published residential discount is ¥3.5/kWh for low-voltage electricity and ¥14/m³ for city gas; check the discount on your bill.",
+        "2 min": "The government is still subsidizing household electricity and gas costs through September. The support is applied through bills rather than as a separate application-based payment. September guidance gives a low-voltage electricity discount of ¥3.5/kWh and a city-gas discount of ¥14/m³, and estimates roughly ¥5,000 of total relief across July–September for a standard household. Actual savings depend on use and contract type, so the best verification is the bill itself."
+      }
+    }
+  }
+]
