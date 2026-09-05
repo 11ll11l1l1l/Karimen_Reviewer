@@ -1,0 +1,215 @@
+[
+  {
+    "id": "japan-2026-pension-public-account-45day-consent",
+    "agent": "practical",
+    "created_at": "2026-09-06T03:57:00+09:00",
+    "type": "benefit_admin",
+    "title": "Pension letter alert: no reply can count as consent after 45 days",
+    "summary": "EFFECTIVE: Japan has started sending some pensioners a registered-mail notice about turning their pension bank account into a 公金受取口座 (public-benefit receiving account). Ang unusual fine print: if you receive the notice and want the registration, you do nothing; if you do NOT want it, you must send back the objection. No objection within 45 days can be treated as consent.",
+    "why_it_matters": "This is easy to mistake for ordinary pension mail or a scam, yet ignoring it can have a real administrative consequence. Registration can simplify future government payments, but some people may prefer not to link their pension account for this purpose. Families helping older relatives should know the opt-out logic and the official anti-scam warning.",
+    "importance": 90,
+    "confidence": 98,
+    "tags": [
+      "Japan",
+      "pension",
+      "公金受取口座",
+      "Japan Pension Service",
+      "My Number",
+      "benefits",
+      "scam prevention",
+      "elderly"
+    ],
+    "geography": ["Japan"],
+    "status": "NEW",
+    "sources": [
+      {
+        "publisher": "Japan Pension Service (日本年金機構)",
+        "title": "年金振込口座の公金受取口座登録に関する意向確認書の送付",
+        "url": "https://www.nenkin.go.jp/tokusetsu/ikokakunin.html",
+        "published_at": "2026-08-26",
+        "source_type": "official"
+      },
+      {
+        "publisher": "Digital Agency (デジタル庁)",
+        "title": "よくある質問：年金受給者への意向確認に基づく公金受取口座の登録",
+        "url": "https://www.digital.go.jp/policies/account_registration/faq-registration/pension-confirm",
+        "published_at": "2026-07-28",
+        "source_type": "official"
+      },
+      {
+        "publisher": "Digital Agency (デジタル庁)",
+        "title": "年金口座（年金振込口座）で給付金等が、手続き不要で、より簡単により早く受け取れます",
+        "url": "https://www.digital.go.jp/policies/account_registration/pension",
+        "published_at": "2026-08-13",
+        "source_type": "official"
+      }
+    ],
+    "claims": [
+      {
+        "kind": "FACT",
+        "text": "The special registration process is already in operation, with eligible pensioners receiving registered-mail notices in stages from around August 2026 through February 2027 according to birth date.",
+        "source_refs": [1, 2],
+        "basis": "Japan Pension Service and Digital Agency implementation pages."
+      },
+      {
+        "kind": "FACT",
+        "text": "The main target group is pension recipients who were age 65 or older on April 15, 2026, subject to exclusions including people who already registered a public-benefit receiving account, certain people who received no April pension payment, overseas residents, and some recipients of only mutual-aid pensions.",
+        "source_refs": [1],
+        "basis": "Japan Pension Service eligibility list."
+      },
+      {
+        "kind": "FACT",
+        "text": "If the recipient wants the pension account registered as the public-benefit receiving account, no action is required. If the recipient does not want registration, the objection form must be returned.",
+        "source_refs": [1, 2],
+        "basis": "Official procedure explicitly uses no-action consent and active objection for opt-out."
+      },
+      {
+        "kind": "FACT",
+        "text": "If no objection is returned within 45 days after the intention-confirmation letter is received, the pension account can be treated as having consent for registration.",
+        "source_refs": [1, 2],
+        "basis": "Japan Pension Service states the 45-day no-objection rule; Digital Agency describes a minimum 45-day confirmation period."
+      },
+      {
+        "kind": "FACT",
+        "text": "Japan Pension Service, MHLW and Digital Agency say they will not request bank-account details by phone, SMS or email and will not demand a fee for this process.",
+        "source_refs": [1],
+        "basis": "Official anti-fraud warning on the implementation page."
+      },
+      {
+        "kind": "INFERENCE",
+        "text": "Families who routinely help elderly parents or grandparents with official mail have a practical reason to check registered pension mail promptly because the default outcome differs from many ordinary government forms: silence can produce registration rather than no action.",
+        "source_refs": [1, 2],
+        "basis": "Inference from the opt-out structure and staged registered-mail delivery."
+      }
+    ],
+    "content": {
+      "key_message": "EFFECTIVE na ito: may pensioners na makakatanggap ng registered mail kung saan ang 'yes' means no action, while 'no' requires returning the objection. Kapag natanggap mo ang notice at walang objection within 45 days, puwedeng ma-treat iyon as consent.",
+      "policy_status": "EFFECTIVE — the special administrative registration scheme started in 2026 and notices are being mailed in stages from around August 2026 through February 2027.",
+      "who_is_affected": "Primarily pension recipients who were age 65 or older on April 15, 2026 and do not already have a qualifying public-benefit receiving account registration, subject to the official exclusions. Family members who help older relatives manage official Japanese mail should also pay attention.",
+      "when": "Mailing is staged by birth date. Japan Pension Service lists approximate waves from August 2026 for the younger eligible group through February 2027 for the oldest group. The critical personal clock is 45 days after receipt of the intention-confirmation letter.",
+      "financial_impact": "No direct fee or automatic cash payment. The benefit is administrative: a registered 公金受取口座 can simplify receipt of many government payments and reduce repeated bank-account paperwork. The main downside is unwanted registration or sharing of account-registration data if the recipient actually preferred not to register.",
+      "risk_if_ignored": "HIGH for someone who does not want registration, because failing to return the objection within the confirmation period can be treated as consent. There is also scam risk because fraudsters can imitate a real government campaign.",
+      "action": "CHECK_MAIL",
+      "deadline": "If you receive the official intention-confirmation letter and do not want the pension account registered, return the objection by the deadline shown in the letter; the official rule uses a 45-day confirmation period after receipt.",
+      "effort": "LOW",
+      "potential_benefit": "Simpler future government-payment processing for people who want the registration, plus avoidance of unintended registration for those who do not.",
+      "downside": "Registration is optional. People who do not want their pension account used as the public-benefit receiving account must actively object within the stated period.",
+      "what_to_do_now": "If you or an older family member receives registered mail from Japan Pension Service about 公金受取口座, open and read it promptly. Confirm whether the listed pension account is correct and decide whether registration is actually wanted. If yes, the official process generally requires no reply. If no, return the objection form within the stated period.",
+      "what_to_wait_for": "Do not send bank information or money in response to unsolicited calls, SMS or email. If no official letter has arrived and you are unsure whether someone is in the target group, wait for the scheduled registered mail or verify through the official Japan Pension Service/Digital Agency channels.",
+      "common_mistake": "Assuming 'no reply' means nothing happens. In this specific scheme, after the official letter is received, no objection within the confirmation period can be treated as consent to register the pension account.",
+      "strongest_counterinterpretation": "For people who already want a public-benefit receiving account, the no-action path is intentionally convenient and reduces paperwork. Registration does not itself change the amount of pension paid, and people who never receive the intention-confirmation letter are not automatically registered through this particular process.",
+      "what_would_change_mind": "A revised Japan Pension Service or Digital Agency FAQ changing the 45-day consent mechanism, eligibility scope, mailing schedule or opt-out procedure would require an update. Evidence that the scheme was suspended or materially redesigned would also change the conclusion.",
+      "usefulness": 95,
+      "novelty": 93,
+      "impact": {
+        "money": "LOW",
+        "family": "HIGH",
+        "career": "LOW",
+        "japan": "HIGH",
+        "urgency": "HIGH"
+      },
+      "connection_tags": [
+        "pension-mail",
+        "public-benefit-account",
+        "my-number",
+        "older-family",
+        "scam-prevention"
+      ],
+      "reading_levels": {
+        "30 sec": {
+          "what_happened": "Japan started a special process to register some pensioners' pension bank accounts as 公金受取口座.",
+          "why_it_matters": "The unusual part: wanting registration requires no action, while refusing requires an objection. After receipt, 45 days without objection can count as consent.",
+          "what_to_do_watch": "Open registered pension mail promptly. If you do not want registration, return the objection by the stated deadline. Never give bank details or pay fees through phone/SMS/email.",
+          "bottom_line": "This is real government mail, but the safest response is to verify the letter and understand that silence can have an administrative effect."
+        },
+        "2_min": "FACT: Japan Pension Service is mailing eligible pensioners in stages from around August 2026 to February 2027. If the person wants the pension account registered as a public-benefit receiving account, no reply is needed. If the person does not want registration, an objection must be returned. Japan Pension Service states that if the objection is not returned within 45 days after receipt, the account can be treated as consented for registration. FACT: officials also warn that they will never ask for account details by phone, SMS or email and will never charge a fee. INFERENCE: this is especially important for families helping older relatives because ignoring ordinary-looking government mail can produce a result the recipient did not intend."
+      },
+      "learning": {
+        "outcomes": [
+          "Recognize the new pension-account registration letter and understand its opt-out structure.",
+          "Know the 45-day consequence of not returning an objection after receiving the letter.",
+          "Distinguish official procedure from scams asking for bank information or fees."
+        ],
+        "background": "A 公金受取口座 is a bank account registered for receiving government payments. The 2026 special process lets eligible pension recipients use their existing pension-payment account without completing the usual separate registration flow. The government chose an intention-confirmation model in which the recipient is mailed the information first and can object if they do not want registration.",
+        "terms": [
+          {
+            "term": "公金受取口座",
+            "meaning": "A bank account registered for receiving eligible government payments and benefits.",
+            "why_it_matters": "It can reduce repeated account-entry and proof-of-account steps for future payments."
+          },
+          {
+            "term": "意向確認書",
+            "meaning": "The official intention-confirmation document sent by Japan Pension Service under this special registration process.",
+            "why_it_matters": "Receiving it starts the practical decision process and the objection window."
+          },
+          {
+            "term": "不同意申出書",
+            "meaning": "The objection form for people who do not want the pension account registered as the public-benefit receiving account.",
+            "why_it_matters": "This is the key document that must be returned if the recipient wants to refuse registration."
+          }
+        ],
+        "how_it_works": [
+          {
+            "title": "Registered mail arrives",
+            "explanation": "Japan Pension Service sends the intention-confirmation package by registered mail to eligible recipients according to the published mailing schedule."
+          },
+          {
+            "title": "Want registration? Usually do nothing",
+            "explanation": "If the listed pension account is correct and the recipient wants it registered, the official process says no response is required."
+          },
+          {
+            "title": "Do not want registration? Act",
+            "explanation": "The objection form must be returned. If no objection is returned within the confirmation period after receipt, the account can be processed as consented for registration."
+          }
+        ],
+        "example": "Example: an eligible pensioner receives the registered letter on September 10 and actually prefers not to register the pension account. Leaving the envelope untouched is not a safe choice; the person should follow the objection instructions and return the form within the deadline shown in the letter.",
+        "takeaways": [
+          "This is an active government process, not merely a proposal.",
+          "No-action can mean consent in this specific scheme.",
+          "The relevant period is tied to receipt of the intention-confirmation letter.",
+          "Not everyone age 65+ receives the letter; official exclusions apply.",
+          "Officials will not request account details or fees through phone, SMS or email."
+        ]
+      },
+      "action_plan": {
+        "goal": "Avoid unintended registration while preserving the convenience for people who actually want the public-benefit receiving account.",
+        "who_should_act": "Eligible pension recipients and family members who help them with Japanese administrative mail.",
+        "deadline": "The objection deadline shown in the received letter; official guidance describes a 45-day confirmation period after receipt.",
+        "prepare": [
+          "The original Japan Pension Service registered-mail package",
+          "The account information printed in the notice",
+          "The enclosed objection form if refusing registration"
+        ],
+        "steps": [
+          {
+            "step": "Verify the mail",
+            "action": "Confirm the sender is Japan Pension Service and compare the package with the official sample if anything looks suspicious.",
+            "how": "Use the official Japan Pension Service website directly rather than a link from an SMS or email.",
+            "needed": ["official envelope", "Japan Pension Service website"],
+            "time_minutes": 5,
+            "cost_yen": 0,
+            "done_when": "You are satisfied the notice is genuine."
+          },
+          {
+            "step": "Decide whether you want registration",
+            "action": "Check the printed bank account and decide whether you want that account used as the public-benefit receiving account.",
+            "how": "If yes, follow the no-action consent path. If no, prepare the objection form.",
+            "needed": ["notice", "account details"],
+            "time_minutes": 5,
+            "cost_yen": 0,
+            "done_when": "The recipient's preference is clear."
+          },
+          {
+            "step": "Return the objection if refusing",
+            "action": "Send the official objection form within the stated period if you do not want registration.",
+            "how": "Use the enclosed instructions and return method. Do not substitute phone/SMS/email bank discussions for the official process.",
+            "needed": ["objection form", "enclosed return instructions"],
+            "time_minutes": 10,
+            "cost_yen": 0,
+            "done_when": "The objection has been sent using the official method."
+          }
+        ]
+      }
+    }
+  }
+]
