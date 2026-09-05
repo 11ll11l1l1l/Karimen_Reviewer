@@ -1,0 +1,245 @@
+[
+  {
+    "id": "japan-2026-foreign-highschool-tuition-support-carveout",
+    "agent": "practical",
+    "created_at": "2026-09-06T05:10:00+09:00",
+    "type": "education_benefit",
+    "title": "Foreign families: Japan's new high-school support has a visa-status carve-out",
+    "summary": "FACT: Japan expanded high-school tuition support from April 2026, but foreign students do not all enter the same scheme. Some residence statuses qualify for the main income-limit-free support, while other foreign students must rely on transition or separate income-tested support instead.",
+    "why_it_matters": "Madaling marinig ang 'high school is now free regardless of income' at isipin automatic iyon sa lahat. For foreign families, the student's nationality, residence status, when they entered high school, and in some cases Japanese-school history can change the support route and the maximum amount. Missing the correct school paperwork can mean paying tuition that may have been supportable.",
+    "importance": 91,
+    "confidence": 98,
+    "tags": ["Japan", "high school", "education", "foreign residents", "family stay", "tuition support", "Ibaraki", "benefits"],
+    "geography": ["Japan", "Ibaraki"],
+    "status": "NEW",
+    "sources": [
+      {
+        "publisher": "Ministry of Education, Culture, Sports, Science and Technology (文部科学省)",
+        "title": "高等学校等就学支援金制度等及び高等教育の修学支援新制度の周知について（通知）（令和8年5月29日）",
+        "url": "https://www.mext.go.jp/a_menu/shotou/career/05010502/1408866_00005.htm",
+        "published_at": "2026-05-29",
+        "source_type": "official"
+      },
+      {
+        "publisher": "Ministry of Education, Culture, Sports, Science and Technology (文部科学省)",
+        "title": "高等学校等就学支援金制度に関するQ＆A",
+        "url": "https://www.mext.go.jp/a_menu/shotou/mushouka/1342600.htm",
+        "published_at": "2026",
+        "source_type": "official"
+      },
+      {
+        "publisher": "Ibaraki Prefectural Board of Education (茨城県教育委員会)",
+        "title": "私立高等学校等の生徒に対する就学支援",
+        "url": "https://kyoiku.pref.ibaraki.jp/gakko/private-schools/school-attendance-support/",
+        "published_at": "2026",
+        "source_type": "official"
+      },
+      {
+        "publisher": "Ibaraki Prefectural Board of Education (茨城県教育委員会)",
+        "title": "私立高等学校等の外国籍生徒及び外国人学校の生徒に対する就学支援",
+        "url": "https://kyoiku.pref.ibaraki.jp/gakko/private-schools/school-attendance-support/page-40378/",
+        "published_at": "2026",
+        "source_type": "official"
+      },
+      {
+        "publisher": "Government Public Relations Office (政府広報オンライン)",
+        "title": "令和8年度から、高校生等の修学支援が新しくなりました",
+        "url": "https://www.gov-online.go.jp/tokusyu/mushouka_r8/index_html.html",
+        "published_at": "2026-09-02",
+        "source_type": "official"
+      }
+    ],
+    "claims": [
+      {
+        "kind": "FACT",
+        "text": "From April 1, 2026, the national high-school tuition support system removed the household-income limit and raised the private full-time high-school support ceiling to ¥457,200 per year, subject to actual tuition and school-type limits.",
+        "source_refs": [1, 5],
+        "basis": "MEXT implementation notice and September 2026 government public-information summary."
+      },
+      {
+        "kind": "FACT",
+        "text": "The 2026 reform also introduced nationality and residence-status eligibility rules. Ibaraki's official implementation lists eligible foreign students as Special Permanent Residents; Permanent Resident-type statuses including Permanent Resident and spouses of Japanese/permanent residents; certain Long-Term Residents intending to remain in Japan permanently; and certain Family Stay students who completed Japanese elementary and junior high school and intend to work and remain in Japan after high school or later study.",
+        "source_refs": [1, 3],
+        "basis": "MEXT implementation notice and Ibaraki Prefectural Board of Education implementation page."
+      },
+      {
+        "kind": "FACT",
+        "text": "Foreign students excluded from the new main scheme are not automatically left with zero support. Students already enrolled by March 31, 2026 can continue under statutory transition rules at roughly the old support level, while new entrants from April 1, 2026 who are outside the main scheme can qualify for the separate 高校生等・新修学支援 if they meet its conditions; students with residence status 留学 are excluded from that new-entrant support route.",
+        "source_refs": [1, 2, 4],
+        "basis": "MEXT notification/Q&A and Ibaraki's foreign-student support page."
+      },
+      {
+        "kind": "FACT",
+        "text": "For Ibaraki private-school students outside the new main scheme, the separate 2026 support is income-tested: up to ¥396,000 per year for households around under ¥5.9 million annual income, and ¥118,800 for households around ¥5.9 million to under ¥9.1 million. Ibaraki also preserves ¥118,800 for certain students who were already enrolled by March 31, 2026 even above that income range.",
+        "source_refs": [4],
+        "basis": "Ibaraki Prefectural Board of Education published support schedule; income figures are approximate household-income guides, not universal eligibility tests."
+      },
+      {
+        "kind": "FACT",
+        "text": "MEXT says application methods and deadlines vary by school and prefecture. For 2026, MEXT's e-Shien page states that online application is available for Japanese-national students, while foreign-national applications generally require the school/prefecture's separate document process.",
+        "source_refs": [2, 5],
+        "basis": "MEXT application guidance and government summary."
+      },
+      {
+        "kind": "INFERENCE",
+        "text": "Foreign families are at higher risk of missing support because the public shorthand 'income limit abolished' hides a second eligibility test based on nationality/residence status and can route students into a different application channel.",
+        "source_refs": [1, 2, 3, 4, 5],
+        "basis": "Inference from the coexistence of income-limit removal, new residence-status rules, transition measures and different application routes."
+      }
+    ],
+    "content": {
+      "key_message": "If your high-school student is not a Japanese national, do not assume the new 2026 tuition support applies automatically in the same way. Check the student's exact 在留資格 and which 2026 support route the school has assigned.",
+      "policy_status": "EFFECTIVE — the revised national high-school tuition-support law took effect April 1, 2026. The nationality/residence-status rules, transition arrangements and separate 2026 support are already being implemented by schools and prefectures.",
+      "who_is_affected": "Foreign-national high-school students and their parents/guardians, especially students on 家族滞在 (Family Stay), 定住者 (Long-Term Resident), 留学 (Student), students in foreign schools, and families whose child entered high school in April 2026. Japanese-national students are not affected by this carve-out.",
+      "when": "Effective for the 2026 school year from April 1, 2026. The key transition date is March 31, 2026: students already enrolled by that date can retain old-system-style support in cases where the reform would otherwise exclude them; students entering from April 1 are assessed under the new rules and, if outside the main scheme, may need the separate 新修学支援 route.",
+      "financial_impact": "For ordinary private full-time high schools, the main new national scheme can cover up to ¥457,200/year. In Ibaraki, a foreign student outside that main scheme may instead fall under separate support of up to ¥396,000/year for roughly under-¥5.9M households or ¥118,800/year for roughly ¥5.9M–under-¥9.1M households, subject to the published eligibility rules and actual tuition. That difference can be tens or hundreds of thousands of yen per school year.",
+      "risk_if_ignored": "HIGH for an affected family. The biggest risk is not knowing that a different residence-status rule or form applies and assuming the school will automatically grant the same support advertised for the general population.",
+      "action": "DO NOW",
+      "deadline": "There is no single national September deadline. Application windows and school cutoffs differ by prefecture and school, so affected families should confirm their own school's 2026 status now rather than relying on a national date.",
+      "effort": "LOW_TO_MEDIUM",
+      "potential_benefit": "Confirming the correct scheme can preserve substantial tuition support and can reveal a fallback route even when the student is excluded from the headline income-limit-free scheme.",
+      "downside": "Some foreign students genuinely receive less support than students in the new main scheme, and students entering from April 2026 with residence status 留学 are excluded from the separate new-entrant support described by MEXT. Eligibility can also depend on facts such as Japanese elementary/junior-high completion and intent to remain/work in Japan for certain 家族滞在 students.",
+      "common_mistake": "Hearing '所得制限撤廃' and concluding that nationality, residence status and application route no longer matter. The income test was removed from the main scheme, but a residence-status test was added.",
+      "what_remains_uncertain": "Exact application dates, forms, supporting documents and payment timing are administered by schools/prefectures and therefore vary locally. Ibaraki's published amounts are not a national substitute for every prefecture's implementation. Families should use their own school/prefecture notice for the operative procedure.",
+      "what_would_change_mind": "A MEXT rule change removing or materially broadening the residence-status restrictions, a later law eliminating the separate support distinction, or prefectural guidance showing that a cited local support amount has changed would require an update.",
+      "usefulness": 96,
+      "novelty": 93,
+      "impact": {
+        "money": "HIGH",
+        "family": "HIGH",
+        "career": "LOW",
+        "japan": "MED",
+        "urgency": "HIGH"
+      },
+      "connection_tags": ["foreign-family", "education-cost", "residence-status", "high-school", "benefit-eligibility"],
+      "reading_levels": {
+        "30 sec": {
+          "what_happened": "Japan expanded high-school tuition support in April 2026, but foreign students now face a nationality/residence-status eligibility test.",
+          "why_it_matters": "A foreign student can be routed to the main support, an old-system transition, or a separate income-tested support scheme depending on visa/status and enrollment timing.",
+          "what_to_do_watch": "Ask the school which scheme your child is registered under and whether any 2026 form is still outstanding. Do not rely on the phrase 'income limit abolished.'",
+          "bottom_line": "May support pa rin for many excluded foreign students, pero hindi pareho ang route or amount. The visa-status check matters."
+        },
+        "2_min": "FACT: the 2026 reform removed the household-income ceiling from the main high-school tuition support system and raised the private full-time ceiling to ¥457,200/year. FACT: it also added nationality/residence-status eligibility. Ibaraki's official implementation includes permanent-resident-type statuses, qualifying Long-Term Residents, and a narrower route for Family Stay students who completed Japanese elementary and junior high school and intend to remain/work in Japan. FACT: students pushed outside the new main system can still have transition or separate support; for April-2026 new entrants the separate route excludes residence status 留学. INFERENCE: foreign families can miss money not because there is no support, but because the headline 'free high school regardless of income' hides which program and paperwork actually applies."
+      },
+      "learning": {
+        "outcomes": [
+          "Understand why the 2026 'income limit abolished' headline does not mean identical eligibility for every foreign student.",
+          "Identify the three practical routes: main support, old-system transition, or separate 新修学支援.",
+          "Know what to ask the school so the family can verify its 2026 support status."
+        ],
+        "background": "Japan's 高等学校等就学支援金 is a government tuition-support payment for eligible high-school students. From April 2026, the main scheme became much more generous and removed its household-income limit. At the same time, however, the law and implementing rules narrowed who qualifies based on nationality and residence status. To avoid abruptly cutting off some students, the government also created transition rules and a separate support program for certain students outside the main scheme.",
+        "terms": [
+          {
+            "term": "高等学校等就学支援金",
+            "meaning": "National government support applied toward eligible high-school tuition; it is not cash that families can freely spend.",
+            "why_it_matters": "This is the main scheme whose income limit was removed in April 2026."
+          },
+          {
+            "term": "高校生等・新修学支援",
+            "meaning": "A separate 2026 support route for certain students who are outside the newly revised main tuition-support scheme.",
+            "why_it_matters": "Being excluded from the headline main scheme does not necessarily mean zero assistance."
+          },
+          {
+            "term": "家族滞在",
+            "meaning": "Family Stay residence status, commonly used by dependent spouses/children of eligible foreign residents.",
+            "why_it_matters": "Under the new main high-school support rules, Family Stay students must meet additional conditions rather than qualifying solely because they live in Japan."
+          }
+        ],
+        "how_it_works": [
+          {
+            "title": "First check the student's legal route",
+            "explanation": "The school/prefecture first determines whether the student fits the new main scheme's nationality/residence-status rules. Income alone no longer decides entry to the main scheme."
+          },
+          {
+            "title": "If excluded, enrollment date matters",
+            "explanation": "Students already enrolled by March 31, 2026 can receive transition treatment in cases covered by the law. Students newly entering from April 1, 2026 may instead use the separate 新修学支援 if eligible."
+          },
+          {
+            "title": "The fallback can pay less",
+            "explanation": "The main private full-time ceiling is up to ¥457,200/year. In Ibaraki's separate support, published amounts for affected foreign students depend on household-income bands and can be lower, so knowing which route applies changes the family's expected tuition bill."
+          }
+        ],
+        "example": "Example: two students at the same Ibaraki private high school can have the same tuition and household income but different support routes if one is a qualifying permanent resident and the other is a new entrant outside the main residence-status rules. The first may fall under the income-limit-free main scheme; the second may need the separate income-tested support instead.",
+        "takeaways": [
+          "The 2026 expansion is already effective.",
+          "Income limits disappeared from the main scheme, but residence-status rules were added.",
+          "Family Stay does not automatically mean ineligible, but extra conditions apply.",
+          "Students outside the main scheme may still have transition or separate support.",
+          "Your school's classification and paperwork—not a national headline—determines what you actually receive."
+        ]
+      },
+      "action_plan": {
+        "goal": "Confirm the student's correct 2026 tuition-support scheme and avoid losing available support because of the wrong assumption or missing school paperwork.",
+        "who_should_act": "Parents/guardians of a foreign-national high-school student in Japan, especially if the child has 家族滞在, 定住者, 留学 or another status and the family is unsure which 2026 scheme applies. Japanese-national students can ignore this specific carve-out check.",
+        "deadline": "Use the deadline set by the student's school/prefecture. There is no single national deadline applicable to every student.",
+        "prepare": [
+          "Student's residence card and exact 在留資格",
+          "School's 2026 tuition-support notice or application packet",
+          "Whether the student was already enrolled on March 31, 2026 or entered on/after April 1, 2026",
+          "For 家族滞在, the student's Japanese elementary/junior-high school history if the school asks to verify the main-scheme conditions",
+          "Any income/tax documents requested by the school if the student is being assessed for a separate income-tested support scheme"
+        ],
+        "steps": [
+          {
+            "step": "Confirm the exact scheme name",
+            "action": "Ask the high-school office which 2026 tuition-support program the student is currently classified under: 高等学校等就学支援金, an old-system transition, 高校生等・新修学支援, or none.",
+            "how": "Use the school's administrative/student-affairs office or the prefectural education/private-school support contact identified by the school.",
+            "needed": ["Residence status", "Enrollment date"],
+            "time_minutes": 10,
+            "cost_yen": 0,
+            "done_when": "The school gives you the scheme name or confirms that eligibility is still under review."
+          },
+          {
+            "step": "Check whether paperwork is complete",
+            "action": "Ask whether any 2026 application, residence-status evidence, income document or re-application is still outstanding and what the school's own deadline is.",
+            "how": "Follow the school's written instructions; do not assume the Japanese-national e-Shien process is the correct route for a foreign-national student in 2026.",
+            "needed": ["School notice/application packet"],
+            "time_minutes": 10,
+            "cost_yen": 0,
+            "done_when": "The school confirms there are no outstanding documents or gives a specific list and deadline."
+          },
+          {
+            "step": "Verify the expected support amount",
+            "action": "Ask the school what annual/monthly support amount is expected under the student's actual route and whether tuition is temporarily billed before support is credited.",
+            "how": "Compare the school's answer with your prefecture's official support page if needed.",
+            "needed": ["Scheme name", "Tuition amount"],
+            "time_minutes": 10,
+            "cost_yen": 0,
+            "done_when": "You know the expected support ceiling and whether/when the school will offset tuition."
+          }
+        ],
+        "mistakes_to_avoid": [
+          "Assuming 'income limit abolished' means residence status no longer matters.",
+          "Assuming exclusion from the main scheme means there is no fallback support.",
+          "Using another prefecture's income bands or deadline as if they automatically apply to your school.",
+          "Waiting for an automatic payment without confirming that the school has a completed application.",
+          "Assuming every foreign student can use the same 2026 e-Shien workflow as a Japanese-national student."
+        ],
+        "decision_rules": [
+          {
+            "if": "the school confirms the student is already approved under the main scheme and all paperwork is complete",
+            "then": "No extra action is needed beyond keeping the approval/tuition notice and checking that the support is reflected correctly."
+          },
+          {
+            "if": "the student is excluded from the main scheme",
+            "then": "Ask specifically whether transition support or 高校生等・新修学支援 applies before accepting a full-tuition bill as final."
+          },
+          {
+            "if": "the student's residence status is 留学 and the student entered from April 1, 2026",
+            "then": "Do not assume the separate new-entrant support applies; MEXT's Q&A excludes that category, so ask the school about any other prefectural/school assistance."
+          }
+        ],
+        "follow_up": "Keep the school's written eligibility result and tuition statement. Re-check whenever the student's residence status changes, the family changes school/prefecture, or MEXT/prefecture issues revised 2026–2027 guidance."
+      },
+      "editorial_visual": {
+        "style": "editorial",
+        "motif": "document",
+        "secondary_motif": "family",
+        "scene": "a family facing three clearly different paper pathways leading to the same Japanese high-school building, with a residence card icon acting like a switch that redirects the path",
+        "caption": "Same school, different support route",
+        "silliness": 18,
+        "exaggeration": 58
+      }
+    }
+  }
+]
