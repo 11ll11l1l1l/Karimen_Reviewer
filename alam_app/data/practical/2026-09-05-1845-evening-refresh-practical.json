@@ -1,0 +1,126 @@
+[
+  {
+    "id": "tepco-wheeling-tariff-nov2026-approved",
+    "agent": "practical",
+    "created_at": "2026-09-05T18:45:00+09:00",
+    "type": "important",
+    "title": "Kanto electricity: TEPCO grid fee increase is approved for Nov. 1; household bills could rise up to ¥239 if passed through",
+    "summary": "Tokyo Electric Power Grid says its revised wheeling-revenue plan was approved on September 4. The higher network charge starts November 1; Kyodo reports that, if a retailer passes the increase through, a standard household bill could rise by as much as ¥239 per month.",
+    "why_it_matters": "This is no longer only a proposal. It affects the TEPCO grid area, including much of Kanto, so households should watch their retailer's October/November tariff notice rather than assuming the full ¥239 applies automatically.",
+    "importance": 94,
+    "confidence": 98,
+    "tags": ["Japan", "Kanto", "Electricity", "TEPCO", "Household Costs", "November 2026"],
+    "geography": ["Japan", "Kanto"],
+    "status": "CONFIRMED",
+    "sources": [
+      {"publisher": "Tokyo Electric Power Company", "title": "「託送供給等に係る収入の見通し」の承認について", "url": "https://www.tepco.co.jp/press/", "published_at": "2026-09-04", "source_type": "primary"},
+      {"publisher": "Kyodo News", "title": "東電、11月託送料値上げ　電気代最大239円上昇", "url": "https://news.livedoor.com/article/detail/32242607/", "published_at": "2026-09-04", "source_type": "news"}
+    ],
+    "claims": [
+      {"kind": "FACT", "text": "Tokyo Electric Power Grid announced on September 4 that its revised wheeling-revenue outlook had been approved.", "source_refs": [1], "basis": "TEPCO press-release listing"},
+      {"kind": "FACT", "text": "The network-charge increase is scheduled to take effect on November 1, 2026.", "source_refs": [2], "basis": "Kyodo report"},
+      {"kind": "FACT", "text": "Kyodo reported that a standard household bill could rise by up to ¥239 per month if the retail electricity supplier passes the increase through.", "source_refs": [2], "basis": "Kyodo report"}
+    ],
+    "content": {
+      "who_is_affected": "Households and businesses supplied over the TEPCO Power Grid network; the exact retail-bill impact depends on the electricity retailer and contract.",
+      "when": "Network charge change: November 1, 2026.",
+      "financial_impact": "Potential retail impact reported at up to ¥239/month for a standard household if fully passed through; actual impact may be lower, different, or absorbed by the retailer.",
+      "risk_if_ignored": "Households may miss a tariff change or fail to compare plans before winter electricity usage rises.",
+      "action": "WATCH",
+      "deadline": "Check your retailer's tariff notice before the November billing cycle.",
+      "effort": "Low: review the electricity retailer's October/November notice and compare the new unit/standing charges with the current plan.",
+      "potential_benefit": "Avoid being surprised by a recurring bill increase and identify whether switching plans is worthwhile.",
+      "downside": "The ¥239 figure is not a guaranteed increase for every household; it depends on retailer pass-through and usage.",
+      "usefulness": 96,
+      "novelty": 91,
+      "impact": {"money": "MED", "family": "MED", "career": "LOW", "japan": "HIGH", "urgency": "MED"},
+      "connection_tags": ["kanto-electricity", "household-costs", "network-fees", "winter-bills"],
+      "reading_levels": {
+        "30_sec": "TEPCO's grid-fee revision has been approved for November 1. If your retailer passes it through, a standard household could pay up to ¥239 more per month. Check the actual notice from your electricity retailer because the increase is not automatically identical for every plan.",
+        "2_min": "The important change is status: the TEPCO grid charge is no longer just under review. Approval was announced September 4 and the higher network charge starts November 1. Retail suppliers decide how much of that cost reaches customers. Kyodo's estimate is up to ¥239/month for a standard household if fully passed through. For Kanto residents, the useful action is to read the retailer's October/November tariff notice and compare the new total plan cost before winter."
+      }
+    }
+  },
+  {
+    "id": "ibaraki-influenza-week35-2026-rise",
+    "agent": "practical",
+    "created_at": "2026-09-05T18:45:00+09:00",
+    "type": "health_alert",
+    "title": "Ibaraki flu is rising again after summer break: cases per sentinel climbed to 2.10, with children under 10 most affected",
+    "summary": "Ibaraki Prefecture's week-35 surveillance says influenza reports rose to 2.10 per sentinel from 1.76 the previous week. Children under 10 remain the largest age group, while group outbreaks at child-related facilities and influenza hospitalizations are also increasing.",
+    "why_it_matters": "School and kindergarten routines are restarting, increasing close-contact opportunities. This is a local, current signal for families in Ibaraki rather than a generic winter reminder.",
+    "importance": 93,
+    "confidence": 100,
+    "tags": ["Ibaraki", "Influenza", "Children", "School", "Family", "Health"],
+    "geography": ["Japan", "Ibaraki"],
+    "status": "DEVELOPING",
+    "sources": [
+      {"publisher": "Ibaraki Prefecture", "title": "感染症流行情報（週報）2026年第35週", "url": "https://www.pref.ibaraki.jp/hokenfukushi/eiken/idwr/weekly/", "published_at": "2026-09-03", "source_type": "official"},
+      {"publisher": "Ministry of Health, Labour and Welfare", "title": "インフルエンザに関する報道発表資料 2025/2026シーズン", "url": "https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/kenkou_iryou/kenkou/kekkaku-kansenshou01/houdou_00023.html", "published_at": "2026-09-04", "source_type": "official"}
+    ],
+    "claims": [
+      {"kind": "FACT", "text": "Ibaraki's influenza reports rose to 2.10 per sentinel in epidemiological week 35 from 1.76 in the prior week.", "source_refs": [1], "basis": "Ibaraki Prefecture weekly surveillance"},
+      {"kind": "FACT", "text": "Children under 10 remained the largest reported age group, and reports of group outbreaks at child-related facilities increased.", "source_refs": [1], "basis": "Ibaraki Prefecture weekly surveillance commentary"},
+      {"kind": "FACT", "text": "Ibaraki Prefecture also reported an increase in influenza hospitalizations across a broad age range.", "source_refs": [1], "basis": "Ibaraki Prefecture weekly surveillance commentary"}
+    ],
+    "content": {
+      "who_is_affected": "Families, schools, kindergartens, childcare facilities, workplaces and people at higher risk of severe influenza in Ibaraki.",
+      "when": "Week 35 surveillance covering August 24-30, published September 3; school activity has resumed after summer break.",
+      "risk_if_ignored": "School-linked spread may accelerate and vulnerable household members can be exposed before families realize influenza activity is already elevated.",
+      "action": "PREPARE",
+      "effort": "Low: reinforce handwashing, ventilation and cough etiquette; avoid school/work when unwell, and watch school or municipal notices.",
+      "potential_benefit": "Reducing household and school transmission, especially to high-risk family members.",
+      "downside": "The surveillance rate is a population signal, not a prediction that an individual child or school will be infected.",
+      "usefulness": 98,
+      "novelty": 94,
+      "impact": {"money": "LOW", "family": "HIGH", "career": "MED", "japan": "MED", "urgency": "HIGH"},
+      "connection_tags": ["ibaraki-flu", "school-reopening", "child-health", "seasonal-infection"],
+      "reading_levels": {
+        "30_sec": "Ibaraki's flu rate rose from 1.76 to 2.10 per sentinel. Under-10s are the largest age group and child-facility outbreaks are increasing. With school back, families should treat this as an active local signal now.",
+        "2_min": "Ibaraki's latest official weekly surveillance shows influenza activity rising again as schools restart. The prefecture recorded 2.10 reports per sentinel, up from 1.76. Children under 10 are still the largest age group, group outbreaks at child-related facilities are increasing, and hospitalizations are also rising. The practical response is basic infection control plus keeping sick children or adults home rather than waiting for a larger outbreak notice."
+      }
+    }
+  },
+  {
+    "id": "japan-ultra-long-mortgage-fsa-watch-2026",
+    "agent": "practical",
+    "created_at": "2026-09-05T18:45:00+09:00",
+    "type": "finance",
+    "title": "Japan watchdog reportedly plans closer checks on 40- and 50-year mortgages as rate risk grows",
+    "summary": "Kyodo reports that the Financial Services Agency plans to strengthen monitoring of banks offering 40- and 50-year home loans, potentially beginning this autumn. The focus is whether borrowers are being lent too much and whether interest-rate, income and property-value risks are explained adequately.",
+    "why_it_matters": "Ultra-long loans make the monthly payment look easier while extending interest exposure for decades. Anyone comparing a 35-year loan with a 40- or 50-year product should compare lifetime cost and stress-tested payments, not only the first monthly payment.",
+    "importance": 88,
+    "confidence": 84,
+    "tags": ["Japan", "Mortgage", "Housing", "Interest Rates", "FSA", "Household Finance"],
+    "geography": ["Japan"],
+    "status": "DEVELOPING",
+    "sources": [
+      {"publisher": "Kyodo News via Kumamoto Nichinichi Shimbun", "title": "40、50年住宅ローンを監視へ　金融庁、過大融資恐れ", "url": "https://kumanichi.com/articles/2032710", "published_at": "2026-09-04", "source_type": "news"},
+      {"publisher": "Financial Services Agency", "title": "新着情報一覧（令和8年）", "url": "https://www.fsa.go.jp/recent/recent2026.html", "published_at": "2026-09-04", "source_type": "official"}
+    ],
+    "claims": [
+      {"kind": "FACT", "text": "Kyodo reported on September 4 that the Financial Services Agency plans stronger monitoring of banks offering 40- and 50-year mortgages, possibly beginning as early as this autumn.", "source_refs": [1], "basis": "Kyodo report; no matching public FSA announcement was identified in the September 4 FSA release list"},
+      {"kind": "FACT", "text": "The reported review would examine loan screening and how lenders explain interest-rate, income-reduction and property-value risks.", "source_refs": [1], "basis": "Kyodo report"},
+      {"kind": "INFERENCE", "text": "The policy signal increases the importance of stress-testing ultra-long mortgage affordability rather than judging a loan mainly by its initial monthly payment.", "source_refs": [1], "basis": "Inference from the risks the reported supervisory review is expected to examine"}
+    ],
+    "content": {
+      "who_is_affected": "Homebuyers and borrowers considering very long mortgage terms, plus banks and online lenders offering 40- or 50-year products.",
+      "when": "Kyodo reported the monitoring could begin as early as autumn 2026.",
+      "financial_impact": "No fixed borrower cost change has been announced. The key risk is a larger lifetime interest bill and exposure to future rate changes over a longer term.",
+      "risk_if_ignored": "A loan can look affordable on monthly payment while carrying a much larger total repayment burden or becoming harder to manage if rates or income change.",
+      "action": "WATCH",
+      "effort": "Medium: compare total repayment, fixed vs variable structure, rate-reset assumptions and the payment at a higher stress rate.",
+      "potential_benefit": "A more realistic comparison between 35-, 40- and 50-year financing options.",
+      "downside": "This remains a reported supervisory plan rather than a published FSA rule or borrower restriction.",
+      "usefulness": 92,
+      "novelty": 90,
+      "impact": {"money": "HIGH", "family": "HIGH", "career": "LOW", "japan": "HIGH", "urgency": "MED"},
+      "connection_tags": ["housing-costs", "long-mortgages", "rate-risk", "household-debt"],
+      "reading_levels": {
+        "30_sec": "Kyodo says the FSA plans closer checks on banks offering 40- and 50-year mortgages. No borrower rule has been announced, but the signal is clear: compare lifetime repayment and rate risk, not just the lower monthly payment.",
+        "2_min": "Ultra-long mortgages reduce the monthly payment by stretching the loan over more years, but they also extend the period in which the borrower pays interest and faces rate or income risk. Kyodo reports that the FSA may start checking lenders this autumn, including whether screening is too permissive and whether risks are explained adequately. Treat this as a warning signal rather than a new rule: anyone shopping for a home loan should compare the 35-, 40- and 50-year options under higher-rate scenarios and on total repayment."
+      },
+      "what_would_change_mind": "A formal FSA announcement, supervisory guideline or lender notice could materially change the scope and urgency of this story."
+    }
+  }
+]
