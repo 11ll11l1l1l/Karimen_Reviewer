@@ -1,0 +1,240 @@
+{
+  "id": "japan-foreign-child-schooling-guidance-2026-08-28",
+  "agent": "practical",
+  "created_at": "2026-09-05T23:22:00+09:00",
+  "type": "education_policy",
+  "title": "Japan quietly strengthened school guidance for foreign children",
+  "summary": "MEXT revised its nationwide guidance on August 28, telling municipalities to more actively track whether foreign children are enrolled, send school information directly to families, and follow up cases they cannot confirm. It is guidance rather than a new compulsory-schooling law, but it gives foreign parents clearer grounds to ask their city education board for enrollment and support help.",
+  "why_it_matters": "Foreign parents can miss school procedures simply because notices are unclear, only in Japanese, or because a child's enrollment status falls between municipal systems. The revised guidance tells local boards to use resident-registry information, multilingual communication, individual contact and coordination with welfare/immigration bodies to reduce those gaps.",
+  "importance": 91,
+  "confidence": 96,
+  "tags": ["Japan", "Foreign Residents", "Children", "School", "Education", "Municipality", "Japanese Support"],
+  "geography": ["Japan"],
+  "status": "CONFIRMED",
+  "sources": [
+    {
+      "publisher": "Ministry of Education, Culture, Sports, Science and Technology (MEXT)",
+      "title": "外国人の子供の就学促進及び就学状況の把握等に関する指針（令和8年8月28日改訂版）",
+      "url": "https://www.mext.go.jp/a_menu/shotou/clarinet/004/1415154_00018.html",
+      "published_at": "2026-08-28",
+      "source_type": "official"
+    },
+    {
+      "publisher": "Ministry of Education, Culture, Sports, Science and Technology (MEXT)",
+      "title": "外国人児童生徒等の就学の促進について（通知）(令和8年8月28日)",
+      "url": "https://www.mext.go.jp/b_menu/hakusho/2026/mext_00017.html",
+      "published_at": "2026-08-28",
+      "source_type": "official"
+    },
+    {
+      "publisher": "Ministry of Education, Culture, Sports, Science and Technology (MEXT)",
+      "title": "「外国人の子供の就学状況等調査（令和7年度）」の結果について",
+      "url": "https://www.mext.go.jp/b_menu/houdou/31/09/1421568_00006.htm",
+      "published_at": "2026-05-25",
+      "source_type": "official"
+    },
+    {
+      "publisher": "教育家庭新聞社",
+      "title": "文部科学省「外国人の子供の就学状況等調査」結果公表〜学齢相当の外国人の子供17万人超で過去最多に",
+      "url": "https://www.kknews.co.jp/news/20260528o04",
+      "published_at": "2026-05-28",
+      "source_type": "news"
+    }
+  ],
+  "claims": [
+    {
+      "kind": "FACT",
+      "text": "MEXT revised its national guidance on foreign children's school enrollment and enrollment-status tracking on August 28, 2026.",
+      "source_refs": [1, 2],
+      "basis": "Official MEXT guidance and notification"
+    },
+    {
+      "kind": "FACT",
+      "text": "The revised guidance asks municipal education boards to use resident-registry information to manage foreign children's enrollment status, coordinate with other municipal departments and support organizations, and individually contact families when enrollment cannot be confirmed.",
+      "source_refs": [1],
+      "basis": "MEXT revised guidance, section on enrollment-status tracking"
+    },
+    {
+      "kind": "FACT",
+      "text": "Municipalities are asked to send school-enrollment information directly to foreign families and consider using languages commonly used by foreign residents in the area.",
+      "source_refs": [1],
+      "basis": "MEXT revised guidance, section on enrollment information"
+    },
+    {
+      "kind": "FACT",
+      "text": "The guidance allows flexible school placement where the local designated school lacks adequate support or another school has a stronger receiving system, while taking commuting convenience and parental wishes into account.",
+      "source_refs": [1],
+      "basis": "MEXT revised guidance on school designation and changes"
+    },
+    {
+      "kind": "FACT",
+      "text": "MEXT's 2025 school-status survey counted 177,726 foreign children of compulsory-school age and 9,153 who were out of school or whose enrollment status could not be confirmed.",
+      "source_refs": [3, 4],
+      "basis": "MEXT survey and independent education-industry reporting"
+    },
+    {
+      "kind": "FACT",
+      "text": "Foreign parents are still not placed under the same statutory compulsory-schooling duty as Japanese parents; the August revision is administrative guidance to improve access and tracking, not a new compulsory-attendance law for foreign families.",
+      "source_refs": [1],
+      "basis": "MEXT guidance explicitly states the current legal distinction"
+    },
+    {
+      "kind": "INFERENCE",
+      "text": "A foreign family that receives no school guidance, cannot get clear enrollment help, or needs a school with better Japanese-language support now has stronger current national guidance to point to when asking its municipal board of education for assistance.",
+      "source_refs": [1, 2],
+      "basis": "Practical implication of the revised municipal guidance"
+    }
+  ],
+  "content": {
+    "key_message": "This is not a new school-attendance mandate; it is stronger national guidance telling municipalities to actively find, inform and help foreign children who could otherwise fall through enrollment gaps.",
+    "who_is_affected": "Foreign families in Japan with children roughly ages 6–15, especially newly arrived families, households that have not received clear school-enrollment information, children needing Japanese-language support, or families whose child's school status is unclear to the municipality.",
+    "when": "The revised MEXT guidance was issued on August 28, 2026 and is current national guidance to local governments. Local implementation will vary by municipality.",
+    "financial_impact": "Usually indirect rather than a new fee or benefit. The main value is avoiding missed enrollment, delayed support, unnecessary private alternatives, or lost access to existing school-support and school-aid information.",
+    "risk_if_ignored": "A child may remain outside the school system longer than necessary, a family may assume no help exists, or parents may not know they can ask about another receiving school when the designated school lacks adequate support.",
+    "action": "PREPARE",
+    "deadline": "No national application deadline. Act promptly if your child's enrollment is unresolved or you need support before or during a school transition.",
+    "effort": "Low to medium; usually starts with the municipal board of education or school-enrollment desk.",
+    "potential_benefit": "Faster enrollment guidance, multilingual information, access to existing school-aid information, Japanese-language support, or a better-supported school placement where local conditions allow.",
+    "downside": "The guidance does not guarantee a specific school, interpreter, special program or automatic transfer. Actual staffing and support capacity differ by city and school.",
+    "skeptical_view": "This is administrative guidance, not a newly enforceable individual entitlement to every requested support measure. Municipal capacity, staffing and local school availability can still limit what happens in practice.",
+    "what_would_change_mind": "A later MEXT or Diet measure changing the statutory schooling duty for foreign parents, a binding implementation rule that materially alters municipal obligations, or evidence that municipalities are not applying the revised guidance in practice.",
+    "usefulness": 94,
+    "novelty": 91,
+    "impact": {
+      "money": "MED",
+      "family": "HIGH",
+      "career": "LOW",
+      "japan": "HIGH",
+      "urgency": "MED"
+    },
+    "connection_tags": ["foreign-residents", "school-enrollment", "municipal-services", "japanese-language-support", "child-education"],
+    "reading_levels": {
+      "30 sec": [
+        "What happened: MEXT revised national guidance on August 28 so cities should more actively identify and contact foreign children whose school status is unclear.",
+        "Why it matters: Cities are told to use resident-registry data, multilingual information and individual follow-up instead of waiting passively for families to navigate the system alone.",
+        "What to do: If your child has no clear enrollment path or needs stronger Japanese-language support, contact your municipal board of education and ask specifically about enrollment, support and school-placement options.",
+        "Bottom line: Stronger guidance helps families ask for help, but it is not a new legal guarantee of a particular school or service."
+      ]
+    },
+    "learning": {
+      "outcomes": [
+        "Understand what changed in the August 28 MEXT guidance and what did not.",
+        "Know which municipal office to contact when a foreign child's enrollment is unclear.",
+        "Recognize that school placement and Japanese-language support can be discussed rather than assumed fixed."
+      ],
+      "background": "Japan's compulsory-schooling law does not impose the same attendance duty on foreign parents that it imposes on Japanese parents. Even so, national policy aims to ensure foreign children living in Japan can access education. MEXT has now strengthened the guidance given to municipalities because the number of foreign school-age children has risen sharply and thousands remain unconfirmed or potentially out of school.",
+      "terms": [
+        {
+          "term": "Municipal board of education",
+          "meaning": "The city, ward, town or village education authority that handles public-school enrollment and local school administration.",
+          "why_it_matters": "This is usually the main official contact when a foreign child's enrollment, school assignment or support path is unclear."
+        },
+        {
+          "term": "School-enrollment status tracking",
+          "meaning": "The municipality checking whether a school-age child is actually enrolled in a Japanese public/private school, foreign school, or another recognized education setting.",
+          "why_it_matters": "The revised guidance tells municipalities to do this more actively for foreign children instead of relying only on ordinary school rolls."
+        }
+      ],
+      "how_it_works": [
+        {
+          "title": "Cities identify school-age foreign children",
+          "explanation": "MEXT tells municipalities to use resident-registry information and related systems to build a clearer picture of foreign children living in the area."
+        },
+        {
+          "title": "Unknown cases should be followed up",
+          "explanation": "If a child's enrollment cannot be confirmed, the city is encouraged to contact or visit the household and coordinate with welfare, international-support or immigration-related bodies when needed."
+        },
+        {
+          "title": "Enrollment information should be easier to understand",
+          "explanation": "Municipalities are asked to send enrollment guidance directly and consider languages actually used by foreign residents in the area."
+        },
+        {
+          "title": "School placement can be flexible",
+          "explanation": "Where the normal designated school lacks sufficient support or another school is better equipped, the guidance allows flexibility while considering commute and parental wishes."
+        }
+      ],
+      "example": "Example: a newly arrived family with a 9-year-old receives no clear school notice and the nearest school has little Japanese-language support. The family can contact the city board of education, ask for enrollment guidance in an understandable language, explain the child's Japanese level, and ask whether another receiving school or support program is available. The city is not required to grant every request, but the revised MEXT guidance explicitly supports this kind of active coordination.",
+      "takeaways": [
+        "The August change is stronger municipal guidance, not a new compulsory-attendance law for foreign parents.",
+        "Cities are expected to track foreign children's school status more actively.",
+        "Multilingual enrollment information and individual follow-up are explicitly encouraged.",
+        "Families can ask about alternative school placement where support capacity is a problem.",
+        "Local implementation and available support still vary."
+      ]
+    },
+    "action_plan": {
+      "goal": "Get a clear, official school-enrollment and support path for a foreign child without relying on guesswork or informal advice.",
+      "who_should_act": "Foreign parents or guardians whose school-age child is not yet enrolled, has not received clear enrollment information, is changing municipalities, or needs more Japanese-language or receiving-school support. Families whose child is already settled and adequately supported can simply keep this as a reference.",
+      "deadline": "No single national deadline; contact the municipality as early as practical before enrollment, transfer or the start of a school term.",
+      "prepare": [
+        "Child's name, date of birth and current address.",
+        "Residence card or other identification details normally used for municipal procedures.",
+        "Any previous school records you already have.",
+        "A short description of the child's Japanese-language level and any support needs.",
+        "Any enrollment notice or correspondence already received from the city or school."
+      ],
+      "steps": [
+        {
+          "step": "Contact the municipal education authority",
+          "action": "Ask for the office handling school enrollment for foreign children.",
+          "how": "Use your city/ward/town hall or board of education. Ask for multilingual help if Japanese is a barrier.",
+          "needed": ["Child's basic details", "Current address"],
+          "done_when": "You have the responsible office or staff contact and know the next enrollment step."
+        },
+        {
+          "step": "Confirm the child's enrollment status",
+          "action": "Ask whether the municipality already has the child recorded and what school or procedure applies.",
+          "how": "Explain whether the child is currently in a Japanese school, foreign school, recently arrived, or not yet enrolled.",
+          "needed": ["Any existing school or municipal documents"],
+          "done_when": "The city confirms the child's status and the next required action."
+        },
+        {
+          "step": "Ask specifically about support",
+          "action": "Describe Japanese-language and adjustment needs and ask what support exists locally.",
+          "how": "Ask about Japanese-language instruction, initial support classes, consultation services and any school-aid information relevant to your household.",
+          "needed": ["Short description of support needs"],
+          "done_when": "You know which support is available, unavailable or still being arranged."
+        },
+        {
+          "step": "Discuss school placement if support is inadequate",
+          "action": "If the designated school cannot adequately receive the child, ask whether another school with stronger support can be considered.",
+          "how": "Refer to the child's needs, commuting practicality and the August 28 MEXT guidance on flexible school designation where local support capacity differs.",
+          "needed": ["Current school assignment", "Reason additional support is needed"],
+          "done_when": "The board gives a clear decision or explains the formal process for requesting a school change."
+        }
+      ],
+      "mistakes_to_avoid": [
+        "Assuming that no letter means the child cannot attend public school.",
+        "Assuming every municipality automatically provides the same interpreter, Japanese class or transfer option.",
+        "Treating the revised guidance as a guaranteed legal right to a specific school or service.",
+        "Waiting until the first school day if enrollment or language support is still unresolved."
+      ],
+      "decision_rules": [
+        {
+          "if": "your child is school-age and you have no clear enrollment path",
+          "then": "contact the municipal board of education promptly and ask for the foreign-child enrollment process"
+        },
+        {
+          "if": "the assigned school lacks adequate receiving or Japanese-language support",
+          "then": "ask the board whether flexible school placement or another support arrangement is available"
+        },
+        {
+          "if": "your child is already enrolled and receiving adequate support",
+          "then": "no immediate action is needed; keep the guidance as a reference for future transfers or support changes"
+        }
+      ],
+      "follow_up": "Keep written notes of the office contacted and the next agreed step. If support or enrollment remains unresolved, re-contact the board of education and ask for the responsible supervisor or consultation channel rather than relying only on informal school-level answers."
+    },
+    "editorial_visual": {
+      "style": "editorial",
+      "motif": "family",
+      "secondary_motif": "document",
+      "scene": "a foreign family holding a school enrollment envelope while a city hall, school building and clear signposts connect into one organized path",
+      "caption": "A clearer path from city hall to the classroom",
+      "silliness": 5,
+      "exaggeration": 32
+    },
+    "bottom_line": "Foreign families still need to contact their municipality, but current national guidance now more clearly tells local governments to find, inform and help children who could otherwise fall through the school-enrollment system.",
+    "confidence_reason": "High confidence because the core change and implementation guidance come directly from MEXT, with the scale of the problem confirmed by MEXT's national survey and independent education reporting."
+  }
+}
