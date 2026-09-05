@@ -1,0 +1,186 @@
+[
+  {
+    "id": "jp-dependent-income-contract-rule-2026",
+    "agent": "practical",
+    "created_at": "2026-09-06T08:00:00+09:00",
+    "type": "social_insurance",
+    "title": "Overtime pushed you past ¥1.3M? You may still stay under your spouse’s health insurance",
+    "summary": "FACT: Since April 1, 2026, dependent-status screening can use the annual income written into a clear employment contract instead of automatically treating every later overtime spike as your normal yearly income. If the contract-based estimate is below the applicable threshold and you have no other income, puwedeng manatili sa扶養 even when temporary overtime later pushes actual pay above the line.",
+    "why_it_matters": "This can prevent avoidable loss of health-insurance dependent status and unnecessary National Health Insurance/National Pension enrollment for some part-time workers. The catch: the rule is document-heavy, does not apply to vague/short contracts or people with other income, and does not override mandatory employee social-insurance coverage when you independently qualify through your job.",
+    "importance": 93,
+    "confidence": 98,
+    "tags": ["Japan", "Social insurance", "130万円の壁", "Dependent", "Part-time", "Health insurance", "Pension", "Overtime"],
+    "geography": ["Japan"],
+    "status": "NEW",
+    "sources": [
+      {
+        "publisher": "Japan Pension Service",
+        "title": "労働契約内容による年間収入での被扶養者の認定の取り扱いについて",
+        "url": "https://www.nenkin.go.jp/oshirase/taisetu/jigyosho/2026/202605/0501.html",
+        "published_at": "2026-05-01",
+        "source_type": "official"
+      },
+      {
+        "publisher": "Ministry of Health, Labour and Welfare",
+        "title": "労働契約内容による年間収入が基準額未満である場合の被扶養者の認定における年間収入の取扱いに係るQ&A（第2版）",
+        "url": "https://www.mhlw.go.jp/hourei/doc/tsuchi/T260310S0010.pdf",
+        "published_at": "2026-03-09",
+        "source_type": "official"
+      },
+      {
+        "publisher": "Ministry of Health, Labour and Welfare",
+        "title": "「年収の壁」への対応",
+        "url": "https://www.mhlw.go.jp/stf/taiou_001_00002.html",
+        "published_at": "2026-09-05",
+        "source_type": "official"
+      }
+    ],
+    "claims": [
+      {
+        "kind": "FACT",
+        "text": "Effective April 1, 2026, a person seeking dependent status can in qualifying cases be judged from expected annual pay stated or calculable from the employment contract, rather than only from past payslips or a rolling estimate that includes unexpected overtime.",
+        "source_refs": [1, 2],
+        "basis": "Japan Pension Service implementation notice and MHLW Q&A"
+      },
+      {
+        "kind": "FACT",
+        "text": "For the ordinary case the contract-based annual income must be below ¥1.3 million and there must be no expected non-salary income; the threshold is ¥1.8 million for people aged 60+ or qualifying disabled persons, and ¥1.5 million for non-spouse dependents aged 19 to under 23.",
+        "source_refs": [1],
+        "basis": "Japan Pension Service threshold notes"
+      },
+      {
+        "kind": "FACT",
+        "text": "Unexpected overtime or other temporary pay not clearly provided for in the contract is excluded from the contract-stage annual-income estimate. If such temporary income later pushes actual annual pay above the threshold but remains within a socially reasonable range, MHLW says dependent status need not automatically be cancelled for that reason alone.",
+        "source_refs": [2],
+        "basis": "MHLW Q&A Q1, Q4 and Q8"
+      },
+      {
+        "kind": "FACT",
+        "text": "The special contract-based method cannot be used when the contract does not allow a reliable annual estimate, such as a contract period shorter than one year from the dependent-recognition date, unclear shift-based hours, or unspecified allowance amounts. In those cases the insurer returns to the conventional evidence method using payslips and tax certificates.",
+        "source_refs": [1, 2],
+        "basis": "Japan Pension Service cautions and MHLW Q&A"
+      },
+      {
+        "kind": "FACT",
+        "text": "The claimant must provide the employment-contract document and a statement that salary is the only expected income. Multiple jobs must all be disclosed and their contract-based income estimates are combined; if one job cannot be reliably estimated under this method, the conventional method applies.",
+        "source_refs": [1, 2],
+        "basis": "Japan Pension Service required documents and MHLW multiple-employer Q&A"
+      },
+      {
+        "kind": "INFERENCE",
+        "text": "The biggest practical value is for households that previously reacted to one or two overtime-heavy months by assuming dependent status was automatically lost. The new rule gives them a stronger documentary basis to ask the insurer for a contract-based review instead of self-deregistering too early.",
+        "source_refs": [1, 2, 3],
+        "basis": "Implementation rule plus MHLW explanation that the purpose is greater predictability and reduced work adjustment"
+      }
+    ],
+    "content": {
+      "key_message": "Kung part-time ka under your spouse’s social-insurance扶養, huwag agad mag-assume na one busy overtime period means automatic exit. Since April 1, 2026, a clear employment contract below the applicable annual threshold can be the main screening basis in qualifying cases.",
+      "who_is_affected": "People applying for or being checked for health-insurance dependent status, especially spouses and family members working part-time or hourly jobs. The ordinary annual-income line is below ¥1.3M. Separate limits apply to age 60+/qualifying disabled dependents and non-spouse dependents aged 19 to under 23. This does not help a worker who already independently meets mandatory employee health-insurance and Employees’ Pension enrollment rules through their own job.",
+      "when": "EFFECTIVE from April 1, 2026. MHLW issued the revised Q&A on March 9, 2026 and Japan Pension Service published the operating guidance on May 1, 2026.",
+      "financial_impact": "Potentially substantial. Losing dependent status can trigger personal health-insurance and pension contributions unless the worker instead enters employer social insurance. The exact yen impact varies by income, municipality and insurance route, so ALAM does not assign a universal saving amount.",
+      "estimated_saving_yen": null,
+      "time_minutes": 20,
+      "travel_minutes": 0,
+      "risk_if_ignored": "HIGH for borderline households — voluntarily leaving扶養 or failing to present the new contract-based evidence can create avoidable premiums and paperwork. The opposite mistake is also costly: hiding permanent income growth can lead to later correction or cancellation.",
+      "action": "CHECK NOW IF BORDERLINE",
+      "deadline": "No single national application deadline. Use the rule when first applying for扶養, during an insurer’s dependent-status check, or when overtime temporarily pushes actual pay above the usual threshold. Respond by the deadline stated by your employer/health insurer if they send a verification request.",
+      "effort": "LOW-MED",
+      "potential_benefit": "Avoid premature loss of dependent status when the employment contract still clearly projects annual salary below the applicable threshold and later excess income is genuinely temporary.",
+      "downside": "This is not a blanket exemption from the ¥1.3M rule. Contracted bonuses and allowances count as wages. Other income can disqualify the contract-based route. Vague shift contracts, sub-one-year contracts and unclear allowance amounts may force conventional income verification instead.",
+      "common_mistake": "Looking only at one or two high monthly payslips and assuming ‘lumampas ako, tanggal na agad sa扶養.’ The new method asks a different first question: what annual income is objectively expected from the actual employment contract, and is any extra pay truly temporary?",
+      "fact_vs_inference": {
+        "fact": "MHLW and Japan Pension Service explicitly allow contract-based annual-income judgment from April 1, 2026, exclude unforeseeable temporary overtime from that contract-stage estimate, and say socially reasonable temporary excess income does not by itself require automatic cancellation.",
+        "inference": "Many borderline part-time households may still be using the older mental model because the operational detail sits in insurer guidance rather than a headline tax change. ALAM has not found a national count of how many dependents have already benefited from the new method."
+      },
+      "strongest_counterinterpretation": "The practical effect may be narrower than the headline sounds. A worker with regular overtime, contractually expected bonuses/allowances, multiple jobs, other income, or mandatory employee-social-insurance eligibility may still lose dependent status or need another coverage route. The rule improves predictability; it does not legalize permanent income above the applicable limit.",
+      "what_remains_uncertain": "Insurers can examine whether claimed ‘temporary’ income is socially reasonable, and after the first year they may request payslips or tax documents to compare actual income with the contract. The national guidance does not provide one numerical definition of how far above ¥1.3M temporary income may go before it becomes unreasonable.",
+      "what_would_change_mind": "A new MHLW/Japan Pension Service circular narrowing the treatment of temporary overtime, defining a hard excess-income ceiling, or changing the April 2026 contract-based recognition method would require an update. Evidence that insurers are instructed to ignore the contract method in ordinary協会けんぽ/health-insurance dependent checks would overturn the central recommendation.",
+      "usefulness": 98,
+      "novelty": 91,
+      "impact": {
+        "money": "HIGH",
+        "family": "HIGH",
+        "career": "MED",
+        "japan": "HIGH",
+        "urgency": "MED"
+      },
+      "connection_tags": ["130man-wall", "health-insurance-dependent", "part-time-work", "overtime", "social-insurance"],
+      "reading_levels": {
+        "30 sec": [
+          "FACT: From April 1, 2026, qualifying扶養 checks can use your employment contract’s expected annual salary.",
+          "Unexpected overtime that was not built into the contract does not automatically become part of that contract-stage annual estimate.",
+          "If temporary overtime later pushes actual annual pay above ¥1.3M, MHLW says扶養 need not automatically be cancelled when the temporary excess remains socially reasonable.",
+          "Action: keep your 労働条件通知書/雇用契約書 and ask HR or the insurer to assess you under the 2026 contract-based rule before voluntarily leaving扶養."
+        ],
+        "2_min": "The old practical fear was simple: one busy season pushes yearly pay above ¥1.3M, so the spouse immediately assumes扶養 is gone. The April 2026 rule is more nuanced. If a clear employment contract lets the insurer calculate expected annual salary below the relevant threshold and you have no other expected income, the insurer can use that contract figure. Unexpected overtime not clearly built into the contract is treated as temporary income for this purpose. MHLW further says a later actual total above the threshold does not automatically cancel扶養 if that temporary excess remains socially reasonable. But this route fails when the contract is too short or vague, allowances are not quantified, another job cannot be documented, or non-salary income exists. It also does not override mandatory social-insurance enrollment through your own employer."
+      },
+      "learning": {
+        "outcomes": [
+          "Know that the April 2026 rule changed how annual income can be judged for扶養.",
+          "Understand the difference between contractually expected pay and genuinely temporary overtime.",
+          "Know which documents and exceptions matter before asking HR or the insurer for review."
+        ],
+        "background": "被扶養者 status lets qualifying family members of an employee-health-insurance member receive coverage without paying a separate dependent health-insurance premium, and a qualifying spouse can also be National Pension Category 3. The annual-income test has long caused part-time workers to restrict work. The 2026 rule was introduced to make the test more predictable from the employment contract itself.",
+        "terms": [
+          {
+            "term": "被扶養者",
+            "meaning": "A qualifying dependent covered under an employee’s health insurance subject to relationship, livelihood and income conditions.",
+            "why_it_matters": "Losing this status can change both health-insurance and pension obligations."
+          },
+          {
+            "term": "臨時収入",
+            "meaning": "For this MHLW guidance, income such as overtime pay that was not clearly provided for and could not reasonably be expected at the employment-contract stage.",
+            "why_it_matters": "It may be excluded from the initial contract-based annual estimate and does not automatically cancel dependent status if later excess remains reasonable."
+          }
+        ],
+        "takeaways": [
+          "The ¥1.3M threshold still exists; the method of forecasting annual income changed.",
+          "Contracted allowances and bonuses count.",
+          "Unexpected overtime can be treated differently from permanently scheduled pay.",
+          "Clear paperwork is essential.",
+          "Do not confuse扶養 rules with mandatory social-insurance enrollment through your own employer."
+        ]
+      },
+      "action_plan": {
+        "goal": "Avoid unnecessary loss of dependent status while staying compliant with the 2026 rules.",
+        "who_should_act": "Part-time workers and spouses whose projected contract pay is below the applicable threshold but whose actual pay has been temporarily elevated by overtime or irregular busy-season work.",
+        "deadline": "Before voluntarily leaving扶養, or by the response date on any dependent-verification notice from your employer or insurer.",
+        "prepare": [
+          "労働条件通知書 or employment contract showing hourly wage/salary, contracted hours/days, allowances and bonuses",
+          "Documents for every employer if you have multiple jobs",
+          "Recent payslips if requested",
+          "A statement that salary is your only expected income if using this contract-based route"
+        ],
+        "steps": [
+          {
+            "step": "Calculate the contract-based annual figure",
+            "action": "Use the wages, fixed allowances, bonuses, hours and workdays stated in the contract.",
+            "how": "Do not silently exclude contracted allowances or bonuses. Separate overtime that was not foreseeable from the written employment terms.",
+            "needed": ["Employment contract or 労働条件通知書"],
+            "time_minutes": 10,
+            "cost_yen": 0,
+            "done_when": "You can show whether the written contract projects annual salary below the relevant limit."
+          },
+          {
+            "step": "Ask for the 2026 contract-based扶養 review",
+            "action": "Contact your employer’s HR/social-insurance desk or the health insurer and state that you want recognition under the April 1, 2026 労働契約内容による年間収入 rule.",
+            "how": "Provide the contract and required salary-only declaration rather than relying only on a verbal explanation of overtime.",
+            "needed": ["Contract", "扶養 paperwork", "salary-only declaration"],
+            "time_minutes": 10,
+            "cost_yen": 0,
+            "done_when": "The employer/insurer confirms which income-assessment method applies to your case."
+          },
+          {
+            "step": "Recheck if work permanently changes",
+            "action": "Report material permanent increases in contracted hours, wages, bonuses or other income.",
+            "how": "Do not rely on the temporary-overtime treatment once the higher income has become part of the regular work arrangement.",
+            "needed": ["Updated employment terms"],
+            "time_minutes": 5,
+            "cost_yen": 0,
+            "done_when": "Your current扶養 status matches your latest employment arrangement."
+          }
+        ]
+      }
+    }
+  }
+]
