@@ -1,0 +1,264 @@
+[
+  {
+    "id": "pension-public-account-optout-2026",
+    "agent": "practical",
+    "created_at": "2026-09-06T09:21:10+09:00",
+    "type": "policy",
+    "title": "Got this pension letter? Silence can register your bank account",
+    "summary": "FACT: Japan is mailing certain pensioners a notice that can register their pension bank account as a 公金受取口座 unless they opt out within 45 days. Kung ayaw mong gamitin ang pension account mo for government benefit payments, kailangan mong ibalik ang enclosed opt-out postcard on time.",
+    "why_it_matters": "This reverses the usual expectation that no reply means no consent. The change does not give the government access to your balance or withdrawals, but it does create a real 45-day decision window that older residents and their families can easily miss.",
+    "importance": 86,
+    "confidence": 98,
+    "tags": ["Japan", "Pension", "MyNumber", "Banking", "Benefits", "Deadline", "Privacy"],
+    "geography": ["Japan"],
+    "status": "NEW",
+    "sources": [
+      {
+        "publisher": "Japan Pension Service",
+        "title": "年金振込口座の公金受取口座登録に関する意向確認書の送付",
+        "url": "https://www.nenkin.go.jp/tokusetsu/ikokakunin.html",
+        "published_at": "2026-08-26",
+        "source_type": "official"
+      },
+      {
+        "publisher": "Digital Agency",
+        "title": "よくある質問：年金受給者への意向確認に基づく公金受取口座の登録（行政機関等経由登録の特例制度）",
+        "url": "https://www.digital.go.jp/policies/account_registration/faq-registration/pension-confirm",
+        "published_at": "2026-07-28",
+        "source_type": "official"
+      },
+      {
+        "publisher": "Digital Agency",
+        "title": "よくある質問：公金受取口座登録制度の概要",
+        "url": "https://www.digital.go.jp/policies/account_registration/faq-program",
+        "published_at": "2026-07-28",
+        "source_type": "official"
+      },
+      {
+        "publisher": "Asahi Shimbun",
+        "title": "断らないと年金口座を公金受取用に登録、高齢者1600万人どうする",
+        "url": "https://smart.asahi.com/v/article/ASV8531QBV85ULFA01YM.php",
+        "published_at": "2026-08-09",
+        "source_type": "news"
+      }
+    ],
+    "claims": [
+      {
+        "kind": "FACT",
+        "text": "The special registration scheme is already in operation, with notices being sent sequentially from around August 2026 through around February 2027.",
+        "source_refs": [1, 2],
+        "basis": "Japan Pension Service schedule and Digital Agency FAQ"
+      },
+      {
+        "kind": "FACT",
+        "text": "If an eligible recipient receives the notice and does not return the opt-out form within 45 days, the pension payment account is treated as consented for registration as a public-money receiving account.",
+        "source_refs": [1, 2],
+        "basis": "Official opt-out procedure and deemed-consent rule"
+      },
+      {
+        "kind": "FACT",
+        "text": "The core target is pension recipients who were age 65 or older on April 15, 2026 and did not already have a public-money receiving account registered, subject to official exclusions.",
+        "source_refs": [1, 2],
+        "basis": "Official eligibility criteria"
+      },
+      {
+        "kind": "FACT",
+        "text": "If the registered-mail notice cannot be delivered, the person is not automatically registered under this special route.",
+        "source_refs": [1, 2],
+        "basis": "Official undelivered-mail exception"
+      },
+      {
+        "kind": "FACT",
+        "text": "Registering a public-money receiving account does not give the government access to account balances or transaction history and does not authorize tax withdrawals from the account.",
+        "source_refs": [3],
+        "basis": "Digital Agency FAQ"
+      },
+      {
+        "kind": "FACT",
+        "text": "Even after registration, the account can later be changed or deleted through MyNaPortal or supported financial-institution procedures.",
+        "source_refs": [2],
+        "basis": "Digital Agency FAQ"
+      },
+      {
+        "kind": "INFERENCE",
+        "text": "The practical risk is not loss of money but accidental consent: older recipients or family caregivers may treat the registered-mail packet as routine pension correspondence and miss that silence has a legal effect.",
+        "source_refs": [1, 2, 4],
+        "basis": "The official deemed-consent design plus independent reporting on its unusual opt-out structure"
+      }
+    ],
+    "content": {
+      "policy_status": "EFFECTIVE",
+      "key_message": "If this Japan Pension Service registered letter arrives, read it: wanting registration requires no action, but refusing it requires action within 45 days.",
+      "who_is_affected": "Primarily pension recipients who were 65 or older on April 15, 2026, receive eligible pension payments in Japan, and did not already have a 公金受取口座 registered. Official exclusions include some people without pension-payment records, overseas residents, certain DV/abuse-protected recipients, and accounts at unsupported financial institutions.",
+      "when": "Mailing is phased by birth date from around August 2026 to around February 2027. The personal response clock starts when the registered letter is received, not on one nationwide calendar date.",
+      "deadline": "Return the enclosed 公金受取口座登録不同意申出書 within 45 days of receiving the notice if you do not want the pension account registered. Follow the return date printed on the individual notice.",
+      "financial_impact": "No direct fee or automatic cash payment is created by this change. Registration can reduce future paperwork for eligible government payments, but opting out does not disqualify someone from benefits; they can still provide account details through the normal process.",
+      "estimated_saving_yen": 0,
+      "time_minutes": 10,
+      "travel_minutes": 0,
+      "risk_if_ignored": "If you received the notice, successfully took delivery, do not want registration, and do nothing, your pension bank account can be registered after the official confirmation period. This is reversible later, but it may be contrary to your preference.",
+      "action": "DO NOW",
+      "effort": "LOW",
+      "potential_benefit": "People who want registration can do nothing and later use the registered account for many eligible public payments with less repeated bank-account paperwork.",
+      "downside": "People who prefer not to register this account must actively opt out. The strongest counterinterpretation is important: this is not a government bank-balance surveillance or withdrawal authority, and opting out does not block public benefits.",
+      "status_detail": "EFFECTIVE. The special administrative registration route has started; this is not a proposal or future budget request.",
+      "what_to_do_now_vs_wait": "DO NOW only if the registered letter has arrived: decide whether you want that exact pension account registered. If no letter has arrived, do not send random forms; check the official mailing schedule and wait for the individualized notice unless you independently want to register through MyNaPortal or a supported financial institution.",
+      "common_mistake": "Assuming 'I did not reply, so I did not consent.' Under this special route, no opt-out reply after receipt is treated as consent. The opposite mistake is also common: believing registration lets the government see your balance or withdraw money; the Digital Agency explicitly says it does not.",
+      "strongest_counterinterpretation": "For many pensioners, registration is useful and low-risk because it simply stores one account for receiving public payments. The unusual opt-out design is consequential because it changes the default, not because registration itself creates a new financial liability.",
+      "what_remains_uncertain": "The exact arrival date varies by birth cohort and individual mailing. The official pages describe an approximately 3-4 month path from notice receipt to completed registration, so actual completion timing can vary.",
+      "what_would_change_mind": "ALAM would revise this story if the Japan Pension Service or Digital Agency changes the 45-day deemed-consent rule, the eligible population, the mailing schedule, the information transmitted, or the ability to later change/delete the account.",
+      "usefulness": 94,
+      "novelty": 91,
+      "impact": {
+        "money": "LOW",
+        "family": "MED",
+        "career": "LOW",
+        "japan": "HIGH",
+        "urgency": "HIGH"
+      },
+      "connection_tags": ["pension-admin", "my-number", "public-benefits", "opt-out-deadline"],
+      "reading_levels": {
+        "30 sec": {
+          "what_happened": "Japan is sending some 65+ pension recipients a registered letter about turning their pension bank account into a 公金受取口座.",
+          "why_it_matters": "If you received it and do not want registration, silence is not neutral: you have about 45 days to opt out.",
+          "what_to_do_watch": "Open the registered letter, verify the listed account, and return the enclosed opt-out form only if you do not want it registered.",
+          "bottom_line": "No reply can mean consent, but registration does not let government see your balance or take money from the account."
+        },
+        "2_min": "FACT: The Japan Pension Service is phasing registered-mail notices through early 2027 to eligible older pension recipients who do not already have a public-money receiving account registered. If the letter is delivered and no opt-out is returned within 45 days, the pension account can be registered automatically under the special deemed-consent route. If the registered letter is not delivered, this special route does not register the account. Registration is meant to simplify future government payments; the Digital Agency says it does not expose balances or transaction history and does not authorize withdrawals. If you later change your mind, the registered account can be changed or deleted."
+      },
+      "learning": {
+        "outcomes": [
+          "Explain what a 公金受取口座 is and what it is not.",
+          "Recognize why this particular pension letter is unusual and when action is required.",
+          "Distinguish the real privacy/consent choice from false claims about government access to savings."
+        ],
+        "background": "A 公金受取口座 is one bank account registered with the Digital Agency for receiving eligible government payments. Normally people actively register an account themselves. This special pension route is different: certain older pensioners are mailed a registered letter, and after a minimum 45-day confirmation period, failure to opt out is treated as consent to register the pension payment account.\n\nThe account is for receiving payments. It is not the same as giving the government online-banking access, and it is not the separate system for identifying multiple bank accounts through MyNumber.",
+        "terms": [
+          {
+            "term": "公金受取口座",
+            "meaning": "A single bank account registered with the Digital Agency for receiving eligible public payments.",
+            "why_it_matters": "It can reduce repeated entry of bank details or submission of passbook/card copies for some benefits and refunds."
+          },
+          {
+            "term": "不同意申出書",
+            "meaning": "The opt-out form included with the Japan Pension Service notice.",
+            "why_it_matters": "For this special route, people who do not want registration must return it within the notice's response period."
+          },
+          {
+            "term": "黙示的な同意",
+            "meaning": "Deemed or implicit consent based on not objecting during the official confirmation period.",
+            "why_it_matters": "It explains why simply ignoring a delivered notice can still have an administrative effect."
+          }
+        ],
+        "how_it_works": [
+          {
+            "title": "The letter arrives",
+            "explanation": "Japan Pension Service sends the eligible pensioner a registered-mail notice showing the pension payment account considered for registration."
+          },
+          {
+            "title": "Your response depends on your choice",
+            "explanation": "If you want that account registered, no reply is needed. If you do not want it registered, return the enclosed opt-out form within the stated period."
+          },
+          {
+            "title": "After the confirmation period",
+            "explanation": "After at least 45 days, the necessary identity and account information can be transmitted to the Digital Agency for registration if no opt-out was received."
+          },
+          {
+            "title": "Registration is not bank access",
+            "explanation": "The Digital Agency records the account information needed for public payments. Its FAQ states that this does not disclose your balance or transaction history and does not permit withdrawals."
+          }
+        ],
+        "example": "Example: If your eligible registered letter is delivered on September 10 and you do not want that pension account registered, treat the return date printed in the packet as the controlling deadline. Do not assume that throwing the letter away equals refusal.",
+        "takeaways": [
+          "This is an active 2026-27 rollout, not a proposal.",
+          "No reply after receiving the letter can count as consent.",
+          "The opt-out window is tied to your individual letter, roughly 45 days.",
+          "Registration does not give the government access to balances or withdrawals.",
+          "If registration happens and you later object, it can be changed or deleted."
+        ]
+      },
+      "action_plan": {
+        "goal": "Make an informed choice about whether the pension-payment account should become your public-money receiving account before the personal response window closes.",
+        "who_should_act": "Act if you or a family member receives this specific registered letter from Japan Pension Service. People who did not receive it do not need to send an opt-out form for this special route.",
+        "deadline": "The individual notice's return date; official guidance says the opt-out must be returned within 45 days of receiving the notice.",
+        "prepare": [
+          "The registered-mail packet from Japan Pension Service",
+          "The account details printed on the notice",
+          "The enclosed 公金受取口座登録不同意申出書 if opting out"
+        ],
+        "steps": [
+          {
+            "step": "Confirm the letter is the official notice",
+            "action": "Read the sender and title and compare the account shown with the pension account you recognize.",
+            "how": "Use the Japan Pension Service official page if uncertain. Do not provide PINs or online-banking passwords to callers, SMS senders or email senders.",
+            "needed": ["Registered-mail packet"],
+            "time_minutes": 3,
+            "cost_yen": 0,
+            "done_when": "You understand which account is proposed and whether the packet is the official pension-account registration notice."
+          },
+          {
+            "step": "Decide whether you want registration",
+            "action": "Choose based on whether you want that exact pension account used as your public-money receiving account.",
+            "how": "Remember that opting out does not cancel benefits, while registering can reduce future account-document paperwork.",
+            "needed": ["Your preference about the listed account"],
+            "time_minutes": 3,
+            "cost_yen": 0,
+            "done_when": "You have a clear yes/no decision."
+          },
+          {
+            "step": "If NO, return the opt-out",
+            "action": "Detach and complete the enclosed 不同意申出書, follow the packet instructions, and return it by the printed response date.",
+            "how": "Use the enclosed procedure. If the form is lost, Japan Pension Service says it cannot simply reissue the same form, but an alternative submission may be possible through the dedicated inquiry channel.",
+            "needed": ["不同意申出書", "Packet instructions"],
+            "time_minutes": 4,
+            "cost_yen": 0,
+            "done_when": "The opt-out has been mailed according to the official packet instructions before the deadline."
+          },
+          {
+            "step": "If YES, no reply is required",
+            "action": "Keep the notice and wait for the registration-result notification.",
+            "how": "Official guidance says completion may take roughly 3-4 months from receipt. If you need a public-money account sooner, use the normal MyNaPortal or supported-financial-institution route instead.",
+            "needed": ["Notice for your records"],
+            "time_minutes": 1,
+            "cost_yen": 0,
+            "done_when": "You have intentionally chosen the no-reply registration path and know to watch for the completion notice."
+          }
+        ],
+        "mistakes_to_avoid": [
+          "Throwing away the letter because you assume silence means refusal.",
+          "Returning the opt-out form even though you actually want the pension account registered.",
+          "Believing the registration exposes balances, transaction history or online-banking credentials.",
+          "Giving a caller, SMS sender or email sender your bank PIN or password; the official scheme does not require that."
+        ],
+        "decision_rules": [
+          {
+            "if": "You want the pension account shown in the notice to be your 公金受取口座",
+            "then": "Do not return the opt-out form; wait for the registration-result notification."
+          },
+          {
+            "if": "You do not want that account registered",
+            "then": "Return the enclosed opt-out form within the personal response period."
+          },
+          {
+            "if": "You never received the registered letter",
+            "then": "This special deemed-consent route does not automatically register you; use a normal registration method only if you independently want an account registered."
+          },
+          {
+            "if": "The listed account information looks wrong or old",
+            "then": "Use the official inquiry information printed on the notice before allowing the response window to expire."
+          }
+        ],
+        "follow_up": "If you allow registration, check the later Digital Agency registration-result notice. If you opted out but later want a 公金受取口座, you can register through the normal official channels. If you allowed registration but later change your mind, official guidance says the account can be changed or deleted."
+      },
+      "editorial_visual": {
+        "style": "editorial",
+        "motif": "document",
+        "secondary_motif": "yen",
+        "scene": "a registered pension letter beside a bank passbook, with a large 45-day countdown calendar and two clear paths represented by a quiet mailbox and a returned postcard, no logos or readable text",
+        "caption": "For this letter, silence is a choice",
+        "silliness": 8,
+        "exaggeration": 40
+      }
+    }
+  }
+]
