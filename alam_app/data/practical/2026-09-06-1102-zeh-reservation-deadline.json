@@ -1,0 +1,95 @@
+[
+  {
+    "id": "mirai-eco-2026-zeh-order-home-reservation-sept30",
+    "agent": "practical",
+    "created_at": "2026-09-06T11:02:00+09:00",
+    "type": "housing",
+    "title": "Reserved a ¥350k–¥400k ZEH home subsidy? September 30 can still wipe it out",
+    "summary": "FACT: Para sa 2026 みらいエコ住宅 subsidy for newly built custom-order ZEH-level homes, reservation applications already closed on August 17. Pero reservation is not the final grant application. Existing reservations expire no later than September 30, 2026—or three months after reservation, whichever comes first—and if the contractor does not convert the reservation into a full grant application in time, the reservation becomes invalid.",
+    "why_it_matters": "A family can think the subsidy is already secured because the builder says it was 'reserved.' For qualifying custom-order ZEH-level homes, the benefit is ¥400,000 per unit in regional classifications 1–4 and ¥350,000 in classifications 5–8. Missing the conversion deadline can therefore mean losing a six-figure benefit even though an earlier reservation was submitted.",
+    "importance": 94,
+    "confidence": 99,
+    "tags": ["Japan", "housing", "ZEH", "subsidy", "みらいエコ住宅2026", "home builders", "deadline", "child-rearing households"],
+    "geography": ["Japan"],
+    "status": "NEW",
+    "sources": [
+      {"publisher": "みらいエコ住宅2026事業／国土交通省", "title": "注文住宅の新築（ZEH水準住宅）の交付申請の予約の受付を終了しました", "url": "https://mirai-eco2026.mlit.go.jp/news/2026081802.html", "published_at": "2026-08-18", "source_type": "official"},
+      {"publisher": "みらいエコ住宅2026事業／国土交通省", "title": "対象要件の詳細：注文住宅の新築", "url": "https://mirai-eco2026.mlit.go.jp/new-house/", "published_at": "2026-09-06", "source_type": "official"},
+      {"publisher": "みらいエコ住宅2026事業／国土交通省", "title": "申請手続きの詳細：注文住宅の新築", "url": "https://mirai-eco2026.mlit.go.jp/new-house/application.html", "published_at": "2026-09-06", "source_type": "official"},
+      {"publisher": "みらいエコ住宅2026事業／国土交通省", "title": "2026年4月の交付申請状況（早期の交付申請に係るお願いを含む）", "url": "https://mirai-eco2026.mlit.go.jp/news/2026051101.html", "published_at": "2026-05-11", "source_type": "official"}
+    ],
+    "claims": [
+      {"kind": "FACT", "text": "Reservations for custom-order ZEH-level new homes under Mirai Eco Housing 2026 closed on August 17, 2026.", "source_refs": [1, 2], "basis": "The program's official August 18 notice and eligibility page give the reservation cutoff."},
+      {"kind": "FACT", "text": "A reservation does not replace the grant application. For custom-order ZEH-level homes, an existing reservation must be converted to a grant application by the reservation expiry, which is no later than September 30, 2026 or three months after reservation, whichever is earlier.", "source_refs": [1, 3], "basis": "The official notice and application instructions state the reservation validity rule and loss of reservation after expiry."},
+      {"kind": "FACT", "text": "The final grant-application deadline for custom-order ZEH-level homes is September 30, 2026, unless the applicable budget ceiling is reached earlier.", "source_refs": [1, 2], "basis": "Official program schedule."},
+      {"kind": "FACT", "text": "The ZEH-level subsidy for an eligible custom-order home is ¥400,000 per unit in regional classifications 1–4 and ¥350,000 in classifications 5–8.", "source_refs": [2], "basis": "Official subsidy table."},
+      {"kind": "FACT", "text": "ZEH-level and long-term-quality custom-order homes are limited to eligible child-rearing households or young married-couple households; the builder must be a registered Mirai Eco Housing operator and files the application on behalf of the homeowner.", "source_refs": [2], "basis": "Official eligibility conditions."},
+      {"kind": "FACT", "text": "For the grant application to be submitted, foundation work must already be complete; if the required level of work progress is not complete at application, the required progress must be completed and reported by January 31, 2027 or the application/grant can be rejected or cancelled.", "source_refs": [2, 4], "basis": "Official eligibility and early-application guidance."},
+      {"kind": "INFERENCE", "text": "The highest-risk households are those who heard only 'your subsidy is reserved' from the builder and have not confirmed that the full 交付申請 has actually been submitted and accepted before the reservation expires.", "source_refs": [1, 3], "basis": "Reservation and final application are separate procedural stages, and expiry explicitly invalidates the reservation."}
+    ],
+    "content": {
+      "policy_status": "EFFECTIVE. This is an active 2026 national housing-subsidy implementation rule, not a proposal. Reservations for custom-order ZEH-level homes closed August 17, 2026; final grant applications remain possible only until September 30, 2026, subject to earlier budget exhaustion and each reservation's own earlier expiry.",
+      "key_message": "Kung sinabi ng builder na 'reserved na ang subsidy,' huwag doon tumigil. Ask specifically: na-submit na ba ang final 交付申請? For custom-order ZEH-level homes, September 30 is the absolute outer deadline and some reservations expire earlier.",
+      "who_is_affected": "People building a new custom-order ZEH-level home under Mirai Eco Housing 2026, especially eligible child-rearing households and young married-couple households whose registered builder already submitted a reservation but has not yet completed the final grant application.",
+      "when": "Reservation intake ended August 17, 2026. Existing reservations remain valid only until the earlier of three months after submission or September 30, 2026. The final grant-application window for this custom-order ZEH category also closes no later than September 30, unless the budget ceiling closes it first.",
+      "financial_impact": "Potential subsidy at risk: ¥400,000 per eligible home in regional classifications 1–4 or ¥350,000 in classifications 5–8. An eligible old-home demolition can add ¥200,000, subject to separate requirements, but the core September story is the ZEH grant itself.",
+      "estimated_saving_yen": 400000,
+      "time_minutes": 10,
+      "travel_minutes": 0,
+      "risk_if_ignored": "HIGH for an affected household: an expired reservation is invalid. If the application window has closed by then, the official notice says the subsidy cannot be received through that reservation.",
+      "action": "ACT_NOW",
+      "deadline": "September 30, 2026 is the absolute outer deadline for the custom-order ZEH-level grant application. Your reservation can expire earlier if three months from reservation arrives first. Budget exhaustion can also close intake earlier.",
+      "effort": "LOW for the homeowner; MED-HIGH for the registered builder if documents or construction milestones are incomplete.",
+      "potential_benefit": "Preserve a legitimate ¥350,000–¥400,000 national housing subsidy, potentially more where a qualifying demolition add-on applies.",
+      "downside": "The homeowner cannot file directly; the registered housing operator handles the application. Some homes may simply not meet the construction-progress, performance, location or household requirements in time.",
+      "common_mistake": "Common mistake: treating 交付申請の予約 as the subsidy approval. It is only a temporary reservation. Another mistake is assuming every Mirai Eco Housing new-home category has the same December 31 deadline; custom-order ZEH-level homes have the earlier September 30 cutoff.",
+      "what_to_do_now": "Message or call the registered builder and ask for the exact status: '交付申請の予約 only, or final 交付申請 already submitted?' Ask for the reservation submission date, its expiry date, whether foundation work is complete, whether all performance certificates are ready, and the planned date for final submission. If the builder says the reservation itself guarantees payment, ask them to check the program's August 18 official notice.",
+      "what_to_wait_for": "Do not wait for a new national extension unless MLIT/program administrators formally publish one. If the final application is already submitted and there are no deficiency requests, the September action need is much lower; then monitor the application status and later construction-progress/complete-report obligations.",
+      "strongest_counterinterpretation": "This is not a nationwide deadline for every homeowner or every Mirai Eco Housing subsidy. It applies specifically to the custom-order new-home ZEH-level category. Long-term-quality, GX-oriented, subdivision-purchase, rental-newbuild and renovation categories can have different schedules. Also, a household whose final grant application is already properly submitted is not at risk merely because September 30 is approaching.",
+      "what_would_change_mind": "ALAM would downgrade urgency if the program formally extends the September 30 ZEH custom-order deadline or confirms that an already-expired reservation can retain priority after the application window closes. It would raise urgency further if the program announces that the relevant budget is nearing 100% before September 30.",
+      "usefulness": 97,
+      "novelty": 94,
+      "impact": {"money": "HIGH", "family": "HIGH", "career": "LOW", "japan": "MED", "urgency": "HIGH"},
+      "connection_tags": ["housing-subsidy", "ZEH", "September-2026-deadline", "builder-paperwork", "child-rearing-household"],
+      "reading_levels": {
+        "30 sec": "FACT: If your builder reserved a 2026 Mirai Eco subsidy for a custom-order ZEH-level home, reservation alone is not enough. Final 交付申請 must be submitted by your reservation expiry—no later than Sept 30, 2026—and some reservations expire earlier. The core subsidy is ¥350k–¥400k. Ask your builder today whether the FINAL application, not just the reservation, has been submitted.",
+        "2 min": "The August 17 reservation cutoff already passed, but households with an existing reservation still have a separate step: convert it into the final grant application. The official program says the reservation expires at the earlier of three months after reservation or Sept 30, and the ZEH custom-order application window itself closes no later than Sept 30 or earlier if budget is exhausted. The subsidy is ¥400k in regional classifications 1–4 and ¥350k in 5–8. Eligible applicants are child-rearing households or young married couples using a registered program builder. The homeowner does not file personally, so the practical move is to verify the builder's exact portal status and planned final-submission date."
+      },
+      "learning": {
+        "outcomes": ["Know that reservation and final grant application are different stages.", "Identify the earlier-of-two-dates reservation expiry rule.", "Know what exact status to ask the builder for before September 30."],
+        "background": "Mirai Eco Housing 2026 subsidizes qualifying energy-efficient new homes and renovations. For new custom-order ZEH-level homes, the program gave builders a reservation mechanism before the full application. That temporary reservation protected space only for a limited period; it did not itself complete the subsidy claim.",
+        "terms": [
+          {"term": "交付申請の予約", "meaning": "Temporary reservation of a planned subsidy application.", "why_it_matters": "It expires and does not equal the final application or grant decision."},
+          {"term": "交付申請", "meaning": "The formal grant application submitted by the registered housing operator.", "why_it_matters": "This is the step that must be completed by the applicable deadline."},
+          {"term": "ZEH水準住宅", "meaning": "A new home meeting the program's specified ZEH-level energy-performance criteria.", "why_it_matters": "The custom-order ZEH category has a special earlier 2026 application deadline."}
+        ],
+        "how_it_works": [
+          {"title": "1. Builder reserved", "explanation": "A registered builder could submit a reservation before August 17 for an eligible custom-order ZEH home."},
+          {"title": "2. Reservation clock keeps running", "explanation": "The reservation remains valid only until three months after submission or September 30, whichever comes first."},
+          {"title": "3. Builder must file the real application", "explanation": "Foundation completion and required documents are needed for the formal application. The homeowner cannot substitute a personal filing."},
+          {"title": "4. Later progress obligations still matter", "explanation": "If the required level of work is not already complete, it must be completed and reported by January 31, 2027 or the application/grant can fail."}
+        ],
+        "example": "If a builder reserved an eligible ZEH custom-order subsidy on July 10, three months later would be October 10—but the special ZEH outer deadline is September 30, so September 30 wins. If the reservation was submitted June 15, three months later is September 15, so that earlier date can control instead.",
+        "takeaways": ["Reservation is not approval.", "Some reservations expire before September 30.", "The ZEH custom-order subsidy is ¥350k–¥400k.", "Ask the builder for the exact final-application status now."]
+      },
+      "action_plan": {
+        "goal": "Confirm that a valid ZEH reservation becomes a full grant application before it expires.",
+        "who_should_act": "Households building an eligible custom-order ZEH-level home where the builder previously said the 2026 subsidy was reserved.",
+        "deadline": "Earlier of the individual reservation expiry or September 30, 2026; potentially earlier if the program reaches its budget ceiling.",
+        "prepare": ["Builder/company name", "Reservation submission date or reservation notice", "Construction schedule", "Any subsidy/application correspondence"],
+        "steps": [
+          {"step": "Verify status", "action": "Ask whether the portal shows only a reservation or a submitted final 交付申請.", "how": "Use the exact Japanese terms so there is no ambiguity.", "needed": ["builder contact"], "time_minutes": 5, "cost_yen": 0, "done_when": "You know whether the final application has actually been submitted."},
+          {"step": "Verify expiry", "action": "Ask for the reservation date and expiry date shown in the system.", "how": "Compare it with September 30; use whichever is earlier.", "needed": ["reservation details"], "time_minutes": 2, "cost_yen": 0, "done_when": "You have a concrete final-submission deadline."},
+          {"step": "Find blockers", "action": "Ask whether foundation completion, ZEH performance proof or other required documents are blocking submission.", "how": "Request a list of incomplete items and expected completion dates.", "needed": ["construction/application status"], "time_minutes": 5, "cost_yen": 0, "done_when": "Every blocker has an owner and target date before the deadline."},
+          {"step": "Confirm submission", "action": "Get confirmation once the final grant application is submitted.", "how": "Ask for the submission/status evidence the builder can share.", "needed": ["builder confirmation"], "time_minutes": 2, "cost_yen": 0, "done_when": "Final 交付申請 is submitted before expiry."}
+        ],
+        "mistakes_to_avoid": ["Assuming reservation means approval.", "Assuming September 30 is always the reservation expiry; yours can be earlier.", "Assuming the December 31 deadline of other categories applies to custom-order ZEH homes.", "Waiting until the final day when missing or defective documents may still need correction."],
+        "decision_rules": [
+          {"if": "The final 交付申請 is already submitted and no material deficiency is outstanding", "then": "Monitor status; no need to panic about reservation conversion."},
+          {"if": "Only a reservation exists", "then": "Treat the individual expiry date as a hard paperwork deadline and ask the builder for a dated submission plan."},
+          {"if": "Foundation work or required evidence cannot be ready before expiry", "then": "Ask the builder/program office immediately whether the home can legally meet the application conditions; do not assume the reservation can simply be extended."}
+        ]
+      }
+    }
+  }
+]
