@@ -3,7 +3,7 @@ from pathlib import Path
 import alam_mobile_shell as shell
 
 
-def main():
+def test_mobile_shell_integrity():
     cookie = shell.COOKIE_GUARD_CSS
     mobile = shell.MOBILE_SHELL_CSS
 
@@ -30,6 +30,9 @@ def main():
         "mobile_shell.install_mobile_shell()"
     )
 
+
+def main():
+    test_mobile_shell_integrity()
     print("ALAM mobile shell regression test passed")
 
 
