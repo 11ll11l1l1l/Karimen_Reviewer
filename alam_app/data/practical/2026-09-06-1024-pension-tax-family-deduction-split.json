@@ -6,274 +6,91 @@
     "type": "tax",
     "title": "Your December pension tax refund may be automatic — a new family deduction may not be",
     "summary": "FACT: Sa December 2026 pension payment, Japan Pension Service will automatically recalculate 2026 withholding using the higher basic deduction and generally refund overwithheld tax. Pero kung may spouse o dependent na newly qualifies only because the income limit rose from ¥580,000 to ¥620,000, JPS says you generally need a 2026 tax return to claim that deduction.",
-    "why_it_matters": "For pensioners near the old family-income threshold, two parts of the same 2026 tax reform work differently. The basic-deduction correction is built into December pension withholding, but a newly eligible spouse/dependent can still require a tax return—so assuming 'Japan Pension Service will fix everything automatically' can leave a legitimate deduction unclaimed.",
+    "why_it_matters": "Two parts of the same tax reform work differently. The basic-deduction correction is built into December pension withholding, but a newly eligible spouse/dependent can still require a tax return—so assuming JPS will fix everything automatically can leave a legitimate deduction unclaimed.",
     "importance": 89,
     "confidence": 98,
-    "tags": [
-      "Japan",
-      "pension",
-      "income tax",
-      "tax refund",
-      "dependents",
-      "spouse deduction",
-      "2026 tax reform",
-      "retirees"
-    ],
+    "tags": ["Japan", "pension", "income tax", "tax refund", "dependents", "spouse deduction", "2026 tax reform"],
     "geography": ["Japan"],
     "status": "NEW",
     "sources": [
-      {
-        "publisher": "日本年金機構",
-        "title": "令和8年度税制改正による公的年金等に係る主な改正事項",
-        "url": "https://www.nenkin.go.jp/oshirase/taisetu/kojin/2026/202606/0617.html",
-        "published_at": "2026-06-17",
-        "source_type": "official"
-      },
-      {
-        "publisher": "日本年金機構",
-        "title": "扶養親族等申告書の記入項目について",
-        "url": "https://www.nenkin.go.jp/denshibenri_kojin/denshibenri_rorei/denshi_fuyo/fuyokoumoku.html",
-        "published_at": "2026-09-03",
-        "source_type": "official"
-      },
-      {
-        "publisher": "日本年金機構",
-        "title": "『令和8年分公的年金等の受給者の扶養親族等申告書』の紙の提出方法",
-        "url": "https://www.nenkin.go.jp/service/jukyu/tetsuduki/rourei/jukyu/fuyo/fuyokami2026.html",
-        "published_at": "2026-08-31",
-        "source_type": "official"
-      },
-      {
-        "publisher": "公益財団法人 生命保険文化センター",
-        "title": "公的年金の税金（所得税）はどうやって計算される？",
-        "url": "https://www.jili.or.jp/lifeplan/lifesecurity/1125.html",
-        "published_at": "2026-07-15",
-        "source_type": "research"
-      },
-      {
-        "publisher": "国税庁",
-        "title": "高齢者と税（年金と税）",
-        "url": "https://www.nta.go.jp/publication/pamph/koho/kurashi/html/03_1.htm",
-        "published_at": "2026-08-01",
-        "source_type": "official"
-      }
+      {"publisher": "日本年金機構", "title": "令和8年度税制改正による公的年金等に係る主な改正事項", "url": "https://www.nenkin.go.jp/oshirase/taisetu/kojin/2026/202606/0617.html", "published_at": "2026-06-17", "source_type": "official"},
+      {"publisher": "日本年金機構", "title": "扶養親族等申告書の記入項目について", "url": "https://www.nenkin.go.jp/denshibenri_kojin/denshibenri_rorei/denshi_fuyo/fuyokoumoku.html", "published_at": "2026-09-03", "source_type": "official"},
+      {"publisher": "日本年金機構", "title": "『令和8年分公的年金等の受給者の扶養親族等申告書』の紙の提出方法", "url": "https://www.nenkin.go.jp/service/jukyu/tetsuduki/rourei/jukyu/fuyo/fuyokami2026.html", "published_at": "2026-08-31", "source_type": "official"},
+      {"publisher": "公益財団法人 生命保険文化センター", "title": "公的年金の税金（所得税）はどうやって計算される？", "url": "https://www.jili.or.jp/lifeplan/lifesecurity/1125.html", "published_at": "2026-07-15", "source_type": "research"}
     ],
     "claims": [
-      {
-        "kind": "FACT",
-        "text": "The 2026 tax reform was enacted through the Act Partially Amending the Income Tax Act, etc. (Act No. 12 of 2026) and raised the basic deduction and income eligibility thresholds for dependents.",
-        "source_refs": [1],
-        "basis": "Japan Pension Service identifies the enacted law and the pension-related changes."
-      },
-      {
-        "kind": "FACT",
-        "text": "For 2026 pension income tax, Japan Pension Service continues using the pre-reform basic deduction through the November pension payment and then recalculates the full-year tax using the revised deduction at the December 2026 payment.",
-        "source_refs": [1, 4],
-        "basis": "Both JPS and the independent Life Insurance Culture Center describe the December year-to-date reconciliation."
-      },
-      {
-        "kind": "FACT",
-        "text": "If the December reconciliation creates an overpayment, Japan Pension Service says the amount is generally refunded; its worked example shows prior overwithholding being offset against December withholding and the difference returned.",
-        "source_refs": [1],
-        "basis": "JPS official explanation and worked example."
-      },
-      {
-        "kind": "FACT",
-        "text": "The 2026 reform raises the total-income threshold for ordinary spouse/dependent eligibility from ¥580,000 to ¥620,000 for 2026 income tax.",
-        "source_refs": [1],
-        "basis": "JPS table explicitly shows ¥620,000 with ¥580,000 as the pre-reform threshold."
-      },
-      {
-        "kind": "FACT",
-        "text": "For a relative who newly qualifies in 2026 because of the revised dependent-income requirement, Japan Pension Service says a final income-tax return is generally required to claim the deduction.",
-        "source_refs": [1, 4],
-        "basis": "JPS states this directly; the Life Insurance Culture Center independently highlights the same filing case."
-      },
-      {
-        "kind": "FACT",
-        "text": "The reason the 2026 pension dependent declaration can still show the old ¥580,000 threshold is timing: JPS began mailing the 2026 declaration from September 10, 2025, before the 2026 tax reform was enacted; current JPS instructions distinguish the 2026 form's ¥580,000 threshold from the ¥620,000 threshold used going forward.",
-        "source_refs": [2, 3],
-        "basis": "Current JPS form instructions explicitly show ¥580,000 for the 2026 form and ¥620,000 for later forms; JPS confirms the 2026 forms were mailed starting September 2025."
-      },
-      {
-        "kind": "FACT",
-        "text": "The pension withholding threshold itself remains ¥2.05 million for age 65+ and ¥1.55 million for under 65 for 2026; the higher ¥2.14 million/¥1.64 million thresholds apply from 2027 pension withholding.",
-        "source_refs": [2, 5],
-        "basis": "Current JPS and NTA guidance explicitly distinguishes 2026 from 2027 thresholds."
-      },
-      {
-        "kind": "INFERENCE",
-        "text": "The practical trap is administrative rather than a new tax bill: the same reform contains an automatic December correction for the pensioner's own basic deduction but a non-automatic route for some newly eligible family deductions.",
-        "source_refs": [1, 2, 3, 4],
-        "basis": "The different handling follows directly from JPS's December reconciliation rule and its separate instruction to file when a relative newly qualifies."
-      }
+      {"kind": "FACT", "text": "The 2026 tax reform was enacted through the Act Partially Amending the Income Tax Act, etc. (Act No. 12 of 2026) and raised the basic deduction and family-income eligibility thresholds.", "source_refs": [1], "basis": "Japan Pension Service identifies the enacted law and pension-related changes."},
+      {"kind": "FACT", "text": "For 2026 pension income tax, JPS uses the pre-reform basic deduction through the November pension payment, then recalculates the full-year tax using the revised deduction at the December 2026 payment.", "source_refs": [1, 4], "basis": "JPS and the independent Life Insurance Culture Center both describe the December reconciliation."},
+      {"kind": "FACT", "text": "If the December reconciliation produces an overpayment, JPS says the amount is generally refunded.", "source_refs": [1], "basis": "Official JPS transition guidance."},
+      {"kind": "FACT", "text": "The reform raises the total-income threshold for ordinary spouse/dependent eligibility from ¥580,000 to ¥620,000 for 2026 income tax.", "source_refs": [1], "basis": "JPS table explicitly shows ¥620,000 with ¥580,000 as the pre-reform threshold."},
+      {"kind": "FACT", "text": "For a relative who newly qualifies in 2026 because of the revised income requirement, JPS says a final income-tax return is generally required to claim the deduction.", "source_refs": [1, 4], "basis": "JPS states this directly and the Life Insurance Culture Center independently highlights the same filing case."},
+      {"kind": "FACT", "text": "The 2026 pension dependent declaration was already being mailed from September 10, 2025, and current JPS instructions distinguish that form's ¥580,000 threshold from the ¥620,000 threshold used under the revised rule going forward.", "source_refs": [2, 3], "basis": "Current JPS form instructions and mailing history."},
+      {"kind": "FACT", "text": "Current JPS instructions distinguish 2026 from later pension withholding: the 2026 age-65+ threshold remains ¥2.05 million and the under-65 threshold ¥1.55 million; ¥2.14 million and ¥1.64 million apply from 2027.", "source_refs": [2], "basis": "Current JPS instructions explicitly label the thresholds by tax year."},
+      {"kind": "INFERENCE", "text": "The practical trap is administrative: the same reform contains an automatic December correction for the pensioner's own basic deduction but a non-automatic route for some newly eligible family deductions.", "source_refs": [1, 2, 3, 4], "basis": "The conclusion follows from the different official transition procedures."}
     ],
     "content": {
-      "policy_status": "ENACTED. The 2026 income-tax changes are law. The special pension withholding reconciliation is scheduled for the December 2026 pension payment; the newly raised ¥620,000 family-income threshold applies to 2026 income tax even though the already-issued 2026 pension declaration used the old ¥580,000 threshold.",
+      "policy_status": "ENACTED. The 2026 income-tax changes are law. The special pension withholding reconciliation is scheduled for the December 2026 pension payment; the raised ¥620,000 family-income threshold applies to 2026 income tax even though the already-issued 2026 pension declaration used the old ¥580,000 threshold.",
       "key_message": "Dalawang magkaibang process: December can automatically fix overwithholding from the higher basic deduction, but it may not add a spouse/dependent who only became eligible under the new ¥620,000 income limit.",
-      "who_is_affected": "Most relevant to old-age pension recipients who have income tax withheld and to pensioners whose spouse or other qualifying dependent has 2026 total income above ¥580,000 but no more than ¥620,000. Other eligibility conditions for spouse/dependent deductions still apply; crossing this income band alone does not guarantee a deduction.",
-      "when": "The automatic pension-tax reconciliation happens at the December 2026 pension payment. Eligibility for the revised ¥620,000 family-income threshold is judged for 2026 income tax. Any needed final/refund return is handled after the 2026 tax year under the normal tax-return process.",
-      "financial_impact": "The automatic refund varies with pension amount, deductions and tax already withheld. For newly qualifying dependents, the ordinary spouse/dependent deduction shown by JPS is ¥380,000 from taxable income, but the actual yen tax saving is not ¥380,000 and depends on the pensioner's taxable income and applicable tax rate.",
+      "who_is_affected": "Most relevant to old-age pension recipients who have income tax withheld and to pensioners whose spouse or other qualifying dependent has 2026 total income above ¥580,000 but no more than ¥620,000. Other eligibility conditions still apply.",
+      "when": "The automatic pension-tax reconciliation happens at the December 2026 pension payment. Any needed final/refund return is handled after the 2026 tax year under the normal tax-return process.",
+      "financial_impact": "The automatic refund varies with pension amount, deductions and tax already withheld. For an ordinary qualifying spouse/dependent, JPS shows a ¥380,000 deduction from taxable income; that is not a ¥380,000 cash refund, and the actual tax saving depends on taxable income and tax rate.",
       "estimated_saving_yen": 0,
       "time_minutes": 20,
       "travel_minutes": 0,
       "risk_if_ignored": "MED: the pensioner's own basic-deduction overpayment should generally be reconciled automatically, but an eligible family deduction can be missed if the household assumes the December adjustment covers it too.",
       "action": "PREPARE",
-      "deadline": "No September action deadline for this 2026 catch-up. Check the December pension payment and the 2026 pension withholding certificate, then use the normal 2026 final/refund-return process if a relative newly qualifies under the revised rule and the deduction was not already reflected.",
+      "deadline": "No special September deadline. Check the December pension payment and the 2026 pension withholding certificate, then use the normal 2026 final/refund-return process if a relative newly qualifies and the deduction was not reflected.",
       "effort": "LOW-MED",
-      "potential_benefit": "Recover tax already overwithheld and avoid leaving a newly available spouse/dependent deduction unclaimed.",
-      "downside": "Not every pensioner needs to file. Filing unnecessarily adds work, and the ¥620,000 income test is only one eligibility condition among several.",
-      "common_mistake": "Common mistake: seeing the new ¥2.14M/¥1.64M withholding thresholds and assuming they already govern all 2026 pension payments. Current JPS/NTA guidance says those headline thresholds apply from 2027; 2026 instead gets a special December recalculation. Another mistake is assuming that automatic recalculation also automatically adds newly eligible family members.",
-      "what_to_do_now": "If a spouse/dependent is near the old threshold, estimate that person's full-year 2026 total income and keep income records. Do not file anything early just because of this story. When the December pension payment and later withholding certificate arrive, check whether the pension tax was reconciled and whether the family deduction is reflected.",
-      "what_to_wait_for": "Wait for the December 2026 pension reconciliation and the 2026 pension withholding certificate before deciding whether a return is needed. Also use the National Tax Agency's 2026 filing guidance when it is finalized for the filing season.",
-      "strongest_counterinterpretation": "For many pensioners this requires no extra action at all. JPS is explicitly building the basic-deduction correction into December, and pensioners who meet the pension-return-exemption conditions are not automatically required to file merely because they receive pension income. The extra filing issue is concentrated among people who want to claim a deduction that the pre-reform pension declaration could not capture or another refund-producing deduction.",
-      "what_would_change_mind": "ALAM would downgrade the action need if JPS or NTA publishes a later mechanism that automatically retrofits newly eligible ¥580k-¥620k dependents into the 2026 pension reconciliation. It would raise urgency if official filing guidance identifies a special deadline, notice, or correction process beyond the ordinary final/refund-return route.",
+      "potential_benefit": "Recover overwithheld tax and avoid leaving a newly available spouse/dependent deduction unclaimed.",
+      "downside": "Not every pensioner needs to file. The ¥620,000 income test is only one eligibility condition among several.",
+      "common_mistake": "Do not assume the new ¥2.14M/¥1.64M withholding thresholds govern ordinary 2026 payments; current JPS guidance assigns them to 2027. Also do not assume the automatic December recalculation automatically adds newly eligible family members.",
+      "what_to_do_now": "If a spouse/dependent is near the old threshold, estimate that person's full-year 2026 total income and keep income records. Do not file early. When the December payment and later withholding certificate arrive, check whether the pension tax was reconciled and whether the family deduction is reflected.",
+      "what_to_wait_for": "Wait for the December 2026 pension reconciliation and the 2026 pension withholding certificate before deciding whether a return is needed. Use the National Tax Agency's official 2026 filing guidance when available.",
+      "strongest_counterinterpretation": "For many pensioners this requires no extra action. JPS is explicitly building the basic-deduction correction into December. The filing issue is concentrated among people who want to claim a deduction that the pre-reform pension declaration could not capture or another refund-producing deduction.",
+      "what_would_change_mind": "ALAM would downgrade the action need if JPS or NTA publishes a mechanism that automatically retrofits newly eligible ¥580k-¥620k dependents into the 2026 pension reconciliation. It would raise urgency if official guidance identifies a special deadline or correction process beyond the ordinary final/refund-return route.",
       "usefulness": 94,
       "novelty": 93,
-      "impact": {
-        "money": "MED",
-        "family": "MED",
-        "career": "LOW",
-        "japan": "MED",
-        "urgency": "MED"
-      },
-      "connection_tags": [
-        "2026-tax-reform",
-        "pension-withholding",
-        "dependent-income-threshold",
-        "tax-refund"
-      ],
+      "impact": {"money": "MED", "family": "MED", "career": "LOW", "japan": "MED", "urgency": "MED"},
+      "connection_tags": ["2026-tax-reform", "pension-withholding", "dependent-income-threshold", "tax-refund"],
       "reading_levels": {
-        "30 sec": "FACT: Japan Pension Service will recalculate 2026 pension withholding in December using the higher basic deduction and generally refund overpaid tax automatically. Fine print: if your spouse/dependent only became eligible because the income limit rose from ¥580k to ¥620k, JPS says you generally need a 2026 tax return to claim that family deduction. PREPARE records now; check December and the withholding certificate before filing.",
-        "2 min": "The 2026 pension-tax reform has two different administrative tracks. For the pensioner's own basic deduction, JPS kept using the old calculation through November and will do a full-year recalculation at the December pension payment; overpaid withholding is generally refunded automatically. But the 2026 pension dependent declaration was already sent from September 2025, before the new law, so its income test still used ¥580,000. The new law raises that test to ¥620,000 for 2026 income tax. JPS therefore says that when a spouse or dependent newly qualifies only because of this change, a final tax return is generally needed to claim the deduction. Also note: the widely quoted pension withholding thresholds of ¥2.14M for age 65+ and ¥1.64M for under 65 are the 2027 thresholds, not the ordinary 2026 thresholds."
+        "30 sec": "FACT: JPS will recalculate 2026 pension withholding in December using the higher basic deduction and generally refund overpaid tax automatically. Fine print: if your spouse/dependent only became eligible because the income limit rose from ¥580k to ¥620k, JPS says you generally need a 2026 tax return to claim that family deduction. PREPARE records now; check December before filing.",
+        "2 min": "The 2026 pension-tax reform has two tracks. JPS will do a full-year December recalculation for the pensioner's own basic deduction, so overpaid withholding is generally automatic. But the 2026 pension dependent declaration was already sent from September 2025 and used ¥580,000. The new law raised the limit to ¥620,000 for 2026 income tax, so JPS says a newly eligible spouse/dependent generally requires a final tax return. The widely quoted ¥2.14M age-65+ and ¥1.64M under-65 pension withholding thresholds are for 2027, not ordinary 2026 withholding."
       },
       "learning": {
-        "outcomes": [
-          "Understand why one part of the pension tax reform is automatic while another can require filing.",
-          "Distinguish the 2026 pension withholding rules from the 2027 ¥2.14M/¥1.64M thresholds.",
-          "Know what to check before deciding whether to file a 2026 tax return."
-        ],
-        "background": "Japan Pension Service withholds income tax from qualifying old-age pension payments. A tax reform enacted in 2026 increased the basic deduction and also raised some family-income eligibility limits. Because the law changed after the 2026 pension declaration process had already started, JPS is handling the transition in two different ways.",
+        "outcomes": ["Understand why one pension tax correction is automatic while another can require filing.", "Distinguish 2026 withholding from the 2027 ¥2.14M/¥1.64M thresholds.", "Know what to check before deciding whether to file."],
+        "background": "JPS withholds income tax from qualifying old-age pension payments. A 2026 law increased the basic deduction and some family-income eligibility limits. Because the 2026 pension declaration process had already begun before the law changed, JPS uses different transition procedures for the two changes.",
         "terms": [
-          {
-            "term": "源泉徴収",
-            "meaning": "Tax withheld before the pension payment reaches the recipient.",
-            "why_it_matters": "The December adjustment is correcting tax that may already have been withheld earlier in 2026."
-          },
-          {
-            "term": "扶養親族等申告書",
-            "meaning": "The pension recipient's declaration used to tell Japan Pension Service about eligible spouses, dependents and certain other deductions for withholding purposes.",
-            "why_it_matters": "The 2026 version was mailed before the later tax-law change, which explains why it could not fully capture the new ¥620,000 threshold."
-          },
-          {
-            "term": "確定申告 / 還付申告",
-            "meaning": "A final income-tax return, including a refund return when too much tax was paid.",
-            "why_it_matters": "This is the route JPS says is generally needed when a relative becomes newly eligible under the revised 2026 family-income test."
-          }
+          {"term": "源泉徴収", "meaning": "Tax withheld before the pension payment reaches the recipient.", "why_it_matters": "December can correct tax already withheld earlier in 2026."},
+          {"term": "扶養親族等申告書", "meaning": "The pension declaration used to tell JPS about eligible spouses, dependents and certain deductions.", "why_it_matters": "The 2026 form was issued before the later law change and used the old threshold."},
+          {"term": "確定申告 / 還付申告", "meaning": "A final income-tax return, including a refund return when too much tax was paid.", "why_it_matters": "JPS says this is generally needed for a relative newly eligible under the revised 2026 family-income test."}
         ],
         "how_it_works": [
-          {
-            "title": "1. JPS kept withholding under the old basic-deduction calculation",
-            "explanation": "Through the November 2026 pension payment, JPS uses the pre-reform basic-deduction amount for withholding. That can produce more withholding than the revised full-year tax ultimately requires."
-          },
-          {
-            "title": "2. December performs a catch-up calculation",
-            "explanation": "At the December pension payment, JPS recalculates the entire 2026 tax using the revised basic deduction, compares it with tax already withheld, and generally refunds any excess."
-          },
-          {
-            "title": "3. Newly eligible family members are different",
-            "explanation": "The 2026 pension declaration was already distributed from September 2025 and used the old ¥580,000 family-income threshold. The new 2026 law raised it to ¥620,000, so JPS says a person who becomes newly eligible because of that change generally needs a final tax return to claim the deduction."
-          }
+          {"title": "1. Old calculation through November", "explanation": "JPS keeps using the pre-reform basic-deduction calculation through the November 2026 pension payment."},
+          {"title": "2. December catch-up", "explanation": "At the December payment, JPS recalculates the full 2026 tax with the revised basic deduction and generally refunds any excess withholding."},
+          {"title": "3. Newly eligible family members are different", "explanation": "The old 2026 pension declaration used ¥580,000. If a family member only becomes eligible under the new ¥620,000 limit, JPS says a final return is generally required to claim that deduction."}
         ],
-        "example": "Example: suppose a pensioner's otherwise-eligible dependent has 2026 total income of ¥600,000. That is above the old ¥580,000 line but within the new ¥620,000 line. The pensioner's December basic-deduction reconciliation can happen automatically, but the dependent deduction is the part that may require a tax return because the old 2026 pension declaration did not capture that newly expanded band.",
-        "takeaways": [
-          "December 2026 has a built-in pension withholding catch-up for the higher basic deduction.",
-          "A newly eligible spouse/dependent in the ¥580k-¥620k income band is not necessarily added automatically.",
-          "The ¥2.14M/¥1.64M pension withholding thresholds are for 2027, not the normal 2026 withholding threshold.",
-          "Keep family income records and check the December payment plus the withholding certificate before deciding to file.",
-          "The ¥620,000 test is not the only condition for spouse/dependent deductions."
-        ]
+        "example": "If an otherwise-eligible dependent has 2026 total income of ¥600,000, that is above the old ¥580,000 line but within the new ¥620,000 line. The pensioner's own December basic-deduction adjustment can be automatic, while the dependent deduction may still require a tax return.",
+        "takeaways": ["December 2026 has a built-in pension withholding catch-up.", "A newly eligible family member in the ¥580k-¥620k band is not necessarily added automatically.", "¥2.14M/¥1.64M are 2027 pension withholding thresholds.", "Keep income records and check December plus the withholding certificate before filing."]
       },
       "action_plan": {
-        "goal": "Let the automatic pension reconciliation happen while preserving the information needed to claim any family deduction that the transition process misses.",
-        "who_should_act": "Pension recipients with tax withheld, especially those whose spouse or other potentially qualifying dependent is expected to have 2026 total income above ¥580,000 but no more than ¥620,000. Pensioners with no affected family member can mainly watch the December reconciliation.",
-        "deadline": "No special immediate filing deadline. Review after the December 2026 pension payment and use the ordinary 2026 tax-return/refund-return procedure if necessary.",
-        "prepare": [
-          "2026 pension payment notices",
-          "2026 public-pension withholding certificate when issued",
-          "Full-year 2026 income records for the spouse/dependent in question",
-          "A copy or record of the pension dependent declaration if available"
-        ],
+        "goal": "Let the automatic reconciliation happen while preserving what is needed to claim a family deduction the transition process misses.",
+        "who_should_act": "Pension recipients with tax withheld, especially if a spouse/dependent is expected to have 2026 total income above ¥580,000 but no more than ¥620,000.",
+        "deadline": "No immediate special deadline; review after the December 2026 pension payment.",
+        "prepare": ["2026 pension payment notices", "2026 pension withholding certificate when issued", "Full-year 2026 income records for the family member"],
         "steps": [
-          {
-            "step": "Estimate the family member's 2026 total income",
-            "action": "Check whether the person's full-year total income falls in the newly expanded band and whether the other spouse/dependent conditions appear to be met.",
-            "how": "Use actual 2026 income records; do not compare the threshold directly with gross salary or pension receipts unless the official rule for that income type converts it that way.",
-            "needed": ["2026 income records for the family member"],
-            "time_minutes": 10,
-            "cost_yen": 0,
-            "done_when": "You know the person's estimated total income and whether the ¥580k-to-¥620k transition is relevant."
-          },
-          {
-            "step": "Check the December pension payment",
-            "action": "Compare the December tax deduction with earlier payments and look for the year-to-date reconciliation/refund effect.",
-            "how": "Use the pension payment notice or account/payment details together with JPS's December reconciliation explanation.",
-            "needed": ["December 2026 pension payment information"],
-            "time_minutes": 5,
-            "cost_yen": 0,
-            "done_when": "You have confirmed that the December pension withholding changed or identified that you need to verify the calculation further."
-          },
-          {
-            "step": "Check whether the family deduction was actually captured",
-            "action": "When the 2026 pension withholding certificate is available, verify the dependent/spouse information relevant to the deduction.",
-            "how": "Compare the certificate and your family-income records with current JPS/NTA guidance for 2026.",
-            "needed": ["2026 pension withholding certificate", "family income records"],
-            "time_minutes": 5,
-            "cost_yen": 0,
-            "done_when": "You know whether a newly eligible family deduction still needs to be claimed through a return."
-          },
-          {
-            "step": "File only if the deduction/refund still needs claiming",
-            "action": "Use the National Tax Agency's official 2026 final/refund-return process after year-end if the revised family deduction applies and was not already reflected.",
-            "how": "Follow the NTA's 2026 filing guidance once available; do not invent a special pension-only form or submit before the tax year is complete.",
-            "needed": ["withholding certificate", "income records", "official NTA filing guidance"],
-            "time_minutes": 30,
-            "cost_yen": 0,
-            "done_when": "The return is accepted or you have confirmed through official guidance that no filing is necessary."
-          }
+          {"step": "Estimate family-member income", "action": "Check full-year 2026 total income and other eligibility conditions.", "how": "Use actual income records; do not compare ¥620,000 directly with gross receipts unless the official income calculation says to.", "needed": ["2026 income records"], "time_minutes": 10, "cost_yen": 0, "done_when": "You know whether the ¥580k-to-¥620k transition is relevant."},
+          {"step": "Check December reconciliation", "action": "Review the December pension tax deduction/refund effect.", "how": "Compare the December payment notice with earlier payments.", "needed": ["December 2026 pension payment information"], "time_minutes": 5, "cost_yen": 0, "done_when": "You have confirmed the pension withholding adjustment or identified a discrepancy to verify."},
+          {"step": "Check the family deduction", "action": "Use the 2026 withholding certificate to see whether the spouse/dependent deduction still needs claiming.", "how": "Compare the certificate and income records with current JPS/NTA guidance.", "needed": ["withholding certificate", "family income records"], "time_minutes": 5, "cost_yen": 0, "done_when": "You know whether a return is still needed."},
+          {"step": "File only if needed", "action": "Use the NTA's official 2026 final/refund-return process after year-end if the deduction applies and was not reflected.", "how": "Follow official NTA filing guidance when published.", "needed": ["withholding certificate", "income records"], "time_minutes": 30, "cost_yen": 0, "done_when": "The return is accepted or official guidance confirms no filing is needed."}
         ],
-        "mistakes_to_avoid": [
-          "Assuming the December automatic recalculation also adds every newly eligible family member.",
-          "Using ¥2.14M/¥1.64M as the ordinary 2026 pension withholding threshold; those amounts apply from 2027.",
-          "Comparing the ¥620,000 total-income test directly with gross salary or gross pension without applying the relevant income calculation.",
-          "Filing before the year is complete or before checking whether the deduction was already captured.",
-          "Assuming income under ¥620,000 alone guarantees spouse/dependent eligibility."
-        ],
+        "mistakes_to_avoid": ["Assuming December automatically adds every newly eligible family member.", "Using ¥2.14M/¥1.64M as ordinary 2026 thresholds.", "Comparing the ¥620,000 total-income test directly with gross salary or pension receipts.", "Assuming income under ¥620,000 alone guarantees eligibility."],
         "decision_rules": [
-          {
-            "if": "No spouse/dependent becomes newly eligible under the revised 2026 income test and there are no other refund-producing issues",
-            "then": "Usually let the December pension reconciliation run and keep the year-end certificate; this story alone does not create a reason to file."
-          },
-          {
-            "if": "A spouse/dependent is newly eligible because 2026 total income is above the old ¥580,000 limit but within the new ¥620,000 limit, and the deduction is not reflected",
-            "then": "Prepare to claim the deduction through the official 2026 final/refund-return process."
-          },
-          {
-            "if": "Official JPS/NTA guidance later provides an automatic correction for this newly eligible family member",
-            "then": "Use that official correction route instead of duplicating the claim."
-          }
+          {"if": "No family member becomes newly eligible under the revised test and there are no other refund-producing issues", "then": "Usually let the December reconciliation run; this story alone does not create a reason to file."},
+          {"if": "A family member is newly eligible because 2026 total income is above ¥580,000 but within ¥620,000 and the deduction is not reflected", "then": "Prepare to claim it through the official 2026 final/refund-return process."}
         ],
-        "follow_up": "Re-check JPS and NTA guidance after the December 2026 pension payment and again when the official 2026 tax-return guidance is published."
+        "follow_up": "Re-check JPS and NTA guidance after the December 2026 pension payment and when official 2026 filing guidance is available."
       },
-      "editorial_visual": {
-        "style": "editorial",
-        "motif": "document",
-        "secondary_motif": "yen",
-        "scene": "a pension statement split into two neat lanes: one lane automatically returns a few yen coins in December, while the other lane stops at a small family-deduction form waiting to be filed; clear calendar page marked December, no readable text or logos",
-        "caption": "One tax correction is automatic; the other may still need paperwork",
-        "silliness": 8,
-        "exaggeration": 35
-      }
+      "editorial_visual": {"style": "editorial", "motif": "document", "secondary_motif": "yen", "scene": "a pension statement split into two neat lanes: one lane automatically returns a few yen coins in December, while the other lane stops at a family-deduction form waiting to be filed; restrained calendar symbolism, no readable text or logos", "caption": "One tax correction is automatic; the other may still need paperwork", "silliness": 8, "exaggeration": 35}
     }
   }
 ]
