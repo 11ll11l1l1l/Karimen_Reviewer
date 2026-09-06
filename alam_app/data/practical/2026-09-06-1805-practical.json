@@ -1,0 +1,232 @@
+[
+  {
+    "id": "japan-company-housing-in-kind-valuation-oct2026",
+    "agent": "practical",
+    "created_at": "2026-09-06T18:05:00+09:00",
+    "type": "social_insurance",
+    "title": "Company housing gets a new social-insurance valuation from October 1",
+    "summary": "FACT: From October 1, 2026, Japan changes how company housing and dorms are valued as non-cash pay for social-insurance purposes: the calculation moves from living-room tatami area to total floor area in square metres. That can change the amount added to standard monthly remuneration, so some workers may see different health-insurance or employees' pension deductions even if their cash salary and company-housing rent do not change.",
+    "why_it_matters": "This is easy to miss because it is not a normal rent increase. It is a payroll/social-insurance calculation change. Workers in company housing, dormitories or employer-leased housing should know that a different imputed housing value may enter their standard monthly remuneration after October 1; employers must recalculate using the new prefectural per-square-metre amounts.",
+    "importance": 86,
+    "confidence": 96,
+    "tags": ["Japan", "social insurance", "company housing", "dormitory", "payroll", "health insurance", "employees pension", "現物給与", "社宅", "寮"],
+    "geography": ["Japan"],
+    "status": "NEW",
+    "sources": [
+      {
+        "publisher": "Japan Pension Service",
+        "title": "令和8年4月1日から現物給与価額が改正されます",
+        "url": "https://www.nenkin.go.jp/oshirase/taisetu/jigyosho/2026/202603/0319.html",
+        "published_at": "2026-03-19",
+        "source_type": "official"
+      },
+      {
+        "publisher": "Japan Pension Service",
+        "title": "令和8年4月から現物給与の価額が改正されます",
+        "url": "https://www.nenkin.go.jp/service/kounen/hokenryo/hoshu/20150511.files/2026.pdf",
+        "published_at": "2026-03-19",
+        "source_type": "official"
+      },
+      {
+        "publisher": "Japan Pension Service",
+        "title": "現物給与の価額 Q&A（よくある質問）",
+        "url": "https://www.nenkin.go.jp/service/kounen/hokenryo/hoshu/genbutsukako.files/2014.pdf",
+        "published_at": "2016-07-22",
+        "source_type": "official"
+      },
+      {
+        "publisher": "Nextpreneurs",
+        "title": "令和8年10月から社宅の現物給与価額が変わります｜畳数から総床面積へ",
+        "url": "https://www.chousing.nextpreneurs.com/column/genbutsu-kyuyo-kaisei/",
+        "published_at": "2026-07-31",
+        "source_type": "analysis"
+      }
+    ],
+    "claims": [
+      {
+        "kind": "FACT",
+        "text": "Japan Pension Service says the housing portion of the official in-kind-pay valuation changes from October 1, 2026, while the food valuation changed from April 1, 2026.",
+        "source_refs": [1, 2],
+        "basis": "Official Japan Pension Service notice and FY2026 valuation table"
+      },
+      {
+        "kind": "FACT",
+        "text": "For housing, the calculation unit changes from a prefectural amount per tatami mat to a prefectural amount per square metre of total floor area from October 1, 2026.",
+        "source_refs": [2],
+        "basis": "Official FY2026 prefectural valuation table"
+      },
+      {
+        "kind": "FACT",
+        "text": "Japan Pension Service treats housing such as company housing or dormitories as in-kind pay when provided as compensation, converts that benefit into money and combines it with cash pay when determining standard monthly remuneration.",
+        "source_refs": [3],
+        "basis": "Official JPS in-kind-pay Q&A"
+      },
+      {
+        "kind": "FACT",
+        "text": "A change in the official in-kind-pay valuation is treated as a change in fixed remuneration and can therefore require a monthly-remuneration revision filing when the normal conditions for such a revision are met.",
+        "source_refs": [3],
+        "basis": "Official JPS Q&A on whether a valuation revision counts as fixed-remuneration change"
+      },
+      {
+        "kind": "FACT",
+        "text": "The FY2026 table sets the October housing value at ¥600 per square metre in Ibaraki, ¥1,330 in Tokyo, ¥1,010 in Kanagawa and ¥820 in Osaka; values differ by prefecture.",
+        "source_refs": [2],
+        "basis": "Official JPS prefectural valuation table"
+      },
+      {
+        "kind": "INFERENCE",
+        "text": "Workers can experience higher, lower or unchanged social-insurance deductions depending on the property layout, prefectural rate, employee housing charge and whether the resulting remuneration change crosses a standard-remuneration threshold.",
+        "source_refs": [2, 3, 4],
+        "basis": "The valuation basis changes and standard monthly remuneration is banded; a Tokyo worked example published from the JPS figures shows the imputed value rising from ¥45,280 to ¥53,200 for one 40㎡ company-housing example."
+      }
+    ],
+    "content": {
+      "policy_status": "ENACTED / EFFECTIVE OCTOBER 1, 2026. The underlying Ministry of Health, Labour and Welfare valuation change has already been published; this is not a proposal.",
+      "key_message": "Kung nakatira ka sa company housing o dorm, check your payroll around October: puwedeng magbago ang social-insurance calculation kahit pareho ang cash salary at housing charge mo.",
+      "who_is_affected": "Employees covered by employees' health insurance / Employees' Pension Insurance who receive employer-provided housing, a dormitory or similar housing benefit that is treated as in-kind compensation. Workers who rent their own home and simply receive a normal cash housing allowance are not using this specific housing valuation rule in the same way.",
+      "when": "New housing valuation applies from October 1, 2026. Food-related in-kind values already changed from April 1, 2026.",
+      "financial_impact": "Variable. The direct change is to the imputed housing amount included in remuneration, not a universal fixed premium increase. If the recalculated remuneration is still inside the same standard-remuneration band, the worker's monthly social-insurance deduction may not change. If it moves enough to trigger a standard-remuneration revision, deductions can change later under the normal payroll rules.",
+      "time_minutes": 10,
+      "travel_minutes": 0,
+      "risk_if_ignored": "MEDIUM. A worker may mistake a later insurance-premium change for a payroll error, while an employer that keeps using the old tatami-based method can calculate remuneration incorrectly.",
+      "action": "CHECK",
+      "deadline": "October 2026 payroll / housing valuation cycle. Employees do not normally file this valuation themselves; employers and payroll teams apply it.",
+      "effort": "LOW for employees; MED for employers/payroll because each covered housing arrangement may need recalculation using total floor area and the correct prefectural rate.",
+      "potential_benefit": "Catching an incorrect payroll treatment early and understanding a legitimate deduction change before assuming wages were cut.",
+      "downside": "This does not mean everyone's premiums will rise. The new value can move either direction depending on the old living-room area, new total area, prefectural rate, employee housing charge and remuneration band.",
+      "what_would_change_mind": "ALAM would revise this story if Japan Pension Service postpones the October 1 housing rule, republishes materially different prefectural rates, or issues new transition guidance that changes how the valuation feeds into standard monthly remuneration.",
+      "usefulness": 91,
+      "novelty": 90,
+      "impact": {
+        "money": "MED",
+        "family": "MED",
+        "career": "LOW",
+        "japan": "HIGH",
+        "urgency": "MED"
+      },
+      "connection_tags": ["company-housing", "social-insurance", "standard-monthly-remuneration", "october-2026", "payroll"],
+      "reading_levels": {
+        "30 sec": [
+          "What happened: From Oct. 1, company-housing value for social insurance changes from tatami-based living-room area to total floor area in m².",
+          "Why it matters: That value is added to cash pay when standard monthly remuneration is calculated.",
+          "What to do: If you live in company housing or a dorm, compare your October-November payroll explanations and ask HR which new housing value they used.",
+          "Bottom line: A deduction change can be legitimate, but it is not automatic for everyone."
+        ],
+        "2 min": "Japan does not treat employer-provided housing as 'free' for social-insurance payroll. It assigns a prefectural monetary value to the housing benefit and combines that with cash pay. Until September 30, the housing calculation is based mainly on living-room tatami area. From October 1, the official table switches to total floor area in square metres, including more of the actual dwelling footprint. Because every prefecture has its own rate and employees may also pay a housing charge, the result is case-specific. The important practical point is not that premiums definitely rise, but that the imputed pay figure changes and can affect standard monthly remuneration if it crosses the normal revision conditions."
+      },
+      "learning": {
+        "outcomes": [
+          "Understand why company housing can appear in social-insurance payroll even when no cash is paid to the employee.",
+          "Recognize the October 1 change from tatami-based living-room valuation to total-floor-area valuation.",
+          "Know why a payroll deduction may change without a cash-salary change."
+        ],
+        "background": "Japan's health-insurance and Employees' Pension Insurance calculations use 'standard monthly remuneration' rather than only base salary. Remuneration can include non-cash benefits provided in return for work. Company housing and dormitory accommodation are one example, so the government publishes a prefecture-by-prefecture monetary value that payroll uses for this benefit.",
+        "terms": [
+          {
+            "term": "現物給与 (genbutsu kyuyo)",
+            "meaning": "Compensation provided in something other than cash, such as employer-provided housing or meals.",
+            "why_it_matters": "Its official monetary value can be included when social-insurance remuneration is calculated."
+          },
+          {
+            "term": "標準報酬月額 (standard monthly remuneration)",
+            "meaning": "The official pay band used to calculate employees' health-insurance and Employees' Pension Insurance premiums.",
+            "why_it_matters": "If recalculated remuneration moves enough to another band and the normal revision conditions are met, monthly deductions can change."
+          }
+        ],
+        "how_it_works": [
+          {
+            "title": "Before October",
+            "explanation": "Housing value is calculated using the prefectural amount per tatami mat for the relevant living-room area."
+          },
+          {
+            "title": "From October 1",
+            "explanation": "Housing value uses the prefectural amount per square metre of total floor area instead."
+          },
+          {
+            "title": "Payroll combines the value with cash remuneration",
+            "explanation": "The resulting in-kind amount, after any applicable employee housing charge treatment, feeds into remuneration used for social insurance. A valuation change is treated as a fixed-remuneration change for monthly-revision purposes."
+          }
+        ],
+        "example": "Using the official Tokyo rates, a worked example for a company apartment with 16 tatami of living space and 40㎡ total floor area changes from ¥45,280 under the old calculation to ¥53,200 under the new one. That ¥7,920 difference is an imputed-pay change, not a ¥7,920 premium increase.",
+        "takeaways": [
+          "October 1 changes the housing calculation method, not your legal rent contract by itself.",
+          "Company housing can count as non-cash remuneration for social insurance.",
+          "The effect differs by prefecture and property layout.",
+          "A changed imputed value does not always mean a changed premium; the standard-remuneration band still matters.",
+          "Employees should ask payroll for the new housing valuation if deductions change unexpectedly."
+        ]
+      },
+      "action_plan": {
+        "goal": "Understand and verify any social-insurance payroll change tied to company housing after October 1.",
+        "who_should_act": "Employees living in employer-provided company housing/dorms and payroll/HR teams administering those arrangements. People renting privately with no employer-provided housing can ignore this specific rule.",
+        "deadline": "Use the new housing valuation from October 1, 2026. Employees should review the first payroll explanations/deductions after the employer's recalculation.",
+        "prepare": [
+          "Your latest payslip",
+          "Your company-housing or dormitory charge shown by payroll/HR",
+          "The prefecture used by payroll for the official in-kind valuation",
+          "If available, the dwelling's total floor area in square metres"
+        ],
+        "steps": [
+          {
+            "step": "Check whether the rule applies to you",
+            "action": "Confirm that your accommodation is employer-provided housing/dormitory treated as a housing benefit rather than your own private rental with only a cash allowance.",
+            "how": "Ask payroll or HR how your housing is classified for social insurance.",
+            "needed": ["Housing arrangement"],
+            "time_minutes": 5,
+            "cost_yen": 0,
+            "done_when": "Payroll confirms whether a housing 現物給与 value is included for you."
+          },
+          {
+            "step": "Ask for the October valuation basis",
+            "action": "Confirm the prefectural rate, total floor area and employee housing charge used in the recalculation.",
+            "how": "Compare the employer's explanation with the Japan Pension Service FY2026 prefectural table.",
+            "needed": ["Prefecture", "Total floor area", "Housing charge"],
+            "time_minutes": 5,
+            "cost_yen": 0,
+            "done_when": "You can see how the new in-kind housing amount was derived."
+          },
+          {
+            "step": "Compare payroll only if deductions change",
+            "action": "If health-insurance or pension deductions later change, ask whether the housing revaluation moved your standard monthly remuneration and whether a monthly revision was filed.",
+            "how": "Use HR/payroll first; the official JPS Q&A explains that valuation changes can count as fixed-remuneration changes.",
+            "needed": ["Before/after payslips"],
+            "time_minutes": 10,
+            "cost_yen": 0,
+            "done_when": "The change is either explained by the correct remuneration revision or identified for correction."
+          }
+        ],
+        "mistakes_to_avoid": [
+          "Assuming the October rule automatically raises everyone's insurance premium.",
+          "Confusing the imputed housing value with the actual rent charged by the company.",
+          "Using Tokyo's rate for every case; the official housing value differs by prefecture.",
+          "Treating a ¥7,920 increase in an example's imputed value as a ¥7,920 premium increase."
+        ],
+        "decision_rules": [
+          {
+            "if": "You do not live in employer-provided housing or a dormitory",
+            "then": "This specific housing-valuation change is unlikely to affect your payroll."
+          },
+          {
+            "if": "You live in company housing and deductions change after the October recalculation",
+            "then": "Ask payroll for the new 現物給与 amount, prefectural rate and whether standard monthly remuneration changed."
+          },
+          {
+            "if": "Payroll is still using the old tatami-based housing method after October 1",
+            "then": "Ask payroll to re-check the 2026 Japan Pension Service table and correction requirements."
+          }
+        ],
+        "follow_up": "Re-check the next payslip and any standard-remuneration notice after payroll applies the new housing value. If the calculation still looks inconsistent, use Japan Pension Service guidance or a pension office rather than estimating the correct premium yourself."
+      },
+      "bottom_line": "Company housing gets a new social-insurance valuation on October 1; know the number payroll uses before assuming any later deduction change is an error.",
+      "editorial_visual": {
+        "style": "editorial",
+        "motif": "home",
+        "secondary_motif": "document",
+        "scene": "a company apartment floor plan being measured by a square-metre ruler while an old tatami measuring stick is set aside beside a payroll document",
+        "caption": "The same company room gets a new payroll measuring stick",
+        "silliness": 18,
+        "exaggeration": 48
+      }
+    }
+  }
+]
