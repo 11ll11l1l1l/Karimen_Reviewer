@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import alam_mobile_shell as shell
 
 
@@ -20,6 +22,13 @@ def main():
     assert ".wisdom-verse:nth-of-type(n+2){display:none!important}" not in mobile
     assert ".intel-brief-copy,.intel-mini{display:none!important}" in mobile
     assert ".today-action-card:has(.today-empty){display:none!important}" in mobile
+
+    entrypoint = Path(__file__).with_name("streamlit_app.py").read_text(encoding="utf-8")
+    assert "import alam_mobile_shell as mobile_shell" in entrypoint
+    assert "mobile_shell.install_mobile_shell()" in entrypoint
+    assert entrypoint.index("intelligence.init_preferences()") < entrypoint.index(
+        "mobile_shell.install_mobile_shell()"
+    )
 
     print("ALAM mobile shell regression test passed")
 
