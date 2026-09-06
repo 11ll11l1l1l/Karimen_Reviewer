@@ -1,0 +1,255 @@
+[
+  {
+    "id": "japan-otc-like-prescription-surcharge-2027",
+    "agent": "practical",
+    "created_at": "2026-09-06T09:57:32+09:00",
+    "type": "healthcare_cost",
+    "title": "Some prescription drugs get a new extra charge in March 2027 — but the exemptions are very specific",
+    "summary": "FACT: Enacted na ang bagong rule for 77 OTC-like prescription-drug ingredients: the working design adds a special charge equal to 1/4 of the drug cost, with rollout targeted for March 2027. Pero hindi blanket increase—may detailed exemptions for certain uses, long-term treatment, hospitalization and protected patient groups, at may parts na fina-finalize pa.",
+    "why_it_matters": "Kung regular kang gumagamit ng common prescribed painkillers, allergy medicines, constipation drugs, skin medicines or similar products, puwedeng magbago ang out-of-pocket cost kahit may health insurance ka. Knowing the exemption logic early helps you avoid unnecessary panic, unsafe self-switching to OTC products, or surprise pharmacy bills next year.",
+    "importance": 91,
+    "confidence": 92,
+    "tags": ["Japan", "health insurance", "prescription drugs", "OTC-like drugs", "medical costs", "2027", "household costs"],
+    "geography": ["Japan"],
+    "status": "NEW",
+    "sources": [
+      {
+        "publisher": "厚生労働省",
+        "title": "OTC類似薬の保険給付の見直しの実施について",
+        "url": "https://www.mhlw.go.jp/content/10808000/001742587.pdf",
+        "published_at": "2026-08-26",
+        "source_type": "official"
+      },
+      {
+        "publisher": "厚生労働省",
+        "title": "OTC類似薬の保険給付の見直しの実施に向けた中間とりまとめ",
+        "url": "https://www.mhlw.go.jp/content/12403550/001734914.pdf",
+        "published_at": "2026-08-06",
+        "source_type": "official"
+      },
+      {
+        "publisher": "厚生労働省",
+        "title": "社会保障審議会（医療保険部会）第214回",
+        "url": "https://www.mhlw.go.jp/stf/newpage_28708.html",
+        "published_at": "2026-09-03",
+        "source_type": "official"
+      },
+      {
+        "publisher": "m3.com",
+        "title": "医師が判断する『長期使用』など基準を明確に、OTC類似薬",
+        "url": "https://www.m3.com/news/open/iryoishin/1356431",
+        "published_at": "2026-09-03",
+        "source_type": "news"
+      },
+      {
+        "publisher": "日本アレルギー友の会ほか6団体",
+        "title": "『OTC類似薬の保険給付の見直しの実施に向けた中間とりまとめ』に関する6団体要望書",
+        "url": "https://www.mhlw.go.jp/content/12401000/001744960.pdf",
+        "published_at": "2026-09-03",
+        "source_type": "primary"
+      }
+    ],
+    "claims": [
+      {
+        "kind": "FACT",
+        "text": "Japan enacted Health Insurance Act amendments in 2026 creating a new partial non-insurance treatment category for medicines judged highly substitutable with OTC drugs.",
+        "source_refs": [1, 2],
+        "basis": "MHLW's law summary and implementation paper state that the amended law was promulgated June 5, 2026 and creates the new category."
+      },
+      {
+        "kind": "FACT",
+        "text": "The current implementation design covers 77 ingredients and 1,042 prescription products and sets the special charge at one quarter of the target drug cost.",
+        "source_refs": [1, 2, 4],
+        "basis": "MHLW implementation materials and September 3 committee reporting."
+      },
+      {
+        "kind": "FACT",
+        "text": "MHLW materials target March 2027 implementation, while the statute itself provides for an effective date to be set by Cabinet Order within one year of promulgation for this measure.",
+        "source_refs": [1, 3],
+        "basis": "MHLW implementation slide says March 2027 is assumed; the law summary states the statutory timing mechanism."
+      },
+      {
+        "kind": "FACT",
+        "text": "If the medical indication is not one for which the corresponding OTC product is approved, the special charge is not to be imposed under the interim design.",
+        "source_refs": [2],
+        "basis": "MHLW interim summary explicitly excludes uses where approved indications/effects do not correspond."
+      },
+      {
+        "kind": "FACT",
+        "text": "For oral medicines, MHLW's interim framework uses roughly 50 weeks of prescriptions within a year as a benchmark for medically necessary long-term use, supported by prescription history or similar records rather than requiring 365 consecutive days.",
+        "source_refs": [2, 4],
+        "basis": "MHLW interim summary explains the approximately-50-week benchmark and acceptable ways to confirm treatment history."
+      },
+      {
+        "kind": "FACT",
+        "text": "Cancer-related treatment and side-effect management can be exempt, but an unrelated ordinary symptom such as hay fever, athlete's foot, a cold or back pain is not automatically exempt merely because the patient has cancer.",
+        "source_refs": [2],
+        "basis": "MHLW gives explicit examples of cancer-related versus unrelated treatment."
+      },
+      {
+        "kind": "FACT",
+        "text": "Hospital prescriptions during admission, including at discharge, are within the exempt-treatment framework in the interim summary.",
+        "source_refs": [2],
+        "basis": "MHLW interim summary section on inpatients."
+      },
+      {
+        "kind": "FACT",
+        "text": "Patient groups are still contesting parts of the exemption design; allergy groups told the September 3 committee that some standard chronic treatments, including certain topical steroids and allergy medicines, could still face added charges.",
+        "source_refs": [5],
+        "basis": "Six-group patient submission to the MHLW committee."
+      },
+      {
+        "kind": "INFERENCE",
+        "text": "The highest practical risk is not one large medical bill but repeated small surcharges for people using affected medicines regularly without fitting a finalized exemption.",
+        "source_refs": [1, 2, 5],
+        "basis": "The charge applies per affected drug use while the exemption framework distinguishes chronic-treatment cases narrowly."
+      }
+    ],
+    "content": {
+      "policy_status": "ENACTED; implementation details are still being finalized. The amended law exists, but the exact Cabinet-Order effective date and some exemption/operational rules are not yet final as of September 6, 2026.",
+      "key_message": "Huwag basta isipin na mawawala sa insurance ang common medicines: the new system keeps insurance but adds a separate charge to selected OTC-like prescriptions, with important use-based and patient-based exemptions.",
+      "who_is_affected": "People insured under Japan's public health-insurance system who receive one of the selected OTC-like prescription medicines after the new system starts. Regular users of common pain, allergy, constipation, cold-symptom, skin and similar medicines should pay particular attention. Exact product-level treatment depends on the final list and indication.",
+      "when": "MHLW is designing the system for March 2027 implementation. The amended law was promulgated June 5, 2026; for this measure the legal effective date is to be fixed by Cabinet Order within one year of promulgation.",
+      "financial_impact": "For an affected medicine, the current design makes one quarter of the target drug cost a separate special charge instead of ordinary insurance benefit. The remaining insured portion is still subject to the patient's normal insurance cost-sharing, and the special charge is subject to consumption tax under MHLW's framework. Actual yen impact depends on drug price, quantity, normal copay rate and whether an exemption applies.",
+      "estimated_saving_yen": 0,
+      "time_minutes": 10,
+      "travel_minutes": 0,
+      "risk_if_ignored": "MED-HIGH: recurring prescriptions can become unexpectedly more expensive, while stopping, reducing or switching prescribed medicine on your own can create medical risk.",
+      "action": "PREPARE",
+      "deadline": "No patient filing deadline exists now. Re-check the final MHLW rules before the intended March 2027 start, especially once the final product list and exemption operation are published.",
+      "effort": "LOW",
+      "potential_benefit": "Avoid surprise costs and identify whether a long-term-use, indication-based, inpatient or protected-treatment exemption may apply before the system starts.",
+      "downside": "The rules are not fully final, so changing treatment now based on the draft framework can be premature or unsafe.",
+      "common_mistake": "Common mistake: thinking every medicine on the 77-ingredient list simply becomes 'not covered by insurance.' That is not the current design. Another mistake is assuming a diagnosis such as cancer automatically exempts every unrelated prescription.",
+      "what_to_do_now": "Keep your current prescription/medicine history and know the names of medicines you take repeatedly. If one appears in the final target list, ask your doctor or pharmacist at a normal visit whether the prescribed indication or long-term-use rule is expected to qualify for exemption. Do not alter treatment on your own.",
+      "what_to_wait_for": "Wait for the final MHLW/Cabinet-Order effective date, final product-level list, final rules for children and low-income patients, and operational instructions for how pharmacies/doctors will record exemptions.",
+      "strongest_counterinterpretation": "This is less severe than full delisting from insurance. The law deliberately created a partial non-insurance charge rather than making the selected drugs entirely self-pay, and the technical framework contains several exemptions. For many occasional users, the added amount may be modest; the largest concern is repeated use where no exemption applies.",
+      "what_would_change_mind": "ALAM would lower the expected household impact if final rules broaden exemptions substantially, shrink the 1,042-product list, reduce the 1/4 special-charge rate, or delay implementation. It would raise concern if the final rules narrow long-term-use or low-income/child protections, expand the product list, or announce a higher charge.",
+      "usefulness": 95,
+      "novelty": 90,
+      "impact": {
+        "money": "MED",
+        "family": "MED",
+        "career": "LOW",
+        "japan": "HIGH",
+        "urgency": "MED"
+      },
+      "connection_tags": ["health-insurance-reform", "prescription-costs", "otc-like-drugs", "2027-household-costs"],
+      "reading_levels": {
+        "30 sec": "FACT: A 2026 law creates a new extra charge for selected prescription drugs that closely resemble OTC medicines. Current design: 77 ingredients/1,042 products, special charge = 1/4 of drug cost, target start March 2027. Important: exemptions can depend on the disease, why the drug is being used, hospitalization, or medically necessary long-term use. PREPARE only—don't stop or switch medicine yourself; wait for final rules.",
+        "2 min": "The government did not simply remove these medicines from health insurance. Instead, it created a system where selected OTC-like prescription drugs remain partly insured but carry a separate special charge. MHLW's working framework covers 77 ingredients and 1,042 products and aims for March 2027. Fine print matters: uses not matched by an OTC indication can be excluded from the charge; inpatient prescriptions are protected; and oral drugs used roughly 50 weeks in a year can qualify as medically necessary long-term use if the treatment history supports it. Cancer protection is also purpose-specific: treatment of the cancer and treatment-related side effects can be exempt, but unrelated hay fever or an ordinary cold is not automatically exempt. Some rules—especially final handling for children and low-income patients—are still being finalized."
+      },
+      "learning": {
+        "outcomes": [
+          "Explain why these drugs are not simply becoming fully uninsured.",
+          "Recognize the main exemption categories before the 2027 rollout.",
+          "Know what information to keep so a doctor or pharmacist can assess an exemption later."
+        ],
+        "background": "Japan normally pays part of covered prescription-drug costs through public health insurance, with the patient paying a statutory share. The 2026 reform creates a new category for prescription medicines judged especially substitutable with over-the-counter products. Instead of removing insurance entirely, part of the drug price is carved out as a separate charge while the rest remains in the insurance framework.",
+        "terms": [
+          {
+            "term": "OTC類似薬",
+            "meaning": "A policy label for prescription medicines considered especially similar or substitutable with over-the-counter medicines. MHLW notes there is no single universal definition of the term.",
+            "why_it_matters": "Only drugs meeting the government's selected criteria are targeted by this reform."
+          },
+          {
+            "term": "特別の料金",
+            "meaning": "A separate charge outside the ordinary insurance benefit for the targeted part of the drug cost.",
+            "why_it_matters": "This is why 'still insured' can nevertheless mean a higher pharmacy bill."
+          }
+        ],
+        "how_it_works": [
+          {
+            "title": "1. Check whether the drug and use are targeted",
+            "explanation": "The working list starts from 77 ingredients whose OTC and prescription versions have matching ingredient/route and comparable maximum daily dose. But if the prescribed medical use is not an approved OTC use, the extra charge can be excluded."
+          },
+          {
+            "title": "2. Check whether the patient or treatment qualifies for protection",
+            "explanation": "MHLW's interim design exempts defined situations such as inpatient treatment, certain cancer- or designated-disease-related care, and medically necessary long-term use. The exemption can depend on why the medicine is used, not just the patient's diagnosis."
+          },
+          {
+            "title": "3. Long-term use needs evidence",
+            "explanation": "For oral drugs, the framework uses roughly 50 weeks of prescriptions within one year as the benchmark. It does not require 365 uninterrupted days, but the clinician may need prescription history, an medication notebook, online medication data or similar records to confirm continuity."
+          }
+        ],
+        "example": "Example of the rule boundary: a person actively receiving cancer treatment may avoid the extra charge for medicine used for cancer-treatment side effects such as treatment-related constipation or mouth sores. The same person would not automatically be exempt for unrelated seasonal hay fever merely because they also have cancer.",
+        "takeaways": [
+          "The reform is enacted, but the operating details are not fully final.",
+          "The current target is 77 ingredients and 1,042 products, with a special charge equal to 1/4 of the target drug cost.",
+          "Exemptions can depend on the reason for prescribing the medicine, not only the diagnosis.",
+          "Roughly 50 weeks of annual oral-drug prescriptions is the current long-term-use benchmark, not a strict 365-day rule.",
+          "Do not self-switch or stop prescription medicines because of this policy; verify the final rule with official guidance and your clinician/pharmacist."
+        ]
+      },
+      "action_plan": {
+        "goal": "Be ready to identify an affected medicine and document a possible exemption without changing medically necessary treatment prematurely.",
+        "who_should_act": "People who regularly receive prescription painkillers, allergy drugs, constipation medicines, skin medicines or other drugs that may appear on the final OTC-like target list. Occasional users can simply watch for the final list and pharmacy guidance.",
+        "deadline": "No action deadline now; re-check before the intended March 2027 launch.",
+        "prepare": [
+          "Current medicine list or お薬手帳",
+          "Recent prescription history for medicines used repeatedly",
+          "The condition/indication each recurring medicine is prescribed for"
+        ],
+        "steps": [
+          {
+            "step": "Record recurring medicines",
+            "action": "Write down the exact names of prescription medicines you use repeatedly.",
+            "how": "Use your medication notebook, pharmacy app or prescription records; no special government form is needed now.",
+            "needed": ["お薬手帳 or prescription history"],
+            "time_minutes": 5,
+            "cost_yen": 0,
+            "done_when": "You have a short list of the exact drug names you regularly receive."
+          },
+          {
+            "step": "Check only after the final list/rules are published",
+            "action": "Compare your recurring medicines with the final official MHLW target list and exemption rules.",
+            "how": "Use MHLW's final announcement or ask your regular pharmacy/clinic once implementation guidance is available.",
+            "needed": ["medicine list", "final MHLW guidance"],
+            "time_minutes": 5,
+            "cost_yen": 0,
+            "done_when": "You know whether each recurring medicine is targeted, excluded by indication, or potentially exempt through another rule."
+          },
+          {
+            "step": "Ask about exemption at a normal clinical contact",
+            "action": "If a recurring medicine is targeted, ask whether your indication or documented long-term use qualifies for the finalized exemption.",
+            "how": "Ask the prescribing clinician or dispensing pharmacist; bring your medicine history if treatment spans multiple facilities.",
+            "needed": ["medicine history", "reason for prescription"],
+            "time_minutes": 5,
+            "cost_yen": 0,
+            "done_when": "The clinic/pharmacy confirms how the final rule will apply to that prescription."
+          }
+        ],
+        "mistakes_to_avoid": [
+          "Do not stop, reduce or substitute prescribed medicine on your own to avoid a possible future surcharge.",
+          "Do not assume all 77 ingredients are charged for every diagnosis or indication.",
+          "Do not assume having cancer or another protected condition exempts unrelated ordinary treatment.",
+          "Do not treat the current March 2027 target and interim exemptions as immutable until the final Cabinet Order and operating rules are issued."
+        ],
+        "decision_rules": [
+          {
+            "if": "you use an affected medicine only occasionally",
+            "then": "wait for final pharmacy/MHLW guidance; no special paperwork is needed now"
+          },
+          {
+            "if": "you use an affected oral medicine almost all year",
+            "then": "keep treatment history because the current framework uses roughly 50 weeks per year as the long-term-use benchmark"
+          },
+          {
+            "if": "the medicine is being used for a purpose not approved for the corresponding OTC product",
+            "then": "the interim framework says the special charge should not apply for that use; confirm under the final rule"
+          }
+        ],
+        "follow_up": "Re-check when MHLW publishes the final 2026 autumn implementation rules and again when the exact effective date is fixed."
+      },
+      "editorial_visual": {
+        "style": "editorial",
+        "motif": "shield",
+        "secondary_motif": "document",
+        "scene": "a prescription bottle passing through a health-insurance shield, with one small price tag peeling away into a separate payment lane while several clearly marked exemption gates remain open",
+        "caption": "Still insured, but part of the drug cost moves outside the shield",
+        "silliness": 2,
+        "exaggeration": 30
+      }
+    }
+  }
+]
