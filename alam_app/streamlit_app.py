@@ -10,6 +10,7 @@ from alam_core import (
     mark_visit,
 )
 import alam_mobile_views as views
+import alam_mobile_shell as mobile_shell
 import alam_extras as extras
 import alam_ask as ask_alam
 import alam_admin as admin
@@ -104,6 +105,10 @@ manager = init_browser_state()
 localstate.init_local_profile(manager)
 intelligence.init_preferences()
 extras.install_extras_css()
+# This shell was added specifically to reserve phone feed space for the persistent
+# navigation and safe-area inset. Keep it after display/browser preferences so its
+# narrow-screen corrections are the final intended mobile geometry.
+mobile_shell.install_mobile_shell()
 
 
 def _sanitize_preference_state():
