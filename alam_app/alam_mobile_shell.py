@@ -16,8 +16,9 @@ COOKIE_GUARD_CSS = r"""
 <style>
 /* CookieManager is a real iframe-backed Streamlit component. Keep it mounted so its
    JavaScript can read/write cookies, but remove it from document flow so mobile first
-   render cannot reserve hundreds of blank pixels before the ALAM brand appears. */
-.st-key-alam_cookie_host{
+   render cannot reserve hundreds of blank pixels before the ALAM brand appears.
+   The selector must match the actual Streamlit component key used in alam_core. */
+.st-key-alam_cookie_manager{
   position:absolute!important;
   width:1px!important;
   height:1px!important;
@@ -29,8 +30,8 @@ COOKIE_GUARD_CSS = r"""
   opacity:0!important;
   pointer-events:none!important;
 }
-.st-key-alam_cookie_host [data-testid="stCustomComponentV1"],
-.st-key-alam_cookie_host iframe{
+.st-key-alam_cookie_manager [data-testid="stCustomComponentV1"],
+.st-key-alam_cookie_manager iframe{
   width:1px!important;
   height:1px!important;
   min-height:0!important;
@@ -209,12 +210,16 @@ MOBILE_SHELL_CSS = r"""
 
 
 def install_cookie_guard():
-    """Install the zero-layout CookieManager host rules before the component mounts."""
+    """Install the zero-layout CookieManager host rules."""
     st.markdown(COOKIE_GUARD_CSS, unsafe_allow_html=True)
 
 
 def install_mobile_shell():
-    """Install compact mobile presentation after persisted display settings load."""
+    """Install CookieManager and compact mobile presentation safeguards together."""
+    # Keep the cookie guard coupled to the production mobile-shell installer. The
+    # CookieManager is created earlier during browser-state initialization; bundling
+    # the guard here prevents a future entrypoint refactor from silently omitting it.
+    install_cookie_guard()
     st.markdown(MOBILE_SHELL_CSS, unsafe_allow_html=True)
 
 
