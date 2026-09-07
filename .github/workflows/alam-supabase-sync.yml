@@ -2,6 +2,18 @@ name: ALAM Supabase sync
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'alam_app/data/**'
+
+# ALAM has exactly one canonical GitHub -> Supabase publication path. Content agents
+# commit verified audit records to GitHub; this workflow owns durable publication.
+# Serialize runs so a burst of content commits cannot race two reconciliations.
+concurrency:
+  group: alam-supabase-sync-main
+  cancel-in-progress: false
 
 jobs:
   sync:
