@@ -1,0 +1,153 @@
+{
+  "id": "tsuchiura-5000-gift-expiry-2026-12-31",
+  "agent": "practical",
+  "created_at": "2026-09-08T00:02:56+09:00",
+  "published_at": "2026-09-08T00:02:56+09:00",
+  "type": "benefit",
+  "title": "Tsuchiura’s ¥5,000 household support can expire unused on December 31",
+  "summary": "Kung registered ka sa Tsuchiura City noong January 31, 2026 at nakatanggap ka ng city ¥5,000 digital gift o Vanilla Visa gift card, may isang deadline na madaling makalimutan: December 31, 2026. Ang digital-gift URL na hindi na-exchange by then ay mawawala at hindi na mare-reissue; ang Vanilla Visa card ay may parehong use-by date.",
+  "why_it_matters": "Hindi ito bagong application window—tapos na ang May 31 selection/application period. Ang practical risk ngayon ay mawalan ng hanggang ¥5,000 bawat eligible family member dahil nakalimutan ang gift URL o card sa bahay.",
+  "importance": 82,
+  "confidence": 98,
+  "tags": ["Japan", "Tsuchiura", "Ibaraki", "benefits", "household support", "deadline", "cost of living"],
+  "geography": ["Japan", "Ibaraki", "Tsuchiura"],
+  "status": "NEW",
+  "sources": [
+    {
+      "publisher": "Tsuchiura City",
+      "title": "土浦市物価高騰対策支援事業を実施します",
+      "url": "https://www.city.tsuchiura.lg.jp/kurashi-tetsuzuki/news/page022673.html",
+      "published_at": "2026-07-10",
+      "source_type": "official"
+    },
+    {
+      "publisher": "Tsuchiura City",
+      "title": "土浦市物価高騰対策支援事業　「バニラVisaギフトカード」を配布します",
+      "url": "https://www.city.tsuchiura.lg.jp/kurashi-tetsuzuki/news/page023218.html",
+      "published_at": "2026-07-22",
+      "source_type": "official"
+    },
+    {
+      "publisher": "Tsuchiura City",
+      "title": "物価高騰対応重点支援地方創生臨時交付金活用事業（令和7年度第7回土浦市一般会計補正予算）",
+      "url": "https://www.city.tsuchiura.lg.jp/shisei/shisei-info/page022703.html",
+      "published_at": "2026-02-10",
+      "source_type": "official"
+    }
+  ],
+  "claims": [
+    {
+      "kind": "FACT",
+      "text": "Tsuchiura City’s cost-of-living support provides ¥5,000 per eligible resident who was registered in the city as of January 31, 2026.",
+      "source_refs": [1, 3],
+      "basis": "City program page and budget documentation."
+    },
+    {
+      "kind": "FACT",
+      "text": "The original selection/application deadline was May 31, 2026, so this is no longer an open application opportunity.",
+      "source_refs": [1],
+      "basis": "Current Tsuchiura City program guidance."
+    },
+    {
+      "kind": "FACT",
+      "text": "A received digital gift must be exchanged by December 31, 2026; if not exchanged by the deadline, the gift URL expires and cannot be reissued.",
+      "source_refs": [1],
+      "basis": "Tsuchiura City’s stated exchange rule."
+    },
+    {
+      "kind": "FACT",
+      "text": "The Vanilla Visa gift card distributed under the same program also has a December 31, 2026 use deadline.",
+      "source_refs": [1, 2],
+      "basis": "Tsuchiura City program and card-distribution pages."
+    },
+    {
+      "kind": "FACT",
+      "text": "The city states that households that did not receive the digital-gift route were sent ¥5,000 Vanilla Visa gift cards by registered mail from June 30 onward.",
+      "source_refs": [2],
+      "basis": "Tsuchiura City card-distribution notice."
+    },
+    {
+      "kind": "INFERENCE",
+      "text": "The main remaining household risk is not missing an application but forgetting to exchange or spend an already-issued benefit before year-end.",
+      "source_refs": [1, 2],
+      "basis": "The application period has ended while the benefit itself remains subject to an active expiry date."
+    }
+  ],
+  "content": {
+    "key_message": "If your household received Tsuchiura’s ¥5,000-per-person support, check the gift now: both the digital-gift exchange deadline and Vanilla Visa use deadline are December 31, 2026.",
+    "who_is_affected": "People who were registered as Tsuchiura City residents on January 31, 2026 and whose household received the city’s cost-of-living support as a digital gift or Vanilla Visa gift card.",
+    "when": "Use or exchange by December 31, 2026.",
+    "financial_impact": "Up to ¥5,000 per eligible resident can effectively be lost if an issued digital gift is not exchanged or a Vanilla Visa gift card is not used by the deadline.",
+    "estimated_saving_yen": 5000,
+    "risk_if_ignored": "HIGH — an expired digital-gift URL cannot be reissued according to the city, and the prepaid card also has a fixed year-end use deadline.",
+    "action": "DO NOW",
+    "deadline": "December 31, 2026. The original May 31 application/selection period has already ended.",
+    "effort": "LOW",
+    "potential_benefit": "Preserve and use the ¥5,000-per-person support already issued to the household.",
+    "downside": "Minimal. The main caution is not to confuse this reminder with a reopened benefit application or respond to scammers asking for ATM operations or transfer fees.",
+    "usefulness": 94,
+    "novelty": 83,
+    "impact": {
+      "money": "MED",
+      "family": "MED",
+      "career": "LOW",
+      "japan": "LOW",
+      "urgency": "MED"
+    },
+    "connection_tags": ["cost-of-living", "municipal-benefit", "tsuchiura", "deadline-risk"],
+    "what_would_change_mind": "A Tsuchiura City notice extending the December 31 deadline, reopening the application period, or changing the non-reissue rule for expired digital-gift URLs.",
+    "strongest_counterinterpretation": "December 31 is still months away, so this is not an emergency. But because the benefit is already issued and can expire, an early household check has high value and almost no cost.",
+    "what_to_do_or_watch": "Check old April–August city mail, your household’s digital-gift URL, and any Vanilla Visa card sent by registered mail. If you already exchanged or spent it, no further action is needed.",
+    "common_costly_mistakes": [
+      "Thinking the May 31 application deadline means there is nothing left to check.",
+      "Leaving the digital-gift URL unexchanged until after December 31, when the city says it cannot be reissued.",
+      "Keeping the Vanilla Visa card for later and forgetting that it also expires on December 31.",
+      "Responding to anyone who says an ATM operation or transfer fee is required to receive the city benefit."
+    ],
+    "uncertainty": "High confidence on the deadline, amount and eligibility date because they are stated by Tsuchiura City. This article does not assume that every eligible household still has an unused benefit.",
+    "reading_levels": {
+      "30_sec": [
+        "Tsuchiura’s support was ¥5,000 per eligible resident registered on January 31, 2026.",
+        "The application/selection period is already closed.",
+        "If you already received the benefit, December 31 is the important remaining date.",
+        "Unused digital-gift URLs can expire without reissue; Vanilla Visa cards also expire that day."
+      ],
+      "2_min": "Tsuchiura City funded a ¥5,000-per-person cost-of-living support program for residents registered in the city on January 31, 2026. The original May 31 selection/application deadline has already passed, so this is not a new benefit application. The hidden household issue is the second deadline: December 31, 2026. The city says a digital gift that has not been exchanged by then expires and cannot be reissued, while the Vanilla Visa gift card distributed under the same program also has a December 31 use deadline. For families, the practical move is simply to check old city mail, saved gift links and any registered-mail card now instead of discovering the expiry after New Year."
+    },
+    "action_plan": {
+      "goal": "Make sure an already-issued Tsuchiura ¥5,000 benefit does not expire unused.",
+      "who_should_act": "Households with members who were Tsuchiura residents on January 31, 2026 and received program mail or a Vanilla Visa gift card.",
+      "deadline": "December 31, 2026.",
+      "prepare": [
+        "City mail sent during the program period",
+        "Saved digital-gift URL or QR notice",
+        "Any Vanilla Visa gift card received by registered mail"
+      ],
+      "steps": [
+        {
+          "step": "Check whether your household already used the support",
+          "action": "Ask the household head and check old city mail, saved links and cards.",
+          "how": "Look specifically for Tsuchiura cost-of-living support correspondence and Vanilla Visa mail.",
+          "needed": ["Household mail", "phone/email saved links", "gift card"],
+          "time_minutes": 10,
+          "cost_yen": 0,
+          "done_when": "You know whether each eligible person’s ¥5,000 benefit was already used, exchanged or remains unused."
+        },
+        {
+          "step": "Use or exchange anything still outstanding",
+          "action": "Exchange the digital gift or spend the Vanilla Visa card before December 31.",
+          "how": "Follow the original city instructions and official program/card guidance.",
+          "needed": ["Gift URL or card"],
+          "time_minutes": 15,
+          "cost_yen": 0,
+          "done_when": "No household benefit remains at risk of year-end expiry."
+        }
+      ],
+      "mistakes_to_avoid": [
+        "Waiting until the final week of December to look for the original mail.",
+        "Assuming an expired digital-gift URL can simply be reissued.",
+        "Treating unsolicited payment requests as part of the city benefit process."
+      ]
+    }
+  }
+}
