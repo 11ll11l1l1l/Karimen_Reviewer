@@ -89,7 +89,7 @@
     "what_remains_uncertain": "The exact November 2026 unit price after raw-material adjustment had not yet been fixed in the verified sources at publication time. Household usage, weather and any later government support extension could materially change the final bill.",
     "what_would_change_mind": "A new government decision extending gas subsidies into October usage or later, a Tokyo Gas revision of the October 1 tariff change, or a newly published November raw-material adjustment materially changing the expected bill would require an update.",
     "impact": {
-      "money": "MED-HIGH",
+      "money": "MED",
       "family": "MED",
       "career": "LOW",
       "japan": "MED",
