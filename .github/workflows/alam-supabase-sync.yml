@@ -7,9 +7,13 @@ on:
       - main
     paths:
       - 'alam_app/data/**'
+      - '.github/workflows/alam-supabase-sync.yml'
 
 # ALAM has exactly one canonical GitHub -> Supabase publication path. Content agents
 # commit verified audit records to GitHub; this workflow owns durable publication.
+# Workflow changes also exercise reconciliation so an operational repair (for example,
+# raising a timeout after a killed run) cannot leave validated GitHub content stranded
+# until some unrelated future content commit happens to arrive.
 # Serialize runs so a burst of content commits cannot race two reconciliations.
 concurrency:
   group: alam-supabase-sync-main
