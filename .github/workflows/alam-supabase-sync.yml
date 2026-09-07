@@ -19,6 +19,8 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      SUPABASE_URL: https://zecztyabmmoqzjumhxxf.supabase.co
     steps:
       - uses: actions/checkout@v4
         with:
