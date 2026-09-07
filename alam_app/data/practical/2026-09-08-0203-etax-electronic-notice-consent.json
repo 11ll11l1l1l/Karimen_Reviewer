@@ -27,14 +27,12 @@
       "publisher": "National Tax Agency / e-Tax",
       "title": "処分通知等の電子交付について",
       "url": "https://www.e-tax.nta.go.jp/tsuuchi/tsuuchimenu.htm",
-      "published_at": "2026-09",
       "source_type": "official"
     },
     {
       "publisher": "National Tax Agency / e-Tax",
       "title": "更正の請求・処分通知（加算税）に係る電子通知について",
       "url": "https://www.e-tax.nta.go.jp/kakunin/kouseituuchi.htm",
-      "published_at": "2026-09",
       "source_type": "official"
     },
     {
@@ -49,59 +47,43 @@
     {
       "kind": "FACT",
       "text": "From September 24, 2026, e-Tax expands the range of tax notices and administrative dispositions that can be delivered electronically.",
-      "source_refs": [
-        1
-      ],
+      "source_refs": [1],
       "basis": "National Tax Agency e-Tax implementation notice."
     },
     {
       "kind": "FACT",
       "text": "The consent method changes in principle from choosing electronic delivery for each application or filing to advance blanket consent in e-Tax My Page.",
-      "source_refs": [
-        1
-      ],
+      "source_refs": [1],
       "basis": "National Tax Agency states the consent method changes from per-application consent to advance blanket consent."
     },
     {
       "kind": "FACT",
       "text": "People who previously used electronic delivery generally need to complete the new blanket-consent setting if they want future electronic delivery, subject to listed transition exceptions.",
-      "source_refs": [
-        1,
-        2
-      ],
+      "source_refs": [1, 2],
       "basis": "The NTA explicitly warns that even prior electronic-delivery users may need the new setting and gives notice-specific exceptions."
     },
     {
       "kind": "FACT",
       "text": "Refund-payment notices remain tied to the electronic-delivery choice made on the relevant refund return or application, while electronic application certificates and tax-payment certificates remain available when electronically requested.",
-      "source_refs": [
-        1
-      ],
+      "source_refs": [1],
       "basis": "Explicit exceptions listed by the NTA."
     },
     {
       "kind": "FACT",
       "text": "Mortgage-deduction certificates and qualified-invoice registration notices can continue to be delivered electronically based on pre-September-24 consent for qualifying earlier filings or applications.",
-      "source_refs": [
-        1
-      ],
+      "source_refs": [1],
       "basis": "Transition exceptions stated by the NTA."
     },
     {
       "kind": "FACT",
       "text": "e-Tax is scheduled to be unavailable from September 19 at 00:00 until September 24 at 08:30, and again for the full day on September 26, because of the national tax-system replacement.",
-      "source_refs": [
-        3
-      ],
+      "source_refs": [3],
       "basis": "Official e-Tax maintenance schedule."
     },
     {
       "kind": "INFERENCE",
       "text": "The safest approach for users who rely on e-Tax messages is to verify their My Page delivery setting after September 24 rather than assume an old filing-level preference still controls future notices.",
-      "source_refs": [
-        1,
-        2
-      ],
+      "source_refs": [1, 2],
       "basis": "The delivery-consent model changes and the NTA specifically warns prior users about the new selection requirement."
     }
   ],
@@ -166,9 +148,7 @@
           "step": "Avoid the system-replacement outage",
           "action": "Do not leave a necessary e-Tax submission until the September 19–24 maintenance period.",
           "how": "Submit before the outage when practical or wait until service resumes if your legal deadline allows.",
-          "needed": [
-            "Relevant filing deadline"
-          ],
+          "needed": ["Relevant filing deadline"],
           "time_minutes": 5,
           "cost_yen": 0,
           "done_when": "You have confirmed the maintenance window does not collide with a filing you must make."
@@ -177,9 +157,7 @@
           "step": "Verify electronic-notice consent after September 24",
           "action": "Open e-Tax My Page and check the new notice-receipt setting.",
           "how": "Select electronic delivery if that is your preference, then confirm whether your specific notice falls under a transition exception.",
-          "needed": [
-            "e-Tax access"
-          ],
+          "needed": ["e-Tax access"],
           "time_minutes": 10,
           "cost_yen": 0,
           "done_when": "Your My Page receipt method matches your preference and you understand any notice-specific exception."
