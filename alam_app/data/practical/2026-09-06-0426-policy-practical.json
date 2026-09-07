@@ -94,11 +94,11 @@
       "usefulness": 89,
       "novelty": 87,
       "impact": {
-        "money": "HIGH_FOR_AFFECTED",
-        "family": "MEDIUM",
-        "career": "MEDIUM",
+        "money": "HIGH",
+        "family": "MED",
+        "career": "MED",
         "japan": "HIGH",
-        "urgency": "LOW_NOW_RISING_IN_2027"
+        "urgency": "LOW"
       },
       "connection_tags": ["take-home-pay", "social-insurance", "salary-band", "pension-reform", "payroll"],
       "reading_levels": {
