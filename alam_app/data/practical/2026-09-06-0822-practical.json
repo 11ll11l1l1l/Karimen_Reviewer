@@ -105,11 +105,11 @@
       "usefulness": 99,
       "novelty": 96,
       "impact": {
-        "money": "VERY HIGH",
+        "money": "HIGH",
         "family": "HIGH",
         "career": "MED",
         "japan": "HIGH",
-        "urgency": "VERY HIGH"
+        "urgency": "HIGH"
       },
       "connection_tags": ["immigration-fees", "visa-renewal", "permanent-residence", "october-2026", "foreign-residents"],
       "reading_levels": {
