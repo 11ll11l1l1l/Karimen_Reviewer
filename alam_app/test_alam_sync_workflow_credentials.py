@@ -1,11 +1,17 @@
 from pathlib import Path
 
 
-WORKFLOW = Path(__file__).resolve().parents[1] / ".github" / "workflows" / "alam-supabase-sync.yml"
+ROOT = Path(__file__).resolve().parents[1]
+WORKFLOW = ROOT / ".github" / "workflows" / "alam-supabase-sync.yml"
+SYNC_JOB = ROOT / "alam_app" / "alam_supabase_sync_job.py"
 
 
 def _workflow_text() -> str:
     return WORKFLOW.read_text(encoding="utf-8")
+
+
+def _sync_job_text() -> str:
+    return SYNC_JOB.read_text(encoding="utf-8")
 
 
 def test_sync_uses_public_project_url_as_non_secret_configuration():
@@ -35,7 +41,13 @@ def test_actual_supabase_sync_is_unconditional_after_required_credential_gate():
 
 
 def test_canonical_sync_job_remains_the_only_workflow_database_writer():
-    text = _workflow_text()
-    assert "run: python alam_app/alam_supabase_sync_job.py" in text
-    assert "alam_app/alam_supabase_ingest.py" in text
-    assert "alam_app/alam_supabase_reconcile.py" in text
+    workflow = _workflow_text()
+    sync_job = _sync_job_text()
+
+    # The workflow owns one trusted entry point. Low-level ingest/reconciliation stay
+    # behind that wrapper so telemetry, archive preflight and recovery cannot be bypassed.
+    assert "run: python alam_app/alam_supabase_sync_job.py" in workflow
+    assert "alam_supabase_ingest.py" not in workflow
+    assert "alam_supabase_reconcile.py" not in workflow
+    assert "from alam_supabase_ingest import _client, run as run_ingestion" in sync_job
+    assert "from alam_supabase_reconcile import prepare_public_archive, reconcile_public_archive" in sync_job

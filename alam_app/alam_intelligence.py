@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 import streamlit as st
 
 import alam_local_state as localstate
-from alam_core import esc, feed_score, parse_dt, source_quality, story_versions
+from alam_core import esc, feed_score, parse_dt, public_time, source_quality, story_versions
 from alam_personas import comments_for_story
 
 
@@ -317,7 +317,7 @@ def render_story_snapshot(record, all_records, records, comments):
 
 def render_weekly(records, all_records):
     cutoff = datetime.now(timezone.utc) - timedelta(days=7)
-    recent = [r for r in records if parse_dt(r.get("created_at")).astimezone(timezone.utc) >= cutoff]
+    recent = [r for r in records if public_time(r).astimezone(timezone.utc) >= cutoff]
     st.markdown(
         "<div class='hero mobile-hero'><div class='hero-kicker'>📅 WEEKLY INTELLIGENCE</div>"
         "<div class='hero-title'>What actually mattered?</div>"

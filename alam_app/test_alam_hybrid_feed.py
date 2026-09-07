@@ -1,13 +1,16 @@
 from alam_hybrid_feed import merge_missing_audit_versions, version_key
 
 
-def _record(story_id, created_at, storage):
-    return {
+def _record(story_id, created_at, storage, published_at=None):
+    record = {
         "id": story_id,
         "title": f"Story {story_id}",
         "created_at": created_at,
         "_storage": storage,
     }
+    if published_at is not None:
+        record["published_at"] = published_at
+    return record
 
 
 def main():
@@ -44,6 +47,28 @@ def main():
     assert timezone_count == 0, timezone_count
     assert len(timezone_clean) == 1
     assert timezone_clean[0]["_storage"] == "supabase"
+
+    # Public chronology is publication chronology, not agent/ingestion creation
+    # chronology. A delayed GitHub overlay must not jump ahead merely because its
+    # record was created later than an already-published database story.
+    published_first = _record(
+        "story-d",
+        "2026-09-03T12:00:00+09:00",
+        "supabase",
+        published_at="2026-09-03T11:30:00+09:00",
+    )
+    created_later_but_published_earlier = _record(
+        "story-e",
+        "2026-09-03T12:30:00+09:00",
+        "local",
+        published_at="2026-09-03T11:00:00+09:00",
+    )
+    publication_order, publication_overlay_count = merge_missing_audit_versions(
+        [published_first],
+        [created_later_but_published_earlier],
+    )
+    assert publication_overlay_count == 1
+    assert [record["id"] for record in publication_order] == ["story-d", "story-e"]
 
     print("ALAM hybrid feed regression test passed")
 

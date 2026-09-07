@@ -88,6 +88,9 @@ def parse_dt(value):
         dt = datetime.fromisoformat(str(value).replace("Z", "+00:00")); return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
     except Exception: return datetime(1970, 1, 1, tzinfo=timezone.utc)
 
+def public_time(record):
+    return parse_dt(record.get("published_at") or record.get("created_at"))
+
 def age_label(value):
     hours = max(0, (datetime.now(timezone.utc) - parse_dt(value).astimezone(timezone.utc)).total_seconds() / 3600)
     if hours < 1: return f"{max(1, int(hours * 60))}m ago"
@@ -99,7 +102,7 @@ def freshness_score(value):
 
 def feed_score(record):
     c = record.get("content") or {}
-    return (0.35 * float(record.get("importance", 50) or 50) + 0.20 * freshness_score(record.get("created_at")) + 0.15 * float(c.get("usefulness", 55) or 55) + 0.10 * float(record.get("confidence", 50) or 50) + 0.10 * float(c.get("novelty", 55) or 55) + 10 + min(8, len(record.get("sources") or []) * 2))
+    return (0.35 * float(record.get("importance", 50) or 50) + 0.20 * freshness_score(record.get("published_at") or record.get("created_at")) + 0.15 * float(c.get("usefulness", 55) or 55) + 0.10 * float(record.get("confidence", 50) or 50) + 0.10 * float(c.get("novelty", 55) or 55) + 10 + min(8, len(record.get("sources") or []) * 2))
 
 @st.cache_data(ttl=60)
 def load_all_records():
@@ -118,7 +121,7 @@ def load_all_records():
 def latest_by_story(records):
     latest = {}
     for r in sorted(records, key=lambda x: parse_dt(x.get("created_at"))): latest[str(r["id"])] = r
-    return sorted(latest.values(), key=lambda r: parse_dt(r.get("created_at")), reverse=True)
+    return sorted(latest.values(), key=public_time, reverse=True)
 
 def story_versions(records, story_id): return sorted([r for r in records if str(r.get("id")) == str(story_id)], key=lambda r: parse_dt(r.get("created_at")))
 def category_meta(record): return CATEGORY_META.get(record.get("_category", "discover"), CATEGORY_META["discover"])

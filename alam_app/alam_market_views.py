@@ -2,7 +2,7 @@ import json
 
 import streamlit as st
 
-from alam_core import CATEGORY_META, esc, feed_score, is_followed, parse_dt
+from alam_core import CATEGORY_META, esc, feed_score, is_followed, public_time
 
 MARKET_TYPES = {"market_outlook", "market_recap", "market_risk", "market_regime"}
 
@@ -24,7 +24,7 @@ def render_market(records, manager=None, comments=None, views=None):
         st.markdown('<div class="empty-box">Wala pang market-intelligence article. The first pre-market/close outlook will appear when Agent 3 publishes a qualifying update.</div>', unsafe_allow_html=True)
         return
 
-    latest = max(subset, key=lambda r: parse_dt(r.get("created_at")))
+    latest = max(subset, key=public_time)
     content = latest.get("content") or {}
     regime = content.get("market_regime") or "WATCH"
     bias = content.get("opening_bias")
