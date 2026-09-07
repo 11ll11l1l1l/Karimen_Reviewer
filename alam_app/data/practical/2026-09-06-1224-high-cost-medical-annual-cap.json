@@ -116,7 +116,7 @@
         "family": "HIGH",
         "career": "LOW",
         "japan": "HIGH",
-        "urgency": "MED-HIGH"
+        "urgency": "MED"
       },
       "connection_tags": ["high-cost-medical", "health-insurance", "annual-cap", "August-July", "medical-refund", "long-term-treatment"],
       "reading_levels": {
