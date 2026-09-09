@@ -1,0 +1,106 @@
+[
+  {
+    "id": "kddi-lawson-physical-ai-geniac-2026-09-09",
+    "agent": "discover",
+    "created_at": "2026-09-10T07:25:00+09:00",
+    "published_at": "2026-09-10T07:25:00+09:00",
+    "type": "technology",
+    "title": "KDDI is turning Lawson store work into training data for physical-AI robots",
+    "summary": "KDDI was selected on September 9 for METI/NEDO's GENIAC robot-foundation-model program. Sa Lawson test store inside KDDI's Takanawa headquarters, the project will collect worker-perspective data from backroom and sales-floor tasks, train a retail/logistics robot model, and test it across different robot hardware.",
+    "why_it_matters": "This is a concrete shift from fixed, pre-programmed automation toward robots that learn varied human work from real operating data. For Japan's retail and logistics sectors, the bottleneck may increasingly be high-quality task data, integration and safe deployment—not only robot hardware.",
+    "importance": 88,
+    "confidence": 98,
+    "tags": ["Japan", "Physical AI", "GENIAC", "KDDI", "Lawson", "Robotics", "Retail", "Logistics", "AI"],
+    "geography": ["Japan", "Tokyo"],
+    "status": "NEW",
+    "sources": [
+      {
+        "publisher": "KDDI",
+        "title": "小売・物流向けロボット基盤モデル研究開発でGENIACに採択",
+        "url": "https://newsroom.kddi.com/news/detail/kddi_nr-1155_4708.html",
+        "published_at": "2026-09-09",
+        "source_type": "primary",
+        "reliability": "high"
+      },
+      {
+        "publisher": "NEDO",
+        "title": "「ポスト5G情報通信システム基盤強化研究開発事業／ロボット基盤モデルの研究開発（GENIAC）（補助）」（多用途ロボット等を含む）の実施体制の決定について",
+        "url": "https://www.nedo.go.jp/koubo/CD3_100434.html",
+        "published_at": "2026-09-09",
+        "source_type": "official",
+        "reliability": "high"
+      }
+    ],
+    "claims": [
+      {
+        "kind": "FACT",
+        "text": "KDDI announced on September 9, 2026 that its retail-and-logistics robot foundation-model proposal was selected for the METI/NEDO GENIAC program.",
+        "source_refs": [1, 2],
+        "basis": "KDDI announcement and NEDO selection notice."
+      },
+      {
+        "kind": "FACT",
+        "text": "The project will use the Lawson S KDDI Takanawa Headquarters store as a main test site and collect worker-perspective action and operation data spanning backroom and sales-floor work.",
+        "source_refs": [1],
+        "basis": "KDDI project description."
+      },
+      {
+        "kind": "FACT",
+        "text": "KDDI says the project will work on difficult retail tasks including handling soft or complex-shaped goods and shelf replenishment without disturbing adjacent products.",
+        "source_refs": [1],
+        "basis": "KDDI project use-case description."
+      },
+      {
+        "kind": "FACT",
+        "text": "KDDI plans to validate the model on multiple domestic and overseas robot platforms and aims to make the developed technology available from fiscal 2028 onward.",
+        "source_refs": [1],
+        "basis": "KDDI development and commercialization schedule."
+      },
+      {
+        "kind": "FACT",
+        "text": "NEDO said it reviewed 29 applications in this GENIAC call before selecting implementation partners.",
+        "source_refs": [2],
+        "basis": "NEDO selection notice."
+      },
+      {
+        "kind": "INFERENCE",
+        "text": "Japan's physical-AI push is increasingly treating real-world human task data as a strategic input alongside robot hardware and control software.",
+        "source_refs": [1, 2],
+        "basis": "The selected project centers on collecting egocentric operating data and using it to train a reusable robot foundation model."
+      }
+    ],
+    "content": {
+      "impact": {
+        "money": "LOW",
+        "family": "LOW",
+        "career": "HIGH",
+        "japan": "HIGH",
+        "urgency": "LOW"
+      },
+      "whats_new": [
+        "A national GENIAC selection is moving physical AI into a real convenience-store workflow rather than a laboratory-only demo.",
+        "The training-data plan covers both backroom and sales-floor work from the worker's point of view.",
+        "KDDI intends to test the resulting model across different robot hardware instead of tying it to one machine."
+      ],
+      "skeptical_view": "Selection into a national R&D program does not prove commercial productivity, safe autonomous operation or attractive deployment cost. Retail environments have long-tail edge cases, fragile products and frequent human interaction, so laboratory performance may not transfer cleanly to daily store operations.",
+      "what_next": [
+        "Watch whether KDDI publishes measurable task-success, intervention and cycle-time results from the Lawson trials.",
+        "Watch whether the model transfers between robot platforms without extensive retraining.",
+        "Watch for concrete fiscal-2028 licensing, product or partner deployment details."
+      ],
+      "what_would_change_mind": "The significance would weaken if trials remain tightly scripted, require heavy human teleoperation or fail to transfer between different robot platforms. It would strengthen if KDDI publishes sustained autonomous task performance in normal store conditions.",
+      "recommendation": "Treat this as a high-quality signal that physical AI is moving toward operational retail data collection, but wait for real productivity and intervention metrics before assuming large-scale labor substitution.",
+      "usefulness": 91,
+      "novelty": 94,
+      "connection_tags": ["physical-ai", "robot-foundation-models", "retail-automation", "labor-shortage", "ai-ready-data"],
+      "reading_levels": {
+        "30_sec": [
+          "KDDI's new GENIAC project will train robots using real Lawson store-work data.",
+          "The target is flexible retail/logistics work, not one fixed robot motion.",
+          "Commercially meaningful proof still depends on autonomy, safety, transferability and cost."
+        ],
+        "2_min": "Japan's physical-AI strategy is beginning to move from general robotics research into task-specific operating data. KDDI will collect egocentric work data inside a Lawson test store at its Takanawa headquarters and use it to train a foundation model for retail and logistics tasks. The important technical test is transfer: whether one learned model can control different robot platforms and handle messy real-store edge cases. The project targets technology availability from fiscal 2028, but selection into GENIAC is an R&D milestone rather than evidence of commercial-scale labor replacement."
+      }
+    }
+  }
+]
