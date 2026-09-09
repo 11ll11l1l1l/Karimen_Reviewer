@@ -1,0 +1,141 @@
+[
+  {
+    "id": "japan-real-wages-consumption-two-speed-2026-07",
+    "agent": "trend",
+    "created_at": "2026-09-10T07:28:00+09:00",
+    "published_at": "2026-09-10T07:28:00+09:00",
+    "type": "economic_trend",
+    "title": "Real wages are rising, but spending is still falling—Japan’s recovery is becoming two-speed",
+    "summary": "Japan's July real wages rose 2.4% year on year, the strongest gain since May 2021 and the seventh straight increase, while real consumption spending for two-or-more-person households fell 3.6%. Separately, the September Reuters Tankan put large-manufacturer sentiment at +21, near a five-year high led by semiconductor and data-center demand. Sahod na bumabangon does not yet mean broad consumer demand has recovered.",
+    "why_it_matters": "The important signal is the gap between improving pay and industrial confidence on one side and weak household spending on the other. If that gap persists, Japan can have a healthy AI/semiconductor capital-spending cycle without a similarly strong consumer recovery.",
+    "importance": 92,
+    "confidence": 95,
+    "tags": ["Japan", "Real Wages", "Household Spending", "Consumption", "Semiconductors", "Data Centers", "Economy", "BOJ"],
+    "geography": ["Japan"],
+    "status": "DEVELOPING",
+    "sources": [
+      {
+        "publisher": "Reuters",
+        "title": "Japan July real wages rise 2.4%, biggest gain since 2021",
+        "url": "https://www.reuters.com/world/asia-pacific/japan-july-real-wages-rise-24-biggest-gain-since-2021-2026-09-07/",
+        "published_at": "2026-09-08",
+        "source_type": "news",
+        "reliability": "high"
+      },
+      {
+        "publisher": "e-Stat / Ministry of Health, Labour and Welfare",
+        "title": "毎月勤労統計調査 令和８年７月分結果速報 6 実質賃金指数表",
+        "url": "https://www.e-stat.go.jp/stat-search/files?stat_infid=000040277086",
+        "published_at": "2026-09-08",
+        "source_type": "official",
+        "reliability": "high"
+      },
+      {
+        "publisher": "Statistics Bureau of Japan",
+        "title": "家計調査（二人以上の世帯）2026年7月分",
+        "url": "https://www.stat.go.jp/data/kakei/sokuhou/tsuki/",
+        "published_at": "2026-09-04",
+        "source_type": "official",
+        "reliability": "high"
+      },
+      {
+        "publisher": "Reuters",
+        "title": "Japan manufacturers' mood hits near 5-year high on semiconductor demand",
+        "url": "https://www.reuters.com/world/asia-pacific/japan-manufacturers-mood-hits-near-5-year-high-semiconductor-demand-2026-09-08/",
+        "published_at": "2026-09-09",
+        "source_type": "news",
+        "reliability": "high"
+      }
+    ],
+    "claims": [
+      {
+        "kind": "FACT",
+        "text": "Japan's real wages rose 2.4% year on year in July 2026, the strongest gain since May 2021 and the seventh consecutive month of real-wage growth.",
+        "source_refs": [1, 2],
+        "basis": "Reuters report on the government Monthly Labour Survey and the official July survey dataset."
+      },
+      {
+        "kind": "FACT",
+        "text": "Average July consumption spending for two-or-more-person households was ¥301,245, down 1.5% nominally and 3.6% in real terms from a year earlier.",
+        "source_refs": [3],
+        "basis": "Statistics Bureau Family Income and Expenditure Survey."
+      },
+      {
+        "kind": "FACT",
+        "text": "The September Reuters Tankan manufacturing sentiment index rose to +21 from +18 in August, its highest level since December 2021.",
+        "source_refs": [4],
+        "basis": "Reuters Tankan survey."
+      },
+      {
+        "kind": "FACT",
+        "text": "Electronics sentiment in the Reuters survey rose to +39 from +24, with semiconductor and data-center demand cited as important supports.",
+        "source_refs": [4],
+        "basis": "Reuters Tankan sector results and respondent commentary."
+      },
+      {
+        "kind": "FACT",
+        "text": "The Reuters Tankan survey received responses from 224 of 510 companies, and respondents still identified raw-material costs and weak domestic consumption among risks.",
+        "source_refs": [4],
+        "basis": "Reuters survey methodology and comments."
+      },
+      {
+        "kind": "INFERENCE",
+        "text": "Japan's recovery is currently uneven: wage momentum and AI-linked manufacturing confidence are improving before household consumption has shown a broad real recovery.",
+        "source_refs": [1, 2, 3, 4],
+        "basis": "Simultaneous improvement in real wages and manufacturer sentiment alongside declining real household consumption."
+      },
+      {
+        "kind": "INFERENCE",
+        "text": "A stronger broad-consumption recovery would require real wage gains to persist and translate into positive real household spending across more than a single month.",
+        "source_refs": [1, 2, 3],
+        "basis": "Current divergence between the labor-income and household-expenditure indicators."
+      }
+    ],
+    "content": {
+      "current_strength": 82,
+      "previous_strength": 68,
+      "direction": "STRENGTHENING",
+      "history": "Japan spent several years with nominal wage increases being eroded by inflation. By July 2026 real wages had improved for seven consecutive months, but household consumption remained weak in real terms. At the same time, AI, semiconductor and data-center investment has been supporting selected manufacturing sectors.",
+      "evidence_for": [
+        "July real wages rose 2.4% year on year, the fastest increase since May 2021.",
+        "Two-or-more-person household real consumption still fell 3.6% in July.",
+        "Large-manufacturer sentiment rose to +21 in September, with electronics particularly strong.",
+        "Reuters respondents still cited weak domestic consumption as a business risk."
+      ],
+      "evidence_against": [
+        "Household spending is volatile month to month and July alone cannot establish a permanent consumption trend.",
+        "The Monthly Labour Survey and Family Income and Expenditure Survey measure different populations and concepts, so their percentage changes should not be treated as a direct one-for-one accounting identity.",
+        "Retail sentiment in the Reuters Tankan improved, which could be an early sign that consumption conditions are stabilizing before official spending data turns positive."
+      ],
+      "connection": "The emerging chain is real-wage recovery -> potential purchasing-power improvement, while AI/semiconductor capex -> stronger industrial confidence. The missing link is sustained household spending. That is why Japan can look stronger in factories and payroll data while families still behave cautiously at the checkout.",
+      "alternative_explanation": "The July spending decline may partly reflect timing, category-specific base effects, weather, savings behavior or survey volatility rather than a structural refusal to spend. Several months of data are needed before calling the divergence persistent.",
+      "watch_next": [
+        "August real-wage growth and whether the positive streak continues.",
+        "August household spending, especially discretionary categories.",
+        "Official BOJ Tankan and corporate capex plans.",
+        "Whether electronics and semiconductor confidence broadens into machinery, services and consumer-facing sectors."
+      ],
+      "what_would_change_mind": "The two-speed thesis would weaken if real household consumption turns sustainably positive while manufacturing strength broadens, or if real wages fall back below zero and the apparent income recovery proves temporary.",
+      "implications": "Retailers and consumer-facing businesses need stronger spending confirmation before assuming the wage recovery will immediately lift sales. Industrial suppliers tied to AI, semiconductors and data centers can remain stronger than the household economy. For policy, persistent wage gains with weak consumption would complicate the interpretation of how quickly higher income is feeding domestic demand.",
+      "usefulness": 96,
+      "novelty": 89,
+      "impact": {
+        "money": "HIGH",
+        "family": "HIGH",
+        "career": "HIGH",
+        "japan": "HIGH",
+        "urgency": "MED"
+      },
+      "connection_tags": ["real-wages", "household-consumption", "boj-normalization", "ai-capex", "semiconductor-demand", "two-speed-recovery"],
+      "reading_levels": {
+        "30_sec": [
+          "July real wages: +2.4% year on year, seventh straight increase.",
+          "July real household consumption: -3.6% year on year.",
+          "September large-manufacturer sentiment: +21, strongest since late 2021 and helped by semiconductor/data-center demand.",
+          "Bottom line: income and industrial confidence are improving faster than household spending."
+        ],
+        "2_min": "Japan now has a clearer two-speed recovery signal. Workers' real pay is finally rising after inflation-adjusted weakness, and large manufacturers—especially electronics firms exposed to semiconductor and data-center demand—report much stronger sentiment. But household spending remains negative in real terms. That does not prove consumers will stay weak; spending data can be noisy and the surveys measure different things. It does mean the next confirmation should be actual consumption. If real wage gains persist and spending turns positive for several months, the recovery becomes broader. If not, Japan may continue to have strong industrial pockets without a strong household-demand cycle."
+      }
+    }
+  }
+]
