@@ -1,0 +1,132 @@
+[
+  {
+    "id": "daikin-air-purifier-recall-fire-alert-2026-09-08",
+    "agent": "practical",
+    "created_at": "2026-09-10T07:26:00+09:00",
+    "published_at": "2026-09-10T07:26:00+09:00",
+    "type": "safety",
+    "title": "Own a Daikin air purifier? Check the model and serial now—recall units are tied to serious fire accidents",
+    "summary": "Japan's Consumer Affairs Agency highlighted Daikin air purifiers again in a September 8 serious-product-accident release involving recall products and fires. Daikin's own recall checker warns that serious fire accidents have occurred among previously announced recall-target machines and lets owners check by model plus 7-digit serial number or by photographing the nameplate.",
+    "why_it_matters": "A unit can still look and operate normally while belonging to an old recall population. The safe decision depends on the exact model and serial number—not on whether the appliance currently seems fine or on the Daikin brand alone.",
+    "importance": 95,
+    "confidence": 99,
+    "tags": ["Japan", "Recall", "Daikin", "Air Purifier", "Fire Safety", "Home", "Product Safety"],
+    "geography": ["Japan"],
+    "status": "NEW",
+    "sources": [
+      {
+        "publisher": "Consumer Affairs Agency",
+        "title": "消費生活用製品の重大製品事故:リコール製品で火災等(スピーカー(充電式)、空気清浄機)(9月8日)",
+        "url": "https://www.caa.go.jp/notice/entry/047459/",
+        "published_at": "2026-09-08",
+        "source_type": "official",
+        "reliability": "high"
+      },
+      {
+        "publisher": "Daikin Industries",
+        "title": "空気清浄機 | 大切なお知らせ",
+        "url": "https://nacpt.daikincc.com/taisetsu/ca.html",
+        "source_type": "primary",
+        "reliability": "high"
+      },
+      {
+        "publisher": "Consumer Affairs Agency Recall Information Site",
+        "title": "リコール情報サイトトップページ",
+        "url": "https://www.recall.caa.go.jp/index.php",
+        "source_type": "official",
+        "reliability": "high"
+      }
+    ],
+    "claims": [
+      {
+        "kind": "FACT",
+        "text": "On September 8, 2026, the Consumer Affairs Agency published 17 serious product accidents and specifically highlighted a Daikin-imported air purifier recall among recall products associated with fires or other serious accidents.",
+        "source_refs": [1],
+        "basis": "Consumer Affairs Agency serious-product-accident release."
+      },
+      {
+        "kind": "FACT",
+        "text": "The September 8 Consumer Affairs Agency notice describes the highlighted air-purifier recall response as collection and refund.",
+        "source_refs": [1],
+        "basis": "Consumer Affairs Agency special-note wording."
+      },
+      {
+        "kind": "FACT",
+        "text": "Daikin's recall checker warns that serious fire accidents have occurred among previously announced recall-target machines.",
+        "source_refs": [2],
+        "basis": "Daikin recall-checker warning."
+      },
+      {
+        "kind": "FACT",
+        "text": "Daikin lets owners search using the machine model and 7-digit serial number, or use a phone camera to read the equipment nameplate.",
+        "source_refs": [2],
+        "basis": "Daikin recall-checker instructions."
+      },
+      {
+        "kind": "FACT",
+        "text": "The Consumer Affairs Agency recall portal currently lists Daikin air purifiers among its important recall notices, with remedy details varying by recall campaign.",
+        "source_refs": [3],
+        "basis": "Current Consumer Affairs Agency recall portal."
+      },
+      {
+        "kind": "INFERENCE",
+        "text": "Owners should verify the exact model and serial number rather than assuming an apparently normal air purifier is outside the recall population.",
+        "source_refs": [1, 2, 3],
+        "basis": "The current serious-accident notice and manufacturer checker show that identification depends on the specific affected unit."
+      }
+    ],
+    "content": {
+      "who_is_affected": "Anyone in Japan using a Daikin air purifier, especially an older unit or a unit whose recall status has never been checked.",
+      "when": "Check now if you own one; the Consumer Affairs Agency issued a fresh serious-accident notice on September 8, 2026.",
+      "financial_impact": "The main issue is safety rather than planned spending. Remedy differs by recall campaign, so follow the result returned for the exact model and serial number instead of buying a replacement first.",
+      "time_minutes": 5,
+      "risk_if_ignored": "HIGH — a recall-target appliance can carry a smoke or fire risk even if it has been operating normally.",
+      "action": "DO NOW",
+      "deadline": "As soon as practical if a Daikin air purifier is currently in use.",
+      "effort": "LOW",
+      "potential_benefit": "Confirm whether the appliance is affected and obtain the correct manufacturer remedy before another incident occurs.",
+      "downside": "A few minutes to locate the nameplate and check the unit. Do not assume every Daikin air purifier is recalled; the exact model and serial determine applicability.",
+      "what_would_change_mind": "A manufacturer or Consumer Affairs Agency update showing the unit's exact model and serial range is not affected, or that the relevant recall has already been completed for that serial number.",
+      "usefulness": 99,
+      "novelty": 91,
+      "impact": {
+        "money": "MED",
+        "family": "HIGH",
+        "career": "LOW",
+        "japan": "MED",
+        "urgency": "HIGH"
+      },
+      "connection_tags": ["product-recall", "home-fire-safety", "consumer-safety"],
+      "action_plan": {
+        "goal": "Determine whether the air purifier is a recall-target unit and follow the correct remedy.",
+        "steps": [
+          {
+            "step": "Find the model and serial",
+            "action": "Read the equipment nameplate and note the model plus 7-digit serial number.",
+            "time_minutes": 2,
+            "done_when": "You have the exact identifiers, not only the product family name."
+          },
+          {
+            "step": "Run Daikin's recall check",
+            "action": "Enter the model and serial in Daikin's recall checker or use the phone-camera nameplate function.",
+            "time_minutes": 3,
+            "done_when": "The checker confirms whether the unit is affected and shows the applicable response."
+          },
+          {
+            "step": "Follow the exact remedy",
+            "action": "If affected, stop relying on guesswork and follow Daikin's instructions for that recall campaign.",
+            "done_when": "The recall remedy has been arranged or completed."
+          }
+        ]
+      },
+      "reading_levels": {
+        "30_sec": [
+          "Japan's Consumer Affairs Agency flagged Daikin air purifiers again in a September 8 serious-accident notice.",
+          "Daikin says serious fires have occurred among previously announced recall-target units.",
+          "Check the exact model and 7-digit serial number; do not judge by appearance alone."
+        ],
+        "2_min": "This is a re-check alert, not a claim that every Daikin air purifier is unsafe. Japan's Consumer Affairs Agency published a fresh serious-product-accident notice on September 8 and specifically highlighted a Daikin air-purifier recall. Daikin's own checker says serious fire accidents have occurred among previously announced recall-target units. Because different campaigns can have different remedies, the practical step is simple: identify the exact model and 7-digit serial, run the official checker, and follow the result for that machine."
+      }
+    }
+  }
+]
