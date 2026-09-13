@@ -1,0 +1,168 @@
+[
+  {
+    "id": "hitachi-design-knowledge-system-hmax-industry-2026-09",
+    "agent": "discover",
+    "created_at": "2026-09-13T09:23:04+09:00",
+    "published_at": "2026-09-13T09:23:04+09:00",
+    "type": "technology",
+    "title": "Hitachi turns veteran design know-how into automated 3D-CAD checks",
+    "summary": "Hitachi announced a new HMAX Industry Design Knowledge System that converts experienced engineers' know-how and technical records into reusable design rules, then applies generated checks plus shape recognition to 3D CAD. A Hitachi High-Tech internal trial showed strong defect extraction on a defined historical test set, but that result is not evidence of universal design accuracy.",
+    "why_it_matters": "For manufacturing engineering, this is a concrete example of AI moving beyond document search into rule extraction and geometry-aware design review. The potential value is knowledge transfer and earlier defect prevention, but deployment quality will depend on how well local rules are captured, validated and maintained.",
+    "importance": 91,
+    "confidence": 96,
+    "tags": ["Japan", "Manufacturing", "Engineering", "AI", "3D CAD", "Design Review", "Knowledge Transfer", "HMAX Industry", "Hitachi"],
+    "geography": ["Japan"],
+    "status": "NEW",
+    "sources": [
+      {
+        "publisher": "Hitachi, Ltd. via PR TIMES",
+        "title": "日立、熟練ノウハウを形式知化し、設計業務の効率化と品質向上を支援する「設計ナレッジシステム」をHMAX Industryとして提供開始",
+        "url": "https://prtimes.jp/main/html/rd/p/000000077.000141666.html",
+        "published_at": "2026-09-10",
+        "source_type": "primary",
+        "reliability": "high"
+      },
+      {
+        "publisher": "MONOist",
+        "title": "日立、熟練者の知見をAIで形式知化　3D CADの設計ルール違反も自動検出",
+        "url": "https://monoist.itmedia.co.jp/mn/articles/2609/11/news027.html",
+        "published_at": "2026-09-11",
+        "source_type": "news",
+        "reliability": "high"
+      },
+      {
+        "publisher": "Hitachi, Ltd.",
+        "title": "ニュースリリース・お知らせ：インダストリー：日立",
+        "url": "https://www.hitachi.co.jp/products/infrastructure/portal/industry/news/index.html",
+        "published_at": "2026-09-10",
+        "source_type": "official",
+        "reliability": "high"
+      }
+    ],
+    "claims": [
+      {
+        "kind": "FACT",
+        "text": "Hitachi announced the Design Knowledge System on September 10, 2026 as an HMAX Industry offering for manufacturing design work; the company says provision began in July 2026.",
+        "source_refs": [1, 2, 3],
+        "basis": "Hitachi announcement, official release index and independent technical coverage."
+      },
+      {
+        "kind": "FACT",
+        "text": "The system is designed to convert expert experience, technical documents and past defect information into explicit design knowledge, and to make that knowledge searchable and reusable.",
+        "source_refs": [1, 2],
+        "basis": "Product description in the Hitachi release and MONOist report."
+      },
+      {
+        "kind": "FACT",
+        "text": "Hitachi combines AI-generated checking logic with proprietary geometry-recognition functions so 3D-CAD models can be checked for defined design-rule violations and problem locations can be visualized.",
+        "source_refs": [1, 2],
+        "basis": "Technical function description."
+      },
+      {
+        "kind": "FACT",
+        "text": "In a Hitachi High-Tech customer-zero prototype evaluation using known defective sheet-metal/fabrication drawing cases from a defined three-year review record, Hitachi reported automatic extraction of all target locations in that verification set.",
+        "source_refs": [1, 2],
+        "basis": "Company-reported internal verification result; the result is scoped to the defined known-defect test set, not general accuracy on unseen designs."
+      },
+      {
+        "kind": "INFERENCE",
+        "text": "The more important manufacturing signal is not a single accuracy figure but the attempt to encode tacit engineering judgment into maintainable rules that can be applied earlier in the CAD-review process.",
+        "source_refs": [1, 2],
+        "basis": "The system architecture links knowledge formalization with automated geometry checks."
+      }
+    ],
+    "content": {
+      "whats_new": [
+        "Hitachi is commercializing a workflow that turns expert design knowledge into explicit, reusable checks rather than leaving it only in manuals or senior engineers' memory.",
+        "The checking layer reaches into 3D CAD through geometry recognition instead of stopping at natural-language document retrieval.",
+        "An internal customer-zero trial produced a strong result on a defined historical defect set, but external and unseen-design performance has not been established by the cited evidence."
+      ],
+      "skeptical_view": "The reported customer-zero result is not a general benchmark. It used a defined set of known defect cases from Hitachi High-Tech review history, and the cited public materials do not provide a broad false-positive rate, unseen-design generalization score, deployment cost, rule-maintenance burden or cycle-time result across outside customers. A system like this can also formalize bad or obsolete rules if governance is weak.",
+      "what_next": [
+        "Watch for customer deployments outside Hitachi Group and measured review-time or defect-escape reduction.",
+        "Watch how much human validation is required before an extracted rule becomes an approved engineering rule.",
+        "Watch false-positive/false-negative performance on unseen CAD data and whether the system supports company-specific geometry conventions without heavy custom coding.",
+        "Watch Hitachi's planned expansion toward BOM/BOP creation, similar-shape search and broader physical-AI workflows."
+      ],
+      "what_would_change_mind": "The significance would weaken if most value comes from manually curated rules with little reusable automation, or if unseen-design false positives make engineers ignore the checks. It would strengthen if independent customer deployments show sustained defect prevention and shorter review cycles with auditable rule governance.",
+      "recommendation": "Treat this as a credible manufacturing-AI direction worth tracking for design-quality and knowledge-transfer workflows, but do not interpret the internal historical-set result as '100% accurate AI.'",
+      "usefulness": 96,
+      "novelty": 94,
+      "impact": {
+        "money": "MED",
+        "family": "LOW",
+        "career": "HIGH",
+        "japan": "HIGH",
+        "urgency": "LOW"
+      },
+      "connection_tags": ["manufacturing-ai", "design-rule-automation", "3d-cad", "tacit-knowledge", "engineering-quality", "skills-transfer"],
+      "learning": {
+        "outcomes": [
+          "Explain how an AI knowledge system can move from engineering documents to executable design checks.",
+          "Distinguish a scoped internal verification result from general accuracy on future designs."
+        ],
+        "background": "Manufacturing design rules often live in several places at once: standards, past failure reports, local checklists and the memory of experienced engineers. Traditional search tools can help find those records, but the engineer still has to translate the lesson into a check against a specific design. Hitachi's new system tries to bridge that gap by formalizing the knowledge and connecting it to 3D-CAD geometry checks.",
+        "terms": [
+          {
+            "term": "Tacit knowledge",
+            "meaning": "Practical judgment that experienced people use but that may not be completely written down as a formal rule.",
+            "why_it_matters": "It is difficult to transfer, audit or automate until the reasoning is made explicit."
+          },
+          {
+            "term": "3D-CAD rule check",
+            "meaning": "A software check that inspects geometric features or relationships in a 3D design against an approved rule.",
+            "why_it_matters": "It can flag a risky geometry before the design reaches manufacturing, but only for rules the system can represent and validate correctly."
+          },
+          {
+            "term": "Customer Zero",
+            "meaning": "The developer first uses its own product internally as the initial customer before wider external deployment.",
+            "why_it_matters": "It can expose operational problems early, but internal results still need external validation before they are treated as broad proof."
+          }
+        ],
+        "how_it_works": [
+          {
+            "title": "Capture the rule",
+            "explanation": "AI processes expert know-how, technical documents and past trouble information to propose explicit design knowledge instead of leaving the lesson as unstructured text."
+          },
+          {
+            "title": "Translate knowledge into a check",
+            "explanation": "The system generates checking logic and combines it with geometry-recognition functions such as identifying shapes and spatial relationships."
+          },
+          {
+            "title": "Run against the CAD model",
+            "explanation": "Defined rule violations can be highlighted in the 3D model so an engineer can review the specific location rather than search manually through all possible rules."
+          },
+          {
+            "title": "Keep humans in rule governance",
+            "explanation": "The public evidence supports automation of extraction and checking, but it does not establish that organizations can safely skip engineering validation of the rule itself."
+          }
+        ],
+        "example": "If a veteran engineer knows that a certain bend must stay a minimum distance from a punched hole to avoid manufacturing trouble, the useful automation is not merely finding a paragraph about the rule. It is turning that rule into a geometry check that flags the exact hole-and-bend combination in a CAD model for review.",
+        "takeaways": [
+          "The product links knowledge capture to CAD-level checking.",
+          "This targets design quality and skills transfer, not only document search.",
+          "The strong internal result was measured on a defined historical known-defect set.",
+          "External generalization, false positives and implementation effort remain important unanswered questions."
+        ]
+      },
+      "reading_levels": {
+        "30_sec": [
+          "Hitachi launched an HMAX Industry system that turns expert design knowledge into reusable rules.",
+          "It can combine those rules with geometry recognition to check 3D-CAD designs automatically.",
+          "Hitachi reported complete extraction of target defects in a defined internal historical test set, not universal AI accuracy.",
+          "The next proof is external deployment with false-positive, review-time and defect-escape data."
+        ],
+        "2_min": "The notable part of Hitachi's Design Knowledge System is the connection between two jobs that are usually separate: extracting engineering know-how from people/documents and applying that knowledge directly to 3D-CAD geometry. In an internal Hitachi High-Tech customer-zero evaluation, the company reported that the prototype automatically extracted all defined target defect locations in a historical known-defect set. That is encouraging but narrower than a general accuracy claim. Public evidence still leaves important questions about unseen designs, false positives, customer-specific rule governance, deployment effort and measurable cycle-time reduction."
+      },
+      "editorial_visual": {
+        "style": "editorial",
+        "motif": "factory",
+        "secondary_motif": "document",
+        "scene": "a veteran engineer hands a glowing book of design rules to a compact AI inspector that projects simple geometric check marks over a large mechanical CAD-like part inside a clean factory design room",
+        "caption": "Turning shop-floor wisdom into repeatable design checks",
+        "silliness": 38,
+        "exaggeration": 70
+      }
+    }
+  }
+]
