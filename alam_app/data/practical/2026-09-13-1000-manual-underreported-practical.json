@@ -1,0 +1,412 @@
+[
+  {
+    "id": "t-fal-electric-kettle-power-base-recall-fire-2026-09",
+    "agent": "practical",
+    "created_at": "2026-09-13T10:00:34+09:00",
+    "published_at": "2026-09-13T10:00:34+09:00",
+    "type": "product_recall",
+    "title": "Check your T-fal kettle: a 4.18-million-unit recall is still causing fire alerts",
+    "summary": "Japan's Consumer Affairs Agency again flagged recalled T-fal electric kettles in its September 11 serious-accident bulletin. The recall covers specific lots among 4,185,393 kettles, and the remedy is a free replacement of the power base.",
+    "why_it_matters": "This recall began in 2025 but remains an active safety issue. Owners can identify affected units from the product number and four-digit manufacturing code on the kettle base instead of guessing from brand or appearance.",
+    "importance": 98,
+    "confidence": 99,
+    "tags": ["Japan", "Recall", "T-fal", "Electric Kettle", "Fire Safety", "Home"],
+    "geography": ["Japan"],
+    "status": "DEVELOPING",
+    "sources": [
+      {
+        "publisher": "Consumer Affairs Agency",
+        "title": "Serious product accidents: recalled electric kettle, rechargeable speaker, electric-assist bicycle and rechargeable pressure washer (September 11)",
+        "url": "https://www.caa.go.jp/notice/entry/047501/",
+        "published_at": "2026-09-11",
+        "source_type": "official"
+      },
+      {
+        "publisher": "Consumer Affairs Agency Recall Information Site",
+        "title": "Groupe SEB Japan: T-fal electric kettles — free power-base replacement",
+        "url": "https://www.recall.caa.go.jp/result/detail.php?rcl=00000034323&screenkbn=03",
+        "published_at": "2025-09-16",
+        "source_type": "official"
+      },
+      {
+        "publisher": "T-fal / Groupe SEB Japan",
+        "title": "Important: free replacement of electric-kettle power bases",
+        "url": "https://www.t-fal.co.jp/news/250916-1/",
+        "published_at": "2025-09-16",
+        "source_type": "primary"
+      }
+    ],
+    "claims": [
+      {
+        "kind": "FACT",
+        "text": "The Consumer Affairs Agency's September 11, 2026 serious-product-accident bulletin again highlighted a recalled electric kettle sold by Groupe SEB Japan, with free power-base replacement as the remedy.",
+        "source_refs": [1],
+        "basis": "Consumer Affairs Agency September 11 bulletin."
+      },
+      {
+        "kind": "FACT",
+        "text": "The recall covers specific manufacturing lots among 4,185,393 T-fal electric kettles.",
+        "source_refs": [2, 3],
+        "basis": "Consumer Affairs Agency recall database and manufacturer notice."
+      },
+      {
+        "kind": "FACT",
+        "text": "The affected lots were manufactured between October 2021 and July 2024, and owners identify them using both the product number and four-digit code on the kettle base.",
+        "source_refs": [2, 3],
+        "basis": "Official recall identification instructions."
+      },
+      {
+        "kind": "FACT",
+        "text": "The recall was initiated because plug damage under certain cord-use conditions can lead to smoke or ignition near the outlet.",
+        "source_refs": [2, 3],
+        "basis": "Official recall reason."
+      }
+    ],
+    "content": {
+      "who_is_affected": "Anyone in Japan who owns a T-fal electric kettle manufactured in the relevant 2021-2024 period should check the exact product number and four-digit manufacturing code. Not every T-fal kettle is affected.",
+      "when": "The recall remains active; the Consumer Affairs Agency highlighted it again on September 11, 2026.",
+      "financial_impact": "The official remedy for affected units is a free replacement of the power base.",
+      "risk_if_ignored": "HIGH — affected power bases can be associated with smoke or ignition near the electrical outlet.",
+      "action": "DO NOW",
+      "effort": "LOW",
+      "potential_benefit": "Remove a known household fire risk without paying for the replacement remedy.",
+      "downside": "Checking the label takes a few minutes; owners must match both identifiers rather than relying on model appearance alone.",
+      "what_would_change_mind": "A manufacturer or regulator notice ending, narrowing or changing the recall remedy.",
+      "usefulness": 100,
+      "novelty": 94,
+      "impact": {
+        "money": "LOW",
+        "family": "HIGH",
+        "career": "LOW",
+        "japan": "MED",
+        "urgency": "HIGH"
+      },
+      "connection_tags": ["household-fire", "product-recall", "electrical-safety"],
+      "action_plan": {
+        "goal": "Determine whether your T-fal kettle is affected and request the official free power-base replacement if it is.",
+        "who_should_act": "Owners of T-fal electric kettles, especially units manufactured from October 2021 through July 2024. Owners of other brands can ignore this specific recall.",
+        "deadline": "No end date is stated in the cited recall notice; check now because the recall remains active.",
+        "prepare": ["The kettle itself", "Access to the label or marking on the bottom of the kettle", "Internet access to the official T-fal or Consumer Affairs Agency recall page"],
+        "steps": [
+          {
+            "step": "Find the identifiers",
+            "action": "Turn the kettle off, unplug it and inspect the bottom label or marking for the product number and four-digit code.",
+            "how": "Use the official recall page's identification guide; some models have the information engraved instead of on a label.",
+            "needed": ["Kettle"],
+            "time_minutes": 3,
+            "cost_yen": 0,
+            "done_when": "You have recorded both the product number and four-digit code."
+          },
+          {
+            "step": "Match against the official list",
+            "action": "Compare both identifiers with the affected combinations on the official T-fal recall page.",
+            "how": "Do not decide based only on the brand name, color or general model family.",
+            "needed": ["Product number", "Four-digit code"],
+            "time_minutes": 3,
+            "cost_yen": 0,
+            "done_when": "You know whether your exact unit is listed as affected."
+          },
+          {
+            "step": "Request the replacement if affected",
+            "action": "Use the manufacturer recall channel linked from the official notice to request the free replacement power base.",
+            "how": "Follow the current manufacturer instructions rather than buying a third-party base.",
+            "needed": ["Affected-unit identifiers"],
+            "time_minutes": 10,
+            "cost_yen": 0,
+            "done_when": "The official replacement request is accepted or you have direct manufacturer guidance."
+          }
+        ],
+        "mistakes_to_avoid": ["Assuming every T-fal kettle is recalled.", "Continuing to use an affected unit because it has not yet shown visible damage.", "Buying an unofficial replacement base before checking the free recall remedy."],
+        "decision_rules": [
+          {"if": "Both identifiers match the official affected list", "then": "Use the official recall process for the free power-base replacement."},
+          {"if": "The identifiers do not match", "then": "This specific recall does not apply, but continue normal safe-use guidance."}
+        ],
+        "follow_up": "Re-check the manufacturer recall page if the identification table or remedy is updated."
+      },
+      "learning": {
+        "outcomes": ["Recognize why an older recall can still be a current safety story.", "Know how to identify an affected kettle without guessing."],
+        "background": "A product recall stays relevant as long as affected products remain in homes. This T-fal action began in September 2025, but Japan's regulator again highlighted the product in a September 2026 serious-accident bulletin.",
+        "terms": [
+          {"term": "Power base", "meaning": "The separate base that supplies electricity to a cordless kettle.", "why_it_matters": "The recall remedy replaces this component rather than necessarily replacing the entire kettle."}
+        ],
+        "how_it_works": [
+          {"title": "Identify the exact production lot", "explanation": "The product number identifies the model, while the four-digit code narrows the manufacturing lot. Both are needed because only specific combinations are affected."},
+          {"title": "Remove the risk through the official remedy", "explanation": "For affected units, the manufacturer replaces the power base with a design using a different power plug structure."}
+        ],
+        "example": "Two visually identical kettles can have different four-digit manufacturing codes, so one may be recalled while the other is not.",
+        "takeaways": ["The recall is still active.", "4,185,393 units are within the recall population, but only listed product/code combinations are affected.", "Check the bottom markings, not just the model name.", "The official remedy is a free power-base replacement."]
+      },
+      "reading_levels": {
+        "30_sec": ["Japan's regulator flagged the T-fal kettle recall again on September 11.", "Specific lots among 4.18 million kettles are covered.", "Check the product number and four-digit code underneath the kettle.", "Affected owners can request a free replacement power base."],
+        "2_min": "The recall began in 2025 but remains active. Groupe SEB Japan says specific manufacturing lots of T-fal electric kettles made from October 2021 through July 2024 can suffer plug damage that may lead to smoke or ignition near an outlet. Owners should unplug the kettle, read the product number and four-digit manufacturing code underneath it, compare both with the official list, and use the manufacturer recall route if the unit matches."
+      },
+      "editorial_visual": {
+        "style": "editorial",
+        "motif": "home",
+        "secondary_motif": "shield",
+        "scene": "a household electric kettle sitting unplugged beside a clearly separated power base while a protective shield symbol blocks a small stylized electrical spark near the wall outlet",
+        "caption": "An old recall can remain a current fire risk",
+        "silliness": 2,
+        "exaggeration": 34
+      }
+    }
+  },
+  {
+    "id": "japan-foreign-resident-survey-scam-warning-2026",
+    "agent": "practical",
+    "created_at": "2026-09-13T10:00:35+09:00",
+    "published_at": "2026-09-13T10:00:35+09:00",
+    "type": "scam_alert",
+    "title": "Foreign residents: a real immigration survey is arriving by mail, while fake versions are circulating",
+    "summary": "Japan's Immigration Services Agency is running its 2026 foreign-resident survey from September 11 to October 4 by mailing selected residents a paper invitation for an online response. The agency says it does not contact respondents by email or phone, never asks for bank or card details, and has already confirmed impersonation attempts.",
+    "why_it_matters": "A legitimate government-looking envelope and a fake message may appear at the same time. Knowing the official contact pattern helps foreign residents avoid both unnecessary fear of the real survey and phishing through fake links.",
+    "importance": 97,
+    "confidence": 99,
+    "tags": ["Japan", "Foreign Residents", "Immigration", "Scam", "Phishing", "Survey"],
+    "geography": ["Japan"],
+    "status": "NEW",
+    "sources": [
+      {
+        "publisher": "Immigration Services Agency of Japan",
+        "title": "Basic Survey on Foreign Residents",
+        "url": "https://www.moj.go.jp/isa/support/coexistence/04_00017.html",
+        "source_type": "official"
+      }
+    ],
+    "claims": [
+      {"kind": "FACT", "text": "The 2026 Basic Survey on Foreign Residents runs from September 11 through October 4, 2026.", "source_refs": [1], "basis": "Immigration Services Agency survey page."},
+      {"kind": "FACT", "text": "Selected respondents are sent a paper letter and then answer the survey online; participation is voluntary and responses do not affect immigration or residence procedures.", "source_refs": [1], "basis": "Official survey instructions."},
+      {"kind": "FACT", "text": "The Immigration Services Agency says impersonation attempts using suspicious email or phone contact have been confirmed.", "source_refs": [1], "basis": "Official scam warning on the survey page."},
+      {"kind": "FACT", "text": "The agency says it will not email or phone respondents, will not request bank-account or credit-card information, and does not ask people to answer through links sent by email.", "source_refs": [1], "basis": "Official scam-warning language."}
+    ],
+    "content": {
+      "who_is_affected": "Foreign residents in Japan, especially people who receive a paper invitation to the 2026 Basic Survey on Foreign Residents or a message claiming to be about that survey.",
+      "when": "Official survey period: September 11 through October 4, 2026.",
+      "financial_impact": "The legitimate survey does not require bank or card information. A request for such information is a strong warning sign.",
+      "risk_if_ignored": "HIGH if a fake email/phone request is trusted; LOW if the legitimate voluntary survey is simply not answered because participation itself is optional.",
+      "action": "PREPARE",
+      "deadline": "2026-10-04 for the legitimate survey response period.",
+      "effort": "LOW",
+      "potential_benefit": "Avoid phishing while recognizing the real government survey process.",
+      "downside": "A cautious resident may mistake a legitimate mailed invitation for a scam unless they verify it against the official agency page.",
+      "what_would_change_mind": "A later Immigration Services Agency notice changing the official survey channel or dates.",
+      "usefulness": 100,
+      "novelty": 98,
+      "impact": {"money": "MED", "family": "MED", "career": "LOW", "japan": "HIGH", "urgency": "HIGH"},
+      "connection_tags": ["foreign-resident-services", "phishing", "immigration-communication"],
+      "action_plan": {
+        "goal": "Verify survey contact safely and avoid fake email or phone requests.",
+        "who_should_act": "Foreign residents who receive a mailed survey invitation, email, phone call or message claiming to be connected to the 2026 Basic Survey on Foreign Residents.",
+        "deadline": "Legitimate survey period ends October 4, 2026.",
+        "prepare": ["The physical letter if one arrived", "The official Immigration Services Agency survey webpage opened independently in your browser"],
+        "steps": [
+          {"step": "Identify how you were contacted", "action": "Separate a mailed paper invitation from email, phone or message contact.", "how": "The official process uses a mailed letter for selected respondents; the agency says it does not email or phone respondents about this survey.", "needed": ["The contact you received"], "time_minutes": 2, "cost_yen": 0, "done_when": "You know whether the contact method matches the agency's stated process."},
+          {"step": "Check for scam indicators", "action": "Reject any request for bank-account or credit-card information or any email asking you to answer through a link.", "how": "Compare the request with the warning on the official Immigration Services Agency page.", "needed": ["Official agency page"], "time_minutes": 2, "cost_yen": 0, "done_when": "No sensitive financial request or email-answer link remains unverified."},
+          {"step": "Verify uncertain cases independently", "action": "Use the contact information published on the official agency page rather than contact details inside a suspicious message.", "how": "Open the official page independently and use its listed survey inquiry route.", "needed": ["Official agency page"], "time_minutes": 5, "cost_yen": 0, "done_when": "You have confirmed whether the communication is genuine."}
+        ],
+        "mistakes_to_avoid": ["Clicking an emailed survey link just because it uses government branding.", "Giving bank or credit-card details to someone claiming they are required for the survey.", "Assuming non-response will hurt visa or residence procedures; the agency says participation is voluntary and does not affect those procedures."],
+        "decision_rules": [
+          {"if": "You received only an email or phone call claiming to be the survey", "then": "Treat it as suspicious and verify independently through the official agency page."},
+          {"if": "You received the official paper invitation and want to participate", "then": "Follow the instructions in the mailed material after verifying the survey page independently."}
+        ],
+        "follow_up": "If the agency publishes a later warning or channel change, follow the newest official notice."
+      },
+      "learning": {
+        "outcomes": ["Distinguish the real survey workflow from a phishing attempt.", "Understand that participation is voluntary and separate from residence-status decisions."],
+        "background": "The Immigration Services Agency surveys foreign residents to understand work, daily-life and social issues that can inform coexistence policy. In 2026 it is simultaneously warning that scammers are impersonating this survey.",
+        "terms": [
+          {"term": "Basic Survey on Foreign Residents", "meaning": "A government survey of foreign residents' living and working conditions in Japan.", "why_it_matters": "It is a policy-information survey, not a visa examination."}
+        ],
+        "how_it_works": [
+          {"title": "Legitimate contact starts with physical mail", "explanation": "Selected residents receive a paper envelope, then use the survey's online response method."},
+          {"title": "Scam attempts break that pattern", "explanation": "The agency specifically says it does not initiate this survey by email or phone and does not request banking or card information."}
+        ],
+        "example": "An email saying 'answer the immigration survey here' with a clickable link does not match the agency's stated process, even if the message uses official-looking logos.",
+        "takeaways": ["Official survey period is September 11-October 4.", "The real invitation is sent by mail.", "The agency says it will not email or phone respondents.", "Bank/card information is not part of the legitimate survey.", "Participation does not affect immigration procedures."]
+      },
+      "reading_levels": {
+        "30_sec": ["The 2026 foreign-resident survey is real and runs September 11-October 4.", "Selected residents are contacted by physical mail.", "Immigration says it will not email or call about the survey and will not ask for bank/card details.", "An emailed survey-answer link should be treated as suspicious."],
+        "2_min": "Japan's Immigration Services Agency is conducting the 2026 Basic Survey on Foreign Residents. Selected residents receive a paper invitation and may answer online. Participation is voluntary and does not affect immigration procedures. The same official page warns that fake email and phone approaches have been confirmed. The agency says it will not email or phone respondents, request bank or credit-card data, or ask people to answer through an email link."
+      },
+      "editorial_visual": {
+        "style": "editorial",
+        "motif": "document",
+        "secondary_motif": "shield",
+        "scene": "a sealed official-looking paper envelope on one side and a suspicious glowing email link on the other, separated by a strong protective shield symbol",
+        "caption": "The real survey starts with mail, not a phishing link",
+        "silliness": 1,
+        "exaggeration": 30
+      }
+    }
+  },
+  {
+    "id": "tsukuba-child-flu-vaccine-subsidy-2026-2027",
+    "agent": "practical",
+    "created_at": "2026-09-13T10:00:36+09:00",
+    "published_at": "2026-09-13T10:00:36+09:00",
+    "type": "family_health_support",
+    "title": "Tsukuba will subsidize children's flu vaccination from October 1",
+    "summary": "Tsukuba residents from age 6 months through junior-high grade 3 can receive up to ¥2,000 toward one influenza vaccination between October 1, 2026 and January 31, 2027. The city says FluMist is eligible, and participating clinics apply the subsidy without a separate city application.",
+    "why_it_matters": "Ibaraki's latest surveillance says influenza is already circulating and broader acute respiratory infections rose again in Week 36. Families can plan the appointment before the subsidy window opens instead of discovering the program after clinics become busy.",
+    "importance": 96,
+    "confidence": 99,
+    "tags": ["Japan", "Ibaraki", "Tsukuba", "Children", "Influenza", "Vaccination", "Family Support"],
+    "geography": ["Japan", "Ibaraki", "Tsukuba"],
+    "status": "NEW",
+    "sources": [
+      {"publisher": "Tsukuba City", "title": "Subsidy for pediatric influenza vaccination costs", "url": "https://www.city.tsukuba.lg.jp/soshikikarasagasu/hokembukenkozoshinka/gyomuannai/5/yobosessyu/11356.html", "published_at": "2026-08-27", "source_type": "official"},
+      {"publisher": "Ibaraki Prefecture", "title": "Weekly infectious disease surveillance — Week 36, 2026", "url": "https://www.pref.ibaraki.jp/hokenfukushi/eiken/idwr/weekly/", "published_at": "2026-09-10", "source_type": "official"}
+    ],
+    "claims": [
+      {"kind": "FACT", "text": "Tsukuba's 2026 pediatric influenza subsidy covers residents who are at least 6 months old through the equivalent of junior-high grade 3 on the vaccination date.", "source_refs": [1], "basis": "Tsukuba City eligibility rules."},
+      {"kind": "FACT", "text": "The subsidy period is October 1, 2026 through January 31, 2027, with a maximum subsidy of ¥2,000 for one vaccination during the period.", "source_refs": [1], "basis": "Tsukuba City program details."},
+      {"kind": "FACT", "text": "FluMist is eligible, and no separate city application is required when vaccination is received at a participating medical institution.", "source_refs": [1], "basis": "Tsukuba City program details."},
+      {"kind": "FACT", "text": "Ibaraki reported Week 36 acute respiratory infection surveillance at 55.46 reports per sentinel, up from 50.55 the prior week, and said influenza was currently circulating in the prefecture.", "source_refs": [2], "basis": "Ibaraki Prefecture Week 36 surveillance."}
+    ],
+    "content": {
+      "who_is_affected": "Children registered as Tsukuba residents who are at least 6 months old through junior-high grade 3 equivalent on the vaccination date.",
+      "when": "Subsidy period: October 1, 2026 through January 31, 2027.",
+      "financial_impact": "Up to ¥2,000 for one influenza vaccination during the subsidy period. The city states a higher maximum for public-assistance recipients.",
+      "risk_if_ignored": "MED — the main consequence is missing a municipal subsidy and potentially delaying seasonal planning; vaccination decisions themselves should be made with the child's clinician when appropriate.",
+      "action": "PREPARE",
+      "deadline": "Vaccination must occur within the October 1, 2026-January 31, 2027 subsidy period.",
+      "effort": "LOW",
+      "potential_benefit": "Reduce eligible out-of-pocket vaccination cost and arrange protection while respiratory infections are already active locally.",
+      "downside": "The subsidy covers only one vaccination in the period; even when a child receives a two-dose schedule, only the first dose is subsidized under this program.",
+      "what_would_change_mind": "A later Tsukuba City notice changing age eligibility, subsidy amount, eligible vaccine types, participating clinics or dates.",
+      "usefulness": 100,
+      "novelty": 96,
+      "impact": {"money": "MED", "family": "HIGH", "career": "LOW", "japan": "LOW", "urgency": "MED"},
+      "connection_tags": ["tsukuba-family-support", "influenza", "child-health", "local-surveillance"],
+      "action_plan": {
+        "goal": "Use the Tsukuba subsidy correctly if your child is eligible and you choose influenza vaccination.",
+        "who_should_act": "Parents/guardians of Tsukuba-registered children aged 6 months through junior-high grade 3 equivalent. Families outside Tsukuba should check their own municipality instead.",
+        "deadline": "Vaccination must be given from October 1, 2026 through January 31, 2027.",
+        "prepare": ["Child's age and Tsukuba resident-registration status", "A participating-clinic choice from the city list", "Any clinic-specific items requested when booking"],
+        "steps": [
+          {"step": "Confirm eligibility", "action": "Check that the child is registered in Tsukuba and falls within the city's age range on the vaccination date.", "how": "Use the eligibility section of the official Tsukuba page.", "needed": ["Child's birth date", "Residence status in Tsukuba"], "time_minutes": 2, "cost_yen": 0, "done_when": "You have confirmed the child falls within the listed group."},
+          {"step": "Choose a participating clinic", "action": "Open the city's participating-medical-institution list and contact a clinic for an appointment.", "how": "The city says no separate municipal application is needed when using a participating clinic.", "needed": ["Clinic list"], "time_minutes": 5, "cost_yen": 0, "done_when": "An appointment or clinic plan is confirmed."},
+          {"step": "Confirm vaccine and price with the clinic", "action": "Ask the clinic which influenza vaccine it offers, the total price and the amount due after the city subsidy.", "how": "FluMist is eligible under the city program, but vaccine suitability and availability are clinical/provider matters.", "needed": ["Clinic contact"], "time_minutes": 5, "cost_yen": 0, "done_when": "You understand the scheduled vaccine and expected out-of-pocket cost."}
+        ],
+        "mistakes_to_avoid": ["Assuming both doses are subsidized when a two-dose schedule is used; the city states the subsidy is for one vaccination.", "Assuming any clinic automatically applies the subsidy; check the participating-institution list or the city's instructions for non-participating clinics.", "Treating local surveillance as personal medical advice; it is a population signal."],
+        "decision_rules": [
+          {"if": "Your child is eligible and you choose vaccination", "then": "Book within the subsidy period and use a participating clinic for the simplest process."},
+          {"if": "The child has a medical condition, prior vaccine reaction or you are unsure which vaccine is appropriate", "then": "Discuss the choice with the child's clinician rather than relying on the subsidy notice alone."}
+        ],
+        "follow_up": "Check the city page again close to the appointment in case the participating-clinic list or operational details change."
+      },
+      "learning": {
+        "outcomes": ["Understand exactly who qualifies and how much Tsukuba contributes.", "Separate the municipal subsidy rules from the medical decision about vaccination."],
+        "background": "Municipalities in Japan can run their own vaccination-support programs. Tsukuba's 2026-27 program is a local subsidy, not a nationwide automatic payment. Separately, Ibaraki's infectious-disease surveillance indicates influenza is already circulating as the subsidy window approaches.",
+        "terms": [
+          {"term": "FluMist", "meaning": "A nasal-spray live attenuated influenza vaccine.", "why_it_matters": "Tsukuba explicitly includes it as an eligible vaccine under this subsidy program."},
+          {"term": "Sentinel surveillance", "meaning": "A system where designated medical institutions report cases so authorities can track community trends.", "why_it_matters": "It describes population-level activity, not an individual child's probability of infection."}
+        ],
+        "how_it_works": [
+          {"title": "Municipal subsidy", "explanation": "At participating clinics, the city contribution is handled through the clinic rather than requiring a separate city application."},
+          {"title": "Local disease signal", "explanation": "The prefecture's surveillance helps families understand timing, but does not replace individual medical advice."}
+        ],
+        "example": "If a participating clinic charges more than ¥2,000, an eligible family generally pays the remaining amount after the city's contribution; the exact clinic price should be confirmed directly.",
+        "takeaways": ["Eligible ages run from 6 months through junior-high grade 3 equivalent.", "The window is October 1-January 31.", "Maximum standard subsidy is ¥2,000 for one vaccination.", "FluMist is eligible.", "Use the city clinic list and confirm medical suitability with the provider."]
+      },
+      "reading_levels": {
+        "30_sec": ["Tsukuba's child flu-vaccine subsidy starts October 1.", "Eligible residents: age 6 months through junior-high grade 3 equivalent.", "Standard support is up to ¥2,000 for one vaccination; FluMist qualifies.", "Ibaraki says influenza is already circulating, so families can plan appointments now."],
+        "2_min": "Tsukuba's program runs October 1, 2026 through January 31, 2027. Eligible children are registered Tsukuba residents aged at least 6 months through junior-high grade 3 equivalent. The standard subsidy is up to ¥2,000 for one vaccination; FluMist is included, and participating clinics do not require a separate city application. Ibaraki's Week 36 surveillance says influenza is already circulating and acute respiratory infection reports rose from 50.55 to 55.46 per sentinel, making early planning useful without turning a population signal into individual medical advice."
+      },
+      "editorial_visual": {
+        "style": "editorial",
+        "motif": "family",
+        "secondary_motif": "shield",
+        "scene": "a parent and child calmly planning an autumn clinic visit beside a calendar opening on October 1, with a small protective shield and no needles shown",
+        "caption": "Plan the appointment before the subsidy window opens",
+        "silliness": 3,
+        "exaggeration": 28
+      }
+    }
+  },
+  {
+    "id": "japan-online-marketplace-asbestos-safety-pledge-2026-09",
+    "agent": "practical",
+    "created_at": "2026-09-13T10:00:37+09:00",
+    "published_at": "2026-09-13T10:00:37+09:00",
+    "type": "consumer_safety_policy",
+    "title": "Japan expands online-marketplace safety controls after asbestos products were found for sale",
+    "summary": "Japan added asbestos-containing products and certain regulated protective/industrial equipment to its Product Safety Pledge on September 10. Officials say products found above the legal asbestos threshold have included colored craft sand and diatomaceous-earth bath mats, but that does not mean every product in those categories is contaminated.",
+    "why_it_matters": "The change strengthens the framework used with major online marketplaces to identify and remove unsafe listings. For consumers, the useful lesson is to check official product notices rather than treating a whole product category as dangerous.",
+    "importance": 91,
+    "confidence": 98,
+    "tags": ["Japan", "Consumer Safety", "Asbestos", "Online Shopping", "Marketplace", "Recall"],
+    "geography": ["Japan"],
+    "status": "NEW",
+    "sources": [
+      {"publisher": "Consumer Affairs Agency", "title": "Commissioner press conference summary, September 10, 2026", "url": "https://www.caa.go.jp/notice/statement/horii/047515.html", "published_at": "2026-09-10", "source_type": "official"},
+      {"publisher": "Consumer Affairs Agency", "title": "Product Safety Pledge (Japan)", "url": "https://www.caa.go.jp/policies/policy/consumer_safety/product_safety_pledge", "published_at": "2026-09-10", "source_type": "official"},
+      {"publisher": "Ministry of Health, Labour and Welfare", "title": "Information on distributed products containing asbestos", "url": "https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/koyou_roudou/roudoukijun/sekimen/other/pamph/index_00003.html", "source_type": "official"}
+    ],
+    "claims": [
+      {"kind": "FACT", "text": "On September 10, 2026, Japan expanded the Product Safety Pledge to cover asbestos-containing products regulated under the Industrial Safety and Health Act and certain regulated machines/equipment sold online.", "source_refs": [1, 2], "basis": "Consumer Affairs Agency announcement."},
+      {"kind": "FACT", "text": "Japanese law prohibits manufacture, import, transfer, provision and use of products containing more than 0.1% asbestos by weight, except limited cases such as research use.", "source_refs": [1, 3], "basis": "Consumer Affairs Agency and Ministry of Health, Labour and Welfare explanation of the legal threshold."},
+      {"kind": "FACT", "text": "Officials cited past findings involving colored sand and diatomaceous-earth bath mats as reasons for adding these products to the pledge framework.", "source_refs": [1, 3], "basis": "Consumer Affairs Agency press conference and MHLW product-information history."},
+      {"kind": "INFERENCE", "text": "The policy expansion should improve marketplace detection and removal of unsafe listings, but it does not establish that all colored sand or diatomaceous products are unsafe.", "source_refs": [1, 2], "basis": "Scope of the Product Safety Pledge and the government's examples."}
+    ],
+    "content": {
+      "who_is_affected": "People buying craft materials, diatomaceous products or regulated safety/industrial equipment through online marketplaces, and people who already own a specifically identified asbestos-containing product.",
+      "when": "The additional product categories were announced as part of the Product Safety Pledge on September 10, 2026.",
+      "financial_impact": "No universal refund or compensation applies to an entire product category; remedies depend on the specific product/seller/recall notice.",
+      "risk_if_ignored": "MED-HIGH for a confirmed asbestos-containing product, especially if damaged or modified; the policy announcement itself is not evidence that an unlisted product is contaminated.",
+      "action": "WATCH",
+      "effort": "LOW",
+      "potential_benefit": "Avoid unsafe listings and respond correctly if an owned product appears on an official asbestos or recall notice.",
+      "downside": "Overreacting to category names can cause unnecessary disposal of products that have not been identified as containing asbestos.",
+      "what_would_change_mind": "A new MHLW or Consumer Affairs Agency notice identifying additional specific products or changing handling instructions.",
+      "usefulness": 95,
+      "novelty": 97,
+      "impact": {"money": "LOW", "family": "HIGH", "career": "LOW", "japan": "MED", "urgency": "MED"},
+      "connection_tags": ["online-marketplace", "product-safety", "asbestos", "unsafe-listings"],
+      "action_plan": {
+        "goal": "Check specific products against official notices without assuming an entire category is contaminated.",
+        "who_should_act": "Consumers who recently bought colored craft sand, diatomaceous-earth products or relevant safety/industrial products online, especially from unfamiliar marketplace sellers.",
+        "deadline": "No universal consumer deadline; act promptly if a specific owned product appears on an official asbestos or recall notice.",
+        "prepare": ["Product name/model", "Seller or marketplace order history", "Official Consumer Affairs Agency and MHLW product-safety pages"],
+        "steps": [
+          {"step": "Identify the exact product", "action": "Record the brand, seller, product name/model and purchase listing.", "how": "Use order history or packaging rather than relying on a generic category such as 'bath mat' or 'colored sand'.", "needed": ["Order history or packaging"], "time_minutes": 5, "cost_yen": 0, "done_when": "You can distinguish the exact item from similar products."},
+          {"step": "Check official notices", "action": "Search the Consumer Affairs Agency recall information and MHLW asbestos-product list for the exact product or seller.", "how": "Use government notices as the decision source, not social-media claims about the whole category.", "needed": ["Exact product details"], "time_minutes": 5, "cost_yen": 0, "done_when": "You know whether the product has been specifically identified by authorities."},
+          {"step": "Follow product-specific instructions if identified", "action": "Use the handling/return/disposal instructions in the official notice or seller recall.", "how": "Do not improvise destructive handling of a suspected asbestos product.", "needed": ["Official notice"], "time_minutes": 5, "cost_yen": 0, "done_when": "You are following the official product-specific route."}
+        ],
+        "mistakes_to_avoid": ["Assuming every colored-sand or diatomaceous product contains asbestos.", "Breaking, grinding or sanding a suspected product to 'check' it yourself.", "Relying on an online seller's reassurance when an official recall or asbestos notice says otherwise."],
+        "decision_rules": [
+          {"if": "Your exact product appears on an official asbestos/recall notice", "then": "Follow that notice's handling and remedy instructions."},
+          {"if": "Only the generic product category matches but no official identification exists", "then": "Do not label the item contaminated; monitor official notices and verify the exact product."}
+        ],
+        "follow_up": "Re-check the official product-safety pages if the marketplace listing disappears, the seller contacts you, or new government notices are issued."
+      },
+      "learning": {
+        "outcomes": ["Understand what the Product Safety Pledge changes.", "Know why a category-level warning is different from a product-specific asbestos finding."],
+        "background": "Japan's Product Safety Pledge is a voluntary government-industry framework with major online marketplaces aimed at reducing exposure to recalled or unsafe products. On September 10, asbestos-containing products and certain regulated equipment were added to its scope after authorities had identified prohibited products in online commerce.",
+        "terms": [
+          {"term": "0.1% asbestos threshold", "meaning": "Products containing more than 0.1% asbestos by weight are prohibited from manufacture, import, transfer, provision and use under the cited Japanese law, subject to limited exceptions.", "why_it_matters": "The rule is about measured asbestos content in a specific product, not the generic product category."},
+          {"term": "Product Safety Pledge", "meaning": "A cooperative safety framework between Japanese authorities and online marketplace operators.", "why_it_matters": "It helps marketplaces act on unsafe or recalled listings beyond ordinary consumer browsing."}
+        ],
+        "how_it_works": [
+          {"title": "Authorities identify unsafe product types or specific products", "explanation": "Government agencies publish safety findings and rules, including asbestos cases."},
+          {"title": "Marketplace operators use the pledge framework", "explanation": "Participating platforms cooperate to address listings that match unsafe or prohibited products."}
+        ],
+        "example": "A diatomaceous bath mat is not automatically an asbestos product. The relevant question is whether the exact product has been identified in an official notice or otherwise verified above the legal threshold.",
+        "takeaways": ["The September 10 change expands online-marketplace safety coverage.", "More than 0.1% asbestos by weight is prohibited under the cited law.", "Past findings include colored sand and diatomaceous bath mats.", "Do not generalize from one recalled product to an entire category.", "Use official product-specific notices before acting."]
+      },
+      "reading_levels": {
+        "30_sec": ["Japan expanded its online Product Safety Pledge on September 10 to include asbestos-containing products and certain regulated equipment.", "Officials cited past unsafe colored sand and diatomaceous bath mats.", "That does not mean all such products contain asbestos.", "Check your exact product against official notices instead of relying on category rumors."],
+        "2_min": "The Consumer Affairs Agency expanded Japan's Product Safety Pledge so online marketplaces can more systematically address asbestos-containing products and certain regulated equipment. The government cited past findings involving colored sand and diatomaceous bath mats. The legal issue is specific measured asbestos content above the threshold, not the mere fact that a product belongs to one of those categories. Consumers should identify the exact product and seller, check official CAA/MHLW notices, and follow product-specific instructions if a match is found."
+      },
+      "editorial_visual": {
+        "style": "editorial",
+        "motif": "shield",
+        "secondary_motif": "document",
+        "scene": "an online shopping parcel and phone screen kept behind a protective inspection shield, with a tiny sealed sample icon and a government notice card, avoiding any dramatic dust imagery",
+        "caption": "Check the exact product, not the rumor",
+        "silliness": 1,
+        "exaggeration": 26
+      }
+    }
+  }
+]
