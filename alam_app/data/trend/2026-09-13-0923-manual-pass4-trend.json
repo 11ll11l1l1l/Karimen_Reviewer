@@ -1,0 +1,188 @@
+[
+  {
+    "id": "japan-marriage-child-intentions-family-roles-2025-survey",
+    "agent": "trend",
+    "created_at": "2026-09-13T09:23:06+09:00",
+    "published_at": "2026-09-13T09:23:06+09:00",
+    "type": "social_trend",
+    "title": "Marriage intentions fall below 80% as Japan's family roles keep changing",
+    "summary": "Japan's newly released national fertility survey shows the share of unmarried 18-to-34-year-olds who intend to marry someday fell to 75.1% for men and 77.8% for women, both below 80% for the first time in the survey series. Desired child counts also declined, while among couples raising children since 2020, more than half of fathers were reported as doing childcare routinely—a mixed picture of weaker family-formation intentions but more involved parenting inside formed families.",
+    "why_it_matters": "This is not simply a 'fewer people want marriage' story. The data point to two simultaneous changes: fewer unmarried young adults expect the traditional marriage-and-children path, while fathers' participation inside families is increasing. That matters for long-run labor supply, housing, schools, childcare demand and how employers design work around family life.",
+    "importance": 92,
+    "confidence": 97,
+    "tags": ["Japan", "Marriage", "Children", "Demographics", "Family", "Parenting", "Workforce", "Childcare", "Social Trends"],
+    "geography": ["Japan"],
+    "status": "DEVELOPING",
+    "sources": [
+      {
+        "publisher": "National Institute of Population and Social Security Research",
+        "title": "第17回出生動向基本調査（結婚と出産に関する全国調査）",
+        "url": "https://www.ipss.go.jp/ps-doukou/j/doukou17/doukou17_gaiyo.html",
+        "published_at": "2026-09-11",
+        "source_type": "official",
+        "reliability": "high"
+      },
+      {
+        "publisher": "National Institute of Population and Social Security Research",
+        "title": "第16回出生動向基本調査（結婚と出産に関する全国調査）",
+        "url": "https://www.ipss.go.jp/ps-doukou/j/doukou16/doukou16_gaiyo.asp",
+        "published_at": "2022-09-09",
+        "source_type": "official",
+        "reliability": "high"
+      },
+      {
+        "publisher": "nippon.com / Jiji Press",
+        "title": "「いずれ結婚」初めて８割下回る＝利点見いだせず意欲低下―初婚の出会いネット倍増・厚労省調査",
+        "url": "https://www.nippon.com/ja/news/yjj2026091100629/",
+        "published_at": "2026-09-11",
+        "source_type": "news",
+        "reliability": "high"
+      }
+    ],
+    "claims": [
+      {
+        "kind": "FACT",
+        "text": "The 17th National Fertility Survey was conducted in June 2025 and published on September 11, 2026; the unmarried-person survey had 6,756 valid responses from 15,811 distributed questionnaires and the married-couple survey had 5,024 valid responses from 10,489 distributed questionnaires.",
+        "source_refs": [1],
+        "basis": "Official survey methodology and release information."
+      },
+      {
+        "kind": "FACT",
+        "text": "Among unmarried people aged 18-34, 75.1% of men and 77.8% of women said they intended to marry someday, down from 81.4% and 84.3% respectively in the prior survey and below 80% for both sexes.",
+        "source_refs": [1, 2, 3],
+        "basis": "Official 17th and 16th survey summaries, independently reported by Jiji/nippon.com."
+      },
+      {
+        "kind": "FACT",
+        "text": "More than 20% of unmarried men and women said they did not intend to marry for life, but roughly 40% of that group also said their intention could change toward wanting marriage later.",
+        "source_refs": [1],
+        "basis": "Official survey summary."
+      },
+      {
+        "kind": "FACT",
+        "text": "Average desired number of children among unmarried respondents continued to fall, reaching 1.64 for men and 1.70 for women; one in six unmarried men and women said they would not want children even if they married.",
+        "source_refs": [1],
+        "basis": "Official 17th survey summary."
+      },
+      {
+        "kind": "FACT",
+        "text": "In the married-couple survey, use of childcare leave for first and second children increased, and for childrearing occurring from 2020 onward more than half of fathers were reported as doing childcare on a routine basis.",
+        "source_refs": [1],
+        "basis": "Official survey summary."
+      },
+      {
+        "kind": "INFERENCE",
+        "text": "Japan's family trend is becoming less uniform: entry into marriage and parenthood is weakening among unmarried young adults at the same time that parenting roles are becoming more shared among many couples who do have children.",
+        "source_refs": [1, 2],
+        "basis": "The survey simultaneously shows lower marriage/child intentions and greater paternal childcare involvement."
+      }
+    ],
+    "content": {
+      "current_strength": 86,
+      "previous_strength": 72,
+      "direction": "STRENGTHENING",
+      "history": "The prior 2021 survey already showed declining marriage intentions among unmarried young adults. The newly released 2025 survey data extend that decline below 80% for both men and women, while also documenting continued change inside married households toward greater paternal childcare participation.",
+      "evidence_for": [
+        "Intent to marry someday fell from 81.4% to 75.1% for unmarried men aged 18-34 and from 84.3% to 77.8% for women.",
+        "Average desired child counts among unmarried respondents declined further to 1.64 for men and 1.70 for women.",
+        "One in six unmarried respondents said they would not want children even if they married.",
+        "For childrearing from 2020 onward, more than half of fathers in the married-couple survey were reported as routinely doing childcare, while childcare-leave use for first and second children increased."
+      ],
+      "evidence_against": [
+        "Intentions are not outcomes: saying 'I do not intend to marry' today does not establish that a person will never marry, and roughly 40% of that group said their intention could change.",
+        "The survey measured attitudes in June 2025, even though results were released in September 2026; it is not a snapshot of September 2026 sentiment.",
+        "Valid response rates were 42.7% for the unmarried survey and 47.9% for the married-couple survey, so nonresponse bias is a material limitation.",
+        "Family formation can react to future wages, housing, childcare availability, partner matching and policy changes, so current intention data should not be converted directly into a birth forecast."
+      ],
+      "connection": "The pattern is not simply 'family decline.' There are at least two separate transitions: fewer unmarried young adults expect marriage and children, while couples who do form families are shifting toward more dual-role parenting. For labor and policy, that means the size of the future family population and the way families divide care work can move in opposite directions at the same time.",
+      "alternative_explanation": "Part of the change may reflect later life timing rather than permanent rejection of marriage or children. Economic uncertainty, different expectations for partnership quality, fewer opportunities to interact with infants, and changing norms can all move stated intentions without producing the same-sized change in eventual outcomes.",
+      "watch_next": [
+        "Actual marriage and birth rates over the next several years, not intention data alone.",
+        "Whether desired child counts stabilize or continue falling in the next survey cycle.",
+        "Whether paternal childcare and leave use continue rising and translate into smaller career penalties for mothers.",
+        "Changes in housing, childcare access, wages and work flexibility that could alter the gap between desired and actual family formation.",
+        "Whether internet-based partner matching continues to replace workplace/friend introductions among newly married couples."
+      ],
+      "what_would_change_mind": "The weakening-family-formation thesis would soften if actual marriage and birth outcomes stabilize while later survey cohorts show recovering intentions. The shared-parenting thesis would weaken if paternal childcare participation fails to persist beyond the recent cohorts or remains concentrated in narrow groups rather than broadening.",
+      "implications": "Long-term demand may become more uneven across schools, family housing and childcare services if fewer people form families, while households that do have children may place greater value on employers and services designed around two active caregivers. For employers, the data argue against treating childcare as primarily a mother's workforce issue. For demographic analysis, stated intentions are an early signal but not a substitute for actual marriage, fertility and labor-force outcomes.",
+      "usefulness": 95,
+      "novelty": 96,
+      "impact": {
+        "money": "MED",
+        "family": "HIGH",
+        "career": "HIGH",
+        "japan": "HIGH",
+        "urgency": "LOW"
+      },
+      "connection_tags": ["japan-demographics", "marriage-intentions", "desired-children", "paternal-childcare", "work-family", "labor-supply"],
+      "learning": {
+        "outcomes": [
+          "Explain what Japan's National Fertility Survey measures and what it does not predict directly.",
+          "Recognize the simultaneous decline in family-formation intentions and increase in paternal childcare participation."
+        ],
+        "background": "Japan's National Fertility Survey is a recurring national survey used to study marriage, childbearing and family behavior. The 17th survey was carried out in June 2025 and released in September 2026. It contains separate surveys of unmarried people and married couples, allowing researchers to compare intentions before family formation with behavior inside families that have formed.",
+        "terms": [
+          {
+            "term": "Marriage intention",
+            "meaning": "A respondent's stated expectation or preference about whether they intend to marry in their lifetime.",
+            "why_it_matters": "It is an attitude signal, not a guaranteed future outcome."
+          },
+          {
+            "term": "Desired number of children",
+            "meaning": "The number of children an unmarried respondent says they would like to have.",
+            "why_it_matters": "It helps measure family aspirations, but actual fertility can differ because of timing, partnership, health, income and other constraints."
+          },
+          {
+            "term": "Response rate",
+            "meaning": "The share of distributed survey questionnaires that produced valid responses.",
+            "why_it_matters": "Lower response rates increase the need to consider whether respondents differ systematically from people who did not respond."
+          }
+        ],
+        "how_it_works": [
+          {
+            "title": "Measure stated intention",
+            "explanation": "The unmarried survey asks about marriage, partners, children, work and values, giving an early view of how younger adults see future family life."
+          },
+          {
+            "title": "Compare with prior survey waves",
+            "explanation": "Because similar questions recur, changes such as the fall from above 80% to below 80% in intended marriage can be treated as a trend signal rather than a one-off headline."
+          },
+          {
+            "title": "Check behavior inside formed families",
+            "explanation": "The married-couple survey adds evidence on actual childbearing and parenting practices, showing that family roles can change even while fewer unmarried people expect to form families."
+          },
+          {
+            "title": "Do not convert intention directly into population forecasts",
+            "explanation": "Intentions can change and the survey itself reports fluidity among people who currently say they do not intend to marry. Actual demographic outcomes require separate marriage and birth statistics."
+          }
+        ],
+        "example": "If 22% of a group says today that they do not intend to marry, it would be wrong to assume exactly 22% will never marry. The survey itself shows that a substantial share of people in that category say their intention could later change.",
+        "takeaways": [
+          "Marriage intention among unmarried 18-34-year-olds is now below 80% for both men and women.",
+          "Desired child counts among unmarried respondents continue to decline.",
+          "Parenting roles are changing too: paternal childcare participation is rising among recent families.",
+          "The data were collected in June 2025, not September 2026.",
+          "Intentions are a trend signal, not a deterministic forecast."
+        ]
+      },
+      "reading_levels": {
+        "30_sec": [
+          "Unmarried 18-34-year-olds intending to marry someday: men 75.1%, women 77.8%, both below 80% for the first time in the series.",
+          "Desired children fell to 1.64 for men and 1.70 for women; one in six said they would want no children even if married.",
+          "At the same time, more than half of fathers in post-2020 childrearing cohorts were reported as routinely doing childcare.",
+          "Bottom line: family formation is weakening while parenting roles inside formed families are becoming more shared."
+        ],
+        "2_min": "The newest National Fertility Survey adds a more nuanced demographic signal than a simple falling-birth story. In data collected in June 2025, the share of unmarried 18-to-34-year-olds who intend to marry someday fell below 80% for both men and women, and desired child counts declined again. Yet the married-couple survey also shows rising childcare-leave use and more routine paternal childcare among recent families. These can coexist: fewer people may form families, while those who do increasingly expect two active caregivers. The survey is important but not deterministic—the data are from 2025, valid response rates were below 50%, and about 40% of respondents who currently said they never intended to marry also said that intention could change."
+      },
+      "editorial_visual": {
+        "style": "editorial",
+        "motif": "family",
+        "secondary_motif": "document",
+        "scene": "a clean split-scene editorial illustration: on one side fewer young adults choose a branching path marked by simple home and family symbols, while on the other side two parents share childcare tasks evenly around a small child, with a survey clipboard connecting both scenes",
+        "caption": "Fewer expect the old family path, while roles inside families are changing",
+        "silliness": 18,
+        "exaggeration": 58
+      }
+    }
+  }
+]
