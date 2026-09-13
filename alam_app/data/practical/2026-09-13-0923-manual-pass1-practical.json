@@ -1,0 +1,196 @@
+[
+  {
+    "id": "tsukuba-daycare-current-status-declaration-extension-2026",
+    "agent": "practical",
+    "created_at": "2026-09-13T09:23:03+09:00",
+    "published_at": "2026-09-13T09:23:03+09:00",
+    "type": "administrative_deadline",
+    "title": "Tsukuba extends daycare status-declaration deadline to October 2",
+    "summary": "Tsukuba City extended the 2026 現況届 (annual childcare-status declaration) window: the extra filing period runs from September 15 through October 2 at 16:30. It applies to specified families already using licensed daycare, and the city generally requires electronic filing with fresh proof of the reason childcare is needed.",
+    "why_it_matters": "This is an easy deadline to miss because the original period ended September 11. Families in scope now have a short second window to confirm continued eligibility instead of assuming the annual check is already closed.",
+    "importance": 94,
+    "confidence": 99,
+    "tags": ["Japan", "Ibaraki", "Tsukuba", "Childcare", "Daycare", "Deadline", "Family", "Municipal Services"],
+    "geography": ["Japan", "Ibaraki", "Tsukuba"],
+    "status": "NEW",
+    "sources": [
+      {
+        "publisher": "Tsukuba City",
+        "title": "現況届について",
+        "url": "https://www.city.tsukuba.lg.jp/soshikikarasagasu/kodomobuyojihoikuka/gyomuannai/5/2/1014521.html",
+        "published_at": "2026-09-11",
+        "source_type": "official",
+        "reliability": "high"
+      }
+    ],
+    "claims": [
+      {
+        "kind": "FACT",
+        "text": "Tsukuba City extended the 2026 childcare current-status declaration period with an additional window from September 15 through October 2, 2026 at 16:30.",
+        "source_refs": [1],
+        "basis": "Tsukuba City official September 11 update."
+      },
+      {
+        "kind": "FACT",
+        "text": "The declaration applies to parents of children in the 0-to-4-year-old classes at licensed childcare facilities who are registered residents of Tsukuba, excluding parents of children admitted on or after July 1, 2026.",
+        "source_refs": [1],
+        "basis": "Eligibility section of the city notice."
+      },
+      {
+        "kind": "FACT",
+        "text": "The city generally requires electronic filing and an attached document proving why the parent cannot provide childcare; proof must reflect the current situation and normally have a certification date within the previous three months.",
+        "source_refs": [1],
+        "basis": "Required-document and application-method sections."
+      },
+      {
+        "kind": "FACT",
+        "text": "Tsukuba City says people who have difficulty completing the Japanese electronic application can consult the Childcare Institutions Management Division at city hall for assistance.",
+        "source_refs": [1],
+        "basis": "Official language-support/application guidance."
+      },
+      {
+        "kind": "FACT",
+        "text": "The city warns that education and childcare benefit certification can be cancelled when the eligibility criteria are not satisfied or when false information is provided.",
+        "source_refs": [1],
+        "basis": "Official notice."
+      }
+    ],
+    "content": {
+      "who_is_affected": "Parents registered in Tsukuba whose child is in a 0-to-4-year-old class at a licensed childcare facility, except children admitted on or after July 1, 2026. Check the official page if your facility or certification status is unusual.",
+      "when": "The extended online filing window opens September 15, 2026 and closes October 2, 2026 at 16:30.",
+      "financial_impact": "No filing fee is stated on the city page. The material issue is maintaining an accurate annual eligibility record rather than obtaining a new cash benefit.",
+      "time_minutes": 20,
+      "risk_if_ignored": "MED-HIGH — this is an annual eligibility confirmation. The city explicitly warns that certification can be cancelled when eligibility is not met or information is false; the page does not state that a late filing alone automatically cancels certification.",
+      "action": "PREPARE",
+      "deadline": "2026-10-02 16:30 JST",
+      "effort": "LOW-MED",
+      "potential_benefit": "Use the reopened filing window and avoid an avoidable administrative problem with continued childcare eligibility records.",
+      "downside": "You may need a newly issued employment or other proof document; the accepted evidence depends on the household's reason for needing childcare.",
+      "what_would_change_mind": "A later Tsukuba City notice changing the deadline, affected group, required documents or filing channel.",
+      "usefulness": 99,
+      "novelty": 96,
+      "impact": {
+        "money": "MED",
+        "family": "HIGH",
+        "career": "MED",
+        "japan": "LOW",
+        "urgency": "HIGH"
+      },
+      "connection_tags": ["tsukuba-childcare", "municipal-deadline", "daycare-eligibility"],
+      "action_plan": {
+        "goal": "Submit the 2026 annual childcare-status declaration correctly during Tsukuba's extended window if your household is in scope.",
+        "who_should_act": "Parents registered in Tsukuba with a child in a 0-to-4-year-old licensed-childcare class, except parents of children admitted on or after July 1, 2026. Other households should verify the city page before doing anything.",
+        "deadline": "October 2, 2026 at 16:30 JST; the extension opens September 15.",
+        "prepare": [
+          "Your child's childcare/facility information needed by the electronic form.",
+          "A current document proving why the parent cannot provide childcare; the exact document depends on the household situation.",
+          "For employed parents, the city lists an employment certificate; proof should reflect the filing-time situation and normally be certified within the prior three months."
+        ],
+        "steps": [
+          {
+            "step": "Confirm that you are in scope",
+            "action": "Check the eligibility section on the Tsukuba City 現況届 page before requesting documents.",
+            "how": "Confirm residence, the child's class/facility and whether the child entered on or after July 1, 2026.",
+            "needed": ["Child's current daycare details"],
+            "time_minutes": 3,
+            "cost_yen": 0,
+            "done_when": "You can identify whether the city's 2026 declaration applies to your household."
+          },
+          {
+            "step": "Prepare the correct evidence",
+            "action": "Obtain the proof document matching your reason for needing childcare.",
+            "how": "Use the document table and linked forms on the official city page; do not reuse an old certificate without checking its date and current accuracy.",
+            "needed": ["Situation-specific proof document"],
+            "time_minutes": 10,
+            "cost_yen": 0,
+            "done_when": "The evidence matches your current situation and satisfies the city's stated recency rule."
+          },
+          {
+            "step": "File electronically",
+            "action": "Use the Ibaraki electronic application service linked from the Tsukuba page during the extended window and attach the required evidence.",
+            "how": "Allow time for browser/upload errors instead of waiting until 16:30 on October 2.",
+            "needed": ["Prepared evidence", "Internet-capable device"],
+            "time_minutes": 10,
+            "cost_yen": 0,
+            "done_when": "The electronic submission completes and you retain the completion information provided by the service."
+          },
+          {
+            "step": "Get help if Japanese online filing is difficult",
+            "action": "Consult Tsukuba City's Childcare Institutions Management Division rather than guessing through the form.",
+            "how": "The city says in-person assistance is available at the division on the first floor of Tsukuba City Hall for people who cannot complete the Japanese electronic application.",
+            "needed": ["Your childcare details and available supporting documents"],
+            "time_minutes": 0,
+            "cost_yen": 0,
+            "done_when": "You have received city guidance on how to complete the required filing."
+          }
+        ],
+        "mistakes_to_avoid": [
+          "Assuming the September 11 original deadline means the process is permanently closed.",
+          "Uploading evidence that no longer reflects the current situation or falls outside the city's stated recency requirement.",
+          "Assuming every daycare family is in scope; the city lists specific class, residence and admission-date conditions.",
+          "Waiting until the final minutes despite the city's warning that device or browser errors can occur."
+        ],
+        "decision_rules": [
+          {
+            "if": "Your household clearly matches the city's listed target group",
+            "then": "Prepare the evidence now and file once the extended window opens September 15."
+          },
+          {
+            "if": "You are unsure about the applicable proof document or cannot complete the Japanese electronic process",
+            "then": "Use the official city consultation route before submitting."
+          }
+        ],
+        "follow_up": "Keep the electronic filing completion information and re-check the city page if your employment, leave or household situation changes before the deadline."
+      },
+      "learning": {
+        "outcomes": [
+          "Understand what Tsukuba's annual 現況届 is and who the 2026 extension covers.",
+          "Know exactly what to prepare and when the reopened window closes."
+        ],
+        "background": "Tsukuba asks families already using licensed childcare to reconfirm, once a year, that the conditions supporting their childcare certification still apply. The city renamed the older 継続確認 process to 現況届 from fiscal 2025. The normal 2026 filing period ended September 11, but the city has now opened an additional filing period beginning September 15.",
+        "terms": [
+          {
+            "term": "現況届",
+            "meaning": "An annual current-status declaration used to reconfirm the household circumstances behind childcare eligibility.",
+            "why_it_matters": "It is not a new daycare application; it is a periodic check for specified families already using licensed childcare."
+          }
+        ],
+        "how_it_works": [
+          {
+            "title": "Reconfirm the reason childcare is needed",
+            "explanation": "The city asks for fresh evidence matched to the household situation, such as employment documentation for working parents."
+          },
+          {
+            "title": "Submit through the official electronic channel",
+            "explanation": "The city generally uses the Ibaraki electronic application service and requires the proof document to be attached."
+          }
+        ],
+        "example": "A working parent whose old employment certificate no longer fits the city's recency rule should request a current certificate rather than upload the older file simply because the job itself has not changed.",
+        "takeaways": [
+          "The extension is September 15 to October 2 at 16:30.",
+          "Check that your household is actually in the listed target group.",
+          "Use current situation-specific evidence.",
+          "Ask the city for help if the Japanese electronic process is a barrier."
+        ]
+      },
+      "reading_levels": {
+        "30_sec": [
+          "Tsukuba reopened the 2026 daycare 現況届 filing window from September 15 to October 2 at 16:30.",
+          "It covers specified families already using licensed childcare, not every household.",
+          "Prepare fresh proof of the reason childcare is needed and file through the official electronic service.",
+          "If Japanese online filing is difficult, the city says its childcare division can assist."
+        ],
+        "2_min": "Tsukuba's annual 現況届 is a status check for specified families already using licensed childcare. The original 2026 window ended September 11, but the city published an extension running September 15 through October 2 at 16:30. The city generally requires electronic submission plus current proof of why childcare is needed; for employed parents it lists an employment certificate and says evidence should reflect the current situation and normally be certified within the previous three months. This is not a reason to assume every daycare family must reapply: verify the listed residence, class and admission-date conditions first."
+      },
+      "editorial_visual": {
+        "style": "editorial",
+        "motif": "family",
+        "secondary_motif": "document",
+        "scene": "a family in front of a giant calendar page marked with a reopened filing window, organizing one clean folder of childcare documents before a closing clock",
+        "caption": "A closed deadline has reopened briefly",
+        "silliness": 18,
+        "exaggeration": 58
+      }
+    }
+  }
+]
