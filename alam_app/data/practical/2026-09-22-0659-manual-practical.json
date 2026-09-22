@@ -1,0 +1,162 @@
+[
+  {
+    "id": "japan-old-fan-aging-fire-warning-2026-09-18",
+    "tags": [
+      "Japan",
+      "Consumer Safety",
+      "Fan",
+      "Fire Safety",
+      "Home Appliances",
+      "NITE"
+    ],
+    "type": "consumer_safety",
+    "agent": "practical",
+    "title": "Still using an old fan? Japan’s latest safety notice says age-related failures can turn into fires",
+    "claims": [
+      {
+        "kind": "FACT",
+        "text": "On September 18, 2026, Japan's Consumer Affairs Agency again highlighted long-term use of electric fans when publishing 26 serious product accidents across multiple product categories.",
+        "basis": "Consumer Affairs Agency September 18 notice.",
+        "source_refs": [
+          1
+        ]
+      },
+      {
+        "kind": "FACT",
+        "text": "NITE says that among about 120 completed fan-accident investigations from the past decade, roughly 30% were fires attributed to age-related deterioration.",
+        "basis": "NITE 2026 fan-safety guidance.",
+        "source_refs": [
+          2
+        ]
+      },
+      {
+        "kind": "FACT",
+        "text": "NITE lists slow or irregular rotation, abnormal noise or vibration, irregular oscillation, unusual motor heat and a burnt smell as warning signs that should prompt users to stop using the fan.",
+        "basis": "NITE inspection checklist.",
+        "source_refs": [
+          2
+        ]
+      },
+      {
+        "kind": "FACT",
+        "text": "For fans manufactured or imported from April 2009 onward, a standard design-use period is displayed and can be used as a replacement reference.",
+        "basis": "NITE guidance.",
+        "source_refs": [
+          2
+        ]
+      },
+      {
+        "kind": "INFERENCE",
+        "text": "A fan that still turns on is not necessarily safe if it is old and showing abnormal behavior; age-related electrical degradation can occur before complete failure.",
+        "basis": "Inference from NITE's documented failure modes and warning signs.",
+        "source_refs": [
+          2
+        ]
+      }
+    ],
+    "status": "NEW",
+    "content": {
+      "when": "Fresh Consumer Affairs Agency warning published September 18, 2026.",
+      "action": "CHECK",
+      "effort": "LOW",
+      "impact": {
+        "japan": "HIGH",
+        "money": "LOW",
+        "career": "LOW",
+        "family": "HIGH",
+        "urgency": "MED"
+      },
+      "novelty": 83,
+      "downside": "Replacing an old but still-functional fan has a cost, but continuing to use a unit with clear abnormal signs carries a much larger downside.",
+      "usefulness": 96,
+      "action_plan": {
+        "goal": "Identify signs of deterioration before continued use.",
+        "steps": [
+          {
+            "how": "Check the body, base or rating label.",
+            "step": "Check age and label",
+            "action": "Look for the manufacture year and the standard design-use period on the fan.",
+            "cost_yen": 0,
+            "done_when": "You know roughly how old the fan is and whether it is beyond its design period.",
+            "time_minutes": 3
+          },
+          {
+            "how": "Observe the fan while standing nearby; do not leave it unattended during the check.",
+            "step": "Run a safety check",
+            "action": "Watch and listen for slow or irregular rotation, unusual vibration/noise, irregular oscillation, excessive heat or a burnt smell.",
+            "cost_yen": 0,
+            "done_when": "No listed abnormality is present.",
+            "time_minutes": 2
+          },
+          {
+            "how": "Do not keep testing a fan that smells burnt or becomes unusually hot.",
+            "step": "Stop if abnormal",
+            "action": "Turn it off, unplug it and stop using it if any abnormal sign appears.",
+            "cost_yen": 0,
+            "done_when": "The suspect unit is unplugged and no longer being used.",
+            "time_minutes": 1
+          }
+        ],
+        "decision_rules": [
+          {
+            "if": "The fan has abnormal heat, smell, noise, vibration or unstable operation",
+            "then": "Stop using it immediately and have it inspected or replace it."
+          },
+          {
+            "if": "The fan is old but operating normally",
+            "then": "Check the standard design-use period and monitor carefully; unplug it when not in use."
+          }
+        ],
+        "mistakes_to_avoid": [
+          "Assuming a fan is safe only because the blades still turn.",
+          "Leaving an old fan powered when it has stopped moving.",
+          "Ignoring a burnt smell, unusual heat or intermittent operation."
+        ]
+      },
+      "reading_levels": {
+        "2_min": "Old electric fans can fail electrically before they completely stop working. Japan's Consumer Affairs Agency highlighted long-term fan use again on September 18, while NITE's current safety guidance says about three in ten of roughly 120 investigated fan accidents over the last decade were fires caused by age-related deterioration. The practical check is simple: know the fan's age, look for its standard design-use period, and stop using it if rotation becomes unstable, the motor runs unusually hot, there is abnormal noise or vibration, or you smell burning.",
+        "30_sec": [
+          "Japan issued a fresh warning on long-used electric fans on September 18.",
+          "NITE says roughly 30% of about 120 investigated fan accidents over 10 years were age-deterioration fires.",
+          "Watch for irregular speed, noise/vibration, hot motors and burnt smells.",
+          "If any warning sign appears, stop using and unplug the fan."
+        ]
+      },
+      "connection_tags": [
+        "home-safety",
+        "aging-appliances",
+        "fire-prevention",
+        "consumer-warning"
+      ],
+      "risk_if_ignored": "Age-related deterioration in capacitors, motor windings, bearings or internal wiring can lead to overheating, sparks and fire.",
+      "who_is_affected": "Households using older AC-powered electric fans, especially units beyond their stated standard design-use period or products with unclear age.",
+      "potential_benefit": "A few minutes of inspection can identify a high-consequence household fire risk before continued use.",
+      "what_would_change_mind": "If updated NITE data materially changes the share or causes of fan accidents, the risk framing should be updated; the stop-use advice for abnormal symptoms would remain."
+    },
+    "sources": [
+      {
+        "url": "https://www.caa.go.jp/notice/entry/047593/",
+        "title": "消費生活用製品の重大製品事故:長期使用の扇風機についての注意喚起、リコール製品で火災等(スピーカー(充電式))(9月18日)",
+        "publisher": "Consumer Affairs Agency",
+        "source_type": "primary",
+        "published_at": "2026-09-18"
+      },
+      {
+        "url": "https://www.nite.go.jp/jiko/chuikanki/mailmagazin/2026fy/vol503_260623.html",
+        "title": "製品安全情報マガジン Vol.503 「扇風機の事故」",
+        "publisher": "NITE",
+        "source_type": "primary",
+        "published_at": "2026-06-23"
+      }
+    ],
+    "summary": "Japan’s Consumer Affairs Agency issued a fresh September 18 warning on long-used electric fans while publishing 26 serious product accidents across multiple product types. NITE says about 30% of roughly 120 investigated fan accidents over the past decade were fires caused by age-related deterioration, with warning signs including slow or irregular blades, abnormal noise or vibration, unusual heat and a burnt smell.",
+    "geography": [
+      "Japan"
+    ],
+    "confidence": 98,
+    "created_at": "2026-09-22T06:59:00+09:00",
+    "importance": 88,
+    "published_at": "2026-09-22T06:59:00+09:00",
+    "why_it_matters": "This is a low-effort household check with a high downside if ignored. Many old fans remain in use for years, and the danger can come from internal electrical deterioration rather than visible blade damage."
+  }
+]

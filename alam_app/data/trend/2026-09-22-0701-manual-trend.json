@@ -1,0 +1,150 @@
+[
+  {
+    "id": "japan-aging-workforce-record-2026-09-20",
+    "tags": [
+      "Japan",
+      "Demographics",
+      "Aging",
+      "Employment",
+      "Labor Shortage",
+      "Workforce"
+    ],
+    "type": "demographic_trend",
+    "agent": "trend",
+    "title": "Japan’s 65+ workforce hits a record 9.43 million as aging becomes a labor-market story",
+    "claims": [
+      {
+        "kind": "FACT",
+        "text": "Japan's population aged 65 and over was estimated at 36.24 million as of September 15, 2026, equal to 29.6% of the total population, a record share.",
+        "basis": "Statistics Bureau September 20 release.",
+        "source_refs": [
+          1
+        ]
+      },
+      {
+        "kind": "FACT",
+        "text": "Employment among people aged 65 and over reached 9.43 million in 2025, rising for the 22nd consecutive year to a record high.",
+        "basis": "Statistics Bureau labor-force compilation.",
+        "source_refs": [
+          1
+        ]
+      },
+      {
+        "kind": "FACT",
+        "text": "Workers aged 65 and over accounted for 13.8% of all employed people, also a record share.",
+        "basis": "Statistics Bureau release.",
+        "source_refs": [
+          1
+        ]
+      },
+      {
+        "kind": "FACT",
+        "text": "Among employed people aged 65 and over excluding executives, 76.1% were non-regular workers.",
+        "basis": "Statistics Bureau release, corroborated by Japanese news coverage.",
+        "source_refs": [
+          1,
+          2
+        ]
+      },
+      {
+        "kind": "INFERENCE",
+        "text": "Japan's aging trend increasingly affects day-to-day workforce design, staffing, training and job structure, not only pension and healthcare policy.",
+        "basis": "Inference from record elderly employment and workforce share.",
+        "source_refs": [
+          1,
+          2
+        ]
+      }
+    ],
+    "status": "NEW",
+    "content": {
+      "impact": {
+        "japan": "HIGH",
+        "money": "MED",
+        "career": "HIGH",
+        "family": "MED",
+        "urgency": "MED"
+      },
+      "history": "Japan's share of elderly residents has risen for decades while the working-age population has contracted. The new data show the employment side of that structural shift is also setting records.",
+      "novelty": 90,
+      "learning": {
+        "takeaways": [
+          "Nearly three in ten people in Japan are now 65+.",
+          "About one in seven workers is 65+.",
+          "Older employment is growing, but most older employees are non-regular.",
+          "Workplace design and automation will increasingly need to account for an older workforce."
+        ]
+      },
+      "direction": "UP",
+      "connection": "The demographic story connects directly to labor shortages, automation, healthcare staffing, retail, logistics and the design of physically demanding work.",
+      "usefulness": 93,
+      "watch_next": [
+        "Whether the 65–69 employment rate continues rising.",
+        "How much of future growth is regular versus non-regular employment.",
+        "Which industries add the most older workers.",
+        "Whether productivity and workplace-injury data improve as firms redesign jobs for older employees."
+      ],
+      "evidence_for": [
+        "The 65+ population share reached a record 29.6%.",
+        "65+ employment has risen for 22 consecutive years.",
+        "Older workers now account for 13.8% of all workers.",
+        "The 65–69 employment rate reached a record level in the Statistics Bureau data."
+      ],
+      "implications": [
+        "Employers may need more flexible scheduling, ergonomics and knowledge-transfer systems.",
+        "Automation and assistive technology can become more valuable where physical workload limits older-worker participation.",
+        "Retirement planning assumptions based on a sharp stop at age 60 or 65 are becoming less representative of actual labor participation."
+      ],
+      "reading_levels": {
+        "2_min": "Japan's aging is no longer only a population chart. It is increasingly visible inside workplaces. The Statistics Bureau says 36.24 million people are now 65 or older, representing a record 29.6% of the population. At the same time, employment among people 65+ reached a record 9.43 million, making up 13.8% of all workers. Most older employees outside executive roles are non-regular workers. The practical implication is that staffing, ergonomics, automation and knowledge transfer will need to be designed around longer working lives rather than treating older workers as an exception.",
+        "30_sec": [
+          "Japan's 65+ population share hit a record 29.6%.",
+          "A record 9.43 million people aged 65+ were working.",
+          "They now make up 13.8% of all workers.",
+          "Among older employees excluding executives, 76.1% were non-regular."
+        ]
+      },
+      "connection_tags": [
+        "aging-japan",
+        "labor-shortage",
+        "senior-employment",
+        "automation",
+        "workplace-design"
+      ],
+      "current_strength": "STRONG",
+      "evidence_against": [
+        "A rising number of older workers does not by itself prove that labor shortages are worsening in every industry.",
+        "High non-regular employment means participation is often different from standard full-time career employment.",
+        "Some increase reflects policy, healthier aging and preference to keep working, not only financial necessity."
+      ],
+      "previous_strength": "STRONG",
+      "what_would_change_mind": "The structural interpretation would weaken if elderly employment participation falls for several years or if working-age population growth reverses materially; neither is visible in the current data.",
+      "alternative_explanation": "Part of the rise reflects better health, longer life expectancy, retirement-policy changes and more flexible job formats, so the trend should not be reduced to 'people are forced to work longer.'"
+    },
+    "sources": [
+      {
+        "url": "https://www.stat.go.jp/data/topics/topi1490.html",
+        "title": "統計からみた我が国の高齢者－「敬老の日」にちなんで－",
+        "publisher": "Statistics Bureau of Japan",
+        "source_type": "primary",
+        "published_at": "2026-09-20"
+      },
+      {
+        "url": "https://www.nippon.com/ja/news/yjj2026092000208/",
+        "title": "65歳以上、3624万人＝総人口の3割占める―総務省",
+        "publisher": "nippon.com / Jiji Press",
+        "source_type": "news",
+        "published_at": "2026-09-20"
+      }
+    ],
+    "summary": "Japan’s Statistics Bureau says the population aged 65 and over reached 36.24 million, or a record 29.6% of the total population. Employment among people 65+ rose for a 22nd straight year to a record 9.43 million, equal to 13.8% of all workers. Among older employees excluding executives, 76.1% were in non-regular employment.",
+    "geography": [
+      "Japan"
+    ],
+    "confidence": 99,
+    "created_at": "2026-09-22T07:01:00+09:00",
+    "importance": 93,
+    "published_at": "2026-09-22T07:01:00+09:00",
+    "why_it_matters": "For companies and households, aging now directly affects who is available to work, how jobs are structured and how long careers last. This makes demographics relevant to automation, staffing and retirement planning."
+  }
+]

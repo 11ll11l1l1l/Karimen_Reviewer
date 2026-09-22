@@ -25,13 +25,89 @@ from alam_supabase_ingest import _client, run as run_ingestion
 from alam_supabase_reconcile import prepare_public_archive, reconcile_public_archive
 
 SYNC_AGENT_ID = "alam_supabase_sync"
-# Deliberately exceeds the workflow's 10-minute hard timeout; regression-enforced.
+# Deliberately exceeds the workflow's 20-minute hard timeout; regression-enforced.
 STALE_SYNC_RUN_MINUTES = 30
+RECONCILE_DRIFT_TOLERANCE = timedelta(minutes=5)
 
 
 def _utc_now():
     """Return an ISO-8601 UTC timestamp accepted by Supabase/Postgres."""
     return datetime.now(timezone.utc).isoformat()
+
+
+def _parse_utc(value):
+    """Normalize a database timestamp for synchronization planning."""
+    if not value:
+        return None
+    try:
+        dt = datetime.fromisoformat(str(value).strip().replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+
+def _reconcile_plan_from_state(previous_status, previous_timestamp, drift_article_ids, force_full=False):
+    """Return (reason, scope); scope=None means full reconciliation."""
+    if force_full:
+        return "explicit full reconciliation requested", None
+    status = str(previous_status or "").strip().lower()
+    if not status:
+        return "no prior canonical synchronization is recorded", None
+    if status != "success":
+        return f"previous canonical synchronization status is {status}", None
+    if _parse_utc(previous_timestamp) is None:
+        return "previous canonical synchronization timestamp is unavailable", None
+    ids = sorted({str(article_id) for article_id in (drift_article_ids or []) if article_id})
+    if ids:
+        return f"{len(ids)} untracked public article update(s) detected", ids
+    return None, []
+
+
+def _reconcile_plan(client):
+    """Determine the smallest safe repair scope before creating the current run row."""
+    force_full = os.environ.get("ALAM_FULL_RECONCILE", "").strip().lower() in {"1", "true", "yes", "on"}
+    rows = (
+        client.table("agent_runs")
+        .select("status,started_at,finished_at")
+        .eq("agent_id", SYNC_AGENT_ID)
+        .order("started_at", desc=True)
+        .limit(1)
+        .execute()
+        .data
+        or []
+    )
+    if not rows:
+        return _reconcile_plan_from_state(None, None, [], force_full=force_full)
+    previous = rows[0]
+    previous_timestamp = previous.get("finished_at") or previous.get("started_at")
+    base_reason, base_scope = _reconcile_plan_from_state(
+        previous.get("status"), previous_timestamp, [], force_full=force_full
+    )
+    if base_reason:
+        return base_reason, base_scope
+    anchor = _parse_utc(previous_timestamp)
+    cutoff = (anchor + RECONCILE_DRIFT_TOLERANCE).isoformat()
+    drift_rows = (
+        client.table("articles")
+        .select("id,updated_at")
+        .eq("status", "published")
+        .gt("updated_at", cutoff)
+        .order("updated_at")
+        .limit(1000)
+        .execute()
+        .data
+        or []
+    )
+    if len(drift_rows) >= 1000:
+        return "large untracked public-write set requires full reconciliation", None
+    return _reconcile_plan_from_state(
+        previous.get("status"),
+        previous_timestamp,
+        [row.get("id") for row in drift_rows],
+        force_full=False,
+    )
 
 
 def _workflow_metadata():
@@ -187,6 +263,12 @@ def main():
         print(f"SYNC AUDIT WARNING: could not recover stale {SYNC_AGENT_ID} runs: {exc}", file=sys.stderr)
 
     try:
+        reconcile_reason, reconcile_scope = _reconcile_plan(client)
+    except Exception as exc:
+        reconcile_reason, reconcile_scope = "reconciliation health probe unavailable", None
+        print(f"SYNC AUDIT WARNING: {exc}; falling back to full reconciliation.", file=sys.stderr)
+
+    try:
         run_id = _insert_run(client)
     except Exception as exc:
         # Observability must never prevent the actual mirror from running. A missing
@@ -254,23 +336,32 @@ def main():
         print(output, end="" if output.endswith("\n") else "\n")
     stats.update(_parse_stats(output))
 
-    # Incremental ingestion can fail after writing the query-facing article row but
-    # before history/sources/topics are complete. A later incremental retry would see
-    # an equal timestamp and call that record unchanged. Reconciliation deliberately
-    # ignores that shortcut and rebuilds the derived Supabase state from the GitHub
-    # audit archive, making partial failures self-healing and repeated runs convergent.
-    # Reusing the preflight snapshot also guarantees reconciliation writes exactly the
-    # archive state that passed quality/chronology/lifecycle validation at the beginning.
-    try:
-        reconcile_stats = reconcile_public_archive(client, prepared_archive=prepared_archive)
-        stats.update(reconcile_stats)
-        if reconcile_stats:
-            print("ALAM reconciliation:")
-            print(json.dumps(reconcile_stats, indent=2, ensure_ascii=False))
-    except Exception as exc:
-        stats["reconcile_errors"] = int(stats.get("reconcile_errors") or 0) + 1
-        exit_code = 1
-        print(f"RECONCILIATION ERROR: {exc}", file=sys.stderr)
+    # Healthy content pushes use the incremental fast path. Full repair remains for
+    # ingestion errors/maintenance; detected untracked writes repair only affected IDs.
+    if exit_code != 0:
+        reconcile_reason, reconcile_scope = "incremental ingestion reported errors", None
+
+    if reconcile_reason:
+        scope_count = len(prepared_archive) if reconcile_scope is None else len(reconcile_scope)
+        stats["reconcile_scope_articles"] = scope_count
+        print(f"ALAM reconciliation requested: {reconcile_reason} ({scope_count} article(s)).")
+        try:
+            reconcile_stats = reconcile_public_archive(
+                client,
+                prepared_archive=prepared_archive,
+                article_ids=reconcile_scope,
+            )
+            stats.update(reconcile_stats)
+            if reconcile_stats:
+                print("ALAM reconciliation:")
+                print(json.dumps(reconcile_stats, indent=2, ensure_ascii=False))
+        except Exception as exc:
+            stats["reconcile_errors"] = int(stats.get("reconcile_errors") or 0) + 1
+            exit_code = 1
+            print(f"RECONCILIATION ERROR: {exc}", file=sys.stderr)
+    else:
+        stats["reconcile_skipped_healthy"] = 1
+        print("ALAM reconciliation skipped: canonical state is healthy and incremental ingestion completed cleanly.")
 
     try:
         _finish_run(client, run_id, exit_code, stats)

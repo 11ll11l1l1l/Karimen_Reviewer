@@ -1,0 +1,158 @@
+[
+  {
+    "id": "boj-rate-125-yen-weakens-2026-09-18",
+    "tags": [
+      "Japan",
+      "BOJ",
+      "Yen",
+      "Interest Rates",
+      "Inflation",
+      "Markets",
+      "CPI"
+    ],
+    "type": "market",
+    "agent": "reflection",
+    "title": "BOJ hikes to 1.25%—but the yen weakens anyway",
+    "claims": [
+      {
+        "kind": "FACT",
+        "text": "The Bank of Japan raised its policy rate from 1.0% to 1.25% on September 18, 2026, the highest level in 31 years.",
+        "basis": "Reuters report and BOJ September policy-change publication.",
+        "source_refs": [
+          1,
+          2
+        ]
+      },
+      {
+        "kind": "FACT",
+        "text": "The decision passed by a 7-2 vote, with two board members dissenting.",
+        "basis": "Reuters report on the BOJ decision.",
+        "source_refs": [
+          1
+        ]
+      },
+      {
+        "kind": "FACT",
+        "text": "The yen weakened after the decision, with the dollar trading around ¥156.7 and briefly reaching about ¥158 during the session.",
+        "basis": "Reuters market report after the BOJ announcement.",
+        "source_refs": [
+          4
+        ]
+      },
+      {
+        "kind": "FACT",
+        "text": "Japan's August 2026 core CPI excluding fresh food rose 1.7% year on year, while the index excluding fresh food and energy rose 1.9%.",
+        "basis": "Statistics Bureau August CPI release.",
+        "source_refs": [
+          3
+        ]
+      },
+      {
+        "kind": "INFERENCE",
+        "text": "A rate hike does not automatically strengthen a currency when the move is already expected and traders judge future tightening to be less aggressive than alternatives abroad.",
+        "basis": "Inference from the post-decision yen move, the split vote and relative-rate commentary.",
+        "source_refs": [
+          1,
+          4
+        ]
+      }
+    ],
+    "status": "NEW",
+    "content": {
+      "impact": {
+        "japan": "HIGH",
+        "money": "HIGH",
+        "career": "MED",
+        "family": "MED",
+        "urgency": "MED"
+      },
+      "novelty": 94,
+      "session": "Post-BOJ September 18 decision",
+      "bear_case": "If tightening remains slower than overseas central banks or growth weakens, the yen may stay soft while rate-sensitive households and companies still face higher borrowing costs.",
+      "bull_case": "If the BOJ signals additional hikes and inflation remains firm, yen assets could gain support and bank margins may benefit.",
+      "catalysts": [
+        "BOJ communication after the September meeting",
+        "Next Japan CPI releases",
+        "U.S. Federal Reserve guidance",
+        "Any official yen-intervention signals"
+      ],
+      "usefulness": 95,
+      "what_moved": [
+        "BOJ policy rate rose to 1.25%.",
+        "The yen weakened instead of strengthening immediately.",
+        "Japanese bonds and FX repriced around a slower-looking future tightening path."
+      ],
+      "forecast_5d": "Volatility is likely to remain elevated around yen-intervention headlines and global central-bank guidance.",
+      "opening_bias": "Neutral-to-volatile: policy is tighter, but FX direction depends heavily on relative global rates and follow-up BOJ guidance.",
+      "why_it_moved": "The hike itself was widely expected. Markets focused on the two dissents and the absence of a clearly more aggressive path, while U.S. and other global rate expectations remained comparatively firm.",
+      "forecast_1_3m": "The broader direction will depend on whether Japanese inflation keeps the BOJ on a sustained hiking path and whether overseas central banks continue tightening.",
+      "market_regime": "Higher-rate Japan with still-wide global rate differentials",
+      "reading_levels": {
+        "2_min": "Japan tightened monetary policy again, but the currency reaction showed why markets trade expectations rather than headlines. The BOJ's move to 1.25% was largely anticipated, so the surprise came from the two dissenting votes and the lack of a stronger signal about the pace of future hikes. The yen weakened after the decision even though Japanese rates went up. For households and investors, the relevant transmission paths are different: borrowing costs can rise gradually, savings yields can improve, and the yen can still remain weak if overseas rates stay comparatively high.",
+        "30_sec": [
+          "BOJ raised rates from 1.0% to 1.25% on September 18.",
+          "It was the highest rate in 31 years, but the vote was 7–2.",
+          "The yen weakened after the decision because markets wanted stronger guidance on future hikes.",
+          "August core CPI was 1.7%; inflation excluding fresh food and energy was 1.9%."
+        ]
+      },
+      "connection_tags": [
+        "boj-tightening",
+        "yen",
+        "inflation",
+        "household-borrowing",
+        "relative-rates"
+      ],
+      "japan_transmission": "Higher BOJ rates can gradually raise floating-rate borrowing costs and improve returns on some yen cash products, while a weak yen can keep imported energy and goods expensive.",
+      "fx_rates_cross_asset": "The key market lesson is relative rates, not Japan's rate alone. If overseas yields stay high while the BOJ moves slowly, the yen can remain under pressure even after a domestic hike.",
+      "practical_guidelines": [
+        "Do not assume 'BOJ hike = stronger yen' mechanically.",
+        "For mortgages or loans, check reset timing rather than headline policy rates only.",
+        "For foreign-currency investing, separate asset return from FX return."
+      ],
+      "forecast_next_session": "Expect continued sensitivity to BOJ communication and overseas yield moves rather than a clean one-direction response to the hike.",
+      "what_would_change_mind": "A materially more hawkish BOJ path, a sharp fall in overseas yields, or sustained official FX intervention could change the current relative-rate interpretation.",
+      "market_pricing_inference": "The immediate yen weakness suggests traders treated the rate increase as already priced and focused on the possibility that the BOJ may not tighten as fast as previously hoped."
+    },
+    "sources": [
+      {
+        "url": "https://www.reuters.com/world/asia-pacific/boj-raises-interest-rates-31-year-high-widely-expected-move-2026-09-18/",
+        "title": "BOJ raises interest rates to 31-year high in widely expected move",
+        "publisher": "Reuters",
+        "source_type": "news",
+        "published_at": "2026-09-18"
+      },
+      {
+        "url": "https://www.boj.or.jp/mopo/mpmdeci/state_2026/",
+        "title": "金融市場調節方針に関する公表文 2026年",
+        "publisher": "Bank of Japan",
+        "source_type": "primary",
+        "published_at": "2026-09-18"
+      },
+      {
+        "url": "https://www.stat.go.jp/data/cpi/sokuhou/tsuki/index-z.htm",
+        "title": "2025年基準 消費者物価指数 全国 2026年8月分",
+        "publisher": "Statistics Bureau of Japan",
+        "source_type": "primary",
+        "published_at": "2026-09-18"
+      },
+      {
+        "url": "https://www.reuters.com/world/asia-pacific/yen-weak-ahead-boj-decision-rate-hike-expected-2026-09-18/",
+        "title": "Dollar advances vs yen as BOJ dissent clouds rate-hike outlook",
+        "publisher": "Reuters",
+        "source_type": "news",
+        "published_at": "2026-09-18"
+      }
+    ],
+    "summary": "The Bank of Japan raised its policy rate from 1.0% to 1.25% on September 18, the highest level in 31 years, in a 7–2 decision. Yet the yen weakened after the announcement as markets focused on the divided vote and the lack of stronger guidance on the next hike. Japan’s August core CPI rose 1.7% year on year, while inflation excluding fresh food and energy was 1.9%.",
+    "geography": [
+      "Japan",
+      "Global"
+    ],
+    "confidence": 97,
+    "created_at": "2026-09-22T07:00:00+09:00",
+    "importance": 96,
+    "published_at": "2026-09-22T07:00:00+09:00",
+    "why_it_matters": "This affects mortgages, yen savings, imported costs, NISA portfolios and Japan-linked salaries. The important signal is that domestic rates can rise while the yen still weakens if markets judge the future path as insufficient relative to global rates."
+  }
+]

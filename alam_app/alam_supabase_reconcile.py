@@ -251,7 +251,7 @@ def _reconcile_sources(client, article_id, record):
     return len(desired), len(stale_ids)
 
 
-def reconcile_public_archive(client, prepared_archive=None):
+def reconcile_public_archive(client, prepared_archive=None, article_ids=None):
     """Repair all public ALAM records represented by the GitHub audit archive.
 
     The function deliberately scopes itself to ``prepare_public_archive()``, whose
@@ -264,6 +264,13 @@ def reconcile_public_archive(client, prepared_archive=None):
     records written are the same records that passed quality and conflict detection.
     """
     grouped = prepared_archive if prepared_archive is not None else prepare_public_archive()
+    if article_ids is not None:
+        requested = {str(article_id) for article_id in article_ids if article_id}
+        grouped = {
+            article_id: records
+            for article_id, records in grouped.items()
+            if str(article_id) in requested
+        }
 
     stats = defaultdict(int)
     for article_id, records in grouped.items():

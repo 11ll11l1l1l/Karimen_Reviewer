@@ -2,6 +2,9 @@ name: ALAM Supabase sync
 
 on:
   workflow_dispatch:
+  schedule:
+    # 03:17 JST daily: full self-healing reconciliation outside normal content pushes.
+    - cron: '17 18 * * *'
   push:
     branches:
       - main
@@ -85,6 +88,7 @@ jobs:
         env:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          ALAM_FULL_RECONCILE: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && '1' || '0' }}
         run: python alam_app/alam_supabase_sync_job.py
 
       - name: Prune obsolete mirror-only article rows

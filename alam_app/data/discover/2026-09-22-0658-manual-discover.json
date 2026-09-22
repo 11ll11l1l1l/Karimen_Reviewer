@@ -1,0 +1,157 @@
+[
+  {
+    "id": "japan-distributed-ai-datacenter-power-gpu-2026-09-18",
+    "tags": [
+      "Japan",
+      "AI",
+      "Data Centers",
+      "GPU",
+      "APN",
+      "Power Grid",
+      "KDDI",
+      "NTT",
+      "IIJ",
+      "Infrastructure"
+    ],
+    "type": "technology_infrastructure",
+    "agent": "discover",
+    "title": "Japan is testing AI compute that moves to where power and GPUs are available",
+    "claims": [
+      {
+        "kind": "FACT",
+        "text": "KDDI, Morgenrot and Tohoku Intelligent Telecommunication announced a September 2026 demonstration aimed at easing AI-era power and GPU constraints through distributed data-center operation.",
+        "basis": "KDDI September 18 release.",
+        "source_refs": [
+          1
+        ]
+      },
+      {
+        "kind": "FACT",
+        "text": "The KDDI trial uses point-to-multipoint all-photonics networking and GPU virtualization.",
+        "basis": "KDDI project description.",
+        "source_refs": [
+          1
+        ]
+      },
+      {
+        "kind": "FACT",
+        "text": "NTT Docomo Business and partners are separately testing workload shifts among multiple data centers based on power conditions, including 10 Gbps wide-area and 100 Gbps Tokyo-area environments.",
+        "basis": "NTT Docomo Business September 18 release.",
+        "source_refs": [
+          2
+        ]
+      },
+      {
+        "kind": "FACT",
+        "text": "An IIJ-led consortium with Kyushu Electric Power and other partners also began a distributed-data-center demonstration under the same government watt-bit coordination program.",
+        "basis": "IIJ September 18 release.",
+        "source_refs": [
+          3
+        ]
+      },
+      {
+        "kind": "INFERENCE",
+        "text": "Japan is moving beyond simply building more AI data centers toward testing whether computing jobs can be shifted to locations where power and GPU resources are easier to supply.",
+        "basis": "Inference from multiple independent demonstrations under the same program.",
+        "source_refs": [
+          1,
+          2,
+          3
+        ]
+      }
+    ],
+    "status": "NEW",
+    "content": {
+      "impact": {
+        "japan": "HIGH",
+        "money": "MED",
+        "career": "HIGH",
+        "family": "LOW",
+        "urgency": "LOW"
+      },
+      "novelty": 95,
+      "learning": {
+        "terms": [
+          {
+            "term": "APN",
+            "meaning": "All-Photonics Network: a high-capacity optical network for low-latency data transport.",
+            "why_it_matters": "Fast inter-site links are needed if AI jobs move between data centers."
+          },
+          {
+            "term": "Workload shift",
+            "meaning": "Moving computing jobs from one server or location to another.",
+            "why_it_matters": "It can let operators use GPUs or electricity where they are available."
+          },
+          {
+            "term": "GPU virtualization",
+            "meaning": "Software that pools or partitions GPU resources.",
+            "why_it_matters": "It can reduce stranded GPU capacity and improve utilization."
+          }
+        ],
+        "takeaways": [
+          "Japan is testing distributed AI infrastructure, not only larger data centers.",
+          "Telecom and power coordination is becoming part of AI infrastructure design.",
+          "Commercial economics and latency still need to be proven."
+        ]
+      },
+      "what_next": [
+        "Watch for measured reductions in peak power demand or GPU idle time.",
+        "Watch which AI workloads tolerate relocation without unacceptable latency.",
+        "Watch whether these demonstrations become commercial services after testing."
+      ],
+      "whats_new": "Multiple operators are testing whether AI processing can move between sites in response to power and computing availability, turning networking and energy coordination into part of the AI infrastructure stack.",
+      "usefulness": 94,
+      "reading_levels": {
+        "2_min": "Japan's AI infrastructure problem is increasingly a power-and-location problem, not only a chip problem. KDDI, NTT Docomo Business and an IIJ-led consortium are testing versions of distributed data-center operation in which GPUs and AI jobs are coordinated across multiple sites. If one location is power-constrained or saturated, some work may be shifted elsewhere over high-capacity optical links. That could change how future data centers and grids are planned, but latency, reliability and cost still have to be proven.",
+        "30_sec": [
+          "Three Japanese groups announced distributed-AI/data-center demonstrations on September 18.",
+          "The common idea is to connect sites optically and move AI jobs according to GPU and electricity availability.",
+          "This could reduce pressure to expand every site equally.",
+          "It remains a demonstration, not a proven commercial model."
+        ]
+      },
+      "recommendation": "Track workload-shifting results alongside new data-center construction. If the model works, networking, orchestration and power-aware scheduling become more valuable engineering capabilities.",
+      "skeptical_view": "Large AI workloads cannot necessarily move freely. Data gravity, latency, network cost and software compatibility may limit the practical benefit.",
+      "connection_tags": [
+        "ai-infrastructure",
+        "distributed-compute",
+        "data-center-power",
+        "gpu-shortage",
+        "optical-networking"
+      ],
+      "what_would_change_mind": "The thesis weakens if trials show that latency, orchestration complexity or transmission cost outweigh the power and GPU benefits."
+    },
+    "sources": [
+      {
+        "url": "https://newsroom.kddi.com/news/detail/kddi_nr-1169_4723.html",
+        "title": "リテールロボットを活用した分散型データセンター実証を開始",
+        "publisher": "KDDI",
+        "source_type": "primary",
+        "published_at": "2026-09-18"
+      },
+      {
+        "url": "https://www.ntt.com/about-us/press-releases/news/article/2026/0918.html",
+        "title": "分散DCにおけるAIの分散処理やワークロードシフトによりAI処理と電力の最適化の社会実装をめざす「ワット・ビット連携」の実証を開始",
+        "publisher": "NTT Docomo Business",
+        "source_type": "primary",
+        "published_at": "2026-09-18"
+      },
+      {
+        "url": "https://www.iij.ad.jp/news/pressrelease/2026/0918.html",
+        "title": "総務省の「令和8年度 ワット・ビット連携関連実証」に採択",
+        "publisher": "Internet Initiative Japan (IIJ)",
+        "source_type": "primary",
+        "published_at": "2026-09-18"
+      }
+    ],
+    "summary": "KDDI, Morgenrot and Tohoku Intelligent Telecommunication began a September trial using retail robots, GPU virtualization and an all-photonics network to connect distributed computing resources. Separate NTT Docomo Business and IIJ-led projects are testing the same broader idea: shift AI workloads across data centers according to available computing capacity and electricity conditions.",
+    "geography": [
+      "Japan"
+    ],
+    "confidence": 96,
+    "created_at": "2026-09-22T06:58:00+09:00",
+    "importance": 91,
+    "published_at": "2026-09-22T06:58:00+09:00",
+    "why_it_matters": "AI infrastructure is becoming a systems-engineering problem spanning computing, telecom and electricity. If compute can shift between sites, regional power and GPU capacity may be used more efficiently."
+  }
+]
