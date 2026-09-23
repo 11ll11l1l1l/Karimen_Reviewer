@@ -25,6 +25,23 @@ Local Windows desktop equipment-management system isolated under `equipment_mana
 - Ticket transitions are version-checked, PostgreSQL row-locked, evented in `ticket_state_events`, and audited in the same transaction.
 - Troubleshooting history and lifecycle history are shown separately so engineering evidence is not confused with administrative state changes.
 
+### Controlled return-to-service
+
+- Release request, verification and approval actions are individually audited with workstation attribution.
+- Final release approval requires an independent approver who is neither the requester nor the verifier.
+- Release approval remains blocked while P1/P2 equipment tickets are open.
+- Release records and active equipment disposition are updated atomically.
+
+### Frozen PM execution specifications
+
+- Starting a PM creates an immutable execution snapshot of the active controlled checklist/spec revision.
+- A PM already in progress continues against the specification revision it started with even if engineering publishes a newer revision.
+- PM results are classified again in the database from the frozen limits; a client cannot force a PASS by submitting a forged result string.
+- Results for steps that are not part of the frozen execution checklist are rejected.
+- Completed PM executions are read-only and cannot accept later result edits.
+- PM completion verifies that every frozen step has a result and blocks completion on specification/control failures or invalid steps.
+
+
 - Login page and first-run administrator creation; no default password is committed.
 - PostgreSQL-ready multi-user architecture. SQLite remains a local/demo fallback only and must not be placed on the shared drive.
 - Role-based permissions plus per-user allow/deny overrides. Administrator UI supports user creation, enable/disable, role changes, password resets, and granular overrides.
