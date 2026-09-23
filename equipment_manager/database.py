@@ -21,6 +21,15 @@ class Base(DeclarativeBase):
     pass
 
 
+class SchemaMigration(Base):
+    __tablename__ = "schema_migrations"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    revision: Mapped[str] = mapped_column(String(80), unique=True, index=True)
+    checksum: Mapped[str] = mapped_column(String(64))
+    description: Mapped[str] = mapped_column(String(250))
+    applied_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
 class User(Base):
     __tablename__ = "users"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -62,6 +71,68 @@ class LoginAttempt(Base):
     attempted_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
 
 
+class FactoryNode(Base):
+    __tablename__ = "factory_nodes"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    node_code: Mapped[str] = mapped_column(String(180), unique=True, index=True)
+    parent_code: Mapped[str] = mapped_column(String(180), default="", index=True)
+    node_type: Mapped[str] = mapped_column(String(40), index=True)
+    name: Mapped[str] = mapped_column(String(180))
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
+class EquipmentLocationAssignment(Base):
+    __tablename__ = "equipment_location_assignments"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    equipment_id: Mapped[str] = mapped_column(String(100), index=True)
+    node_code: Mapped[str] = mapped_column(String(180), index=True)
+    active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    assigned_by: Mapped[str] = mapped_column(String(120), default="")
+    assigned_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    ended_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    __table_args__ = (UniqueConstraint("equipment_id","node_code","active",name="uq_equipment_location_active"),)
+
+
+class ApprovalDelegation(Base):
+    __tablename__ = "approval_delegations"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    delegator: Mapped[str] = mapped_column(String(80), index=True)
+    delegate: Mapped[str] = mapped_column(String(80), index=True)
+    permission: Mapped[str] = mapped_column(String(100), index=True)
+    scope_type: Mapped[str] = mapped_column(String(30), default="GLOBAL")
+    scope_key: Mapped[str] = mapped_column(String(180), default="")
+    starts_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    ends_at: Mapped[datetime] = mapped_column(DateTime, index=True)
+    reason: Mapped[str] = mapped_column(Text)
+    active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    created_by: Mapped[str] = mapped_column(String(80), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    revoked_by: Mapped[str] = mapped_column(String(80), default="")
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    revoke_reason: Mapped[str] = mapped_column(Text, default="")
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
+class UserAccessPolicy(Base):
+    __tablename__ = "user_access_policies"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    username: Mapped[str] = mapped_column(String(80), unique=True, index=True)
+    scope_mode: Mapped[str] = mapped_column(String(30), default="UNRESTRICTED")
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
+class UserEquipmentScope(Base):
+    __tablename__ = "user_equipment_scopes"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    username: Mapped[str] = mapped_column(String(80), index=True)
+    scope_type: Mapped[str] = mapped_column(String(30), index=True)
+    scope_key: Mapped[str] = mapped_column(String(180), index=True)
+    permission: Mapped[str] = mapped_column(String(100), default="*")
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    __table_args__ = (UniqueConstraint("username","scope_type","scope_key","permission",name="uq_user_equipment_scope"),)
+
+
 class Equipment(Base):
     __tablename__ = "equipment"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -85,6 +156,24 @@ class Equipment(Base):
     map_y: Mapped[float] = mapped_column(Float, default=0.0)
     version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class EquipmentAlarmEvent(Base):
+    __tablename__ = "equipment_alarm_events"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    event_key: Mapped[str] = mapped_column(String(80), unique=True, index=True)
+    equipment_id: Mapped[str] = mapped_column(String(100), index=True)
+    alarm_code: Mapped[str] = mapped_column(String(120), index=True)
+    severity: Mapped[str] = mapped_column(String(30), default="Warning", index=True)
+    message: Mapped[str] = mapped_column(Text, default="")
+    source: Mapped[str] = mapped_column(String(80), default="Manual", index=True)
+    state: Mapped[str] = mapped_column(String(30), default="ACTIVE", index=True)
+    occurred_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    acknowledged_by: Mapped[str] = mapped_column(String(120), default="")
+    acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    cleared_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    related_ticket: Mapped[str] = mapped_column(String(100), default="", index=True)
+    raw_payload_json: Mapped[str] = mapped_column(Text, default="{}")
 
 
 class EquipmentStateEvent(Base):
@@ -158,6 +247,16 @@ class EquipmentMeter(Base):
     __table_args__ = (UniqueConstraint("equipment_id","meter_code",name="uq_equipment_meter"),)
 
 
+class EquipmentMeterBehavior(Base):
+    __tablename__ = "equipment_meter_behaviors"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    equipment_id: Mapped[str] = mapped_column(String(100), index=True)
+    meter_code: Mapped[str] = mapped_column(String(80), index=True)
+    meter_mode: Mapped[str] = mapped_column(String(20), default="COUNTER")
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    __table_args__ = (UniqueConstraint("equipment_id","meter_code",name="uq_equipment_meter_behavior"),)
+
+
 class MeterReading(Base):
     __tablename__ = "meter_readings"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -195,6 +294,35 @@ class PMUsageOccurrence(Base):
     meter_code: Mapped[str] = mapped_column(String(80), index=True)
     trigger_value: Mapped[float] = mapped_column(Float)
     reading_value: Mapped[float] = mapped_column(Float)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
+class PMConditionTrigger(Base):
+    __tablename__ = "pm_condition_triggers"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    trigger_id: Mapped[str] = mapped_column(String(100), unique=True, index=True)
+    equipment_id: Mapped[str] = mapped_column(String(100), index=True)
+    pm_id: Mapped[str] = mapped_column(String(100), index=True)
+    meter_code: Mapped[str] = mapped_column(String(80), index=True)
+    comparator: Mapped[str] = mapped_column(String(10))
+    threshold: Mapped[float] = mapped_column(Float)
+    reset_threshold: Mapped[float | None] = mapped_column(Float, nullable=True)
+    latched: Mapped[bool] = mapped_column(Boolean, default=False)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
+class PMConditionOccurrence(Base):
+    __tablename__ = "pm_condition_occurrences"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    trigger_id: Mapped[str] = mapped_column(String(100), index=True)
+    task_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    equipment_id: Mapped[str] = mapped_column(String(100), index=True)
+    pm_id: Mapped[str] = mapped_column(String(100), index=True)
+    meter_code: Mapped[str] = mapped_column(String(80), index=True)
+    threshold: Mapped[float] = mapped_column(Float)
+    reading_value: Mapped[float] = mapped_column(Float)
+    event_type: Mapped[str] = mapped_column(String(30), default="TRIGGERED")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
 
 
@@ -259,6 +387,36 @@ class PMDeferral(Base):
     reviewed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     review_note: Mapped[str] = mapped_column(Text, default="")
     version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
+class TechnicianCertification(Base):
+    __tablename__ = "technician_certifications"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    username: Mapped[str] = mapped_column(String(80), index=True)
+    cert_code: Mapped[str] = mapped_column(String(100), index=True)
+    issuer: Mapped[str] = mapped_column(String(180), default="")
+    issued_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    note: Mapped[str] = mapped_column(Text, default="")
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    __table_args__ = (UniqueConstraint("username","cert_code",name="uq_technician_certification"),)
+
+
+class PMRequirement(Base):
+    __tablename__ = "pm_requirements"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    requirement_id: Mapped[str] = mapped_column(String(120), index=True)
+    pm_id: Mapped[str] = mapped_column(String(100), index=True)
+    requirement_type: Mapped[str] = mapped_column(String(40), index=True)
+    requirement_key: Mapped[str] = mapped_column(String(160), default="")
+    description: Mapped[str] = mapped_column(Text)
+    quantity: Mapped[float] = mapped_column(Float, default=1.0)
+    mandatory: Mapped[bool] = mapped_column(Boolean, default=True)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    revision: Mapped[int] = mapped_column(Integer, default=1)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    __table_args__ = (UniqueConstraint("requirement_id","revision",name="uq_pm_requirement_revision"),)
 
 
 class PMSpec(Base):
@@ -327,6 +485,33 @@ class PMExecutionStepSnapshot(Base):
     __table_args__ = (UniqueConstraint("execution_id", "step_no", name="uq_pm_execution_snapshot_step"),)
 
 
+class PMExecutionRequirementSnapshot(Base):
+    __tablename__ = "pm_execution_requirement_snapshots"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    execution_id: Mapped[int] = mapped_column(Integer, index=True)
+    source_requirement_id: Mapped[int] = mapped_column(Integer)
+    requirement_id: Mapped[str] = mapped_column(String(120))
+    requirement_type: Mapped[str] = mapped_column(String(40), index=True)
+    requirement_key: Mapped[str] = mapped_column(String(160), default="")
+    description: Mapped[str] = mapped_column(Text)
+    quantity: Mapped[float] = mapped_column(Float, default=1.0)
+    mandatory: Mapped[bool] = mapped_column(Boolean, default=True)
+    source_revision: Mapped[int] = mapped_column(Integer)
+    __table_args__ = (UniqueConstraint("execution_id","requirement_id",name="uq_pm_execution_requirement"),)
+
+
+class PMExecutionRequirementAck(Base):
+    __tablename__ = "pm_execution_requirement_acks"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    execution_id: Mapped[int] = mapped_column(Integer, index=True)
+    requirement_id: Mapped[str] = mapped_column(String(120), index=True)
+    acknowledged_by: Mapped[str] = mapped_column(String(120))
+    note: Mapped[str] = mapped_column(Text, default="")
+    evidence_path: Mapped[str] = mapped_column(Text, default="")
+    acknowledged_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    __table_args__ = (UniqueConstraint("execution_id","requirement_id",name="uq_pm_execution_requirement_ack"),)
+
+
 class PMResult(Base):
     __tablename__ = "pm_results"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -361,6 +546,34 @@ class Ticket(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     version: Mapped[int] = mapped_column(Integer, default=1)
+
+
+class TicketOperationalControl(Base):
+    __tablename__ = "ticket_operational_controls"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    ticket_no: Mapped[str] = mapped_column(String(100), unique=True, index=True)
+    containment: Mapped[str] = mapped_column(Text, default="")
+    production_impact: Mapped[str] = mapped_column(Text, default="")
+    affected_lots: Mapped[str] = mapped_column(Text, default="")
+    safety_quality_risk: Mapped[str] = mapped_column(Text, default="")
+    response_due_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    containment_due_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    resolution_due_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    escalation_level: Mapped[int] = mapped_column(Integer, default=0, index=True)
+    escalated_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    escalation_reason: Mapped[str] = mapped_column(Text, default="")
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
+class TicketEscalationEvent(Base):
+    __tablename__ = "ticket_escalation_events"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    ticket_no: Mapped[str] = mapped_column(String(100), index=True)
+    from_level: Mapped[int] = mapped_column(Integer, default=0)
+    to_level: Mapped[int] = mapped_column(Integer)
+    reason: Mapped[str] = mapped_column(Text)
+    user: Mapped[str] = mapped_column(String(120), default="system")
+    occurred_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
 
 
 class TicketStateEvent(Base):
@@ -476,6 +689,22 @@ class EquipmentRelease(Base):
     approved_by: Mapped[str] = mapped_column(String(120), default="")
     approved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     version: Mapped[int] = mapped_column(Integer, default=1)
+
+
+class WorkLog(Base):
+    __tablename__ = "work_logs"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    equipment_id: Mapped[str] = mapped_column(String(100), default="", index=True)
+    entity_type: Mapped[str] = mapped_column(String(40), index=True)
+    entity_key: Mapped[str] = mapped_column(String(120), index=True)
+    username: Mapped[str] = mapped_column(String(80), index=True)
+    work_type: Mapped[str] = mapped_column(String(80), default="Engineering")
+    started_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    ended_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    duration_minutes: Mapped[float] = mapped_column(Float, default=0.0)
+    note: Mapped[str] = mapped_column(Text, default="")
+    status: Mapped[str] = mapped_column(String(30), default="Active", index=True)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
 
 
 class Endorsement(Base):
@@ -624,6 +853,55 @@ class ControlledDocumentRevision(Base):
     __table_args__ = (UniqueConstraint("document_id","revision",name="uq_controlled_document_revision"),)
 
 
+class IntegrationEndpoint(Base):
+    __tablename__ = "integration_endpoints"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    endpoint_id: Mapped[str] = mapped_column(String(100), unique=True, index=True)
+    name: Mapped[str] = mapped_column(String(180), default="")
+    adapter_type: Mapped[str] = mapped_column(String(30), index=True)
+    target: Mapped[str] = mapped_column(Text)
+    topics: Mapped[str] = mapped_column(Text, default="*")
+    auth_env: Mapped[str] = mapped_column(String(120), default="")
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
+class IntegrationEvent(Base):
+    __tablename__ = "integration_events"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    event_id: Mapped[str] = mapped_column(String(40), unique=True, index=True, default=lambda: secrets.token_hex(16))
+    topic: Mapped[str] = mapped_column(String(100), index=True)
+    entity_type: Mapped[str] = mapped_column(String(60), index=True)
+    entity_key: Mapped[str] = mapped_column(String(160), index=True)
+    payload_json: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
+class IntegrationDelivery(Base):
+    __tablename__ = "integration_deliveries"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    event_id: Mapped[str] = mapped_column(String(40), index=True)
+    endpoint_id: Mapped[str] = mapped_column(String(100), index=True)
+    status: Mapped[str] = mapped_column(String(30), default="Pending", index=True)
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    next_attempt_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    last_error: Mapped[str] = mapped_column(Text, default="")
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    __table_args__ = (UniqueConstraint("event_id","endpoint_id",name="uq_integration_delivery"),)
+
+
+class RecoveryDrill(Base):
+    __tablename__ = "recovery_drills"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    backup_path: Mapped[str] = mapped_column(Text)
+    database_type: Mapped[str] = mapped_column(String(30))
+    success: Mapped[bool] = mapped_column(Boolean)
+    detail: Mapped[str] = mapped_column(Text, default="")
+    performed_by: Mapped[str] = mapped_column(String(120), default="")
+    workstation: Mapped[str] = mapped_column(String(120), default="")
+    performed_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
 class AuditLog(Base):
     __tablename__ = "audit_log"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -642,19 +920,19 @@ AUTH_LOCKOUT_MINUTES = 15
 
 ROLE_PERMISSIONS = {
     "Administrator": {"*"},
-    "Manager": {"view", "qualification.edit", "qualification.execute", "qualification.verify", "qualification.approve", "equipment.meter.record", "equipment.edit", "equipment.transition", "equipment.component.edit", "pm.edit", "pm.execute", "pm.approve", "pm.defer", "pm.defer.approve", "ticket.edit", "disposition.edit", "release.approve", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
-    "Supervisor": {"view", "qualification.execute", "qualification.verify", "qualification.approve", "equipment.meter.record", "equipment.edit", "equipment.transition", "equipment.component.edit", "pm.edit", "pm.execute", "pm.defer", "pm.defer.approve", "ticket.edit", "disposition.edit", "release.verify", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
-    "Equipment Engineer": {"view", "qualification.edit", "qualification.execute", "qualification.verify", "equipment.meter.record", "equipment.edit", "equipment.transition", "equipment.component.edit", "pm.edit", "pm.execute", "pm.defer", "ticket.edit", "disposition.edit", "release.verify", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
-    "Maintenance": {"view", "qualification.execute", "equipment.meter.record", "equipment.component.edit", "pm.execute", "pm.defer", "ticket.edit", "endorsement.edit", "inventory.consume", "inventory.reserve", "document.link"},
-    "Technician": {"view", "equipment.meter.record", "pm.execute", "ticket.edit", "inventory.consume", "document.link"},
-    "Process Engineer": {"view", "qualification.verify", "qualification.approve", "ticket.edit", "release.verify", "document.link", "report.view"},
+    "Manager": {"view", "workflow.override", "worklog.edit", "qualification.edit", "qualification.execute", "qualification.verify", "qualification.approve", "equipment.meter.record", "equipment.edit", "equipment.transition", "equipment.component.edit", "pm.edit", "pm.execute", "pm.approve", "pm.defer", "pm.defer.approve", "ticket.edit", "disposition.edit", "release.approve", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
+    "Supervisor": {"view", "worklog.edit", "qualification.execute", "qualification.verify", "qualification.approve", "equipment.meter.record", "equipment.edit", "equipment.transition", "equipment.component.edit", "pm.edit", "pm.execute", "pm.defer", "pm.defer.approve", "ticket.edit", "disposition.edit", "release.verify", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
+    "Equipment Engineer": {"view", "worklog.edit", "qualification.edit", "qualification.execute", "qualification.verify", "equipment.meter.record", "equipment.edit", "equipment.transition", "equipment.component.edit", "pm.edit", "pm.execute", "pm.defer", "ticket.edit", "disposition.edit", "release.verify", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
+    "Maintenance": {"view", "worklog.edit", "qualification.execute", "equipment.meter.record", "equipment.component.edit", "pm.execute", "pm.defer", "ticket.edit", "endorsement.edit", "inventory.consume", "inventory.reserve", "document.link"},
+    "Technician": {"view", "worklog.edit", "equipment.meter.record", "pm.execute", "ticket.edit", "inventory.consume", "document.link"},
+    "Process Engineer": {"view", "worklog.edit", "qualification.verify", "qualification.approve", "ticket.edit", "release.verify", "document.link", "report.view"},
     "Inventory Controller": {"view", "inventory.edit", "inventory.consume", "inventory.reserve", "document.link"},
     "Document Controller": {"view", "document.link", "document.control"},
     "Read Only": {"view", "report.view"},
 }
 
 PERMISSIONS = [
-    "view", "qualification.edit", "qualification.execute", "qualification.verify", "qualification.approve", "equipment.edit", "equipment.transition", "equipment.component.edit", "equipment.meter.record", "layout.edit", "pm.edit", "pm.execute", "pm.approve", "pm.defer", "pm.defer.approve",
+    "view", "workflow.override", "worklog.edit", "qualification.edit", "qualification.execute", "qualification.verify", "qualification.approve", "equipment.edit", "equipment.transition", "equipment.component.edit", "equipment.meter.record", "layout.edit", "pm.edit", "pm.execute", "pm.approve", "pm.defer", "pm.defer.approve",
     "ticket.edit", "disposition.edit", "release.verify", "release.approve", "endorsement.edit",
     "inventory.edit", "inventory.consume", "inventory.reserve", "document.link", "document.control",
     "user.admin", "audit.view", "report.view",
@@ -684,9 +962,76 @@ class Database:
         args = {"check_same_thread": False} if self.url.startswith("sqlite") else {}
         self.engine = create_engine(self.url, future=True, pool_pre_ping=True, connect_args=args)
         self.Session = sessionmaker(bind=self.engine, autoflush=False, expire_on_commit=False, future=True)
-        Base.metadata.create_all(self.engine)
+        inspector=inspect(self.engine)
+        existing=set(inspector.get_table_names())
+        if not existing:
+            Base.metadata.create_all(self.engine)
+            self._record_bootstrap_migrations()
+        else:
+            SchemaMigration.__table__.create(self.engine,checkfirst=True)
+            self._apply_schema_migrations()
         self._assert_schema_compatible()
         self._bootstrap_legacy_event_history()
+        self._bootstrap_factory_hierarchy()
+
+    @staticmethod
+    def _migration_checksum(revision: str, description: str) -> str:
+        return hashlib.sha256(f"{revision}|{description}".encode("utf-8")).hexdigest()
+
+    def _migration_plan(self):
+        return [
+            ("20260923_001","Create additive production-core tables",lambda: [
+                table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
+            ]),
+            ("20260923_002","Create operational event and lookup indexes",self._migration_indexes),
+        ]
+
+    def _migration_indexes(self):
+        statements=[
+            "CREATE INDEX IF NOT EXISTS ix_eq_state_equipment_time ON equipment_state_events (equipment_id, changed_at)",
+            "CREATE INDEX IF NOT EXISTS ix_ticket_state_ticket_time ON ticket_state_events (ticket_no, changed_at)",
+            "CREATE INDEX IF NOT EXISTS ix_ticket_escalation_ticket_time ON ticket_escalation_events (ticket_no, occurred_at)",
+            "CREATE INDEX IF NOT EXISTS ix_meter_reading_equipment_meter_time ON meter_readings (equipment_id, meter_code, recorded_at)",
+            "CREATE INDEX IF NOT EXISTS ix_qualification_equipment_status ON qualification_runs (equipment_id, status)",
+            "CREATE INDEX IF NOT EXISTS ix_pm_task_equipment_status ON pm_tasks (equipment_id, status)",
+        ]
+        with self.engine.begin() as conn:
+            for sql in statements:conn.exec_driver_sql(sql)
+
+    def _record_bootstrap_migrations(self):
+        SchemaMigration.__table__.create(self.engine,checkfirst=True)
+        with self.Session.begin() as s:
+            for revision,description,_ in self._migration_plan():
+                if not s.scalar(select(SchemaMigration).where(SchemaMigration.revision==revision)):
+                    s.add(SchemaMigration(
+                        revision=revision,
+                        checksum=self._migration_checksum(revision,description),
+                        description=description,
+                    ))
+
+    def _apply_schema_migrations(self):
+        SchemaMigration.__table__.create(self.engine,checkfirst=True)
+        with self.Session() as s:
+            applied={row.revision:row for row in s.scalars(select(SchemaMigration))}
+        for revision,description,apply_fn in self._migration_plan():
+            expected=self._migration_checksum(revision,description)
+            row=applied.get(revision)
+            if row:
+                if row.checksum!=expected:
+                    raise RuntimeError(
+                        f"DATABASE MIGRATION CHECKSUM MISMATCH for {revision}. "
+                        "Migration history was modified after deployment."
+                    )
+                continue
+            apply_fn()
+            with self.Session.begin() as s:
+                s.add(SchemaMigration(
+                    revision=revision,checksum=expected,description=description,
+                ))
+
+    def list_schema_migrations(self):
+        with self.session() as s:
+            return list(s.scalars(select(SchemaMigration).order_by(SchemaMigration.applied_at,SchemaMigration.id)))
 
     def _assert_schema_compatible(self):
         """Fail fast if an existing database is missing model columns.
@@ -779,6 +1124,286 @@ class Database:
                     workstation="DATABASE-UPGRADE",
                     changed_at=occurred,
                 ))
+
+    @staticmethod
+    def _factory_code(parent: str, node_type: str, name: str) -> str:
+        clean="".join(ch if ch.isalnum() else "-" for ch in (name or "").strip().upper()).strip("-") or "UNSPECIFIED"
+        base=f"{node_type.upper()}:{clean}"
+        return f"{parent}/{base}" if parent else base
+
+    def _bootstrap_factory_hierarchy(self):
+        with self.session() as s:
+            for eq in s.scalars(select(Equipment)):
+                parent=""
+                levels=[
+                    ("Site",eq.site),
+                    ("Building",eq.building),
+                    ("Floor",eq.floor),
+                    ("Area",eq.area),
+                    ("Line",eq.line_cell),
+                ]
+                deepest=""
+                for node_type,name in levels:
+                    if not (name or "").strip():
+                        continue
+                    code=self._factory_code(parent,node_type,name)
+                    if not s.scalar(select(FactoryNode).where(FactoryNode.node_code==code)):
+                        s.add(FactoryNode(node_code=code,parent_code=parent,node_type=node_type,name=name.strip()))
+                        s.flush()
+                    parent=code
+                    deepest=code
+                if deepest:
+                    active=s.scalar(select(EquipmentLocationAssignment).where(
+                        EquipmentLocationAssignment.equipment_id==eq.equipment_id,
+                        EquipmentLocationAssignment.active.is_(True),
+                    ))
+                    if not active:
+                        s.add(EquipmentLocationAssignment(
+                            equipment_id=eq.equipment_id,node_code=deepest,active=True,
+                            assigned_by="system-migration",
+                        ))
+
+    def list_factory_nodes(self, active_only: bool = True):
+        with self.session() as s:
+            stmt=select(FactoryNode).order_by(FactoryNode.node_code)
+            if active_only:stmt=stmt.where(FactoryNode.active.is_(True))
+            return list(s.scalars(stmt))
+
+    def equipment_location(self, equipment_id: str):
+        with self.session() as s:
+            return s.scalar(select(EquipmentLocationAssignment).where(
+                EquipmentLocationAssignment.equipment_id==equipment_id,
+                EquipmentLocationAssignment.active.is_(True),
+            ))
+
+    def set_equipment_location(self, equipment_id: str, node_code: str, user: str, workstation: str = ""):
+        with self.session() as s:
+            eq=s.scalar(select(Equipment).where(Equipment.equipment_id==equipment_id))
+            if not eq:raise ValueError("Equipment not found")
+            node=s.scalar(select(FactoryNode).where(FactoryNode.node_code==node_code,FactoryNode.active.is_(True)))
+            if not node:raise ValueError("Factory location node not found")
+            now=datetime.utcnow()
+            for old in s.scalars(select(EquipmentLocationAssignment).where(
+                EquipmentLocationAssignment.equipment_id==equipment_id,
+                EquipmentLocationAssignment.active.is_(True),
+            )):
+                old.active=False;old.ended_at=now
+            row=EquipmentLocationAssignment(
+                equipment_id=equipment_id,node_code=node_code,active=True,
+                assigned_by=user,assigned_at=now,
+            )
+            s.add(row)
+            s.add(AuditLog(
+                user=user,action="EQUIPMENT_LOCATION_ASSIGN",entity_type="EQUIPMENT",
+                entity_key=equipment_id,detail=node_code,workstation=workstation,
+            ))
+            s.flush();return row
+
+    def _node_ancestors(self, s, node_code: str) -> set[str]:
+        result=set()
+        current=node_code
+        guard=0
+        while current and guard<32:
+            if current in result:break
+            result.add(current)
+            node=s.scalar(select(FactoryNode).where(FactoryNode.node_code==current))
+            current=node.parent_code if node else ""
+            guard+=1
+        return result
+
+    def list_approval_delegations(self, active_only: bool = False):
+        now=datetime.utcnow()
+        with self.session() as s:
+            stmt=select(ApprovalDelegation).order_by(ApprovalDelegation.created_at.desc())
+            if active_only:
+                stmt=stmt.where(
+                    ApprovalDelegation.active.is_(True),
+                    ApprovalDelegation.starts_at<=now,
+                    ApprovalDelegation.ends_at>now,
+                )
+            return list(s.scalars(stmt))
+
+    def _delegation_scope_allows(self, s, row: ApprovalDelegation, equipment_id: str) -> bool:
+        scope=(row.scope_type or "GLOBAL").upper()
+        if scope=="GLOBAL":return True
+        if not equipment_id:return False
+        if scope=="EQUIPMENT":return row.scope_key==equipment_id
+        if scope=="NODE":
+            assignment=s.scalar(select(EquipmentLocationAssignment).where(
+                EquipmentLocationAssignment.equipment_id==equipment_id,
+                EquipmentLocationAssignment.active.is_(True),
+            ))
+            return bool(assignment and row.scope_key in self._node_ancestors(s,assignment.node_code))
+        return False
+
+    def delegated_permission(self, username: str, permission: str, equipment_id: str = "") -> bool:
+        now=datetime.utcnow()
+        with self.session() as s:
+            rows=list(s.scalars(select(ApprovalDelegation).where(
+                ApprovalDelegation.delegate==username,
+                ApprovalDelegation.permission==permission,
+                ApprovalDelegation.active.is_(True),
+                ApprovalDelegation.starts_at<=now,
+                ApprovalDelegation.ends_at>now,
+            )))
+            return any(self._delegation_scope_allows(s,row,equipment_id) for row in rows)
+
+    def create_approval_delegation(
+        self,
+        delegator: str,
+        delegate: str,
+        permission: str,
+        ends_at: datetime,
+        reason: str,
+        actor: str,
+        scope_type: str = "GLOBAL",
+        scope_key: str = "",
+        starts_at: datetime | None = None,
+        workstation: str = "",
+    ):
+        if permission in {"user.admin","workflow.override"}:
+            raise ValueError(f"Permission '{permission}' cannot be delegated.")
+        if permission not in PERMISSIONS:
+            raise ValueError("Unknown permission.")
+        if delegator==delegate:raise ValueError("Delegator and delegate must be different users.")
+        if not reason.strip():raise ValueError("Delegation reason is required.")
+        starts_at=starts_at or datetime.utcnow()
+        if ends_at<=starts_at:raise ValueError("Delegation end must be after its start.")
+        scope_type=scope_type.upper()
+        if scope_type not in {"GLOBAL","EQUIPMENT","NODE"}:raise ValueError("Delegation scope must be GLOBAL, EQUIPMENT, or NODE.")
+        with self.session() as s:
+            delegator_user=s.scalar(select(User).where(User.username==delegator,User.active.is_(True)))
+            delegate_user=s.scalar(select(User).where(User.username==delegate,User.active.is_(True)))
+            actor_user=s.scalar(select(User).where(User.username==actor,User.active.is_(True)))
+            if not delegator_user or not delegate_user or not actor_user:raise ValueError("Delegator, delegate, and actor must be active EMS users.")
+            delegator_ctx={"username":delegator_user.username,"role":delegator_user.role}
+            if not self._direct_permission(delegator_ctx,permission):
+                raise PermissionError("Delegator does not directly own the permission being delegated.")
+            if actor!=delegator and actor_user.role!="Administrator":
+                raise PermissionError("Only the delegator or an Administrator may create this delegation.")
+            if scope_type=="EQUIPMENT" and not s.scalar(select(Equipment).where(Equipment.equipment_id==scope_key)):
+                raise ValueError("Delegation equipment scope not found.")
+            if scope_type=="NODE" and not s.scalar(select(FactoryNode).where(FactoryNode.node_code==scope_key)):
+                raise ValueError("Delegation factory-node scope not found.")
+            row=ApprovalDelegation(
+                delegator=delegator,delegate=delegate,permission=permission,
+                scope_type=scope_type,scope_key=scope_key,starts_at=starts_at,ends_at=ends_at,
+                reason=reason.strip(),created_by=actor,
+            )
+            s.add(row);s.flush()
+            s.add(AuditLog(
+                user=actor,action="APPROVAL_DELEGATION_CREATE",entity_type="DELEGATION",entity_key=str(row.id),
+                detail=json.dumps({"delegator":delegator,"delegate":delegate,"permission":permission,
+                    "scope_type":scope_type,"scope_key":scope_key,"starts_at":starts_at.isoformat(),
+                    "ends_at":ends_at.isoformat(),"reason":reason.strip()},sort_keys=True),
+                workstation=workstation,
+            ))
+            return row
+
+    def revoke_approval_delegation(self, delegation_id: int, actor: str, reason: str, workstation: str = ""):
+        if not reason.strip():raise ValueError("Revocation reason is required.")
+        with self.session() as s:
+            row=s.get(ApprovalDelegation,delegation_id)
+            if not row:raise ValueError("Delegation not found.")
+            actor_user=s.scalar(select(User).where(User.username==actor,User.active.is_(True)))
+            if not actor_user:raise PermissionError("Active actor required.")
+            if actor!=row.delegator and actor_user.role!="Administrator":
+                raise PermissionError("Only the delegator or an Administrator may revoke this delegation.")
+            if not row.active:return row
+            row.active=False;row.revoked_by=actor;row.revoked_at=datetime.utcnow();row.revoke_reason=reason.strip();row.version+=1
+            s.add(AuditLog(
+                user=actor,action="APPROVAL_DELEGATION_REVOKE",entity_type="DELEGATION",entity_key=str(row.id),
+                detail=reason.strip(),workstation=workstation,
+            ))
+            s.flush();return row
+
+    def user_access_policy(self, username: str):
+        with self.session() as s:
+            return s.scalar(select(UserAccessPolicy).where(UserAccessPolicy.username==username))
+
+    def set_user_access_policy(self, username: str, scope_mode: str):
+        mode=scope_mode.strip().upper()
+        if mode not in {"UNRESTRICTED","RESTRICTED"}:
+            raise ValueError("Scope mode must be UNRESTRICTED or RESTRICTED.")
+        with self.session() as s:
+            if not s.scalar(select(User).where(User.username==username)):
+                raise ValueError("User not found")
+            row=s.scalar(select(UserAccessPolicy).where(UserAccessPolicy.username==username))
+            if row:
+                row.scope_mode=mode;row.version+=1
+            else:
+                row=UserAccessPolicy(username=username,scope_mode=mode);s.add(row)
+            s.flush();return row
+
+    def list_user_scopes(self, username: str):
+        with self.session() as s:
+            return list(s.scalars(select(UserEquipmentScope).where(
+                UserEquipmentScope.username==username,
+                UserEquipmentScope.active.is_(True),
+            ).order_by(UserEquipmentScope.scope_type,UserEquipmentScope.scope_key)))
+
+    def add_user_scope(self, username: str, scope_type: str, scope_key: str, permission: str = "*"):
+        scope_type=scope_type.strip().upper()
+        if scope_type not in {"EQUIPMENT","NODE"}:raise ValueError("Scope type must be EQUIPMENT or NODE.")
+        with self.session() as s:
+            if not s.scalar(select(User).where(User.username==username)):raise ValueError("User not found")
+            if scope_type=="EQUIPMENT" and not s.scalar(select(Equipment).where(Equipment.equipment_id==scope_key)):
+                raise ValueError("Scoped equipment not found")
+            if scope_type=="NODE" and not s.scalar(select(FactoryNode).where(FactoryNode.node_code==scope_key)):
+                raise ValueError("Scoped factory node not found")
+            row=s.scalar(select(UserEquipmentScope).where(
+                UserEquipmentScope.username==username,UserEquipmentScope.scope_type==scope_type,
+                UserEquipmentScope.scope_key==scope_key,UserEquipmentScope.permission==permission,
+            ))
+            if row:
+                row.active=True
+            else:
+                row=UserEquipmentScope(username=username,scope_type=scope_type,scope_key=scope_key,permission=permission,active=True);s.add(row)
+            s.flush();return row
+
+    def clear_user_scopes(self, username: str):
+        with self.session() as s:
+            for row in s.scalars(select(UserEquipmentScope).where(UserEquipmentScope.username==username,UserEquipmentScope.active.is_(True))):
+                row.active=False
+
+    def equipment_in_scope(self, username: str, equipment_id: str, permission: str = "*") -> bool:
+        with self.session() as s:
+            user=s.scalar(select(User).where(User.username==username))
+            if user and user.role=="Administrator":return True
+            policy=s.scalar(select(UserAccessPolicy).where(UserAccessPolicy.username==username))
+            if not policy or policy.scope_mode!="RESTRICTED":return True
+            scopes=list(s.scalars(select(UserEquipmentScope).where(
+                UserEquipmentScope.username==username,UserEquipmentScope.active.is_(True),
+            )))
+            if any(x.scope_type=="EQUIPMENT" and x.scope_key==equipment_id and x.permission in {"*",permission} for x in scopes):
+                return True
+            assignment=s.scalar(select(EquipmentLocationAssignment).where(
+                EquipmentLocationAssignment.equipment_id==equipment_id,
+                EquipmentLocationAssignment.active.is_(True),
+            ))
+            if not assignment:return False
+            ancestors=self._node_ancestors(s,assignment.node_code)
+            return any(x.scope_type=="NODE" and x.scope_key in ancestors and x.permission in {"*",permission} for x in scopes)
+
+    def assert_equipment_scope(self, username: str, equipment_id: str, permission: str = "*"):
+        if username and not self.equipment_in_scope(username,equipment_id,permission):
+            raise PermissionError(f"User '{username}' is not authorized for equipment {equipment_id}.")
+
+    def assert_authorized(self, username: str, permission: str, equipment_id: str = ""):
+        strict=os.getenv("EMS_STRICT_AUTHZ","0").strip().lower() in {"1","true","yes","on"}
+        delegated=False
+        with self.session() as s:
+            user=s.scalar(select(User).where(User.username==username)) if username else None
+            if strict and (not user or not user.active):
+                raise PermissionError("Authenticated active EMS user is required for this operation.")
+            if user:
+                user_ctx={"username":user.username,"role":user.role}
+                if not self._direct_permission(user_ctx,permission):
+                    delegated=self.delegated_permission(username,permission,equipment_id)
+                    if not delegated:
+                        raise PermissionError(f"User '{username}' lacks permission '{permission}'.")
+        if equipment_id and not delegated:
+            self.assert_equipment_scope(username,equipment_id,permission)
 
     @contextmanager
     def session(self):
@@ -915,11 +1540,108 @@ class Database:
         with self.session() as s:
             return {x.permission: x.allowed for x in s.scalars(select(UserPermission).where(UserPermission.username == username))}
 
+    def _direct_permission(self, user: dict[str, Any], permission: str) -> bool:
+        overrides=self.permission_overrides(user["username"])
+        if permission in overrides:return overrides[permission]
+        base=ROLE_PERMISSIONS.get(user.get("role","Read Only"),{"view"})
+        return "*" in base or permission in base
+
     def has_permission(self, user: dict[str, Any], permission: str) -> bool:
-        overrides = self.permission_overrides(user["username"])
-        if permission in overrides: return overrides[permission]
-        base = ROLE_PERMISSIONS.get(user.get("role", "Read Only"), {"view"})
-        return "*" in base or permission in base or (permission != "view" and "*" in base)
+        if self._direct_permission(user,permission):return True
+        now=datetime.utcnow()
+        with self.session() as s:
+            return bool(s.scalar(select(func.count()).select_from(ApprovalDelegation).where(
+                ApprovalDelegation.delegate==user["username"],
+                ApprovalDelegation.permission==permission,
+                ApprovalDelegation.active.is_(True),
+                ApprovalDelegation.starts_at<=now,
+                ApprovalDelegation.ends_at>now,
+            )) or 0)
+
+    def save_integration_endpoint(self, data: dict[str, Any], expected_version: int | None = None):
+        payload=dict(data)
+        adapter=str(payload.get("adapter_type","")).upper()
+        if adapter not in {"FILE","HTTP"}:raise ValueError("Integration adapter must be FILE or HTTP.")
+        payload["adapter_type"]=adapter
+        if not str(payload.get("endpoint_id","")).strip() or not str(payload.get("target","")).strip():
+            raise ValueError("Endpoint ID and target are required.")
+        with self.session() as s:
+            row=s.scalar(select(IntegrationEndpoint).where(IntegrationEndpoint.endpoint_id==payload["endpoint_id"]))
+            if row:self._update_versioned(row,payload,expected_version,"Integration endpoint")
+            else:row=IntegrationEndpoint(**payload);s.add(row)
+            s.flush();return row
+
+    def list_integration_endpoints(self, enabled_only: bool = False):
+        with self.session() as s:
+            stmt=select(IntegrationEndpoint).order_by(IntegrationEndpoint.endpoint_id)
+            if enabled_only:stmt=stmt.where(IntegrationEndpoint.enabled.is_(True))
+            return list(s.scalars(stmt))
+
+    def _queue_integration_event(self, s, topic: str, entity_type: str, entity_key: str, payload: dict[str, Any]):
+        event=IntegrationEvent(
+            topic=topic,entity_type=entity_type,entity_key=str(entity_key),
+            payload_json=json.dumps(payload,default=str,sort_keys=True),
+        )
+        s.add(event);s.flush()
+        endpoints=list(s.scalars(select(IntegrationEndpoint).where(IntegrationEndpoint.enabled.is_(True))))
+        for endpoint in endpoints:
+            topics={x.strip() for x in (endpoint.topics or "*").split(",") if x.strip()}
+            if "*" in topics or topic in topics:
+                s.add(IntegrationDelivery(event_id=event.event_id,endpoint_id=endpoint.endpoint_id))
+        return event
+
+    def pending_integration_deliveries(self, limit: int = 100):
+        now=datetime.utcnow()
+        with self.session() as s:
+            deliveries=list(s.scalars(
+                select(IntegrationDelivery)
+                .where(
+                    IntegrationDelivery.status.in_(["Pending","Retry"]),
+                    ((IntegrationDelivery.next_attempt_at.is_(None)) | (IntegrationDelivery.next_attempt_at<=now)),
+                )
+                .order_by(IntegrationDelivery.id)
+                .limit(max(1,min(int(limit),1000)))
+            ))
+            result=[]
+            for delivery in deliveries:
+                event=s.scalar(select(IntegrationEvent).where(IntegrationEvent.event_id==delivery.event_id))
+                endpoint=s.scalar(select(IntegrationEndpoint).where(IntegrationEndpoint.endpoint_id==delivery.endpoint_id))
+                if event and endpoint and endpoint.enabled:result.append((delivery,event,endpoint))
+            return result
+
+    def mark_integration_delivery(self, delivery_id: int, success: bool, error: str = ""):
+        with self.session() as s:
+            row=s.get(IntegrationDelivery,delivery_id)
+            if not row:raise ValueError("Integration delivery not found")
+            row.attempts+=1
+            if success:
+                row.status="Sent";row.sent_at=datetime.utcnow();row.last_error="";row.next_attempt_at=None
+            else:
+                row.status="Retry";row.last_error=error[:4000]
+                delay=min(3600,30*(2**min(row.attempts,7)))
+                row.next_attempt_at=datetime.utcnow()+timedelta(seconds=delay)
+            s.flush();return row
+
+    def integration_delivery_status(self, limit: int = 500):
+        with self.session() as s:
+            return list(s.scalars(select(IntegrationDelivery).order_by(IntegrationDelivery.id.desc()).limit(limit)))
+
+    def record_recovery_drill(self, backup_path: str, database_type: str, success: bool, detail: str, user: str = "", workstation: str = ""):
+        with self.session() as s:
+            row=RecoveryDrill(
+                backup_path=backup_path,database_type=database_type,success=bool(success),
+                detail=detail,performed_by=user,workstation=workstation,
+            )
+            s.add(row)
+            s.add(AuditLog(
+                user=user,action="RECOVERY_DRILL_PASS" if success else "RECOVERY_DRILL_FAIL",
+                entity_type="SYSTEM",entity_key=backup_path,detail=detail,workstation=workstation,
+            ))
+            s.flush();return row
+
+    def list_recovery_drills(self, limit: int = 100):
+        with self.session() as s:
+            return list(s.scalars(select(RecoveryDrill).order_by(RecoveryDrill.performed_at.desc()).limit(max(1,min(int(limit),1000)))))
 
     def audit(self, user: str, action: str, entity_type: str, entity_key: str = "", detail: str = "", workstation: str = ""):
         with self.session() as s:
@@ -981,6 +1703,84 @@ class Database:
             s.flush()
             return item
 
+    def ingest_alarm(
+        self,
+        equipment_id: str,
+        alarm_code: str,
+        *,
+        state: str = "ACTIVE",
+        severity: str = "Warning",
+        message: str = "",
+        source: str = "Manual",
+        event_key: str = "",
+        occurred_at: datetime | None = None,
+        related_ticket: str = "",
+        raw_payload: dict[str, Any] | None = None,
+    ):
+        state=state.strip().upper()
+        if state not in {"ACTIVE","CLEARED"}:raise ValueError("Alarm state must be ACTIVE or CLEARED.")
+        occurred_at=occurred_at or datetime.utcnow()
+        event_key=event_key.strip() or secrets.token_hex(20)
+        with self.session() as s:
+            existing=s.scalar(select(EquipmentAlarmEvent).where(EquipmentAlarmEvent.event_key==event_key))
+            if existing:return existing
+            if not s.scalar(select(Equipment).where(Equipment.equipment_id==equipment_id)):
+                raise ValueError("Equipment not found")
+            if state=="CLEARED":
+                active=s.scalar(select(EquipmentAlarmEvent).where(
+                    EquipmentAlarmEvent.equipment_id==equipment_id,
+                    EquipmentAlarmEvent.alarm_code==alarm_code,
+                    EquipmentAlarmEvent.state=="ACTIVE",
+                ).order_by(EquipmentAlarmEvent.occurred_at.desc(),EquipmentAlarmEvent.id.desc()))
+                if active:
+                    active.state="CLEARED";active.cleared_at=occurred_at
+                    self._queue_integration_event(s,"equipment.alarm.cleared","ALARM",active.event_key,{
+                        "equipment_id":equipment_id,"alarm_code":alarm_code,"severity":active.severity,
+                        "message":active.message,"source":source,"cleared_at":occurred_at.isoformat(),
+                    })
+                    s.flush();return active
+            row=EquipmentAlarmEvent(
+                event_key=event_key,equipment_id=equipment_id,alarm_code=alarm_code,
+                severity=severity,message=message,source=source,state=state,
+                occurred_at=occurred_at,cleared_at=occurred_at if state=="CLEARED" else None,
+                related_ticket=related_ticket,raw_payload_json=json.dumps(raw_payload or {},default=str,sort_keys=True),
+            )
+            s.add(row)
+            self._queue_integration_event(s,"equipment.alarm.active" if state=="ACTIVE" else "equipment.alarm.cleared","ALARM",event_key,{
+                "equipment_id":equipment_id,"alarm_code":alarm_code,"severity":severity,
+                "message":message,"source":source,"state":state,"occurred_at":occurred_at.isoformat(),
+                "related_ticket":related_ticket,
+            })
+            s.flush();return row
+
+    def acknowledge_alarm(self, event_key: str, user: str):
+        with self.session() as s:
+            row=s.scalar(select(EquipmentAlarmEvent).where(EquipmentAlarmEvent.event_key==event_key))
+            if not row:raise ValueError("Alarm event not found")
+            self.assert_equipment_scope(user,row.equipment_id,"ticket.edit")
+            if not row.acknowledged_at:
+                row.acknowledged_by=user;row.acknowledged_at=datetime.utcnow()
+            s.flush();return row
+
+    def list_alarms(self, equipment_id: str = "", active_only: bool = False, limit: int = 1000):
+        with self.session() as s:
+            stmt=select(EquipmentAlarmEvent).order_by(EquipmentAlarmEvent.occurred_at.desc(),EquipmentAlarmEvent.id.desc())
+            if equipment_id:stmt=stmt.where(EquipmentAlarmEvent.equipment_id==equipment_id)
+            if active_only:stmt=stmt.where(EquipmentAlarmEvent.state=="ACTIVE")
+            return list(s.scalars(stmt.limit(max(1,min(int(limit),5000)))))
+
+    def alarm_pareto(self, days: int = 30, equipment_id: str = ""):
+        cutoff=datetime.utcnow()-timedelta(days=max(1,int(days)))
+        with self.session() as s:
+            stmt=select(
+                EquipmentAlarmEvent.alarm_code,
+                EquipmentAlarmEvent.message,
+                func.count(EquipmentAlarmEvent.id).label("count"),
+            ).where(EquipmentAlarmEvent.occurred_at>=cutoff)
+            if equipment_id:stmt=stmt.where(EquipmentAlarmEvent.equipment_id==equipment_id)
+            stmt=stmt.group_by(EquipmentAlarmEvent.alarm_code,EquipmentAlarmEvent.message).order_by(func.count(EquipmentAlarmEvent.id).desc())
+            return [dict(alarm_code=r[0],message=r[1],count=int(r[2])) for r in s.execute(stmt).all()]
+
     def list_equipment_state_events(self, equipment_id: str, limit: int = 250):
         with self.session() as s:
             stmt = (
@@ -1007,6 +1807,7 @@ class Database:
         user: str = "",
         workstation: str = "",
     ):
+        self.assert_authorized(user,"equipment.component.edit",str(data.get("equipment_id","")))
         payload=dict(data)
         if not payload.get("component_id","").strip():
             raise ValueError("Component ID is required.")
@@ -1077,6 +1878,7 @@ class Database:
             item=s.scalar(stmt)
             if not item:
                 raise ValueError("Component not found")
+            self.assert_authorized(user,"equipment.component.edit",item.equipment_id)
             if expected_version is not None and item.version!=expected_version:
                 raise RuntimeError("CONFLICT: Component changed by another user. Refresh and retry.")
             if item.status=="Removed":
@@ -1140,6 +1942,8 @@ class Database:
 
     def save_meter(self, data: dict[str, Any], expected_version: int | None = None):
         payload=dict(data)
+        mode=str(payload.pop("meter_mode","COUNTER")).upper()
+        if mode not in {"COUNTER","GAUGE"}:raise ValueError("Meter mode must be COUNTER or GAUGE.")
         with self.session() as s:
             if not s.scalar(select(Equipment).where(Equipment.equipment_id==payload.get("equipment_id",""))):
                 raise ValueError("Equipment not found")
@@ -1153,9 +1957,24 @@ class Database:
                 self._update_versioned(item,payload,expected_version,"Equipment meter")
             else:
                 item=EquipmentMeter(**payload)
-                s.add(item)
+                s.add(item);s.flush()
+            behavior=s.scalar(select(EquipmentMeterBehavior).where(
+                EquipmentMeterBehavior.equipment_id==item.equipment_id,
+                EquipmentMeterBehavior.meter_code==item.meter_code,
+            ))
+            if behavior:
+                if behavior.meter_mode!=mode:behavior.meter_mode=mode;behavior.version+=1
+            else:s.add(EquipmentMeterBehavior(equipment_id=item.equipment_id,meter_code=item.meter_code,meter_mode=mode))
             s.flush()
             return item
+
+    def meter_mode(self, equipment_id: str, meter_code: str) -> str:
+        with self.session() as s:
+            row=s.scalar(select(EquipmentMeterBehavior).where(
+                EquipmentMeterBehavior.equipment_id==equipment_id,
+                EquipmentMeterBehavior.meter_code==meter_code,
+            ))
+            return row.meter_mode if row else "COUNTER"
 
     def list_meter_readings(self, equipment_id: str, meter_code: str = "", limit: int = 500):
         with self.session() as s:
@@ -1243,6 +2062,7 @@ class Database:
         workstation: str = "",
         expected_version: int | None = None,
     ):
+        self.assert_authorized(user,"equipment.meter.record",equipment_id)
         with self.session() as s:
             stmt=select(EquipmentMeter).where(
                 EquipmentMeter.equipment_id==equipment_id,
@@ -1258,8 +2078,15 @@ class Database:
             value=float(value)
             if value<0:
                 raise ValueError("Meter reading cannot be negative")
-            if value<meter.current_value and not reset:
-                raise ValueError("Meter reading cannot decrease unless an explicit reset is recorded.")
+            behavior=s.scalar(select(EquipmentMeterBehavior).where(
+                EquipmentMeterBehavior.equipment_id==equipment_id,
+                EquipmentMeterBehavior.meter_code==meter_code,
+            ))
+            mode=behavior.meter_mode if behavior else "COUNTER"
+            if mode=="COUNTER" and value<meter.current_value and not reset:
+                raise ValueError("Counter reading cannot decrease unless an explicit reset is recorded.")
+            if mode=="GAUGE" and reset:
+                raise ValueError("Gauge meters do not use counter reset operations.")
             now=datetime.utcnow()
             reading=MeterReading(
                 equipment_id=equipment_id,
@@ -1291,6 +2118,7 @@ class Database:
                 created=[]
             else:
                 created=self._evaluate_usage_triggers_in_session(s,meter,user=user,workstation=workstation)
+                created+=self._evaluate_condition_triggers_in_session(s,meter,user=user,workstation=workstation)
 
             s.add(AuditLog(
                 user=user,
@@ -1342,6 +2170,104 @@ class Database:
                 stmt=stmt.where(PMUsageTrigger.equipment_id==equipment_id)
             return list(s.scalars(stmt))
 
+    def save_pm_condition_trigger(self, data: dict[str, Any], expected_version: int | None = None):
+        payload=dict(data)
+        comp=str(payload.get("comparator","")).strip()
+        if comp not in {">",">=","<","<="}:raise ValueError("Condition comparator must be >, >=, <, or <=.")
+        with self.session() as s:
+            meter=s.scalar(select(EquipmentMeter).where(
+                EquipmentMeter.equipment_id==payload.get("equipment_id",""),
+                EquipmentMeter.meter_code==payload.get("meter_code",""),
+            ))
+            if not meter:raise ValueError("Configured equipment meter not found")
+            if not s.scalar(select(PMDefinition).where(PMDefinition.pm_id==payload.get("pm_id",""))):
+                raise ValueError("PM definition not found")
+            row=s.scalar(select(PMConditionTrigger).where(PMConditionTrigger.trigger_id==payload["trigger_id"]))
+            if row:
+                payload.pop("latched",None)
+                self._update_versioned(row,payload,expected_version,"PM condition trigger")
+            else:
+                payload.setdefault("latched",False);row=PMConditionTrigger(**payload);s.add(row)
+            s.flush();return row
+
+    def list_pm_condition_triggers(self, equipment_id: str = ""):
+        with self.session() as s:
+            stmt=select(PMConditionTrigger).order_by(PMConditionTrigger.equipment_id,PMConditionTrigger.trigger_id)
+            if equipment_id:stmt=stmt.where(PMConditionTrigger.equipment_id==equipment_id)
+            return list(s.scalars(stmt))
+
+    def list_pm_condition_occurrences(self, trigger_id: str = ""):
+        with self.session() as s:
+            stmt=select(PMConditionOccurrence).order_by(PMConditionOccurrence.created_at.desc())
+            if trigger_id:stmt=stmt.where(PMConditionOccurrence.trigger_id==trigger_id)
+            return list(s.scalars(stmt))
+
+    @staticmethod
+    def _condition_matches(value: float, comparator: str, threshold: float) -> bool:
+        if comparator==">":return value>threshold
+        if comparator==">=":return value>=threshold
+        if comparator=="<":return value<threshold
+        if comparator=="<=":return value<=threshold
+        raise ValueError("Unsupported condition comparator")
+
+    def _evaluate_condition_triggers_in_session(self, s, meter: EquipmentMeter, user: str = "", workstation: str = ""):
+        created=[]
+        stmt=select(PMConditionTrigger).where(
+            PMConditionTrigger.equipment_id==meter.equipment_id,
+            PMConditionTrigger.meter_code==meter.meter_code,
+            PMConditionTrigger.active.is_(True),
+        )
+        if self.url.startswith("postgresql"):stmt=stmt.with_for_update()
+        for trigger in s.scalars(stmt):
+            matched=self._condition_matches(meter.current_value,trigger.comparator,trigger.threshold)
+            if trigger.latched:
+                reset=False
+                if trigger.reset_threshold is None:
+                    reset=not matched
+                elif trigger.comparator in {">",">="}:
+                    reset=meter.current_value<=trigger.reset_threshold
+                else:
+                    reset=meter.current_value>=trigger.reset_threshold
+                if reset:
+                    trigger.latched=False;trigger.version+=1
+                    s.add(PMConditionOccurrence(
+                        trigger_id=trigger.trigger_id,task_id=None,equipment_id=meter.equipment_id,
+                        pm_id=trigger.pm_id,meter_code=meter.meter_code,threshold=trigger.threshold,
+                        reading_value=meter.current_value,event_type="RESET",
+                    ))
+                continue
+            if not matched:continue
+            open_task=s.scalar(select(PMTask).where(
+                PMTask.equipment_id==meter.equipment_id,PMTask.pm_id==trigger.pm_id,
+                PMTask.status.notin_(["Completed","Cancelled"]),
+            ))
+            task=None
+            if not open_task:
+                definition=s.scalar(select(PMDefinition).where(PMDefinition.pm_id==trigger.pm_id))
+                now=datetime.utcnow()
+                task=PMTask(
+                    equipment_id=meter.equipment_id,pm_id=trigger.pm_id,
+                    pm_name=definition.name if definition else trigger.pm_id,
+                    original_due_date=now,scheduled_date=now,status="Pending",
+                    estimated_hours=definition.estimated_hours if definition else 0.0,
+                    priority="High",sop_path=definition.sop_path if definition else "",
+                )
+                s.add(task);s.flush();created.append(task)
+            trigger.latched=True;trigger.version+=1
+            s.add(PMConditionOccurrence(
+                trigger_id=trigger.trigger_id,task_id=task.id if task else (open_task.id if open_task else None),
+                equipment_id=meter.equipment_id,pm_id=trigger.pm_id,meter_code=meter.meter_code,
+                threshold=trigger.threshold,reading_value=meter.current_value,event_type="TRIGGERED",
+            ))
+            s.add(AuditLog(
+                user=user,action="PM_CONDITION_TRIGGER",entity_type="PM_TASK",
+                entity_key=str(task.id if task else open_task.id),
+                detail=json.dumps({"trigger_id":trigger.trigger_id,"meter_code":meter.meter_code,
+                    "reading":meter.current_value,"comparator":trigger.comparator,"threshold":trigger.threshold},sort_keys=True),
+                workstation=workstation,
+            ))
+        return created
+
     def list_pm_usage_occurrences(self, trigger_id: str = ""):
         with self.session() as s:
             stmt=select(PMUsageOccurrence).order_by(PMUsageOccurrence.created_at.desc())
@@ -1378,7 +2304,13 @@ class Database:
         workstation: str = "",
         expected_version: int | None = None,
         override: bool = False,
+        override_reason: str = "",
     ):
+        self.assert_authorized(user,"equipment.transition",equipment_id)
+        if override:
+            if not override_reason.strip():
+                raise ValueError("Workflow override requires explicit justification.")
+            self.assert_authorized(user,"workflow.override",equipment_id)
         with self.session() as s:
             stmt = select(Equipment).where(Equipment.equipment_id == equipment_id)
             if self.url.startswith("postgresql"):
@@ -1421,9 +2353,14 @@ class Database:
             eq.status = target_state
             eq.version += 1
             eq.updated_at = now
+            self._queue_integration_event(s,"equipment.state.changed","EQUIPMENT",equipment_id,{
+                "equipment_id":equipment_id,"from_state":previous,"to_state":target_state,
+                "reason_code":reason_code,"reason_text":reason_text.strip(),"owner":owner.strip(),
+                "related_ticket":related_ticket.strip(),"changed_by":user,"changed_at":now.isoformat(),
+            })
             s.add(AuditLog(
                 user=user,
-                action="STATE_TRANSITION",
+                action="STATE_TRANSITION_OVERRIDE" if override else "STATE_TRANSITION",
                 entity_type="EQUIPMENT",
                 entity_key=equipment_id,
                 detail=json.dumps({
@@ -1435,6 +2372,8 @@ class Database:
                     "related_ticket": related_ticket.strip(),
                     "related_pm_task_id": related_pm_task_id,
                     "owner": owner.strip(),
+                    "override": override,
+                    "override_reason": override_reason.strip(),
                 }, sort_keys=True),
                 workstation=workstation,
                 created_at=now,
@@ -1507,6 +2446,7 @@ class Database:
             task=s.scalar(stmt)
             if not task:
                 raise ValueError("PM task not found")
+            self.assert_authorized(user,"pm.defer",task.equipment_id)
             if expected_task_version is not None and task.version!=expected_task_version:
                 raise RuntimeError("CONFLICT: PM task changed by another user. Refresh and retry.")
             if task.status in {"Completed","Cancelled","In Progress"}:
@@ -1610,6 +2550,53 @@ class Database:
             s.flush()
             return row
 
+    def save_technician_certification(self, data: dict[str, Any], expected_version: int | None = None):
+        payload=dict(data)
+        with self.session() as s:
+            if not s.scalar(select(User).where(User.username==payload.get("username",""))):
+                raise ValueError("Certification user not found.")
+            row=s.scalar(select(TechnicianCertification).where(
+                TechnicianCertification.username==payload["username"],
+                TechnicianCertification.cert_code==payload["cert_code"],
+            ))
+            if row:self._update_versioned(row,payload,expected_version,"Technician certification")
+            else:row=TechnicianCertification(**payload);s.add(row)
+            s.flush();return row
+
+    def list_technician_certifications(self, username: str = ""):
+        with self.session() as s:
+            stmt=select(TechnicianCertification).order_by(TechnicianCertification.username,TechnicianCertification.cert_code)
+            if username:stmt=stmt.where(TechnicianCertification.username==username)
+            return list(s.scalars(stmt))
+
+    def upsert_pm_requirement(self, data: dict[str, Any], create_revision: bool = False):
+        payload=dict(data)
+        rtype=str(payload.get("requirement_type","")).upper()
+        if rtype not in {"CERTIFICATION","LOTO","SAFETY","TOOL","PART","DOCUMENT"}:
+            raise ValueError("PM requirement type must be CERTIFICATION, LOTO, SAFETY, TOOL, PART, or DOCUMENT.")
+        payload["requirement_type"]=rtype
+        with self.session() as s:
+            current=s.scalar(select(PMRequirement).where(
+                PMRequirement.requirement_id==payload["requirement_id"],
+                PMRequirement.active.is_(True),
+            ).order_by(PMRequirement.revision.desc()))
+            if current and create_revision:
+                current.active=False;current.version+=1
+                payload["revision"]=current.revision+1
+                row=PMRequirement(**payload);s.add(row)
+            elif current:
+                self._update_versioned(current,payload,None,"PM requirement");row=current
+            else:
+                payload.setdefault("revision",1);row=PMRequirement(**payload);s.add(row)
+            s.flush();return row
+
+    def list_pm_requirements(self, pm_id: str = "", active_only: bool = True):
+        with self.session() as s:
+            stmt=select(PMRequirement).order_by(PMRequirement.pm_id,PMRequirement.requirement_id,PMRequirement.revision.desc())
+            if pm_id:stmt=stmt.where(PMRequirement.pm_id==pm_id)
+            if active_only:stmt=stmt.where(PMRequirement.active.is_(True))
+            return list(s.scalars(stmt))
+
     def upsert_pm_spec(self, data: dict[str, Any], create_revision: bool = False):
         with self.session() as s:
             current = s.scalar(select(PMSpec).where(PMSpec.pm_id == data["pm_id"], PMSpec.step_no == int(data["step_no"]), PMSpec.active.is_(True)).order_by(PMSpec.revision.desc()))
@@ -1644,6 +2631,84 @@ class Database:
             normalized = (value_text or "").strip().lower()
             return "PASS" if normalized in {"pass", "ok", "yes", "good", "acceptable"} else "FAIL"
         return "RECORDED" if (value_text or "").strip() else "INVALID"
+
+    @staticmethod
+    def _snapshot_pm_requirements(s, ex: PMExecution, task: PMTask):
+        existing=int(s.scalar(select(func.count()).select_from(PMExecutionRequirementSnapshot).where(
+            PMExecutionRequirementSnapshot.execution_id==ex.id
+        )) or 0)
+        if existing:return
+        reqs=list(s.scalars(select(PMRequirement).where(
+            PMRequirement.pm_id==task.pm_id,PMRequirement.active.is_(True)
+        ).order_by(PMRequirement.requirement_id)))
+        for req in reqs:
+            s.add(PMExecutionRequirementSnapshot(
+                execution_id=ex.id,source_requirement_id=req.id,requirement_id=req.requirement_id,
+                requirement_type=req.requirement_type,requirement_key=req.requirement_key,
+                description=req.description,quantity=req.quantity,mandatory=req.mandatory,
+                source_revision=req.revision,
+            ))
+
+    def _validate_pm_certifications(self, s, execution_id: int, username: str):
+        now=datetime.utcnow()
+        reqs=list(s.scalars(select(PMExecutionRequirementSnapshot).where(
+            PMExecutionRequirementSnapshot.execution_id==execution_id,
+            PMExecutionRequirementSnapshot.requirement_type=="CERTIFICATION",
+            PMExecutionRequirementSnapshot.mandatory.is_(True),
+        )))
+        missing=[]
+        for req in reqs:
+            cert=s.scalar(select(TechnicianCertification).where(
+                TechnicianCertification.username==username,
+                TechnicianCertification.cert_code==req.requirement_key,
+                TechnicianCertification.active.is_(True),
+                ((TechnicianCertification.expires_at.is_(None)) | (TechnicianCertification.expires_at>now)),
+            ))
+            if not cert:missing.append(req.requirement_key or req.description)
+        if missing:
+            raise PermissionError("Required active certification(s) missing: "+", ".join(missing))
+
+    def list_pm_execution_requirements(self, execution_id: int):
+        with self.session() as s:
+            return list(s.scalars(select(PMExecutionRequirementSnapshot).where(
+                PMExecutionRequirementSnapshot.execution_id==execution_id
+            ).order_by(PMExecutionRequirementSnapshot.requirement_type,PMExecutionRequirementSnapshot.requirement_id)))
+
+    def acknowledge_pm_requirement(
+        self,
+        execution_id: int,
+        requirement_id: str,
+        user: str,
+        note: str = "",
+        evidence_path: str = "",
+    ):
+        with self.session() as s:
+            ex=s.get(PMExecution,execution_id)
+            if not ex:raise ValueError("PM execution not found")
+            if ex.status=="Completed":raise ValueError("Completed PM execution is read-only.")
+            req=s.scalar(select(PMExecutionRequirementSnapshot).where(
+                PMExecutionRequirementSnapshot.execution_id==execution_id,
+                PMExecutionRequirementSnapshot.requirement_id==requirement_id,
+            ))
+            if not req:raise ValueError("PM execution requirement not found")
+            if req.requirement_type=="CERTIFICATION":
+                raise ValueError("Certification requirements are validated automatically at execution start.")
+            row=s.scalar(select(PMExecutionRequirementAck).where(
+                PMExecutionRequirementAck.execution_id==execution_id,
+                PMExecutionRequirementAck.requirement_id==requirement_id,
+            ))
+            if row:raise ValueError("Requirement is already acknowledged.")
+            row=PMExecutionRequirementAck(
+                execution_id=execution_id,requirement_id=requirement_id,acknowledged_by=user,
+                note=note.strip(),evidence_path=evidence_path.strip(),
+            )
+            s.add(row);s.flush();return row
+
+    def list_pm_requirement_acks(self, execution_id: int):
+        with self.session() as s:
+            return list(s.scalars(select(PMExecutionRequirementAck).where(
+                PMExecutionRequirementAck.execution_id==execution_id
+            ).order_by(PMExecutionRequirementAck.acknowledged_at)))
 
     @staticmethod
     def _snapshot_pm_specs(s, ex: PMExecution, task: PMTask):
@@ -1693,15 +2758,21 @@ class Database:
             task = s.scalar(task_stmt)
             if not task:
                 raise ValueError("PM task not found")
+            self.assert_authorized(user,"pm.execute",task.equipment_id)
             ex = s.scalar(select(PMExecution).where(PMExecution.task_id == task_id))
             if ex:
                 self._snapshot_pm_specs(s, ex, task)
+                self._snapshot_pm_requirements(s, ex, task)
                 s.flush()
+                self._validate_pm_certifications(s,ex.id,user)
                 return ex
             ex = PMExecution(task_id=task_id, started_by=user)
             s.add(ex)
             s.flush()
             self._snapshot_pm_specs(s, ex, task)
+            self._snapshot_pm_requirements(s, ex, task)
+            s.flush()
+            self._validate_pm_certifications(s,ex.id,user)
             task.status = "In Progress"
             task.version += 1
             s.flush()
@@ -1783,6 +2854,17 @@ class Database:
                 raise ValueError(
                     f"Failed/invalid PM steps require correction, disposition, or engineering review: {hard_fail}"
                 )
+            requirements=list(s.scalars(select(PMExecutionRequirementSnapshot).where(
+                PMExecutionRequirementSnapshot.execution_id==execution_id,
+                PMExecutionRequirementSnapshot.mandatory.is_(True),
+                PMExecutionRequirementSnapshot.requirement_type!="CERTIFICATION",
+            )))
+            acked={x.requirement_id for x in s.scalars(select(PMExecutionRequirementAck).where(
+                PMExecutionRequirementAck.execution_id==execution_id
+            ))}
+            missing_req=[x.requirement_id for x in requirements if x.requirement_id not in acked]
+            if missing_req:
+                raise ValueError(f"Mandatory PM execution requirements not acknowledged: {missing_req}")
             now = datetime.utcnow()
             ex.status = "Completed"
             ex.completed_by = user
@@ -1791,6 +2873,10 @@ class Database:
             task.status = "Completed"
             task.last_completion_date = now
             task.version += 1
+            self._queue_integration_event(s,"maintenance.pm.completed","PM_TASK",str(task.id),{
+                "task_id":task.id,"equipment_id":task.equipment_id,"pm_id":task.pm_id,
+                "completed_by":user,"completed_at":now.isoformat(),
+            })
             s.flush()
             return ex
 
@@ -1831,6 +2917,104 @@ class Database:
             s.flush()
             return item
 
+    def ticket_operational_control(self, ticket_no: str):
+        with self.session() as s:
+            return s.scalar(select(TicketOperationalControl).where(TicketOperationalControl.ticket_no==ticket_no))
+
+    def save_ticket_operational_control(
+        self,
+        ticket_no: str,
+        data: dict[str, Any],
+        user: str,
+        workstation: str = "",
+        expected_version: int | None = None,
+    ):
+        with self.session() as s:
+            ticket=s.scalar(select(Ticket).where(Ticket.ticket_no==ticket_no))
+            if not ticket:raise ValueError("Ticket not found")
+            self.assert_authorized(user,"ticket.edit",ticket.equipment_id)
+            row=s.scalar(select(TicketOperationalControl).where(TicketOperationalControl.ticket_no==ticket_no))
+            payload=dict(data)
+            if row:
+                self._update_versioned(row,payload,expected_version,"Ticket operational control")
+            else:
+                row=TicketOperationalControl(ticket_no=ticket_no,**payload);s.add(row)
+            s.add(AuditLog(
+                user=user,action="TICKET_OPERATIONAL_CONTROL",entity_type="TICKET",
+                entity_key=ticket_no,detail=json.dumps(payload,default=str,sort_keys=True),
+                workstation=workstation,
+            ))
+            s.flush();return row
+
+    def evaluate_ticket_escalations(self, now: datetime | None = None):
+        now=now or datetime.utcnow()
+        escalated=[]
+        with self.session() as s:
+            controls=list(s.scalars(select(TicketOperationalControl)))
+            for control in controls:
+                ticket=s.scalar(select(Ticket).where(Ticket.ticket_no==control.ticket_no))
+                if not ticket or ticket.status in {"Closed","Cancelled"}:continue
+                reasons=[]
+                target=control.escalation_level
+                if control.response_due_at and now>control.response_due_at and ticket.status=="Open":
+                    target=max(target,1);reasons.append("Response SLA overdue")
+                if control.containment_due_at and now>control.containment_due_at and not control.containment.strip():
+                    target=max(target,2);reasons.append("Containment overdue")
+                if control.resolution_due_at and now>control.resolution_due_at:
+                    target=max(target,3);reasons.append("Resolution SLA overdue")
+                if ticket.priority=="P1":
+                    target=max(target,2);reasons.append("P1 critical incident")
+                if target>control.escalation_level:
+                    old=control.escalation_level
+                    control.escalation_level=target
+                    control.escalated_at=now
+                    control.escalation_reason="; ".join(dict.fromkeys(reasons))
+                    control.version+=1
+                    s.add(TicketEscalationEvent(
+                        ticket_no=ticket.ticket_no,from_level=old,to_level=target,
+                        reason=control.escalation_reason,user="system",occurred_at=now,
+                    ))
+                    escalated.append(ticket.ticket_no)
+            s.flush()
+        return escalated
+
+    def list_ticket_escalations(self, ticket_no: str = ""):
+        with self.session() as s:
+            stmt=select(TicketEscalationEvent).order_by(TicketEscalationEvent.occurred_at.desc())
+            if ticket_no:stmt=stmt.where(TicketEscalationEvent.ticket_no==ticket_no)
+            return list(s.scalars(stmt))
+
+    def operations_attention_queue(self, limit: int = 200):
+        self.evaluate_ticket_escalations()
+        now=datetime.utcnow()
+        rows=[]
+        with self.session() as s:
+            for alarm in s.scalars(select(EquipmentAlarmEvent).where(EquipmentAlarmEvent.state=="ACTIVE")):
+                sev=(alarm.severity or "").upper()
+                rows.append({"severity":"CRITICAL" if sev in {"CRITICAL","FATAL","S1"} else "HIGH","kind":"ALARM","key":alarm.event_key,"equipment_id":alarm.equipment_id,"summary":f"{alarm.alarm_code} — {alarm.message}","owner":alarm.acknowledged_by,"age_hours":(now-alarm.occurred_at).total_seconds()/3600})
+            for eq in s.scalars(select(Equipment).where(Equipment.status.in_(["Down","Engineering","Waiting Parts","Waiting Vendor","Qualification","Hold"]))):
+                rows.append({"severity":"CRITICAL" if eq.status=="Down" else "HIGH","kind":"EQUIPMENT","key":eq.equipment_id,"equipment_id":eq.equipment_id,"summary":f"{eq.status} — {eq.name}","owner":eq.owner,"age_hours":0.0})
+            for task in s.scalars(select(PMTask).where(PMTask.status.in_(["Overdue","Deferred","Pending","Scheduled"]))):
+                if task.status=="Overdue" or (task.scheduled_date and task.scheduled_date<now):
+                    due=task.scheduled_date or task.original_due_date
+                    age=(now-due).total_seconds()/3600 if due else 0
+                    rows.append({"severity":"HIGH","kind":"PM","key":str(task.id),"equipment_id":task.equipment_id,"summary":f"{task.pm_id} {task.status}","owner":task.assigned_to,"age_hours":age})
+            for ticket in s.scalars(select(Ticket).where(Ticket.status.notin_(["Closed","Cancelled"]))):
+                control=s.scalar(select(TicketOperationalControl).where(TicketOperationalControl.ticket_no==ticket.ticket_no))
+                level=control.escalation_level if control else 0
+                if ticket.priority in {"P1","P2"} or level>0:
+                    age=(now-ticket.created_at).total_seconds()/3600 if ticket.created_at else 0
+                    rows.append({"severity":"CRITICAL" if ticket.priority=="P1" or level>=3 else "HIGH","kind":"INCIDENT","key":ticket.ticket_no,"equipment_id":ticket.equipment_id,"summary":f"{ticket.priority} {ticket.status} — {ticket.title}"+(f" [Esc L{level}]" if level else ""),"owner":ticket.owner,"age_hours":age})
+            for q in s.scalars(select(QualificationRun).where(QualificationRun.status.in_(["Submitted","Verified"]))):
+                rows.append({"severity":"MEDIUM","kind":"QUALIFICATION","key":q.run_no,"equipment_id":q.equipment_id,"summary":f"{q.status} — {q.protocol_name}","owner":q.verified_by or q.submitted_by,"age_hours":(now-q.started_at).total_seconds()/3600})
+            for rel in s.scalars(select(EquipmentRelease).where(EquipmentRelease.status.in_(["Pending Verification","Verified","Verification Failed"]))):
+                rows.append({"severity":"HIGH" if rel.status=="Verification Failed" else "MEDIUM","kind":"RELEASE","key":str(rel.id),"equipment_id":rel.equipment_id,"summary":rel.status,"owner":rel.verified_by or rel.requested_by,"age_hours":(now-rel.requested_at).total_seconds()/3600})
+            for e in s.scalars(select(Endorsement).where(Endorsement.status.in_(["Open","Acknowledged"]))):
+                rows.append({"severity":"MEDIUM","kind":"HANDOVER","key":e.endorsement_no,"equipment_id":e.equipment_id,"summary":e.next_action or e.pending_work or "Open handover","owner":e.next_owner,"age_hours":(now-e.created_at).total_seconds()/3600})
+        rank={"CRITICAL":0,"HIGH":1,"MEDIUM":2,"LOW":3}
+        rows.sort(key=lambda x:(rank.get(x["severity"],9),-float(x.get("age_hours") or 0)))
+        return rows[:max(1,min(int(limit),1000))]
+
     def list_ticket_state_events(self, ticket_no: str, limit: int = 250):
         with self.session() as s:
             stmt = (
@@ -1853,7 +3037,10 @@ class Database:
         workstation: str = "",
         expected_version: int | None = None,
         override: bool = False,
+        override_reason: str = "",
     ):
+        if override and not override_reason.strip():
+            raise ValueError("Workflow override requires explicit justification.")
         with self.session() as s:
             stmt = select(Ticket).where(Ticket.ticket_no == ticket_no)
             if self.url.startswith("postgresql"):
@@ -1861,6 +3048,8 @@ class Database:
             item = s.scalar(stmt)
             if not item:
                 raise ValueError("Ticket not found")
+            self.assert_authorized(user,"ticket.edit",item.equipment_id)
+            if override:self.assert_authorized(user,"workflow.override",item.equipment_id)
             if expected_version is not None and item.version != expected_version:
                 raise RuntimeError("CONFLICT: Ticket changed by another user. Refresh and retry.")
 
@@ -1924,9 +3113,14 @@ class Database:
                 changed_at=now,
             )
             s.add(event)
+            self._queue_integration_event(s,"incident.state.changed","TICKET",ticket_no,{
+                "ticket_no":ticket_no,"equipment_id":item.equipment_id,"from_state":previous,
+                "to_state":target_state,"reason_code":reason_code,"owner":item.owner,
+                "changed_by":user,"changed_at":now.isoformat(),
+            })
             s.add(AuditLog(
                 user=user,
-                action="TICKET_STATE_TRANSITION",
+                action="TICKET_STATE_OVERRIDE" if override else "TICKET_STATE_TRANSITION",
                 entity_type="TICKET",
                 entity_key=ticket_no,
                 detail=json.dumps({
@@ -1935,6 +3129,8 @@ class Database:
                     "reason_code": reason_code,
                     "note": note.strip(),
                     "owner": item.owner,
+                    "override": override,
+                    "override_reason": override_reason.strip(),
                 }, sort_keys=True),
                 workstation=workstation,
                 created_at=now,
@@ -1952,6 +3148,7 @@ class Database:
             return list(s.scalars(select(TicketInvestigation).where(TicketInvestigation.ticket_no==ticket_no).order_by(TicketInvestigation.sequence)))
 
     def set_disposition(self, data: dict[str, Any]):
+        self.assert_authorized(str(data.get("created_by","")),"disposition.edit",str(data.get("equipment_id","")))
         with self.session() as s:
             stmt = select(Equipment).where(Equipment.equipment_id == data["equipment_id"])
             if not self.url.startswith("sqlite"): stmt = stmt.with_for_update()
@@ -2052,6 +3249,7 @@ class Database:
         run_no: str = "",
         workstation: str = "",
     ):
+        self.assert_authorized(user,"qualification.execute",equipment_id)
         with self.session() as s:
             eq=s.scalar(select(Equipment).where(Equipment.equipment_id==equipment_id))
             if not eq:
@@ -2197,6 +3395,11 @@ class Database:
             if user in {row.started_by,row.submitted_by,row.verified_by}:raise ValueError("Independent final approval required.")
             now=datetime.utcnow();row.status="Approved";row.approved_by=user;row.approved_at=now;row.expires_at=(now+timedelta(days=int(valid_days))) if valid_days else None;row.version+=1
             s.add(QualificationEvent(run_no=row.run_no,action="APPROVE",user=user,detail=note.strip(),workstation=workstation,occurred_at=now))
+            self._queue_integration_event(s,"qualification.approved","QUALIFICATION_RUN",row.run_no,{
+                "run_no":row.run_no,"equipment_id":row.equipment_id,"protocol_id":row.protocol_id,
+                "protocol_revision":row.protocol_revision,"approved_by":user,
+                "approved_at":now.isoformat(),"expires_at":row.expires_at.isoformat() if row.expires_at else None,
+            })
             s.add(AuditLog(
                 user=user,action="QUALIFICATION_APPROVE",entity_type="QUALIFICATION_RUN",entity_key=row.run_no,
                 detail=json.dumps({"equipment_id":row.equipment_id,"protocol_id":row.protocol_id,"protocol_revision":row.protocol_revision,"expires_at":row.expires_at.isoformat() if row.expires_at else None},sort_keys=True),
@@ -2271,6 +3474,7 @@ class Database:
         user: str,
         workstation: str = "",
     ):
+        self.assert_authorized(user,"release.verify",equipment_id)
         with self.session() as s:
             if not s.scalar(select(Equipment).where(Equipment.equipment_id==equipment_id)):
                 raise ValueError("Equipment not found")
@@ -2310,6 +3514,7 @@ class Database:
                 stmt=stmt.with_for_update()
             r=s.scalar(stmt)
             if not r: raise ValueError("Release request not found")
+            self.assert_authorized(user,"release.verify",r.equipment_id)
             if expected_version is not None and r.version!=expected_version:
                 raise RuntimeError("CONFLICT: Release request changed by another user.")
             if r.status=="Approved / Released":
@@ -2343,6 +3548,7 @@ class Database:
                 stmt=stmt.with_for_update()
             r=s.scalar(stmt)
             if not r: raise ValueError("Release request not found")
+            self.assert_authorized(user,"release.approve",r.equipment_id)
             if expected_version is not None and r.version!=expected_version:
                 raise RuntimeError("CONFLICT: Release request changed by another user.")
             checks=json.loads(r.checks_json or "{}")
@@ -2394,6 +3600,10 @@ class Database:
             r.approved_by=user
             r.approved_at=datetime.utcnow()
             r.version+=1
+            self._queue_integration_event(s,"equipment.released","EQUIPMENT",r.equipment_id,{
+                "equipment_id":r.equipment_id,"release_id":r.id,"approved_by":user,
+                "approved_at":r.approved_at.isoformat(),"related_ticket":r.related_ticket,
+            })
             s.add(AuditLog(
                 user=user,
                 action="RELEASE_APPROVE",
@@ -2409,6 +3619,54 @@ class Database:
             ))
             s.flush()
             return r
+
+    def start_work_log(
+        self,
+        entity_type: str,
+        entity_key: str,
+        equipment_id: str,
+        user: str,
+        work_type: str = "Engineering",
+        note: str = "",
+    ):
+        if equipment_id:self.assert_authorized(user,"worklog.edit",equipment_id)
+        with self.session() as s:
+            active=s.scalar(select(WorkLog).where(
+                WorkLog.username==user,WorkLog.entity_type==entity_type,
+                WorkLog.entity_key==entity_key,WorkLog.status=="Active",
+            ))
+            if active:return active
+            row=WorkLog(
+                equipment_id=equipment_id,entity_type=entity_type,entity_key=str(entity_key),
+                username=user,work_type=work_type,note=note.strip(),status="Active",
+            )
+            s.add(row);s.flush();return row
+
+    def stop_work_log(self, work_log_id: int, user: str, note: str = ""):
+        with self.session() as s:
+            stmt=select(WorkLog).where(WorkLog.id==work_log_id)
+            if self.url.startswith("postgresql"):stmt=stmt.with_for_update()
+            row=s.scalar(stmt)
+            if not row:raise ValueError("Work log not found")
+            if row.status!="Active":raise ValueError("Work log is already closed.")
+            actor=s.scalar(select(User).where(User.username==user))
+            if row.username!=user and not (actor and actor.role in {"Administrator","Manager","Supervisor"}):
+                raise PermissionError("Only the worker or an authorized supervisor can close this work log.")
+            now=datetime.utcnow();row.ended_at=now;row.duration_minutes=max(0.0,(now-row.started_at).total_seconds()/60.0);row.status="Completed";row.version+=1
+            if note.strip():row.note=(row.note+"\n"+note.strip()).strip()
+            self._queue_integration_event(s,"labor.work.completed","WORK_LOG",str(row.id),{
+                "work_log_id":row.id,"equipment_id":row.equipment_id,"entity_type":row.entity_type,
+                "entity_key":row.entity_key,"username":row.username,"work_type":row.work_type,
+                "duration_minutes":row.duration_minutes,"ended_at":now.isoformat(),
+            })
+            s.flush();return row
+
+    def list_work_logs(self, equipment_id: str = "", active_only: bool = False, limit: int = 1000):
+        with self.session() as s:
+            stmt=select(WorkLog).order_by(WorkLog.started_at.desc()).limit(max(1,min(int(limit),5000)))
+            if equipment_id:stmt=stmt.where(WorkLog.equipment_id==equipment_id)
+            if active_only:stmt=stmt.where(WorkLog.status=="Active")
+            return list(s.scalars(stmt))
 
     def save_endorsement(self, data: dict[str, Any], expected_version: int | None = None):
         with self.session() as s:
@@ -2771,6 +4029,7 @@ class Database:
                 "pm_open":c(PMTask,PMTask.status.in_(["Pending","Scheduled","In Progress","Overdue"])),
                 "pm_overdue":c(PMTask,PMTask.status=="Overdue"),
                 "tickets_open":c(Ticket,Ticket.status.notin_(["Closed","Cancelled"])),
+                "alarms_active":c(EquipmentAlarmEvent,EquipmentAlarmEvent.state=="ACTIVE"),
                 "tickets_critical":c(Ticket,Ticket.priority.in_(["P1","P2"]),Ticket.status.notin_(["Closed","Cancelled"])),
                 "inventory_low":c(InventoryItem,InventoryItem.quantity<=InventoryItem.min_quantity),
                 "endorsements_open":c(Endorsement,Endorsement.status.in_(["Open","Acknowledged"])),

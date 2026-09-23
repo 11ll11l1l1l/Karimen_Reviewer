@@ -4,14 +4,14 @@ import json
 import os
 import socket
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
 from PySide6.QtCore import Qt, QTimer, Signal
 from PySide6.QtGui import QAction, QBrush, QColor, QKeySequence, QPixmap
 from PySide6.QtWidgets import (
-    QAbstractItemView, QApplication, QCheckBox, QComboBox, QDateEdit, QDialog, QDialogButtonBox, QDoubleSpinBox,
+    QAbstractItemView, QApplication, QCheckBox, QComboBox, QDateEdit, QDateTimeEdit, QDialog, QDialogButtonBox, QDoubleSpinBox,
     QFileDialog, QFormLayout, QGraphicsItem, QGraphicsPixmapItem, QGraphicsRectItem, QGraphicsScene,
     QGraphicsTextItem, QGraphicsView, QGridLayout, QHBoxLayout, QHeaderView, QLabel, QLineEdit,
     QListWidget, QMainWindow, QMessageBox, QPushButton, QSpinBox, QStackedWidget, QTabWidget,
@@ -20,6 +20,8 @@ from PySide6.QtWidgets import (
 
 from database import Database, PERMISSIONS, ROLE_PERMISSIONS
 from backup import create_backup, verify_backup
+from logging_config import configure_logging, install_exception_hook
+from version import __version__
 from domain import REASON_CODES, TICKET_REASON_CODES, allowed_targets, allowed_ticket_targets
 from services import (
     auto_mapping, calculate_next_due, copy_clipboard_image, dataframe_to_pm_backlog,
@@ -27,7 +29,7 @@ from services import (
     read_table, readonly_open_copy, workbook_sheets, workload_by_day,
 )
 
-APP_TITLE = "Equipment Management System"
+APP_TITLE = f"Equipment Management System {__version__}"
 WORKSTATION = socket.gethostname()
 FILE_ROOT = os.getenv("EMS_FILE_ROOT", str(Path.cwd() / "equipment_files"))
 
@@ -104,15 +106,45 @@ class MetricCard(QWidget):
 
 class DashboardPage(QWidget):
     def __init__(self, db: Database):
-        super().__init__(); self.db = db; v = QVBoxLayout(self); title = QLabel("Operational Dashboard"); title.setStyleSheet("font-size:18pt;font-weight:700"); v.addWidget(title); g = QGridLayout(); v.addLayout(g)
-        defs = [("equipment_total","Equipment"),("equipment_down","Down"),("equipment_hold","On Hold"),("pm_open","Open PM"),("pm_overdue","PM Overdue"),("tickets_open","Open Tickets"),("tickets_critical","P1/P2 Tickets"),("inventory_low","Low Stock"),("release_pending","Release Pending"),("reservations_active","Part Reservations"),("endorsements_open","Endorsements"),("dispositions_active","Active Dispositions")]
-        self.cards = {}
-        for i, (key, label) in enumerate(defs): self.cards[key] = MetricCard(label); g.addWidget(self.cards[key], i//4, i%4)
-        self.updated = QLabel(); v.addWidget(self.updated); v.addStretch(1); self.refresh()
+        super().__init__(); self.db=db; self.attention=[]
+        v=QVBoxLayout(self)
+        top=QHBoxLayout(); title=QLabel("Operations Command Center"); title.setStyleSheet("font-size:20pt;font-weight:700")
+        self.updated=QLabel(); refresh=QPushButton("Refresh"); refresh.clicked.connect(self.refresh)
+        top.addWidget(title); top.addStretch(1); top.addWidget(self.updated); top.addWidget(refresh); v.addLayout(top)
+
+        g=QGridLayout(); v.addLayout(g)
+        defs=[
+            ("equipment_down","Tools Down"),("equipment_hold","Tools on Hold"),("pm_overdue","PM Overdue"),
+            ("tickets_critical","P1/P2 Incidents"),("alarms_active","Active Alarms"),("release_pending","Release Pending"),("endorsements_open","Shift Handovers"),
+            ("inventory_low","Low Stock"),("reservations_active","Part Reservations"),
+        ]
+        self.cards={}
+        for i,(key,label) in enumerate(defs):
+            self.cards[key]=MetricCard(label);g.addWidget(self.cards[key],i//4,i%4)
+
+        section=QLabel("WHAT REQUIRES ATTENTION");section.setStyleSheet("font-size:13pt;font-weight:700;margin-top:8px");v.addWidget(section)
+        self.attention_table=make_table(["Severity","Type","Equipment","Key","Action / Condition","Owner","Age (h)"])
+        v.addWidget(self.attention_table,3)
+
+        lower=QHBoxLayout()
+        note=QLabel("Priority queue is derived from governed equipment states, incident SLA/escalation, overdue PM, qualification/release status and shift handovers.")
+        note.setWordWrap(True);note.setStyleSheet("color:#5a6670")
+        lower.addWidget(note,1)
+        v.addLayout(lower)
+        self.refresh()
+
     def refresh(self):
-        for k, val in self.db.dashboard_counts().items():
-            if k in self.cards: self.cards[k].value.setText(str(val))
-        self.updated.setText("Updated: " + datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        counts=self.db.dashboard_counts()
+        for key,card in self.cards.items():card.value.setText(str(counts.get(key,0)))
+        self.attention=self.db.operations_attention_queue()
+        self.attention_table.setRowCount(len(self.attention))
+        fields=["severity","kind","equipment_id","key","summary","owner","age_hours"]
+        for r,row in enumerate(self.attention):
+            for col,field in enumerate(fields):
+                value=row.get(field,"")
+                if field=="age_hours":value=f"{float(value or 0):.1f}"
+                self.attention_table.setItem(r,col,ti(value))
+        self.updated.setText("Updated "+datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
 
 class EquipmentDialog(QDialog):
@@ -219,13 +251,13 @@ class ComponentRemoveDialog(QDialog):
 class MeterDialog(QDialog):
     def __init__(self,equipment_id,row=None,parent=None):
         super().__init__(parent);self.row=row;self.equipment_id=equipment_id;self.setWindowTitle("Equipment Usage Meter")
-        f=QFormLayout(self);self.code=QLineEdit();self.name=QLineEdit();self.unit=QLineEdit();self.initial=QDoubleSpinBox();self.initial.setRange(0,1e15);self.active=QCheckBox("Active");self.active.setChecked(True)
-        f.addRow("Equipment",QLabel(equipment_id));f.addRow("Meter Code",self.code);f.addRow("Name",self.name);f.addRow("Unit",self.unit);f.addRow("Initial Value",self.initial);f.addRow("",self.active)
+        f=QFormLayout(self);self.code=QLineEdit();self.name=QLineEdit();self.unit=QLineEdit();self.mode=QComboBox();self.mode.addItems(["COUNTER","GAUGE"]);self.initial=QDoubleSpinBox();self.initial.setRange(-1e15,1e15);self.active=QCheckBox("Active");self.active.setChecked(True)
+        f.addRow("Equipment",QLabel(equipment_id));f.addRow("Meter Code",self.code);f.addRow("Name",self.name);f.addRow("Unit",self.unit);f.addRow("Mode",self.mode);f.addRow("Initial Value",self.initial);f.addRow("",self.active)
         b=QDialogButtonBox(QDialogButtonBox.StandardButton.Save|QDialogButtonBox.StandardButton.Cancel);b.accepted.connect(self.accept);b.rejected.connect(self.reject);f.addRow(b)
         if row:
-            self.code.setText(row.meter_code);self.code.setReadOnly(True);self.name.setText(row.name);self.unit.setText(row.unit);self.initial.setValue(row.current_value);self.initial.setEnabled(False);self.active.setChecked(row.active)
+            self.code.setText(row.meter_code);self.code.setReadOnly(True);self.name.setText(row.name);self.unit.setText(row.unit);self.mode.setCurrentText("COUNTER");self.initial.setValue(row.current_value);self.initial.setEnabled(False);self.active.setChecked(row.active)
     def data(self):
-        return {"equipment_id":self.equipment_id,"meter_code":self.code.text().strip(),"name":self.name.text().strip(),"unit":self.unit.text().strip(),"current_value":self.initial.value(),"active":self.active.isChecked()}
+        return {"equipment_id":self.equipment_id,"meter_code":self.code.text().strip(),"name":self.name.text().strip(),"unit":self.unit.text().strip(),"meter_mode":self.mode.currentText(),"current_value":self.initial.value(),"active":self.active.isChecked()}
 
 
 class MeterReadingDialog(QDialog):
@@ -451,40 +483,92 @@ class PMDefinitionDialog(QDialog):
     def data(self):return {"pm_id":self.pm.text().strip(),"name":self.name.text().strip(),"equipment_id":self.eq.text().strip(),"schedule_type":self.type.currentText(),"frequency_value":self.freq.value(),"frequency_unit":self.unit.currentText(),"anchor_mode":self.anchor.currentText(),"early_window_days":self.early.value(),"grace_days":self.grace.value(),"estimated_hours":self.hours.value(),"required_people":self.people.value(),"required_skill":self.skill.text().strip(),"required_parts":self.parts.text().strip(),"sop_path":self.sop.text().strip(),"active":True}
 
 
+class PMRequirementDialog(QDialog):
+    def __init__(self,parent=None):
+        super().__init__(parent);self.setWindowTitle("PM Execution Requirement");f=QFormLayout(self)
+        self.req=QLineEdit();self.pm=QLineEdit();self.type=QComboBox();self.type.addItems(["CERTIFICATION","LOTO","SAFETY","TOOL","PART","DOCUMENT"])
+        self.key=QLineEdit();self.desc=QTextEdit();self.qty=QDoubleSpinBox();self.qty.setRange(0.001,1e9);self.qty.setValue(1);self.mandatory=QCheckBox("Mandatory");self.mandatory.setChecked(True)
+        for label,w in [("Requirement ID",self.req),("PM ID",self.pm),("Type",self.type),("Key / Code",self.key),("Description",self.desc),("Quantity",self.qty)]:f.addRow(label,w)
+        f.addRow("",self.mandatory)
+        b=QDialogButtonBox(QDialogButtonBox.StandardButton.Save|QDialogButtonBox.StandardButton.Cancel);b.accepted.connect(self.accept);b.rejected.connect(self.reject);f.addRow(b)
+    def data(self):
+        return {"requirement_id":self.req.text().strip(),"pm_id":self.pm.text().strip(),"requirement_type":self.type.currentText(),"requirement_key":self.key.text().strip(),"description":self.desc.toPlainText().strip(),"quantity":self.qty.value(),"mandatory":self.mandatory.isChecked(),"active":True}
+
+
 class PMExecutionDialog(QDialog):
     def __init__(self,db,user,task,parent=None):
-        super().__init__(parent); self.db=db; self.user=user; self.task=task; self.execrow=db.start_pm_execution(task.id,user["username"]); self.specs=db.list_pm_execution_specs(self.execrow.id); self.results={r.step_no:r for r in db.list_pm_results(self.execrow.id)}; self.setWindowTitle(f"Execute PM — {task.equipment_id} / {task.pm_id}"); self.resize(1050,650); v=QVBoxLayout(self); self.table=make_table(["Step","Activity","Type","Target","Low","High","Value","Result","Evidence"]); self.table.doubleClicked.connect(self.enter_result); v.addWidget(self.table); h=QHBoxLayout(); enter=QPushButton("Enter Selected Result"); enter.clicked.connect(self.enter_result); paste=QPushButton("Paste Image Evidence"); paste.clicked.connect(self.paste_evidence); complete=QPushButton("Complete PM"); complete.clicked.connect(self.complete); h.addWidget(enter); h.addWidget(paste); h.addStretch(1); h.addWidget(complete); v.addLayout(h); self.refresh()
+        super().__init__(parent);self.db=db;self.user=user;self.task=task
+        self.execrow=db.start_pm_execution(task.id,user["username"])
+        self.specs=db.list_pm_execution_specs(self.execrow.id);self.requirements=db.list_pm_execution_requirements(self.execrow.id)
+        self.results={r.step_no:r for r in db.list_pm_results(self.execrow.id)};self.acks={a.requirement_id:a for a in db.list_pm_requirement_acks(self.execrow.id)}
+        self.setWindowTitle(f"Execute PM — {task.equipment_id} / {task.pm_id}");self.resize(1100,720);v=QVBoxLayout(self)
+        tabs=QTabWidget()
+        ws=QWidget();vs=QVBoxLayout(ws);self.table=make_table(["Step","Activity","Type","Target","Low","High","Value","Result","Evidence"]);self.table.doubleClicked.connect(self.enter_result);vs.addWidget(self.table)
+        hs=QHBoxLayout();enter=QPushButton("Enter Selected Result");enter.clicked.connect(self.enter_result);paste=QPushButton("Paste Image Evidence");paste.clicked.connect(self.paste_evidence);hs.addWidget(enter);hs.addWidget(paste);hs.addStretch(1);vs.addLayout(hs);tabs.addTab(ws,"Measurements / Checklist")
+        wr=QWidget();vr=QVBoxLayout(wr);self.req_table=make_table(["Requirement","Type","Key","Description","Qty","Mandatory","Status","By","Evidence"]);vr.addWidget(self.req_table)
+        hr=QHBoxLayout();ack=QPushButton("Acknowledge Selected Requirement");ack.clicked.connect(self.ack_requirement);hr.addWidget(ack);hr.addStretch(1);vr.addLayout(hr);tabs.addTab(wr,"Execution Requirements")
+        v.addWidget(tabs,1)
+        h=QHBoxLayout();complete=QPushButton("Complete PM");complete.clicked.connect(self.complete);h.addStretch(1);h.addWidget(complete);v.addLayout(h);self.refresh()
+
     def refresh(self):
-        self.results={r.step_no:r for r in self.db.list_pm_results(self.execrow.id)}; self.table.setRowCount(len(self.specs))
+        self.results={r.step_no:r for r in self.db.list_pm_results(self.execrow.id)};self.acks={a.requirement_id:a for a in self.db.list_pm_requirement_acks(self.execrow.id)}
+        self.table.setRowCount(len(self.specs))
         for r,s in enumerate(self.specs):
-            res=self.results.get(s.step_no); vals=[s.step_no,s.activity,s.input_type,s.target,s.spec_low,s.spec_high,res.value_text if res else "",res.result if res else "",Path(res.evidence_path).name if res and res.evidence_path else ""]
-            for c,val in enumerate(vals):self.table.setItem(r,c,ti(val))
+            res=self.results.get(s.step_no);vals=[s.step_no,s.activity,s.input_type,s.target,s.spec_low,s.spec_high,res.value_text if res else "",res.result if res else "",Path(res.evidence_path).name if res and res.evidence_path else ""]
+            for col,val in enumerate(vals):self.table.setItem(r,col,ti(val))
+        self.req_table.setRowCount(len(self.requirements))
+        for r,req in enumerate(self.requirements):
+            ack=self.acks.get(req.requirement_id)
+            status="AUTO-VALIDATED" if req.requirement_type=="CERTIFICATION" else ("ACKNOWLEDGED" if ack else "PENDING")
+            vals=[req.requirement_id,req.requirement_type,req.requirement_key,req.description,req.quantity,req.mandatory,status,ack.acknowledged_by if ack else "",Path(ack.evidence_path).name if ack and ack.evidence_path else ""]
+            for col,val in enumerate(vals):self.req_table.setItem(r,col,ti(val))
+
     def selected_spec(self):
-        r=self.table.currentRow(); return self.specs[r] if 0<=r<len(self.specs) else None
+        r=self.table.currentRow();return self.specs[r] if 0<=r<len(self.specs) else None
+
+    def selected_requirement(self):
+        r=self.req_table.currentRow();return self.requirements[r] if 0<=r<len(self.requirements) else None
+
     def enter_result(self):
         spec=self.selected_spec()
         if not spec:return
-        current=self.results.get(spec.step_no); prompt="Numeric value" if spec.input_type=="Numeric" else "Result / text"
+        current=self.results.get(spec.step_no);prompt="Numeric value" if spec.input_type=="Numeric" else "Result / text"
         val,ok=QInputDialog.getText(self,"PM Result",prompt,text=current.value_text if current else "")
         if not ok:return
         num=None
         if spec.input_type=="Numeric":
             try:num=float(val)
-            except Exception: QMessageBox.warning(self,"PM","Numeric value required."); return
+            except Exception:QMessageBox.warning(self,"PM","Numeric value required.");return
         result=evaluate_measurement(spec,val,num)
-        try:self.db.save_pm_result(self.execrow.id,spec.step_no,{"value_text":val,"value_numeric":num,"result":result,"entered_by":self.user["username"],"evidence_path":current.evidence_path if current else ""},current.version if current else None); self.refresh()
-        except Exception as exc: QMessageBox.critical(self,"PM",str(exc))
+        try:self.db.save_pm_result(self.execrow.id,spec.step_no,{"value_text":val,"value_numeric":num,"result":result,"entered_by":self.user["username"],"evidence_path":current.evidence_path if current else ""},current.version if current else None);self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"PM",str(exc))
+
     def paste_evidence(self):
         spec=self.selected_spec()
         if not spec:return
         img=QApplication.clipboard().image()
-        if img.isNull(): QMessageBox.warning(self,"Clipboard","Clipboard does not contain an image."); return
+        if img.isNull():QMessageBox.warning(self,"Clipboard","Clipboard does not contain an image.");return
         try:
-            path=copy_clipboard_image(img,FILE_ROOT,"PM",f"{self.task.id}_step_{spec.step_no}"); current=self.results.get(spec.step_no); data={"value_text":current.value_text if current else "Evidence attached","value_numeric":current.value_numeric if current else None,"result":current.result if current else "RECORDED","entered_by":self.user["username"],"evidence_path":path}; self.db.save_pm_result(self.execrow.id,spec.step_no,data,current.version if current else None); self.refresh()
-        except Exception as exc: QMessageBox.critical(self,"Evidence",str(exc))
+            path=copy_clipboard_image(img,FILE_ROOT,"PM",f"{self.task.id}_step_{spec.step_no}");current=self.results.get(spec.step_no)
+            data={"value_text":current.value_text if current else "Evidence attached","value_numeric":current.value_numeric if current else None,"result":current.result if current else "RECORDED","entered_by":self.user["username"],"evidence_path":path}
+            self.db.save_pm_result(self.execrow.id,spec.step_no,data,current.version if current else None);self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"Evidence",str(exc))
+
+    def ack_requirement(self):
+        req=self.selected_requirement()
+        if not req:return
+        if req.requirement_type=="CERTIFICATION":
+            QMessageBox.information(self,"PM Requirement","Certification was validated automatically when the PM execution started.");return
+        note,ok=QInputDialog.getText(self,"Acknowledge Requirement",req.description)
+        if not ok:return
+        evidence=""
+        if QMessageBox.question(self,"Evidence","Attach evidence file?")==QMessageBox.StandardButton.Yes:evidence,_=QFileDialog.getOpenFileName(self,"Requirement Evidence")
+        try:self.db.acknowledge_pm_requirement(self.execrow.id,req.requirement_id,self.user["username"],note,evidence);self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"PM Requirement",str(exc))
+
     def complete(self):
-        try:self.db.complete_pm_execution(self.execrow.id,self.user["username"]); self.accept()
-        except Exception as exc: QMessageBox.critical(self,"Complete PM",str(exc))
+        try:self.db.complete_pm_execution(self.execrow.id,self.user["username"]);self.accept()
+        except Exception as exc:QMessageBox.critical(self,"Complete PM",str(exc))
 
 
 class PMDeferralRequestDialog(QDialog):
@@ -538,24 +622,44 @@ class PMUsageTriggerDialog(QDialog):
         return {"trigger_id":self.trigger.text().strip(),"equipment_id":self.eq.text().strip(),"pm_id":self.pm.text().strip(),"meter_code":self.meter.text().strip(),"interval_value":self.interval.value(),"active":True}
 
 
+class PMConditionTriggerDialog(QDialog):
+    def __init__(self,parent=None):
+        super().__init__(parent);self.setWindowTitle("Condition-Based PM Trigger");f=QFormLayout(self)
+        self.trigger=QLineEdit();self.eq=QLineEdit();self.pm=QLineEdit();self.meter=QLineEdit();self.comp=QComboBox();self.comp.addItems([">",">=","<","<="])
+        self.threshold=QDoubleSpinBox();self.threshold.setRange(-1e15,1e15);self.threshold.setDecimals(4)
+        self.use_reset=QCheckBox("Use reset threshold");self.reset=QDoubleSpinBox();self.reset.setRange(-1e15,1e15);self.reset.setDecimals(4)
+        for label,w in [("Trigger ID",self.trigger),("Equipment",self.eq),("PM ID",self.pm),("Meter Code",self.meter),("Comparator",self.comp),("Threshold",self.threshold),("",self.use_reset),("Reset Threshold",self.reset)]:f.addRow(label,w)
+        note=QLabel("Trigger latches after activation. It rearms only after the reading returns past the reset threshold, preventing repeated task creation from noisy values.");note.setWordWrap(True);note.setStyleSheet("color:#5a6670");f.addRow("",note)
+        b=QDialogButtonBox(QDialogButtonBox.StandardButton.Save|QDialogButtonBox.StandardButton.Cancel);b.accepted.connect(self.accept);b.rejected.connect(self.reject);f.addRow(b)
+    def data(self):
+        return {"trigger_id":self.trigger.text().strip(),"equipment_id":self.eq.text().strip(),"pm_id":self.pm.text().strip(),"meter_code":self.meter.text().strip(),"comparator":self.comp.currentText(),"threshold":self.threshold.value(),"reset_threshold":self.reset.value() if self.use_reset.isChecked() else None,"active":True}
+
+
 class PMPage(QWidget):
     def __init__(self,db,user):
-        super().__init__(); self.db=db; self.user=user; self.defs=[]; self.tasks=[]; self.specrows=[]; self.deferrals=[]; self.usage_triggers=[]; self.usage_occurrences=[]; v=QVBoxLayout(self); self.tabs=QTabWidget(); v.addWidget(self.tabs)
+        super().__init__(); self.db=db; self.user=user; self.defs=[]; self.tasks=[]; self.specrows=[]; self.requirements=[]; self.deferrals=[]; self.usage_triggers=[]; self.usage_occurrences=[]; self.condition_triggers=[]; self.condition_occurrences=[]; v=QVBoxLayout(self); self.tabs=QTabWidget(); v.addWidget(self.tabs)
         wd=QWidget(); vd=QVBoxLayout(wd); hd=QHBoxLayout(); add=QPushButton("Add Definition"); edit=QPushButton("Edit Definition"); gen=QPushButton("Generate Next PM"); ready=QPushButton("Parts Readiness"); add.clicked.connect(self.add_def); edit.clicked.connect(self.edit_def); gen.clicked.connect(self.generate_next); ready.clicked.connect(self.parts_ready); canedit=db.has_permission(user,"pm.edit"); add.setEnabled(canedit); edit.setEnabled(canedit); gen.setEnabled(canedit); hd.addWidget(add);hd.addWidget(edit);hd.addWidget(gen);hd.addWidget(ready);hd.addStretch(1);vd.addLayout(hd);self.def_table=make_table(["PM ID","Name","Equipment","Type","Frequency","Unit","Anchor","Early","Grace","Hours","Parts","Ver"]);vd.addWidget(self.def_table);self.tabs.addTab(wd,"Definitions")
         wb=QWidget(); vb=QVBoxLayout(wb); hb=QHBoxLayout(); imp=QPushButton("Import Excel/CSV"); paste=QPushButton("Paste from Excel"); execute=QPushButton("Execute Selected"); defer=QPushButton("Request Deferral"); forecast=QPushButton("Workload Forecast"); imp.clicked.connect(self.import_backlog); paste.clicked.connect(self.paste_backlog); execute.clicked.connect(self.execute); defer.clicked.connect(self.request_deferral); forecast.clicked.connect(self.forecast); imp.setEnabled(canedit); paste.setEnabled(canedit); execute.setEnabled(db.has_permission(user,"pm.execute")); defer.setEnabled(db.has_permission(user,"pm.defer")); [hb.addWidget(x) for x in [imp,paste,execute,defer,forecast]];hb.addStretch(1);vb.addLayout(hb);self.task_table=make_table(["Equipment","PM ID","PM Name","Original Due","Scheduled","Status","Assigned","Hours","Priority","Ver"]);vb.addWidget(self.task_table);self.tabs.addTab(wb,"Backlog / Schedule")
         ws=QWidget(); vs=QVBoxLayout(ws); hs=QHBoxLayout(); ispec=QPushButton("Import Steps / Specs"); pspec=QPushButton("Paste Steps / Specs"); ispec.clicked.connect(self.import_specs); pspec.clicked.connect(self.paste_specs); ispec.setEnabled(canedit); pspec.setEnabled(canedit); hs.addWidget(ispec);hs.addWidget(pspec);hs.addStretch(1);vs.addLayout(hs);self.spec_table=make_table(["PM ID","Step","Activity","Method","Type","Unit","Target","CL","CH","LSL","USL","Rev"]);vs.addWidget(self.spec_table);self.tabs.addTab(ws,"Checklist / Specs")
+        wreq=QWidget();vreq=QVBoxLayout(wreq);hreq=QHBoxLayout();addreq=QPushButton("Add Requirement");revreq=QPushButton("Revise Selected");addreq.clicked.connect(self.add_requirement);revreq.clicked.connect(self.revise_requirement);addreq.setEnabled(canedit);revreq.setEnabled(canedit);hreq.addWidget(addreq);hreq.addWidget(revreq);hreq.addStretch(1);vreq.addLayout(hreq);self.requirement_table=make_table(["Requirement","PM ID","Type","Key","Description","Qty","Mandatory","Revision","Active"]);vreq.addWidget(self.requirement_table);self.tabs.addTab(wreq,"Execution Requirements")
         wf=QWidget(); vf=QVBoxLayout(wf); hf=QHBoxLayout(); approve=QPushButton("Approve Selected"); reject=QPushButton("Reject Selected"); approve.clicked.connect(lambda:self.review_deferral(True)); reject.clicked.connect(lambda:self.review_deferral(False)); canreview=db.has_permission(user,"pm.defer.approve"); approve.setEnabled(canreview); reject.setEnabled(canreview); hf.addWidget(approve);hf.addWidget(reject);hf.addStretch(1);vf.addLayout(hf);self.deferral_table=make_table(["ID","Equipment","PM","Original Due","Requested Due","Status","Requested By","Reviewed By","Review Note","Ver"]);vf.addWidget(self.deferral_table);self.tabs.addTab(wf,"PM Deferrals")
         wu=QWidget();vu=QVBoxLayout(wu);hu=QHBoxLayout();addu=QPushButton("Add Usage Trigger");addu.clicked.connect(self.add_usage_trigger);addu.setEnabled(canedit);hu.addWidget(addu);hu.addStretch(1);vu.addLayout(hu)
         self.usage_trigger_table=make_table(["Trigger","Equipment","PM","Meter","Interval","Last Trigger","Next Trigger","Active","Ver"]);self.usage_trigger_table.itemSelectionChanged.connect(self.load_usage_occurrences);vu.addWidget(self.usage_trigger_table,2)
         self.usage_occurrence_table=make_table(["Trigger","Task ID","Equipment","PM","Meter","Threshold","Reading","Created"]);vu.addWidget(self.usage_occurrence_table,1);self.tabs.addTab(wu,"Usage Triggers")
+        wcnd=QWidget();vcnd=QVBoxLayout(wcnd);hcnd=QHBoxLayout();addcnd=QPushButton("Add Condition Trigger");addcnd.clicked.connect(self.add_condition_trigger);addcnd.setEnabled(canedit);hcnd.addWidget(addcnd);hcnd.addStretch(1);vcnd.addLayout(hcnd)
+        self.condition_trigger_table=make_table(["Trigger","Equipment","PM","Meter","Comparator","Threshold","Reset","Latched","Active","Ver"]);self.condition_trigger_table.itemSelectionChanged.connect(self.load_condition_occurrences);vcnd.addWidget(self.condition_trigger_table,2)
+        self.condition_occurrence_table=make_table(["Trigger","Task ID","Equipment","PM","Meter","Threshold","Reading","Event","Created"]);vcnd.addWidget(self.condition_occurrence_table,1);self.tabs.addTab(wcnd,"Condition Triggers")
         self.refresh()
     def refresh(self):
         self.defs=self.db.list_pm_definitions(); fill_table(self.def_table,self.defs,["pm_id","name","equipment_id","schedule_type","frequency_value","frequency_unit","anchor_mode","early_window_days","grace_days","estimated_hours","required_parts","version"])
         self.tasks=self.db.list_pm_tasks(); fill_table(self.task_table,self.tasks,["equipment_id","pm_id","pm_name","original_due_date","scheduled_date","status","assigned_to","estimated_hours","priority","version"])
         self.specrows=self.db.list_pm_specs(); fill_table(self.spec_table,self.specrows,["pm_id","step_no","activity","method","input_type","unit","target","control_low","control_high","spec_low","spec_high","revision"])
+        self.requirements=self.db.list_pm_requirements(active_only=False);fill_table(self.requirement_table,self.requirements,["requirement_id","pm_id","requirement_type","requirement_key","description","quantity","mandatory","revision","active"])
         self.deferrals=self.db.list_pm_deferrals(); fill_table(self.deferral_table,self.deferrals,["id","equipment_id","pm_id","original_due_date","requested_due_date","status","requested_by","reviewed_by","review_note","version"])
         self.usage_triggers=self.db.list_pm_usage_triggers(); fill_table(self.usage_trigger_table,self.usage_triggers,["trigger_id","equipment_id","pm_id","meter_code","interval_value","last_trigger_value","next_trigger_value","active","version"])
         self.load_usage_occurrences()
+        self.condition_triggers=self.db.list_pm_condition_triggers();fill_table(self.condition_trigger_table,self.condition_triggers,["trigger_id","equipment_id","pm_id","meter_code","comparator","threshold","reset_threshold","latched","active","version"])
+        self.load_condition_occurrences()
     def add_def(self):
         d=PMDefinitionDialog(parent=self)
         if d.exec()==QDialog.DialogCode.Accepted:
@@ -626,6 +730,20 @@ class PMPage(QWidget):
     def paste_specs(self):
         try:self._import_specs_df(read_clipboard_table(QApplication.clipboard().text()))
         except Exception as exc:QMessageBox.critical(self,"Paste",str(exc))
+    def add_requirement(self):
+        d=PMRequirementDialog(self)
+        if d.exec()==QDialog.DialogCode.Accepted:
+            try:self.db.upsert_pm_requirement(d.data());self.refresh()
+            except Exception as exc:QMessageBox.critical(self,"PM Requirement",str(exc))
+
+    def revise_requirement(self):
+        row=selected_row(self.requirement_table,self.requirements)
+        if not row:return
+        d=PMRequirementDialog(self);d.req.setText(row.requirement_id);d.req.setReadOnly(True);d.pm.setText(row.pm_id);d.type.setCurrentText(row.requirement_type);d.key.setText(row.requirement_key);d.desc.setPlainText(row.description);d.qty.setValue(row.quantity);d.mandatory.setChecked(row.mandatory)
+        if d.exec()==QDialog.DialogCode.Accepted:
+            try:self.db.upsert_pm_requirement(d.data(),create_revision=True);self.refresh()
+            except Exception as exc:QMessageBox.critical(self,"PM Requirement",str(exc))
+
     def add_usage_trigger(self):
         d=PMUsageTriggerDialog(self)
         if d.exec()==QDialog.DialogCode.Accepted:
@@ -636,6 +754,17 @@ class PMPage(QWidget):
         row=selected_row(self.usage_trigger_table,self.usage_triggers)
         self.usage_occurrences=self.db.list_pm_usage_occurrences(row.trigger_id) if row else []
         fill_table(self.usage_occurrence_table,self.usage_occurrences,["trigger_id","task_id","equipment_id","pm_id","meter_code","trigger_value","reading_value","created_at"])
+
+    def add_condition_trigger(self):
+        d=PMConditionTriggerDialog(self)
+        if d.exec()==QDialog.DialogCode.Accepted:
+            try:self.db.save_pm_condition_trigger(d.data());self.refresh()
+            except Exception as exc:QMessageBox.critical(self,"Condition Trigger",str(exc))
+
+    def load_condition_occurrences(self):
+        row=selected_row(self.condition_trigger_table,self.condition_triggers)
+        self.condition_occurrences=self.db.list_pm_condition_occurrences(row.trigger_id) if row else []
+        fill_table(self.condition_occurrence_table,self.condition_occurrences,["trigger_id","task_id","equipment_id","pm_id","meter_code","threshold","reading_value","event_type","created_at"])
 
     def request_deferral(self):
         row=selected_row(self.task_table,self.tasks)
@@ -752,6 +881,38 @@ class TicketStateDialog(QDialog):
         }
 
 
+class TicketOperationalControlDialog(QDialog):
+    def __init__(self,row=None,parent=None):
+        super().__init__(parent);self.row=row;self.setWindowTitle("Incident Operational Control");self.setMinimumWidth(650)
+        f=QFormLayout(self)
+        self.containment=QTextEdit();self.impact=QTextEdit();self.lots=QTextEdit();self.risk=QTextEdit()
+        self.deadlines={}
+        for key,label in [("response_due_at","Response Due"),("containment_due_at","Containment Due"),("resolution_due_at","Resolution Due")]:
+            box=QCheckBox("Set");dt=QDateTimeEdit();dt.setCalendarPopup(True);dt.setDateTime(datetime.now());dt.setDisplayFormat("yyyy-MM-dd HH:mm")
+            rowbox=QHBoxLayout();rowbox.addWidget(box);rowbox.addWidget(dt,1);f.addRow(label,rowbox);self.deadlines[key]=(box,dt)
+        f.insertRow(0,"Containment",self.containment);f.insertRow(1,"Production Impact",self.impact);f.insertRow(2,"Affected Lots / Material",self.lots);f.insertRow(3,"Safety / Quality Risk",self.risk)
+        if row:
+            self.containment.setPlainText(row.containment);self.impact.setPlainText(row.production_impact);self.lots.setPlainText(row.affected_lots);self.risk.setPlainText(row.safety_quality_risk)
+            for key,(box,dt) in self.deadlines.items():
+                value=getattr(row,key,None)
+                if value:
+                    box.setChecked(True);dt.setDateTime(value)
+        note=QLabel("Overdue response, containment, and resolution deadlines automatically raise escalation levels and appear on the Operations Command Center.")
+        note.setWordWrap(True);note.setStyleSheet("color:#5a6670");f.addRow("",note)
+        b=QDialogButtonBox(QDialogButtonBox.StandardButton.Save|QDialogButtonBox.StandardButton.Cancel);b.accepted.connect(self.accept);b.rejected.connect(self.reject);f.addRow(b)
+
+    def data(self):
+        payload={
+            "containment":self.containment.toPlainText().strip(),
+            "production_impact":self.impact.toPlainText().strip(),
+            "affected_lots":self.lots.toPlainText().strip(),
+            "safety_quality_risk":self.risk.toPlainText().strip(),
+        }
+        for key,(box,dt) in self.deadlines.items():
+            payload[key]=dt.dateTime().toPython() if box.isChecked() else None
+        return payload
+
+
 class InvestigationDialog(QDialog):
     def __init__(self,parent=None):
         super().__init__(parent);self.setWindowTitle("Investigation Step");f=QFormLayout(self);self.obs=QTextEdit();self.check=QTextEdit();self.result=QTextEdit();self.concl=QTextEdit();self.action=QTextEdit();self.evidence=QLineEdit();browse=QPushButton("Browse");browse.clicked.connect(self.browse);hb=QHBoxLayout();hb.addWidget(self.evidence);hb.addWidget(browse)
@@ -767,17 +928,19 @@ class InvestigationDialog(QDialog):
 
 class TicketPage(QWidget):
     def __init__(self,db,user):
-        super().__init__();self.db=db;self.user=user;self.rows=[];self.inv=[];self.lifecycle=[]
+        super().__init__();self.db=db;self.user=user;self.rows=[];self.inv=[];self.lifecycle=[];self.control=None;self.escalations=[]
         v=QVBoxLayout(self);h=QHBoxLayout()
-        add=QPushButton("New Ticket");edit=QPushButton("Edit Details");state=QPushButton("Change Status");invest=QPushButton("Add Investigation Step")
-        add.clicked.connect(self.add);edit.clicked.connect(self.edit);state.clicked.connect(self.change_state);invest.clicked.connect(self.add_investigation)
-        allowed=db.has_permission(user,"ticket.edit");add.setEnabled(allowed);edit.setEnabled(allowed);state.setEnabled(allowed);invest.setEnabled(allowed)
-        h.addWidget(add);h.addWidget(edit);h.addWidget(state);h.addWidget(invest);h.addStretch(1);v.addLayout(h)
+        add=QPushButton("New Ticket");edit=QPushButton("Edit Details");state=QPushButton("Change Status");invest=QPushButton("Add Investigation Step");control=QPushButton("Operational Control")
+        add.clicked.connect(self.add);edit.clicked.connect(self.edit);state.clicked.connect(self.change_state);invest.clicked.connect(self.add_investigation);control.clicked.connect(self.edit_operational_control)
+        allowed=db.has_permission(user,"ticket.edit");add.setEnabled(allowed);edit.setEnabled(allowed);state.setEnabled(allowed);invest.setEnabled(allowed);control.setEnabled(allowed)
+        h.addWidget(add);h.addWidget(edit);h.addWidget(state);h.addWidget(invest);h.addWidget(control);h.addStretch(1);v.addLayout(h)
         self.table=make_table(["Ticket","Equipment","Title","Severity","Priority","Status","Owner","Updated","Ver"]);self.table.itemSelectionChanged.connect(self.load_details);v.addWidget(self.table,2)
 
         tabs=QTabWidget()
         wi=QWidget();vi=QVBoxLayout(wi);self.invtable=make_table(["#","Observation","Check","Result","Conclusion","Action","By","Time"]);vi.addWidget(self.invtable);tabs.addTab(wi,"Troubleshooting History")
         wl=QWidget();vl=QVBoxLayout(wl);self.lifetable=make_table(["From","To","Reason","Note","Owner","Changed By","Time"]);vl.addWidget(self.lifetable);tabs.addTab(wl,"Lifecycle History")
+        wo=QWidget();vo=QVBoxLayout(wo);self.control_table=make_table(["Containment","Production Impact","Affected Lots","Safety/Quality Risk","Response Due","Containment Due","Resolution Due","Esc Level","Esc Reason"]);vo.addWidget(self.control_table,1)
+        self.escalation_table=make_table(["From Level","To Level","Reason","User","Time"]);vo.addWidget(self.escalation_table,1);tabs.addTab(wo,"Operational Control / SLA")
         v.addWidget(tabs,1);self.refresh()
 
     def refresh(self):
@@ -832,8 +995,28 @@ class TicketPage(QWidget):
         row=selected_row(self.table,self.rows)
         self.inv=self.db.list_ticket_investigations(row.ticket_no) if row else []
         self.lifecycle=self.db.list_ticket_state_events(row.ticket_no) if row else []
+        self.control=self.db.ticket_operational_control(row.ticket_no) if row else None
+        self.escalations=self.db.list_ticket_escalations(row.ticket_no) if row else []
         fill_table(self.invtable,self.inv,["sequence","observation","check_performed","result","conclusion","action","entered_by","entered_at"])
         fill_table(self.lifetable,self.lifecycle,["from_state","to_state","reason_code","note","owner","changed_by","changed_at"])
+        controls=[self.control] if self.control else []
+        fill_table(self.control_table,controls,["containment","production_impact","affected_lots","safety_quality_risk","response_due_at","containment_due_at","resolution_due_at","escalation_level","escalation_reason"])
+        fill_table(self.escalation_table,self.escalations,["from_level","to_level","reason","user","occurred_at"])
+
+    def edit_operational_control(self):
+        row=selected_row(self.table,self.rows)
+        if not row:return
+        current=self.db.ticket_operational_control(row.ticket_no)
+        d=TicketOperationalControlDialog(current,self)
+        if d.exec()==QDialog.DialogCode.Accepted:
+            try:
+                self.db.save_ticket_operational_control(
+                    row.ticket_no,d.data(),self.user["username"],WORKSTATION,
+                    current.version if current else None,
+                )
+                self.db.evaluate_ticket_escalations()
+                self.load_details()
+            except Exception as exc:QMessageBox.critical(self,"Operational Control",str(exc))
 
     def add_investigation(self):
         row=selected_row(self.table,self.rows)
@@ -1041,6 +1224,43 @@ class ControlPage(QWidget):
         except Exception as exc:QMessageBox.critical(self,"Release",str(exc))
 
 
+class WorkLogPage(QWidget):
+    def __init__(self,db,user):
+        super().__init__();self.db=db;self.user=user;self.rows=[]
+        v=QVBoxLayout(self);h=QHBoxLayout();title=QLabel("Engineering Work / Labor");title.setStyleSheet("font-size:18pt;font-weight:700")
+        start=QPushButton("Start Work");stop=QPushButton("Stop Selected");refresh=QPushButton("Refresh");self.active=QCheckBox("Active only")
+        start.clicked.connect(self.start);stop.clicked.connect(self.stop);refresh.clicked.connect(self.refresh);self.active.stateChanged.connect(self.refresh)
+        allowed=db.has_permission(user,"worklog.edit");start.setEnabled(allowed);stop.setEnabled(allowed)
+        h.addWidget(title);h.addStretch(1);h.addWidget(self.active);h.addWidget(refresh);h.addWidget(start);h.addWidget(stop);v.addLayout(h)
+        self.table=make_table(["ID","Equipment","Entity Type","Entity Key","Worker","Work Type","Started","Ended","Minutes","Status","Note"]);v.addWidget(self.table);self.refresh()
+
+    def refresh(self):
+        self.rows=self.db.list_work_logs(active_only=self.active.isChecked())
+        fill_table(self.table,self.rows,["id","equipment_id","entity_type","entity_key","username","work_type","started_at","ended_at","duration_minutes","status","note"])
+
+    def start(self):
+        entity_type,ok=QInputDialog.getItem(self,"Start Work","Linked work type",["PM_TASK","TICKET","QUALIFICATION","EQUIPMENT","OTHER"],0,False)
+        if not ok:return
+        key,ok=QInputDialog.getText(self,"Start Work","Linked entity key / ID")
+        if not ok:return
+        eq,ok=QInputDialog.getText(self,"Start Work","Equipment ID")
+        if not ok:return
+        work_type,ok=QInputDialog.getItem(self,"Start Work","Labor type",["Troubleshooting","Maintenance","Repair","Qualification","Engineering","Vendor Support","Other"],0,False)
+        if not ok:return
+        note,ok=QInputDialog.getText(self,"Start Work","Initial note")
+        if not ok:return
+        try:self.db.start_work_log(entity_type,key.strip(),eq.strip(),self.user["username"],work_type,note);self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"Work Log",str(exc))
+
+    def stop(self):
+        row=selected_row(self.table,self.rows)
+        if not row:return
+        note,ok=QInputDialog.getText(self,"Stop Work","Completion note")
+        if not ok:return
+        try:self.db.stop_work_log(row.id,self.user["username"],note);self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"Work Log",str(exc))
+
+
 class EndorsementDialog(QDialog):
     def __init__(self,parent=None):
         super().__init__(parent);self.setWindowTitle("Endorsement / Handover");f=QFormLayout(self);self.no=QLineEdit("END-"+datetime.now().strftime("%Y%m%d-%H%M%S"));self.eq=QLineEdit();self.condition=QTextEdit();self.done=QTextEdit();self.pending=QTextEdit();self.rest=QTextEdit();self.next=QTextEdit();self.owner=QLineEdit();
@@ -1245,6 +1465,20 @@ class DocumentPage(QWidget):
         QMessageBox.information(self,"Integrity","PASS — SHA-256 matches." if ok else f"FAIL — {detail}")
 
 
+class IntegrationEndpointDialog(QDialog):
+    def __init__(self,row=None,parent=None):
+        super().__init__(parent);self.row=row;self.setWindowTitle("Integration Endpoint");f=QFormLayout(self)
+        self.endpoint=QLineEdit();self.name=QLineEdit();self.adapter=QComboBox();self.adapter.addItems(["FILE","HTTP"]);self.target=QLineEdit();self.topics=QLineEdit("*");self.auth=QLineEdit();self.enabled=QCheckBox("Enabled");self.enabled.setChecked(True)
+        self.topics.setPlaceholderText("*, equipment.state.changed, incident.state.changed")
+        for label,w in [("Endpoint ID",self.endpoint),("Name",self.name),("Adapter",self.adapter),("Target path / URL",self.target),("Topics",self.topics),("Auth environment variable",self.auth)]:f.addRow(label,w)
+        f.addRow("",self.enabled)
+        b=QDialogButtonBox(QDialogButtonBox.StandardButton.Save|QDialogButtonBox.StandardButton.Cancel);b.accepted.connect(self.accept);b.rejected.connect(self.reject);f.addRow(b)
+        if row:
+            self.endpoint.setText(row.endpoint_id);self.endpoint.setReadOnly(True);self.name.setText(row.name);self.adapter.setCurrentText(row.adapter_type);self.target.setText(row.target);self.topics.setText(row.topics);self.auth.setText(row.auth_env);self.enabled.setChecked(row.enabled)
+    def data(self):
+        return {"endpoint_id":self.endpoint.text().strip(),"name":self.name.text().strip(),"adapter_type":self.adapter.currentText(),"target":self.target.text().strip(),"topics":self.topics.text().strip() or "*","auth_env":self.auth.text().strip(),"enabled":self.enabled.isChecked()}
+
+
 class UserDialog(QDialog):
     def __init__(self,parent=None):
         super().__init__(parent);self.setWindowTitle("New User");f=QFormLayout(self);self.username=QLineEdit();self.name=QLineEdit();self.password=QLineEdit();self.password.setEchoMode(QLineEdit.EchoMode.Password);self.role=QComboBox();self.role.addItems(list(ROLE_PERMISSIONS));f.addRow("Username",self.username);f.addRow("Display Name",self.name);f.addRow("Password",self.password);f.addRow("Role",self.role);b=QDialogButtonBox(QDialogButtonBox.StandardButton.Save|QDialogButtonBox.StandardButton.Cancel);b.accepted.connect(self.accept);b.rejected.connect(self.reject);f.addRow(b)
@@ -1252,18 +1486,37 @@ class UserDialog(QDialog):
 
 class AdminPage(QWidget):
     def __init__(self,db,user):
-        super().__init__();self.db=db;self.user=user;self.rows=[];self.attempts=[];v=QVBoxLayout(self)
-        h=QHBoxLayout();add=QPushButton("Add User");role=QPushButton("Change Role");toggle=QPushButton("Enable / Disable");reset=QPushButton("Reset Password");unlock=QPushButton("Unlock Login");override=QPushButton("Permission Override");backupb=QPushButton("Create DB Backup");verifyb=QPushButton("Verify Backup")
-        add.clicked.connect(self.add);role.clicked.connect(self.role);toggle.clicked.connect(self.toggle);reset.clicked.connect(self.reset);unlock.clicked.connect(self.unlock);override.clicked.connect(self.override);backupb.clicked.connect(self.create_backup);verifyb.clicked.connect(self.verify_backup)
-        allowed=db.has_permission(user,"user.admin") or user.get("role")=="Administrator";[x.setEnabled(allowed) for x in [add,role,toggle,reset,unlock,override,backupb,verifyb]];[h.addWidget(x) for x in [add,role,toggle,reset,unlock,override,backupb,verifyb]];h.addStretch(1);v.addLayout(h)
+        super().__init__();self.db=db;self.user=user;self.rows=[];self.attempts=[];self.scope_rows=[];self.cert_rows=[];self.integration_endpoints=[];self.integration_deliveries=[];v=QVBoxLayout(self)
+        h=QHBoxLayout();add=QPushButton("Add User");role=QPushButton("Change Role");toggle=QPushButton("Enable / Disable");reset=QPushButton("Reset Password");unlock=QPushButton("Unlock Login");override=QPushButton("Permission Override");scope=QPushButton("Access Scope");clearscope=QPushButton("Clear Scopes");cert=QPushButton("Certification");integration=QPushButton("Integration Endpoint");backupb=QPushButton("Create DB Backup");verifyb=QPushButton("Verify Backup")
+        add.clicked.connect(self.add);role.clicked.connect(self.role);toggle.clicked.connect(self.toggle);reset.clicked.connect(self.reset);unlock.clicked.connect(self.unlock);override.clicked.connect(self.override);scope.clicked.connect(self.manage_scope);clearscope.clicked.connect(self.clear_scopes);cert.clicked.connect(self.manage_certification);integration.clicked.connect(self.manage_integration);backupb.clicked.connect(self.create_backup);verifyb.clicked.connect(self.verify_backup)
+        allowed=db.has_permission(user,"user.admin") or user.get("role")=="Administrator";[x.setEnabled(allowed) for x in [add,role,toggle,reset,unlock,override,scope,clearscope,cert,integration,backupb,verifyb]];[h.addWidget(x) for x in [add,role,toggle,reset,unlock,override,scope,clearscope,cert,integration,backupb,verifyb]];h.addStretch(1);v.addLayout(h)
         tabs=QTabWidget()
         wu=QWidget();vu=QVBoxLayout(wu);self.table=make_table(["Username","Display Name","Role","Active","Last Login","Created"]);vu.addWidget(self.table);tabs.addTab(wu,"Users")
+        ws=QWidget();vs=QVBoxLayout(ws);self.scope_table=make_table(["Username","Mode","Scope Type","Scope Key","Permission"]);vs.addWidget(self.scope_table);tabs.addTab(ws,"Access Scopes")
+        wc=QWidget();vc=QVBoxLayout(wc);self.cert_table=make_table(["Username","Certification","Issuer","Issued","Expires","Active","Note","Ver"]);vc.addWidget(self.cert_table);tabs.addTab(wc,"Certifications")
+        wi=QWidget();vi=QVBoxLayout(wi);self.integration_table=make_table(["Endpoint","Name","Adapter","Target","Topics","Auth Env","Enabled","Ver"]);self.delivery_table=make_table(["ID","Event","Endpoint","Status","Attempts","Next Attempt","Last Error","Sent"]);vi.addWidget(self.integration_table,1);vi.addWidget(self.delivery_table,1);tabs.addTab(wi,"Integrations / Outbox")
         wa=QWidget();va=QVBoxLayout(wa);self.attempt_table=make_table(["Username","Success","Reason","Workstation","Attempted"]);va.addWidget(self.attempt_table);tabs.addTab(wa,"Login Attempts")
         v.addWidget(tabs);self.refresh()
 
     def refresh(self):
         self.rows=self.db.list_users();fill_table(self.table,self.rows,["username","display_name","role","active","last_login","created_at"])
         self.attempts=self.db.list_login_attempts(limit=500);fill_table(self.attempt_table,self.attempts,["username","success","reason","workstation","attempted_at"])
+        self.scope_rows=[]
+        for u in self.rows:
+            policy=self.db.user_access_policy(u.username);mode=policy.scope_mode if policy else "UNRESTRICTED"
+            scopes=self.db.list_user_scopes(u.username)
+            if scopes:
+                for s in scopes:self.scope_rows.append({"username":u.username,"mode":mode,"scope_type":s.scope_type,"scope_key":s.scope_key,"permission":s.permission})
+            else:self.scope_rows.append({"username":u.username,"mode":mode,"scope_type":"","scope_key":"","permission":""})
+        self.scope_table.setRowCount(len(self.scope_rows))
+        for r,row in enumerate(self.scope_rows):
+            for col,key in enumerate(["username","mode","scope_type","scope_key","permission"]):self.scope_table.setItem(r,col,ti(row.get(key,"")))
+        self.cert_rows=self.db.list_technician_certifications()
+        fill_table(self.cert_table,self.cert_rows,["username","cert_code","issuer","issued_at","expires_at","active","note","version"])
+        self.integration_endpoints=self.db.list_integration_endpoints()
+        fill_table(self.integration_table,self.integration_endpoints,["endpoint_id","name","adapter_type","target","topics","auth_env","enabled","version"])
+        self.integration_deliveries=self.db.integration_delivery_status()
+        fill_table(self.delivery_table,self.integration_deliveries,["id","event_id","endpoint_id","status","attempts","next_attempt_at","last_error","sent_at"])
 
     def current(self):return selected_row(self.table,self.rows)
 
@@ -1308,6 +1561,72 @@ class AdminPage(QWidget):
         choice,ok=QInputDialog.getItem(self,"Permission Override",f"{row.username}: {perm}",["Allow","Deny","Use Role Default"],0,False)
         if ok:self.db.set_permission_override(row.username,perm,{"Allow":True,"Deny":False,"Use Role Default":None}[choice]);self.refresh()
 
+    def manage_integration(self):
+        row=selected_row(self.integration_table,self.integration_endpoints)
+        d=IntegrationEndpointDialog(row,self)
+        if d.exec()==QDialog.DialogCode.Accepted:
+            try:self.db.save_integration_endpoint(d.data(),row.version if row else None);self.refresh()
+            except Exception as exc:QMessageBox.critical(self,"Integration Endpoint",str(exc))
+
+    def manage_certification(self):
+        row=self.current()
+        if not row:return
+        code,ok=QInputDialog.getText(self,"Certification","Certification code")
+        if not ok or not code.strip():return
+        existing=next((x for x in self.db.list_technician_certifications(row.username) if x.cert_code==code.strip()),None)
+        issuer,ok=QInputDialog.getText(self,"Certification","Issuer",text=existing.issuer if existing else "")
+        if not ok:return
+        days,ok=QInputDialog.getInt(self,"Certification","Validity days from today (0 = no expiry)",365,0,3650)
+        if not ok:return
+        note,ok=QInputDialog.getText(self,"Certification","Note",text=existing.note if existing else "")
+        if not ok:return
+        try:
+            now=datetime.now()
+            self.db.save_technician_certification({
+                "username":row.username,"cert_code":code.strip(),"issuer":issuer.strip(),
+                "issued_at":now,"expires_at":(now+timedelta(days=days)) if days else None,
+                "active":True,"note":note.strip(),
+            },existing.version if existing else None)
+            self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"Certification",str(exc))
+
+    def manage_scope(self):
+        row=self.current()
+        if not row:return
+        current=self.db.user_access_policy(row.username)
+        current_mode=current.scope_mode if current else "UNRESTRICTED"
+        mode,ok=QInputDialog.getItem(self,"Access Scope","Scope mode",["UNRESTRICTED","RESTRICTED"],0 if current_mode=="UNRESTRICTED" else 1,False)
+        if not ok:return
+        try:self.db.set_user_access_policy(row.username,mode)
+        except Exception as exc:QMessageBox.critical(self,"Access Scope",str(exc));return
+        if mode=="UNRESTRICTED":self.refresh();return
+        scope_type,ok=QInputDialog.getItem(self,"Access Scope","Grant scope by",["NODE","EQUIPMENT"],0,False)
+        if not ok:self.refresh();return
+        if scope_type=="NODE":
+            items=[f"{n.node_code} — {n.node_type}: {n.name}" for n in self.db.list_factory_nodes()]
+            if not items:QMessageBox.warning(self,"Access Scope","No factory hierarchy nodes exist.");return
+            choice,ok=QInputDialog.getItem(self,"Factory Scope","Node",items,0,False)
+            if not ok:return
+            key=choice.split(" — ",1)[0]
+        else:
+            items=[e.equipment_id for e in self.db.list_equipment()]
+            choice,ok=QInputDialog.getItem(self,"Equipment Scope","Equipment",items,0,False)
+            if not ok:return
+            key=choice
+        perms=["*"]+PERMISSIONS
+        perm,ok=QInputDialog.getItem(self,"Access Scope","Permission within scope",perms,0,False)
+        if not ok:return
+        try:
+            self.db.add_user_scope(row.username,scope_type,key,perm)
+            self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"Access Scope",str(exc))
+
+    def clear_scopes(self):
+        row=self.current()
+        if not row:return
+        if QMessageBox.question(self,"Clear Scopes",f"Clear all explicit scopes for {row.username}?")!=QMessageBox.StandardButton.Yes:return
+        self.db.clear_user_scopes(row.username);self.refresh()
+
     def create_backup(self):
         postgres=self.db.url.startswith("postgresql")
         filt="PostgreSQL Backup (*.dump)" if postgres else "SQLite Backup (*.db)"
@@ -1327,6 +1646,47 @@ class AdminPage(QWidget):
         ok,detail=verify_backup(self.db.url,path)
         if ok:QMessageBox.information(self,"Backup Verification","PASS — "+detail)
         else:QMessageBox.critical(self,"Backup Verification","FAIL — "+detail)
+
+
+class AlarmPage(QWidget):
+    def __init__(self,db,user):
+        super().__init__();self.db=db;self.user=user;self.rows=[];self.pareto=[]
+        v=QVBoxLayout(self);h=QHBoxLayout();title=QLabel("Equipment Alarms / Events");title.setStyleSheet("font-size:18pt;font-weight:700")
+        self.eq=QLineEdit();self.eq.setPlaceholderText("Equipment filter");active=QCheckBox("Active only");active.setChecked(True);self.active_only=active
+        refresh=QPushButton("Refresh");refresh.clicked.connect(self.refresh);ack=QPushButton("Acknowledge");ack.clicked.connect(self.acknowledge)
+        manual=QPushButton("Record Manual Alarm");manual.clicked.connect(self.manual_alarm);manual.setEnabled(db.has_permission(user,"ticket.edit"))
+        h.addWidget(title);h.addStretch(1);h.addWidget(self.eq);h.addWidget(active);h.addWidget(refresh);h.addWidget(ack);h.addWidget(manual);v.addLayout(h)
+        tabs=QTabWidget()
+        wa=QWidget();va=QVBoxLayout(wa);self.table=make_table(["Event","Equipment","Alarm Code","Severity","Message","Source","State","Occurred","Ack By","Ack At","Cleared","Ticket"]);va.addWidget(self.table);tabs.addTab(wa,"Alarm History")
+        wp=QWidget();vp=QVBoxLayout(wp);self.pareto_table=make_table(["Alarm Code","Message","Count"]);vp.addWidget(self.pareto_table);tabs.addTab(wp,"30-Day Pareto")
+        v.addWidget(tabs);self.eq.textChanged.connect(self.refresh);self.active_only.stateChanged.connect(self.refresh);self.refresh()
+
+    def refresh(self):
+        equipment=self.eq.text().strip()
+        self.rows=self.db.list_alarms(equipment,active_only=self.active_only.isChecked())
+        fill_table(self.table,self.rows,["event_key","equipment_id","alarm_code","severity","message","source","state","occurred_at","acknowledged_by","acknowledged_at","cleared_at","related_ticket"])
+        self.pareto=self.db.alarm_pareto(30,equipment)
+        self.pareto_table.setRowCount(len(self.pareto))
+        for r,row in enumerate(self.pareto):
+            for col,key in enumerate(["alarm_code","message","count"]):self.pareto_table.setItem(r,col,ti(row.get(key,"")))
+
+    def acknowledge(self):
+        row=selected_row(self.table,self.rows)
+        if not row:return
+        try:self.db.acknowledge_alarm(row.event_key,self.user["username"]);self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"Alarm",str(exc))
+
+    def manual_alarm(self):
+        equipment,ok=QInputDialog.getText(self,"Manual Alarm","Equipment ID")
+        if not ok or not equipment.strip():return
+        code,ok=QInputDialog.getText(self,"Manual Alarm","Alarm code")
+        if not ok or not code.strip():return
+        message,ok=QInputDialog.getText(self,"Manual Alarm","Message")
+        if not ok:return
+        severity,ok=QInputDialog.getItem(self,"Manual Alarm","Severity",["Info","Warning","Critical"],1,False)
+        if not ok:return
+        try:self.db.ingest_alarm(equipment.strip(),code.strip(),severity=severity,message=message.strip(),source="Manual");self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"Alarm",str(exc))
 
 
 class ReliabilityPage(QWidget):
@@ -1359,7 +1719,7 @@ class MainWindow(QMainWindow):
         super().__init__();self.db=db;self.user=user;self.setWindowTitle(APP_TITLE);self.resize(1450,850);root=QWidget();self.setCentralWidget(root);h=QHBoxLayout(root);self.nav=QListWidget();self.nav.setFixedWidth(210);self.stack=QStackedWidget();h.addWidget(self.nav);h.addWidget(self.stack,1)
         self.pages=[]
         def add(name,page):self.nav.addItem(name);self.stack.addWidget(page);self.pages.append(page)
-        self.dashboard=DashboardPage(db);add("Dashboard",self.dashboard);add("Equipment",EquipmentPage(db,user));self.layout=LayoutPage(db,user);add("Layout / Map",self.layout);add("PM",PMPage(db,user));add("Issue Tickets",TicketPage(db,user));add("Qualification",QualificationPage(db,user));add("Reliability",ReliabilityPage(db));add("Disposition / Release",ControlPage(db,user));add("Endorsements",EndorsementPage(db,user));self.inventory=InventoryPage(db,user);add("Inventory",self.inventory);add("Documents",DocumentPage(db,user));add("Administration",AdminPage(db,user))
+        self.dashboard=DashboardPage(db);add("Dashboard",self.dashboard);add("Equipment",EquipmentPage(db,user));self.layout=LayoutPage(db,user);add("Layout / Map",self.layout);add("PM",PMPage(db,user));add("Issue Tickets",TicketPage(db,user));add("Alarms / Events",AlarmPage(db,user));add("Qualification",QualificationPage(db,user));add("Reliability",ReliabilityPage(db));add("Disposition / Release",ControlPage(db,user));add("Work / Labor",WorkLogPage(db,user));add("Endorsements",EndorsementPage(db,user));self.inventory=InventoryPage(db,user);add("Inventory",self.inventory);add("Documents",DocumentPage(db,user));add("Administration",AdminPage(db,user))
         self.inventory.show_map_part.connect(self.show_part_map);self.nav.currentRowChanged.connect(self.stack.setCurrentIndex);self.nav.setCurrentRow(0)
         self.statusBar().showMessage(f"{user['display_name']} — {user['role']} — {WORKSTATION}")
         refresh=QAction("Refresh",self);refresh.setShortcut(QKeySequence("F5"));refresh.triggered.connect(self.refresh_current);self.addAction(refresh);self.timer=QTimer(self);self.timer.timeout.connect(self.dashboard.refresh);self.timer.start(30000)
@@ -1370,6 +1730,7 @@ class MainWindow(QMainWindow):
 
 
 def main():
+    configure_logging("ems-main");install_exception_hook("ems-main")
     app=QApplication(sys.argv);app.setStyleSheet(STYLE);db=Database()
     if not db.has_users():
         first=FirstAdminDialog(db)
