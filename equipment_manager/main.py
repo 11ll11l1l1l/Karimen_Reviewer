@@ -172,19 +172,73 @@ class EquipmentStateDialog(QDialog):
         }
 
 
+class ComponentDialog(QDialog):
+    def __init__(self,equipment_id,row=None,parent=None):
+        super().__init__(parent); self.row=row; self.equipment_id=equipment_id; self.setWindowTitle("Equipment Component")
+        f=QFormLayout(self)
+        self.component_id=QLineEdit(); self.parent_id=QLineEdit(); self.name=QLineEdit(); self.type=QLineEdit(); self.mfg=QLineEdit(); self.model=QLineEdit(); self.serial=QLineEdit(); self.part=QLineEdit()
+        self.life=QDoubleSpinBox(); self.life.setRange(0,1e15); self.life.setSpecialValueText("Not set")
+        self.life_unit=QLineEdit(); self.usage=QDoubleSpinBox(); self.usage.setRange(0,1e15); self.notes=QTextEdit()
+        f.addRow("Equipment",QLabel(equipment_id))
+        for label,w in [("Component ID",self.component_id),("Parent Component",self.parent_id),("Name",self.name),("Type",self.type),("Manufacturer",self.mfg),("Model",self.model),("Serial",self.serial),("Part Number",self.part),("Life Limit",self.life),("Life Limit Unit",self.life_unit),("Usage",self.usage),("Notes",self.notes)]:f.addRow(label,w)
+        b=QDialogButtonBox(QDialogButtonBox.StandardButton.Save|QDialogButtonBox.StandardButton.Cancel);b.accepted.connect(self.accept);b.rejected.connect(self.reject);f.addRow(b)
+        if row:
+            self.component_id.setText(row.component_id);self.component_id.setReadOnly(True)
+            self.parent_id.setText(row.parent_component_id);self.parent_id.setReadOnly(True)
+            self.name.setText(row.name);self.type.setText(row.component_type);self.mfg.setText(row.manufacturer);self.model.setText(row.model);self.serial.setText(row.serial_number);self.part.setText(row.part_number)
+            self.life.setValue(row.life_limit_value or 0);self.life_unit.setText(row.life_limit_unit);self.usage.setValue(row.usage_value or 0);self.notes.setPlainText(row.notes)
+
+    def data(self):
+        return {
+            "component_id":self.component_id.text().strip(),
+            "equipment_id":self.equipment_id,
+            "parent_component_id":self.parent_id.text().strip(),
+            "name":self.name.text().strip(),
+            "component_type":self.type.text().strip(),
+            "manufacturer":self.mfg.text().strip(),
+            "model":self.model.text().strip(),
+            "serial_number":self.serial.text().strip(),
+            "part_number":self.part.text().strip(),
+            "life_limit_value":self.life.value() or None,
+            "life_limit_unit":self.life_unit.text().strip(),
+            "usage_value":self.usage.value(),
+            "notes":self.notes.toPlainText().strip(),
+        }
+
+
+class ComponentRemoveDialog(QDialog):
+    def __init__(self,row,parent=None):
+        super().__init__(parent);self.row=row;self.setWindowTitle(f"Remove Component — {row.component_id}")
+        f=QFormLayout(self);self.reason=QTextEdit();self.ticket=QLineEdit();self.pm=QSpinBox();self.pm.setRange(0,2_000_000_000);self.pm.setSpecialValueText("None")
+        f.addRow("Reason",self.reason);f.addRow("Related Ticket",self.ticket);f.addRow("Related PM Task ID",self.pm)
+        note=QLabel("Removal is permanent history. The component remains traceable but is no longer active on the equipment.");note.setWordWrap(True);note.setStyleSheet("color:#7a4b00");f.addRow("",note)
+        b=QDialogButtonBox(QDialogButtonBox.StandardButton.Save|QDialogButtonBox.StandardButton.Cancel);b.accepted.connect(self.accept);b.rejected.connect(self.reject);f.addRow(b)
+
+
 class EquipmentPage(QWidget):
     def __init__(self, db, user):
-        super().__init__(); self.db=db; self.user=user; self.rows=[]; self.history=[]
+        super().__init__(); self.db=db; self.user=user; self.rows=[]; self.history=[]; self.components=[]; self.component_events=[]
         v=QVBoxLayout(self); h=QHBoxLayout(); self.search=QLineEdit(); self.search.setPlaceholderText("Search equipment..."); self.search.textChanged.connect(self.refresh)
         add=QPushButton("Add"); edit=QPushButton("Edit Master Data"); transition=QPushButton("Change State")
         add.clicked.connect(self.add); edit.clicked.connect(self.edit); transition.clicked.connect(self.change_state)
         add.setEnabled(db.has_permission(user,"equipment.edit")); edit.setEnabled(db.has_permission(user,"equipment.edit")); transition.setEnabled(db.has_permission(user,"equipment.transition"))
         h.addWidget(self.search,1); h.addWidget(add); h.addWidget(edit); h.addWidget(transition); v.addLayout(h)
         self.table=make_table(["ID","Name","Type","Area","Line/Cell","Status","Disposition","Owner","Criticality","Ver"])
-        self.table.doubleClicked.connect(self.edit); self.table.itemSelectionChanged.connect(self.load_history); v.addWidget(self.table,2)
-        v.addWidget(QLabel("Equipment State Timeline"))
-        self.history_table=make_table(["From","To","Class","Reason","Detail","Ticket","PM Task","Owner","Changed By","Time"])
-        v.addWidget(self.history_table,1); self.refresh()
+        self.table.doubleClicked.connect(self.edit); self.table.itemSelectionChanged.connect(self.load_details); v.addWidget(self.table,2)
+
+        tabs=QTabWidget()
+        ws=QWidget();vs=QVBoxLayout(ws);self.history_table=make_table(["From","To","Class","Reason","Detail","Ticket","PM Task","Owner","Changed By","Time"]);vs.addWidget(self.history_table);tabs.addTab(ws,"State Timeline")
+
+        wc=QWidget();vc=QVBoxLayout(wc);hc=QHBoxLayout();addc=QPushButton("Add Component");editc=QPushButton("Edit Component");removec=QPushButton("Remove Component")
+        addc.clicked.connect(self.add_component);editc.clicked.connect(self.edit_component);removec.clicked.connect(self.remove_component)
+        cancomp=db.has_permission(user,"equipment.component.edit");addc.setEnabled(cancomp);editc.setEnabled(cancomp);removec.setEnabled(cancomp)
+        hc.addWidget(addc);hc.addWidget(editc);hc.addWidget(removec);hc.addStretch(1);vc.addLayout(hc)
+        self.component_table=make_table(["Component ID","Parent","Name","Type","Part","Serial","Status","Life Limit","Unit","Usage","Installed","Removed","Ver"])
+        self.component_table.itemSelectionChanged.connect(self.load_component_events);vc.addWidget(self.component_table,2)
+        vc.addWidget(QLabel("Component History"))
+        self.component_event_table=make_table(["Component","Event","Parent","Reason","Ticket","PM Task","User","Time"]);vc.addWidget(self.component_event_table,1)
+        tabs.addTab(wc,"Components / Modules")
+        v.addWidget(tabs,1); self.refresh()
 
     def refresh(self):
         current=selected_row(self.table,self.rows)
@@ -195,7 +249,7 @@ class EquipmentPage(QWidget):
             for i,row in enumerate(self.rows):
                 if row.equipment_id==current_id:
                     self.table.selectRow(i); break
-        self.load_history()
+        self.load_details()
 
     def add(self):
         d=EquipmentDialog(parent=self)
@@ -212,7 +266,7 @@ class EquipmentPage(QWidget):
         d=EquipmentDialog(row,self)
         if d.exec()==QDialog.DialogCode.Accepted:
             try:
-                self.db.save_equipment(d.data(),row.version)
+                self.db.save_equipment(d.data(),row.version,user=self.user["username"],workstation=WORKSTATION)
                 self.db.audit(self.user["username"],"UPDATE_MASTER","EQUIPMENT",row.equipment_id,workstation=WORKSTATION)
                 self.refresh()
             except Exception as exc: QMessageBox.critical(self,"Equipment",str(exc))
@@ -234,10 +288,57 @@ class EquipmentPage(QWidget):
             except Exception as exc:
                 QMessageBox.critical(self,"Equipment State",str(exc))
 
-    def load_history(self):
+    def load_details(self):
         row=selected_row(self.table,self.rows)
         self.history=self.db.list_equipment_state_events(row.equipment_id) if row else []
+        self.components=self.db.list_components(row.equipment_id) if row else []
         fill_table(self.history_table,self.history,["from_state","to_state","state_class","reason_code","reason_text","related_ticket","related_pm_task_id","owner","changed_by","changed_at"])
+        fill_table(self.component_table,self.components,["component_id","parent_component_id","name","component_type","part_number","serial_number","status","life_limit_value","life_limit_unit","usage_value","installed_at","removed_at","version"])
+        self.load_component_events()
+
+    def load_component_events(self):
+        component=selected_row(self.component_table,self.components)
+        equipment=selected_row(self.table,self.rows)
+        self.component_events=self.db.list_component_events(component_id=component.component_id) if component else (self.db.list_component_events(equipment_id=equipment.equipment_id) if equipment else [])
+        fill_table(self.component_event_table,self.component_events,["component_id","event_type","parent_component_id","reason","related_ticket","related_pm_task_id","user","occurred_at"])
+
+    def add_component(self):
+        equipment=selected_row(self.table,self.rows)
+        if not equipment:return
+        d=ComponentDialog(equipment.equipment_id,parent=self)
+        if d.exec()==QDialog.DialogCode.Accepted:
+            try:
+                self.db.save_component(d.data(),user=self.user["username"],workstation=WORKSTATION)
+                self.load_details()
+            except Exception as exc:QMessageBox.critical(self,"Component",str(exc))
+
+    def edit_component(self):
+        row=selected_row(self.component_table,self.components)
+        if not row:return
+        d=ComponentDialog(row.equipment_id,row,self)
+        if d.exec()==QDialog.DialogCode.Accepted:
+            try:
+                self.db.save_component(d.data(),row.version,user=self.user["username"],workstation=WORKSTATION)
+                self.load_details()
+            except Exception as exc:QMessageBox.critical(self,"Component",str(exc))
+
+    def remove_component(self):
+        row=selected_row(self.component_table,self.components)
+        if not row:return
+        d=ComponentRemoveDialog(row,self)
+        if d.exec()==QDialog.DialogCode.Accepted:
+            try:
+                self.db.remove_component(
+                    row.component_id,
+                    d.reason.toPlainText().strip(),
+                    self.user["username"],
+                    related_ticket=d.ticket.text().strip(),
+                    related_pm_task_id=d.pm.value() or None,
+                    workstation=WORKSTATION,
+                    expected_version=row.version,
+                )
+                self.load_details()
+            except Exception as exc:QMessageBox.critical(self,"Component",str(exc))
 
 
 class MapNode(QGraphicsRectItem):
