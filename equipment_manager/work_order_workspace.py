@@ -10,6 +10,7 @@ from PySide6.QtWidgets import (
 
 from table_productivity import install_table_productivity
 from workspaces import AttachmentPanel
+from collaboration_panel import CollaborationPanel
 
 
 def _item(value):
@@ -88,6 +89,7 @@ class WorkOrderWorkspace(QWidget):
         self.closeout_summary=QLabel("Select a work order.");self.closeout_summary.setWordWrap(True);self.closeout_summary.setStyleSheet("background:#f8fafb;border:1px solid #d7dfe5;padding:10px;")
         cov.addWidget(self.closeout_summary);cov.addStretch(1);tabs.addTab(closeout,"Qualification / Release Closeout")
         self.attachments=AttachmentPanel(db,user);tabs.addTab(self.attachments,"Evidence / Attachments")
+        self.collaboration=CollaborationPanel(db,user);tabs.addTab(self.collaboration,"Discussion / Updates")
         self.refresh()
 
     def refresh(self):
@@ -110,7 +112,7 @@ class WorkOrderWorkspace(QWidget):
         if row:self.work_order_no=row.work_order_no
         self.work_order=self.db.get_work_order(self.work_order_no) if self.work_order_no else None
         if not self.work_order:
-            self.context.setText("Select or create a work order.");self.description.clear();self.owner.clear();self.closeout_summary.setText("Select a work order.");self.attachments.set_entity("","");return
+            self.context.setText("Select or create a work order.");self.description.clear();self.owner.clear();self.closeout_summary.setText("Select a work order.");self.attachments.set_entity("","");self.collaboration.set_entity("","");return
         wo=self.work_order
         self.title.setText(f"{wo.work_order_no} · {wo.title}")
         self.context.setText(f"{wo.equipment_id}    {wo.priority}    {wo.status}    Source: {wo.source_type}:{wo.source_key or '—'}    Qualification required: {'Yes' if wo.qualification_required else 'No'}    Release required: {'Yes' if wo.release_required else 'No'}")
@@ -120,6 +122,7 @@ class WorkOrderWorkspace(QWidget):
         self.logs=[x for x in self.db.list_work_logs(wo.equipment_id,False,1000) if x.entity_type=="WORK_ORDER" and x.entity_key==wo.work_order_no]
         _fill(self.labor_table,self.logs,["id","username","work_type","started_at","ended_at","duration_minutes","status","note"])
         self.attachments.set_entity("WORK_ORDER",wo.work_order_no,wo.equipment_id)
+        self.collaboration.set_entity("WORK_ORDER",wo.work_order_no,wo.equipment_id)
         try:
             close=self.db.work_order_closeout_status(wo.work_order_no)
             blockers="\n".join(f"• {x}" for x in close["blockers"]) or "• No current closeout blockers detected."
