@@ -5,7 +5,7 @@ import json
 import os
 import secrets
 from contextlib import contextmanager
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any
 
 from sqlalchemy import Boolean, DateTime, Float, Integer, String, Text, UniqueConstraint, create_engine, func, select
@@ -1477,6 +1477,96 @@ class Database:
 
     def list_audit(self, limit: int=500):
         with self.session() as s: return list(s.scalars(select(AuditLog).order_by(AuditLog.created_at.desc()).limit(limit)))
+
+    def reliability_summary(
+        self,
+        equipment_id: str,
+        start: datetime | None = None,
+        end: datetime | None = None,
+    ) -> dict[str, Any]:
+        end=end or datetime.utcnow()
+        start=start or (end-timedelta(days=30))
+        if end<=start:
+            raise ValueError("Reliability period end must be after start.")
+        with self.session() as s:
+            eq=s.scalar(select(Equipment).where(Equipment.equipment_id==equipment_id))
+            if not eq:
+                raise ValueError("Equipment not found")
+            before=s.scalar(
+                select(EquipmentStateEvent)
+                .where(EquipmentStateEvent.equipment_id==equipment_id,EquipmentStateEvent.changed_at<=start)
+                .order_by(EquipmentStateEvent.changed_at.desc(),EquipmentStateEvent.id.desc())
+            )
+            state=before.to_state if before else "Available"
+            events=list(s.scalars(
+                select(EquipmentStateEvent)
+                .where(
+                    EquipmentStateEvent.equipment_id==equipment_id,
+                    EquipmentStateEvent.changed_at>start,
+                    EquipmentStateEvent.changed_at<=end,
+                )
+                .order_by(EquipmentStateEvent.changed_at,EquipmentStateEvent.id)
+            ))
+
+        cursor=start
+        total_downtime=0.0
+        unplanned=0.0
+        planned=0.0
+        failure_count=0
+        in_unplanned=STATE_CLASS.get(state)=="UNPLANNED_DOWNTIME"
+
+        for event in events:
+            seconds=max(0.0,(event.changed_at-cursor).total_seconds())
+            cls=STATE_CLASS.get(state,"")
+            if state in DOWNTIME_STATES:
+                total_downtime+=seconds
+                if cls=="UNPLANNED_DOWNTIME":
+                    unplanned+=seconds
+                else:
+                    planned+=seconds
+
+            new_unplanned=STATE_CLASS.get(event.to_state)=="UNPLANNED_DOWNTIME"
+            if new_unplanned and not in_unplanned:
+                failure_count+=1
+            in_unplanned=new_unplanned
+            state=event.to_state
+            cursor=event.changed_at
+
+        seconds=max(0.0,(end-cursor).total_seconds())
+        cls=STATE_CLASS.get(state,"")
+        if state in DOWNTIME_STATES:
+            total_downtime+=seconds
+            if cls=="UNPLANNED_DOWNTIME":
+                unplanned+=seconds
+            else:
+                planned+=seconds
+
+        period=max(0.0,(end-start).total_seconds())
+        uptime=max(0.0,period-total_downtime)
+        hours=lambda sec: sec/3600.0
+        availability=(uptime/period*100.0) if period else 100.0
+        mttr=(hours(unplanned)/failure_count) if failure_count else 0.0
+        mtbf=(hours(uptime)/failure_count) if failure_count else 0.0
+        return {
+            "equipment_id":equipment_id,
+            "start":start,
+            "end":end,
+            "period_hours":hours(period),
+            "downtime_hours":hours(total_downtime),
+            "unplanned_downtime_hours":hours(unplanned),
+            "planned_downtime_hours":hours(planned),
+            "failure_count":failure_count,
+            "mttr_hours":mttr,
+            "mtbf_hours":mtbf,
+            "availability_pct":availability,
+            "current_state":eq.status,
+        }
+
+    def reliability_report(self, days: int = 30) -> list[dict[str, Any]]:
+        days=max(1,min(int(days),3650))
+        end=datetime.utcnow()
+        start=end-timedelta(days=days)
+        return [self.reliability_summary(eq.equipment_id,start,end) for eq in self.list_equipment()]
 
     def dashboard_counts(self):
         with self.session() as s:
