@@ -405,6 +405,34 @@ class Ticket(Base):
     version: Mapped[int] = mapped_column(Integer, default=1)
 
 
+class TicketOperationalControl(Base):
+    __tablename__ = "ticket_operational_controls"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    ticket_no: Mapped[str] = mapped_column(String(100), unique=True, index=True)
+    containment: Mapped[str] = mapped_column(Text, default="")
+    production_impact: Mapped[str] = mapped_column(Text, default="")
+    affected_lots: Mapped[str] = mapped_column(Text, default="")
+    safety_quality_risk: Mapped[str] = mapped_column(Text, default="")
+    response_due_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    containment_due_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    resolution_due_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    escalation_level: Mapped[int] = mapped_column(Integer, default=0, index=True)
+    escalated_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    escalation_reason: Mapped[str] = mapped_column(Text, default="")
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
+class TicketEscalationEvent(Base):
+    __tablename__ = "ticket_escalation_events"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    ticket_no: Mapped[str] = mapped_column(String(100), index=True)
+    from_level: Mapped[int] = mapped_column(Integer, default=0)
+    to_level: Mapped[int] = mapped_column(Integer)
+    reason: Mapped[str] = mapped_column(Text)
+    user: Mapped[str] = mapped_column(String(120), default="system")
+    occurred_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
 class TicketStateEvent(Base):
     __tablename__ = "ticket_state_events"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -2046,6 +2074,101 @@ class Database:
                 ))
             s.flush()
             return item
+
+    def ticket_operational_control(self, ticket_no: str):
+        with self.session() as s:
+            return s.scalar(select(TicketOperationalControl).where(TicketOperationalControl.ticket_no==ticket_no))
+
+    def save_ticket_operational_control(
+        self,
+        ticket_no: str,
+        data: dict[str, Any],
+        user: str,
+        workstation: str = "",
+        expected_version: int | None = None,
+    ):
+        with self.session() as s:
+            ticket=s.scalar(select(Ticket).where(Ticket.ticket_no==ticket_no))
+            if not ticket:raise ValueError("Ticket not found")
+            self.assert_authorized(user,"ticket.edit",ticket.equipment_id)
+            row=s.scalar(select(TicketOperationalControl).where(TicketOperationalControl.ticket_no==ticket_no))
+            payload=dict(data)
+            if row:
+                self._update_versioned(row,payload,expected_version,"Ticket operational control")
+            else:
+                row=TicketOperationalControl(ticket_no=ticket_no,**payload);s.add(row)
+            s.add(AuditLog(
+                user=user,action="TICKET_OPERATIONAL_CONTROL",entity_type="TICKET",
+                entity_key=ticket_no,detail=json.dumps(payload,default=str,sort_keys=True),
+                workstation=workstation,
+            ))
+            s.flush();return row
+
+    def evaluate_ticket_escalations(self, now: datetime | None = None):
+        now=now or datetime.utcnow()
+        escalated=[]
+        with self.session() as s:
+            controls=list(s.scalars(select(TicketOperationalControl)))
+            for control in controls:
+                ticket=s.scalar(select(Ticket).where(Ticket.ticket_no==control.ticket_no))
+                if not ticket or ticket.status in {"Closed","Cancelled"}:continue
+                reasons=[]
+                target=control.escalation_level
+                if control.response_due_at and now>control.response_due_at and ticket.status=="Open":
+                    target=max(target,1);reasons.append("Response SLA overdue")
+                if control.containment_due_at and now>control.containment_due_at and not control.containment.strip():
+                    target=max(target,2);reasons.append("Containment overdue")
+                if control.resolution_due_at and now>control.resolution_due_at:
+                    target=max(target,3);reasons.append("Resolution SLA overdue")
+                if ticket.priority=="P1":
+                    target=max(target,2);reasons.append("P1 critical incident")
+                if target>control.escalation_level:
+                    old=control.escalation_level
+                    control.escalation_level=target
+                    control.escalated_at=now
+                    control.escalation_reason="; ".join(dict.fromkeys(reasons))
+                    control.version+=1
+                    s.add(TicketEscalationEvent(
+                        ticket_no=ticket.ticket_no,from_level=old,to_level=target,
+                        reason=control.escalation_reason,user="system",occurred_at=now,
+                    ))
+                    escalated.append(ticket.ticket_no)
+            s.flush()
+        return escalated
+
+    def list_ticket_escalations(self, ticket_no: str = ""):
+        with self.session() as s:
+            stmt=select(TicketEscalationEvent).order_by(TicketEscalationEvent.occurred_at.desc())
+            if ticket_no:stmt=stmt.where(TicketEscalationEvent.ticket_no==ticket_no)
+            return list(s.scalars(stmt))
+
+    def operations_attention_queue(self, limit: int = 200):
+        self.evaluate_ticket_escalations()
+        now=datetime.utcnow()
+        rows=[]
+        with self.session() as s:
+            for eq in s.scalars(select(Equipment).where(Equipment.status.in_(["Down","Engineering","Waiting Parts","Waiting Vendor","Qualification","Hold"]))):
+                rows.append({"severity":"CRITICAL" if eq.status=="Down" else "HIGH","kind":"EQUIPMENT","key":eq.equipment_id,"equipment_id":eq.equipment_id,"summary":f"{eq.status} — {eq.name}","owner":eq.owner,"age_hours":0.0})
+            for task in s.scalars(select(PMTask).where(PMTask.status.in_(["Overdue","Deferred","Pending","Scheduled"]))):
+                if task.status=="Overdue" or (task.scheduled_date and task.scheduled_date<now):
+                    due=task.scheduled_date or task.original_due_date
+                    age=(now-due).total_seconds()/3600 if due else 0
+                    rows.append({"severity":"HIGH","kind":"PM","key":str(task.id),"equipment_id":task.equipment_id,"summary":f"{task.pm_id} {task.status}","owner":task.assigned_to,"age_hours":age})
+            for ticket in s.scalars(select(Ticket).where(Ticket.status.notin_(["Closed","Cancelled"]))):
+                control=s.scalar(select(TicketOperationalControl).where(TicketOperationalControl.ticket_no==ticket.ticket_no))
+                level=control.escalation_level if control else 0
+                if ticket.priority in {"P1","P2"} or level>0:
+                    age=(now-ticket.created_at).total_seconds()/3600 if ticket.created_at else 0
+                    rows.append({"severity":"CRITICAL" if ticket.priority=="P1" or level>=3 else "HIGH","kind":"INCIDENT","key":ticket.ticket_no,"equipment_id":ticket.equipment_id,"summary":f"{ticket.priority} {ticket.status} — {ticket.title}"+(f" [Esc L{level}]" if level else ""),"owner":ticket.owner,"age_hours":age})
+            for q in s.scalars(select(QualificationRun).where(QualificationRun.status.in_(["Submitted","Verified"]))):
+                rows.append({"severity":"MEDIUM","kind":"QUALIFICATION","key":q.run_no,"equipment_id":q.equipment_id,"summary":f"{q.status} — {q.protocol_name}","owner":q.verified_by or q.submitted_by,"age_hours":(now-q.started_at).total_seconds()/3600})
+            for rel in s.scalars(select(EquipmentRelease).where(EquipmentRelease.status.in_(["Pending Verification","Verified","Verification Failed"]))):
+                rows.append({"severity":"HIGH" if rel.status=="Verification Failed" else "MEDIUM","kind":"RELEASE","key":str(rel.id),"equipment_id":rel.equipment_id,"summary":rel.status,"owner":rel.verified_by or rel.requested_by,"age_hours":(now-rel.requested_at).total_seconds()/3600})
+            for e in s.scalars(select(Endorsement).where(Endorsement.status.in_(["Open","Acknowledged"]))):
+                rows.append({"severity":"MEDIUM","kind":"HANDOVER","key":e.endorsement_no,"equipment_id":e.equipment_id,"summary":e.next_action or e.pending_work or "Open handover","owner":e.next_owner,"age_hours":(now-e.created_at).total_seconds()/3600})
+        rank={"CRITICAL":0,"HIGH":1,"MEDIUM":2,"LOW":3}
+        rows.sort(key=lambda x:(rank.get(x["severity"],9),-float(x.get("age_hours") or 0)))
+        return rows[:max(1,min(int(limit),1000))]
 
     def list_ticket_state_events(self, ticket_no: str, limit: int = 250):
         with self.session() as s:
