@@ -27,7 +27,7 @@ from workspaces import AttachmentPanel
 from table_productivity import install_table_productivity
 from excel_import_studio import run_mapping_studio
 from services import (
-    auto_mapping, calculate_next_due, copy_clipboard_image, dataframe_to_pm_backlog,
+    auto_mapping, calculate_next_due, copy_clipboard_image, dataframe_to_equipment, dataframe_to_inventory, dataframe_to_pm_backlog,
     dataframe_to_pm_specs, evaluate_measurement, pm_parts_readiness, read_clipboard_table,
     read_table, readonly_open_copy, workbook_sheets, workload_by_day,
 )
@@ -278,10 +278,10 @@ class EquipmentPage(QWidget):
     def __init__(self, db, user):
         super().__init__(); self.db=db; self.user=user; self.rows=[]; self.history=[]; self.components=[]; self.component_events=[]; self.meters=[]; self.meter_readings=[]
         v=QVBoxLayout(self); h=QHBoxLayout(); self.search=QLineEdit(); self.search.setPlaceholderText("Search equipment..."); self.search.textChanged.connect(self.refresh)
-        add=QPushButton("Add"); edit=QPushButton("Edit Master Data"); transition=QPushButton("Change State")
-        add.clicked.connect(self.add); edit.clicked.connect(self.edit); transition.clicked.connect(self.change_state)
-        add.setEnabled(db.has_permission(user,"equipment.edit")); edit.setEnabled(db.has_permission(user,"equipment.edit")); transition.setEnabled(db.has_permission(user,"equipment.transition"))
-        h.addWidget(self.search,1); h.addWidget(add); h.addWidget(edit); h.addWidget(transition); v.addLayout(h)
+        add=QPushButton("Add"); edit=QPushButton("Edit Master Data"); transition=QPushButton("Change State");imp=QPushButton("Import Excel/CSV");paste=QPushButton("Paste from Excel")
+        add.clicked.connect(self.add); edit.clicked.connect(self.edit); transition.clicked.connect(self.change_state);imp.clicked.connect(self.import_equipment);paste.clicked.connect(self.paste_equipment)
+        canedit=db.has_permission(user,"equipment.edit");add.setEnabled(canedit);edit.setEnabled(canedit);imp.setEnabled(canedit);paste.setEnabled(canedit);transition.setEnabled(db.has_permission(user,"equipment.transition"))
+        h.addWidget(self.search,1); h.addWidget(add); h.addWidget(edit);h.addWidget(imp);h.addWidget(paste); h.addWidget(transition); v.addLayout(h)
         self.table=make_table(["ID","Name","Type","Area","Line/Cell","Status","Disposition","Owner","Criticality","Ver"])
         self.table.doubleClicked.connect(self.edit); self.table.itemSelectionChanged.connect(self.load_details); v.addWidget(self.table,2)
 
@@ -317,6 +317,42 @@ class EquipmentPage(QWidget):
                 if row.equipment_id==current_id:
                     self.table.selectRow(i); break
         self.load_details()
+
+    def _equipment_import_df(self,df):
+        fields=[
+            ("equipment_id","Equipment ID"),("name","Name"),("equipment_type","Equipment type"),("manufacturer","Manufacturer"),
+            ("model","Model"),("serial_number","Serial number"),("asset_number","Asset number"),("site","Site"),("building","Building"),
+            ("floor","Floor"),("area","Area"),("line_cell","Line / Bay / Cell"),("owner","Owner"),("criticality","Criticality"),
+        ]
+        mapping=run_mapping_studio(self,self.db,self.user["username"],"excel_mapping.equipment_master",df,fields,auto_mapping(list(df.columns)),{"equipment_id"},"Equipment Master Import Studio")
+        if mapping is None:return
+        rows,errors=dataframe_to_equipment(df,mapping)
+        if not rows:QMessageBox.warning(self,"Equipment import","No valid rows.\n"+"\n".join(errors[:20]));return
+        if QMessageBox.question(self,"Equipment import",f"Validated {len(rows)} equipment row(s); {len(errors)} warning/error row(s). Commit changes?")!=QMessageBox.StandardButton.Yes:return
+        imported=0;failures=[]
+        for data in rows:
+            try:
+                current=self.db.get_equipment(data["equipment_id"])
+                self.db.save_equipment(data,current.version if current else None,user=self.user["username"],workstation=WORKSTATION);imported+=1
+            except Exception as exc:failures.append(f"{data.get('equipment_id')}: {exc}")
+        self.refresh();detail=f"Imported/updated {imported} equipment row(s). Failures: {len(failures)}."
+        if failures:detail+="\n"+"\n".join(failures[:12])
+        QMessageBox.information(self,"Equipment import",detail)
+
+    def import_equipment(self):
+        path,_=QFileDialog.getOpenFileName(self,"Import Equipment Master","","Excel/CSV (*.xlsx *.xlsm *.csv)")
+        if not path:return
+        try:
+            sheets=workbook_sheets(path);sheet=sheets[0]
+            if len(sheets)>1:
+                sheet,ok=QInputDialog.getItem(self,"Import Equipment","Sheet",sheets,0,False)
+                if not ok:return
+            self._equipment_import_df(read_table(path,sheet))
+        except Exception as exc:QMessageBox.critical(self,"Equipment import",str(exc))
+
+    def paste_equipment(self):
+        try:self._equipment_import_df(read_clipboard_table(QApplication.clipboard().text()))
+        except Exception as exc:QMessageBox.critical(self,"Equipment paste",str(exc))
 
     def add(self):
         d=EquipmentDialog(parent=self)
@@ -1402,10 +1438,45 @@ class InventoryPage(QWidget):
     show_map_part=Signal(str)
     def __init__(self,db,user):
         super().__init__();self.db=db;self.user=user;self.items=[];self.locs=[];self.res=[];v=QVBoxLayout(self);tabs=QTabWidget();v.addWidget(tabs)
-        wi=QWidget();vi=QVBoxLayout(wi);hi=QHBoxLayout();self.search=QLineEdit();self.search.setPlaceholderText("Search part / description / location");self.search.textChanged.connect(self.refresh);add=QPushButton("Add Item");edit=QPushButton("Edit");consume=QPushButton("Consume");reserve=QPushButton("Reserve");show=QPushButton("Show on Map");add.clicked.connect(self.add_item);edit.clicked.connect(self.edit_item);consume.clicked.connect(self.consume);reserve.clicked.connect(self.reserve);show.clicked.connect(self.map_item);add.setEnabled(db.has_permission(user,"inventory.edit"));edit.setEnabled(db.has_permission(user,"inventory.edit"));consume.setEnabled(db.has_permission(user,"inventory.consume") or db.has_permission(user,"inventory.edit"));reserve.setEnabled(db.has_permission(user,"inventory.reserve"));hi.addWidget(self.search,1);[hi.addWidget(x) for x in [add,edit,consume,reserve,show]];vi.addLayout(hi);self.itable=make_table(["Part","Description","Qty","Min","Unit","Condition","Location","Image","Ver"]);vi.addWidget(self.itable);tabs.addTab(wi,"Inventory")
+        wi=QWidget();vi=QVBoxLayout(wi);hi=QHBoxLayout();self.search=QLineEdit();self.search.setPlaceholderText("Search part / description / location");self.search.textChanged.connect(self.refresh);add=QPushButton("Add Item");edit=QPushButton("Edit");imp=QPushButton("Import Excel/CSV");paste=QPushButton("Paste from Excel");consume=QPushButton("Consume");reserve=QPushButton("Reserve");show=QPushButton("Show on Map");add.clicked.connect(self.add_item);edit.clicked.connect(self.edit_item);imp.clicked.connect(self.import_inventory);paste.clicked.connect(self.paste_inventory);consume.clicked.connect(self.consume);reserve.clicked.connect(self.reserve);show.clicked.connect(self.map_item);canedit=db.has_permission(user,"inventory.edit");add.setEnabled(canedit);edit.setEnabled(canedit);imp.setEnabled(canedit);paste.setEnabled(canedit);consume.setEnabled(db.has_permission(user,"inventory.consume") or canedit);reserve.setEnabled(db.has_permission(user,"inventory.reserve"));hi.addWidget(self.search,1);[hi.addWidget(x) for x in [add,edit,imp,paste,consume,reserve,show]];vi.addLayout(hi);self.itable=make_table(["Part","Description","Qty","Min","Unit","Condition","Location","Image","Ver"]);vi.addWidget(self.itable);tabs.addTab(wi,"Inventory")
         wl=QWidget();vl=QVBoxLayout(wl);addl=QPushButton("Add Storage Location");addl.clicked.connect(self.add_loc);addl.setEnabled(db.has_permission(user,"inventory.edit"));vl.addWidget(addl);self.ltable=make_table(["Code","Name","Building","Floor","Area","Cabinet","Shelf","Bin","Image","Ver"]);vl.addWidget(self.ltable);tabs.addTab(wl,"Storage Locations")
         wr=QWidget();vr=QVBoxLayout(wr);rel=QPushButton("Release Selected Reservation");rel.clicked.connect(self.release_res);rel.setEnabled(db.has_permission(user,"inventory.reserve"));vr.addWidget(rel);self.rtable=make_table(["ID","Part","Location","Qty","PM Task","Equipment","Status","Reserved By","Time","Ver"]);vr.addWidget(self.rtable);tabs.addTab(wr,"Reservations");self.refresh()
     def refresh(self):self.items=self.db.list_inventory(self.search.text().strip());fill_table(self.itable,self.items,["part_number","description","quantity","min_quantity","unit","condition","location_code","image_path","version"]);self.locs=self.db.list_storage_locations();fill_table(self.ltable,self.locs,["location_code","name","building","floor","area","cabinet","shelf","drawer_bin","image_path","version"]);self.res=self.db.list_reservations();fill_table(self.rtable,self.res,["id","part_number","location_code","quantity","pm_task_id","equipment_id","status","reserved_by","reserved_at","version"])
+    def _inventory_import_df(self,df):
+        fields=[
+            ("part_number","Part number"),("description","Description"),("quantity","Quantity"),("min_quantity","Minimum quantity"),
+            ("unit","Unit"),("condition","Condition"),("location_code","Location code"),("image_path","Image path"),
+        ]
+        mapping=run_mapping_studio(self,self.db,self.user["username"],"excel_mapping.inventory",df,fields,auto_mapping(list(df.columns)),{"part_number","location_code"},"Inventory Import Studio")
+        if mapping is None:return
+        rows,errors=dataframe_to_inventory(df,mapping)
+        if not rows:QMessageBox.warning(self,"Inventory import","No valid rows.\n"+"\n".join(errors[:20]));return
+        if QMessageBox.question(self,"Inventory import",f"Validated {len(rows)} inventory row(s); {len(errors)} warning/error row(s). Commit changes?")!=QMessageBox.StandardButton.Yes:return
+        imported=0;failures=[]
+        for data in rows:
+            try:
+                existing=next((x for x in self.db.list_inventory(data["part_number"]) if x.part_number==data["part_number"] and x.location_code==data["location_code"]),None)
+                self.db.save_inventory_item(data,existing.version if existing else None);imported+=1
+            except Exception as exc:failures.append(f"{data.get('part_number')} @ {data.get('location_code')}: {exc}")
+        self.refresh();detail=f"Imported/updated {imported} inventory row(s). Failures: {len(failures)}."
+        if failures:detail+="\n"+"\n".join(failures[:12])
+        QMessageBox.information(self,"Inventory import",detail)
+
+    def import_inventory(self):
+        path,_=QFileDialog.getOpenFileName(self,"Import Inventory","","Excel/CSV (*.xlsx *.xlsm *.csv)")
+        if not path:return
+        try:
+            sheets=workbook_sheets(path);sheet=sheets[0]
+            if len(sheets)>1:
+                sheet,ok=QInputDialog.getItem(self,"Import Inventory","Sheet",sheets,0,False)
+                if not ok:return
+            self._inventory_import_df(read_table(path,sheet))
+        except Exception as exc:QMessageBox.critical(self,"Inventory import",str(exc))
+
+    def paste_inventory(self):
+        try:self._inventory_import_df(read_clipboard_table(QApplication.clipboard().text()))
+        except Exception as exc:QMessageBox.critical(self,"Inventory paste",str(exc))
+
     def add_item(self):
         d=InventoryDialog(parent=self)
         if d.exec()==QDialog.DialogCode.Accepted:
