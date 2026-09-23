@@ -54,13 +54,13 @@ class MaintenancePlanningWorkspace(QWidget):
         tabs=QTabWidget();root.addWidget(tabs,1)
 
         board=QWidget();bv=QVBoxLayout(board)
-        self.board=_table(["Task","Equipment","PM","Name","Original Due","Planned","Window","Status","Assigned","Hours","Priority","Ver"])
+        self.board=_table(["Task","Equipment","PM","Name","Original Due","Planned","Window","Parts","Certs","Status","Assigned","Hours","Priority","Ver"])
         self.board.doubleClicked.connect(self.open_selected);bv.addWidget(self.board);tabs.addTab(board,"Schedule board")
 
         calendar=QWidget();cv=QHBoxLayout(calendar);split=QSplitter()
         self.calendar=QCalendarWidget();self.calendar.selectionChanged.connect(self.calendar_changed);split.addWidget(self.calendar)
         right=QWidget();rv=QVBoxLayout(right);self.day_label=QLabel();self.day_label.setStyleSheet("font-weight:700;font-size:12pt")
-        self.day_table=_table(["Task","Equipment","PM","Name","Status","Assigned","Hours","Window"])
+        self.day_table=_table(["Task","Equipment","PM","Name","Status","Assigned","Hours","Window","Parts","Certs"])
         self.day_table.doubleClicked.connect(self.open_day_selected);rv.addWidget(self.day_label);rv.addWidget(self.day_table)
         split.addWidget(right);split.setStretchFactor(1,2);cv.addWidget(split);tabs.addTab(calendar,"Calendar / day plan")
 
@@ -82,11 +82,13 @@ class MaintenancePlanningWorkspace(QWidget):
             self.filtered=[r for r in self.rows if q in " ".join(str(r.get(k,"") or "") for k in ["equipment_id","pm_id","pm_name","status","assigned_to","priority","window"]).lower()]
         else:self.filtered=list(self.rows)
         self.board.setRowCount(len(self.filtered))
-        fields=["id","equipment_id","pm_id","pm_name","original_due_date","scheduled_date","window","status","assigned_to","estimated_hours","priority","version"]
+        fields=["id","equipment_id","pm_id","pm_name","original_due_date","scheduled_date","window","parts_status","certification_status","status","assigned_to","estimated_hours","priority","version"]
         for r,row in enumerate(self.filtered):
             for col,field in enumerate(fields):self.board.setItem(r,col,_item(row.get(field)))
         open_count=len(self.filtered);overdue=sum(1 for x in self.filtered if x["window"]=="OVERDUE");hours=sum(float(x.get("estimated_hours") or 0) for x in self.filtered)
-        self.summary.setText(f"{open_count} open tasks · {hours:.1f} planned h · {overdue} overdue")
+        parts_short=sum(1 for x in self.filtered if x.get("parts_status")=="SHORT")
+        cert_block=sum(1 for x in self.filtered if x.get("certification_status") in {"MISSING","UNASSIGNED"})
+        self.summary.setText(f"{open_count} open tasks · {hours:.1f} planned h · {overdue} overdue · {parts_short} parts-blocked · {cert_block} cert-blocked")
         self.rebuild_views()
 
     def rebuild_views(self):
@@ -115,7 +117,7 @@ class MaintenancePlanningWorkspace(QWidget):
         self.plan_dt.setDate(qd)
         rows=[r for r in self.filtered if (r.get("scheduled_date") or r.get("original_due_date")) and (r.get("scheduled_date") or r.get("original_due_date")).date()==day]
         self._day_rows=rows;self.day_label.setText(f"{day.isoformat()} · {len(rows)} task(s) · {sum(float(x.get('estimated_hours') or 0) for x in rows):.1f} h")
-        self.day_table.setRowCount(len(rows));fields=["id","equipment_id","pm_id","pm_name","status","assigned_to","estimated_hours","window"]
+        self.day_table.setRowCount(len(rows));fields=["id","equipment_id","pm_id","pm_name","status","assigned_to","estimated_hours","window","parts_status","certification_status"]
         for r,row in enumerate(rows):
             for col,field in enumerate(fields):self.day_table.setItem(r,col,_item(row.get(field)))
 
