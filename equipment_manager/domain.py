@@ -159,3 +159,117 @@ def validate_transition(
         state_class=STATE_CLASS[target_state],
         downtime=target_state in DOWNTIME_STATES,
     )
+
+TICKET_STATES = (
+    "Open",
+    "Assigned",
+    "Investigation",
+    "Waiting Parts",
+    "Waiting Vendor",
+    "Waiting Production",
+    "Monitoring",
+    "Resolved",
+    "Verification",
+    "Closed",
+    "Cancelled",
+)
+
+TICKET_ALLOWED_TRANSITIONS = {
+    "Open": {"Assigned", "Investigation", "Cancelled"},
+    "Assigned": {"Investigation", "Waiting Parts", "Waiting Vendor", "Waiting Production", "Cancelled"},
+    "Investigation": {"Waiting Parts", "Waiting Vendor", "Waiting Production", "Monitoring", "Resolved", "Cancelled"},
+    "Waiting Parts": {"Investigation", "Waiting Vendor", "Resolved", "Cancelled"},
+    "Waiting Vendor": {"Investigation", "Waiting Parts", "Resolved", "Cancelled"},
+    "Waiting Production": {"Investigation", "Monitoring", "Resolved", "Cancelled"},
+    "Monitoring": {"Investigation", "Resolved", "Cancelled"},
+    "Resolved": {"Verification", "Investigation"},
+    "Verification": {"Closed", "Investigation"},
+    "Closed": {"Investigation"},
+    "Cancelled": set(),
+}
+
+TICKET_REASON_CODES = {
+    "INITIAL_STATE": "Initial ticket state",
+    "ASSIGN": "Assign owner",
+    "START_INVESTIGATION": "Start / resume investigation",
+    "WAIT_PARTS": "Waiting for spare parts",
+    "WAIT_VENDOR": "Waiting for vendor support",
+    "WAIT_PRODUCTION": "Waiting for production window or confirmation",
+    "MONITOR": "Monitor after action",
+    "RESOLVE": "Repair / corrective action completed",
+    "VERIFY_START": "Begin independent verification",
+    "VERIFY_PASS": "Verification passed",
+    "VERIFY_FAIL": "Verification failed; return to investigation",
+    "REOPEN": "Reopen a resolved or closed incident",
+    "CANCEL": "Cancel invalid / duplicate / no-longer-applicable ticket",
+}
+
+
+@dataclass(frozen=True)
+class TicketTransitionDecision:
+    current_state: str
+    target_state: str
+
+
+def allowed_ticket_targets(current_state: str) -> list[str]:
+    return sorted(TICKET_ALLOWED_TRANSITIONS.get(current_state, set()), key=TICKET_STATES.index)
+
+
+def validate_ticket_transition(
+    current_state: str,
+    target_state: str,
+    *,
+    reason_code: str,
+    owner: str = "",
+    note: str = "",
+    override: bool = False,
+) -> TicketTransitionDecision:
+    if current_state not in TICKET_STATES:
+        raise TransitionRuleViolation(f"Unknown current ticket state: {current_state}")
+    if target_state not in TICKET_STATES:
+        raise TransitionRuleViolation(f"Unknown target ticket state: {target_state}")
+    if current_state == target_state:
+        raise TransitionRuleViolation("Ticket is already in the requested state.")
+    if not override and target_state not in TICKET_ALLOWED_TRANSITIONS[current_state]:
+        raise TransitionRuleViolation(
+            f"Ticket transition {current_state} -> {target_state} is not permitted. "
+            f"Allowed: {', '.join(allowed_ticket_targets(current_state)) or 'none'}"
+        )
+    if reason_code not in TICKET_REASON_CODES:
+        raise TransitionRuleViolation("A valid ticket lifecycle reason code is required.")
+
+    expected = {
+        "Assigned": {"ASSIGN"},
+        "Waiting Parts": {"WAIT_PARTS"},
+        "Waiting Vendor": {"WAIT_VENDOR"},
+        "Waiting Production": {"WAIT_PRODUCTION"},
+        "Monitoring": {"MONITOR"},
+        "Resolved": {"RESOLVE"},
+        "Verification": {"VERIFY_START"},
+        "Closed": {"VERIFY_PASS"},
+        "Cancelled": {"CANCEL"},
+    }
+    if target_state in expected and reason_code not in expected[target_state]:
+        raise TransitionRuleViolation(
+            f"Ticket state '{target_state}' requires reason code {', '.join(sorted(expected[target_state]))}."
+        )
+
+    if target_state == "Investigation":
+        allowed = {"START_INVESTIGATION"}
+        if current_state == "Verification":
+            allowed.add("VERIFY_FAIL")
+        if current_state in {"Resolved", "Closed"}:
+            allowed.add("REOPEN")
+        if reason_code not in allowed:
+            raise TransitionRuleViolation(
+                f"Returning to Investigation from '{current_state}' requires an investigation/reopen reason."
+            )
+
+    if target_state in {"Assigned", "Investigation", "Waiting Parts", "Waiting Vendor", "Waiting Production", "Monitoring"} and not owner.strip():
+        raise TransitionRuleViolation(f"An accountable owner is required for ticket state '{target_state}'.")
+
+    if reason_code in {"CANCEL", "VERIFY_FAIL", "REOPEN"} and not note.strip():
+        raise TransitionRuleViolation("Detailed lifecycle notes are required for this transition.")
+
+    return TicketTransitionDecision(current_state=current_state, target_state=target_state)
+
