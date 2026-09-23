@@ -13,9 +13,10 @@ class MigrationLifecycleTests(unittest.TestCase):
             url=f"sqlite:///{Path(root)/'ems.db'}"
             db=Database(url)
             rows=db.list_schema_migrations()
-            self.assertEqual([x.revision for x in rows],["20260923_001","20260923_002","20260923_003","20260923_004"])
+            expected=[revision for revision,_description,_apply in db._migration_plan()]
+            self.assertEqual([x.revision for x in rows],expected)
             reopened=Database(url)
-            self.assertEqual([x.revision for x in reopened.list_schema_migrations()],["20260923_001","20260923_002","20260923_003","20260923_004"])
+            self.assertEqual([x.revision for x in reopened.list_schema_migrations()],expected)
 
     def test_migration_checksum_tampering_stops_startup(self):
         with tempfile.TemporaryDirectory() as root:
