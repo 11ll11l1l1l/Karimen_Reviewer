@@ -104,15 +104,45 @@ class MetricCard(QWidget):
 
 class DashboardPage(QWidget):
     def __init__(self, db: Database):
-        super().__init__(); self.db = db; v = QVBoxLayout(self); title = QLabel("Operational Dashboard"); title.setStyleSheet("font-size:18pt;font-weight:700"); v.addWidget(title); g = QGridLayout(); v.addLayout(g)
-        defs = [("equipment_total","Equipment"),("equipment_down","Down"),("equipment_hold","On Hold"),("pm_open","Open PM"),("pm_overdue","PM Overdue"),("tickets_open","Open Tickets"),("tickets_critical","P1/P2 Tickets"),("inventory_low","Low Stock"),("release_pending","Release Pending"),("reservations_active","Part Reservations"),("endorsements_open","Endorsements"),("dispositions_active","Active Dispositions")]
-        self.cards = {}
-        for i, (key, label) in enumerate(defs): self.cards[key] = MetricCard(label); g.addWidget(self.cards[key], i//4, i%4)
-        self.updated = QLabel(); v.addWidget(self.updated); v.addStretch(1); self.refresh()
+        super().__init__(); self.db=db; self.attention=[]
+        v=QVBoxLayout(self)
+        top=QHBoxLayout(); title=QLabel("Operations Command Center"); title.setStyleSheet("font-size:20pt;font-weight:700")
+        self.updated=QLabel(); refresh=QPushButton("Refresh"); refresh.clicked.connect(self.refresh)
+        top.addWidget(title); top.addStretch(1); top.addWidget(self.updated); top.addWidget(refresh); v.addLayout(top)
+
+        g=QGridLayout(); v.addLayout(g)
+        defs=[
+            ("equipment_down","Tools Down"),("equipment_hold","Tools on Hold"),("pm_overdue","PM Overdue"),
+            ("tickets_critical","P1/P2 Incidents"),("release_pending","Release Pending"),("endorsements_open","Shift Handovers"),
+            ("inventory_low","Low Stock"),("reservations_active","Part Reservations"),
+        ]
+        self.cards={}
+        for i,(key,label) in enumerate(defs):
+            self.cards[key]=MetricCard(label);g.addWidget(self.cards[key],i//4,i%4)
+
+        section=QLabel("WHAT REQUIRES ATTENTION");section.setStyleSheet("font-size:13pt;font-weight:700;margin-top:8px");v.addWidget(section)
+        self.attention_table=make_table(["Severity","Type","Equipment","Key","Action / Condition","Owner","Age (h)"])
+        v.addWidget(self.attention_table,3)
+
+        lower=QHBoxLayout()
+        note=QLabel("Priority queue is derived from governed equipment states, incident SLA/escalation, overdue PM, qualification/release status and shift handovers.")
+        note.setWordWrap(True);note.setStyleSheet("color:#5a6670")
+        lower.addWidget(note,1)
+        v.addLayout(lower)
+        self.refresh()
+
     def refresh(self):
-        for k, val in self.db.dashboard_counts().items():
-            if k in self.cards: self.cards[k].value.setText(str(val))
-        self.updated.setText("Updated: " + datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        counts=self.db.dashboard_counts()
+        for key,card in self.cards.items():card.value.setText(str(counts.get(key,0)))
+        self.attention=self.db.operations_attention_queue()
+        self.attention_table.setRowCount(len(self.attention))
+        fields=["severity","kind","equipment_id","key","summary","owner","age_hours"]
+        for r,row in enumerate(self.attention):
+            for col,field in enumerate(fields):
+                value=row.get(field,"")
+                if field=="age_hours":value=f"{float(value or 0):.1f}"
+                self.attention_table.setItem(r,col,ti(value))
+        self.updated.setText("Updated "+datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
 
 class EquipmentDialog(QDialog):
