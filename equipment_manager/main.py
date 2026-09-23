@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
 )
 
 from database import Database, PERMISSIONS, ROLE_PERMISSIONS
+from backup import create_backup, verify_backup
 from domain import REASON_CODES, TICKET_REASON_CODES, allowed_targets, allowed_ticket_targets
 from services import (
     auto_mapping, calculate_next_due, copy_clipboard_image, dataframe_to_pm_backlog,
@@ -1110,9 +1111,9 @@ class UserDialog(QDialog):
 class AdminPage(QWidget):
     def __init__(self,db,user):
         super().__init__();self.db=db;self.user=user;self.rows=[];self.attempts=[];v=QVBoxLayout(self)
-        h=QHBoxLayout();add=QPushButton("Add User");role=QPushButton("Change Role");toggle=QPushButton("Enable / Disable");reset=QPushButton("Reset Password");unlock=QPushButton("Unlock Login");override=QPushButton("Permission Override")
-        add.clicked.connect(self.add);role.clicked.connect(self.role);toggle.clicked.connect(self.toggle);reset.clicked.connect(self.reset);unlock.clicked.connect(self.unlock);override.clicked.connect(self.override)
-        allowed=db.has_permission(user,"user.admin") or user.get("role")=="Administrator";[x.setEnabled(allowed) for x in [add,role,toggle,reset,unlock,override]];[h.addWidget(x) for x in [add,role,toggle,reset,unlock,override]];h.addStretch(1);v.addLayout(h)
+        h=QHBoxLayout();add=QPushButton("Add User");role=QPushButton("Change Role");toggle=QPushButton("Enable / Disable");reset=QPushButton("Reset Password");unlock=QPushButton("Unlock Login");override=QPushButton("Permission Override");backupb=QPushButton("Create DB Backup");verifyb=QPushButton("Verify Backup")
+        add.clicked.connect(self.add);role.clicked.connect(self.role);toggle.clicked.connect(self.toggle);reset.clicked.connect(self.reset);unlock.clicked.connect(self.unlock);override.clicked.connect(self.override);backupb.clicked.connect(self.create_backup);verifyb.clicked.connect(self.verify_backup)
+        allowed=db.has_permission(user,"user.admin") or user.get("role")=="Administrator";[x.setEnabled(allowed) for x in [add,role,toggle,reset,unlock,override,backupb,verifyb]];[h.addWidget(x) for x in [add,role,toggle,reset,unlock,override,backupb,verifyb]];h.addStretch(1);v.addLayout(h)
         tabs=QTabWidget()
         wu=QWidget();vu=QVBoxLayout(wu);self.table=make_table(["Username","Display Name","Role","Active","Last Login","Created"]);vu.addWidget(self.table);tabs.addTab(wu,"Users")
         wa=QWidget();va=QVBoxLayout(wa);self.attempt_table=make_table(["Username","Success","Reason","Workstation","Attempted"]);va.addWidget(self.attempt_table);tabs.addTab(wa,"Login Attempts")
@@ -1164,6 +1165,26 @@ class AdminPage(QWidget):
         if not ok:return
         choice,ok=QInputDialog.getItem(self,"Permission Override",f"{row.username}: {perm}",["Allow","Deny","Use Role Default"],0,False)
         if ok:self.db.set_permission_override(row.username,perm,{"Allow":True,"Deny":False,"Use Role Default":None}[choice]);self.refresh()
+
+    def create_backup(self):
+        postgres=self.db.url.startswith("postgresql")
+        filt="PostgreSQL Backup (*.dump)" if postgres else "SQLite Backup (*.db)"
+        default=str(Path.cwd()/("equipment_backup.dump" if postgres else "equipment_backup.db"))
+        path,_=QFileDialog.getSaveFileName(self,"Create Database Backup",default,filt)
+        if not path:return
+        try:
+            result=create_backup(self.db.url,path)
+            self.db.audit(self.user["username"],"DATABASE_BACKUP","SYSTEM",result["path"],detail=result["verification"],workstation=WORKSTATION)
+            QMessageBox.information(self,"Backup",f"Verified backup created.\n{result['path']}\n{result['size_bytes']} bytes\n{result['verification']}")
+        except Exception as exc:QMessageBox.critical(self,"Backup",str(exc))
+
+    def verify_backup(self):
+        filt="PostgreSQL Backup (*.dump)" if self.db.url.startswith("postgresql") else "SQLite Backup (*.db)"
+        path,_=QFileDialog.getOpenFileName(self,"Verify Database Backup","",filt)
+        if not path:return
+        ok,detail=verify_backup(self.db.url,path)
+        if ok:QMessageBox.information(self,"Backup Verification","PASS — "+detail)
+        else:QMessageBox.critical(self,"Backup Verification","FAIL — "+detail)
 
 
 class ReliabilityPage(QWidget):
