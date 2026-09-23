@@ -20,6 +20,8 @@ from PySide6.QtWidgets import (
 
 from database import Database, PERMISSIONS, ROLE_PERMISSIONS
 from backup import create_backup, verify_backup
+from logging_config import configure_logging, install_exception_hook
+from version import __version__
 from domain import REASON_CODES, TICKET_REASON_CODES, allowed_targets, allowed_ticket_targets
 from services import (
     auto_mapping, calculate_next_due, copy_clipboard_image, dataframe_to_pm_backlog,
@@ -27,7 +29,7 @@ from services import (
     read_table, readonly_open_copy, workbook_sheets, workload_by_day,
 )
 
-APP_TITLE = "Equipment Management System"
+APP_TITLE = f"Equipment Management System {__version__}"
 WORKSTATION = socket.gethostname()
 FILE_ROOT = os.getenv("EMS_FILE_ROOT", str(Path.cwd() / "equipment_files"))
 
@@ -1624,6 +1626,7 @@ class MainWindow(QMainWindow):
 
 
 def main():
+    configure_logging("ems-main");install_exception_hook("ems-main")
     app=QApplication(sys.argv);app.setStyleSheet(STYLE);db=Database()
     if not db.has_users():
         first=FirstAdminDialog(db)
