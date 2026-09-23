@@ -124,6 +124,60 @@ class ComponentEvent(Base):
     occurred_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
 
 
+class EquipmentMeter(Base):
+    __tablename__ = "equipment_meters"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    equipment_id: Mapped[str] = mapped_column(String(100), index=True)
+    meter_code: Mapped[str] = mapped_column(String(80), index=True)
+    name: Mapped[str] = mapped_column(String(160), default="")
+    unit: Mapped[str] = mapped_column(String(40), default="")
+    current_value: Mapped[float] = mapped_column(Float, default=0.0)
+    last_reading_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    __table_args__ = (UniqueConstraint("equipment_id","meter_code",name="uq_equipment_meter"),)
+
+
+class MeterReading(Base):
+    __tablename__ = "meter_readings"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    equipment_id: Mapped[str] = mapped_column(String(100), index=True)
+    meter_code: Mapped[str] = mapped_column(String(80), index=True)
+    value: Mapped[float] = mapped_column(Float)
+    reading_type: Mapped[str] = mapped_column(String(30), default="Reading")
+    note: Mapped[str] = mapped_column(Text, default="")
+    recorded_by: Mapped[str] = mapped_column(String(120), index=True)
+    workstation: Mapped[str] = mapped_column(String(120), default="")
+    recorded_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
+class PMUsageTrigger(Base):
+    __tablename__ = "pm_usage_triggers"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    trigger_id: Mapped[str] = mapped_column(String(100), unique=True, index=True)
+    equipment_id: Mapped[str] = mapped_column(String(100), index=True)
+    pm_id: Mapped[str] = mapped_column(String(100), index=True)
+    meter_code: Mapped[str] = mapped_column(String(80), index=True)
+    interval_value: Mapped[float] = mapped_column(Float)
+    last_trigger_value: Mapped[float] = mapped_column(Float, default=0.0)
+    next_trigger_value: Mapped[float] = mapped_column(Float)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
+class PMUsageOccurrence(Base):
+    __tablename__ = "pm_usage_occurrences"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    trigger_id: Mapped[str] = mapped_column(String(100), index=True)
+    task_id: Mapped[int] = mapped_column(Integer, index=True)
+    equipment_id: Mapped[str] = mapped_column(String(100), index=True)
+    pm_id: Mapped[str] = mapped_column(String(100), index=True)
+    meter_code: Mapped[str] = mapped_column(String(80), index=True)
+    trigger_value: Mapped[float] = mapped_column(Float)
+    reading_value: Mapped[float] = mapped_column(Float)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
 class PMDefinition(Base):
     __tablename__ = "pm_definitions"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -480,11 +534,11 @@ PBKDF2_ROUNDS = 310_000
 
 ROLE_PERMISSIONS = {
     "Administrator": {"*"},
-    "Manager": {"view", "equipment.edit", "equipment.transition", "equipment.component.edit", "pm.edit", "pm.execute", "pm.approve", "pm.defer", "pm.defer.approve", "ticket.edit", "disposition.edit", "release.approve", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
-    "Supervisor": {"view", "equipment.edit", "equipment.transition", "equipment.component.edit", "pm.edit", "pm.execute", "pm.defer", "pm.defer.approve", "ticket.edit", "disposition.edit", "release.verify", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
-    "Equipment Engineer": {"view", "equipment.edit", "equipment.transition", "equipment.component.edit", "pm.edit", "pm.execute", "pm.defer", "ticket.edit", "disposition.edit", "release.verify", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
-    "Maintenance": {"view", "equipment.component.edit", "pm.execute", "pm.defer", "ticket.edit", "endorsement.edit", "inventory.consume", "inventory.reserve", "document.link"},
-    "Technician": {"view", "pm.execute", "ticket.edit", "inventory.consume", "document.link"},
+    "Manager": {"view", "equipment.meter.record", "equipment.edit", "equipment.transition", "equipment.component.edit", "pm.edit", "pm.execute", "pm.approve", "pm.defer", "pm.defer.approve", "ticket.edit", "disposition.edit", "release.approve", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
+    "Supervisor": {"view", "equipment.meter.record", "equipment.edit", "equipment.transition", "equipment.component.edit", "pm.edit", "pm.execute", "pm.defer", "pm.defer.approve", "ticket.edit", "disposition.edit", "release.verify", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
+    "Equipment Engineer": {"view", "equipment.meter.record", "equipment.edit", "equipment.transition", "equipment.component.edit", "pm.edit", "pm.execute", "pm.defer", "ticket.edit", "disposition.edit", "release.verify", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
+    "Maintenance": {"view", "equipment.meter.record", "equipment.component.edit", "pm.execute", "pm.defer", "ticket.edit", "endorsement.edit", "inventory.consume", "inventory.reserve", "document.link"},
+    "Technician": {"view", "equipment.meter.record", "pm.execute", "ticket.edit", "inventory.consume", "document.link"},
     "Process Engineer": {"view", "ticket.edit", "release.verify", "document.link", "report.view"},
     "Inventory Controller": {"view", "inventory.edit", "inventory.consume", "inventory.reserve", "document.link"},
     "Document Controller": {"view", "document.link", "document.control"},
@@ -492,7 +546,7 @@ ROLE_PERMISSIONS = {
 }
 
 PERMISSIONS = [
-    "view", "equipment.edit", "equipment.transition", "equipment.component.edit", "layout.edit", "pm.edit", "pm.execute", "pm.approve", "pm.defer", "pm.defer.approve",
+    "view", "equipment.edit", "equipment.transition", "equipment.component.edit", "equipment.meter.record", "layout.edit", "pm.edit", "pm.execute", "pm.approve", "pm.defer", "pm.defer.approve",
     "ticket.edit", "disposition.edit", "release.verify", "release.approve", "endorsement.edit",
     "inventory.edit", "inventory.consume", "inventory.reserve", "document.link", "document.control",
     "user.admin", "audit.view", "report.view",
@@ -839,6 +893,216 @@ class Database:
             if equipment_id:
                 stmt=stmt.where(ComponentEvent.equipment_id==equipment_id)
             return list(s.scalars(stmt))
+
+    def list_meters(self, equipment_id: str = ""):
+        with self.session() as s:
+            stmt=select(EquipmentMeter).order_by(EquipmentMeter.equipment_id,EquipmentMeter.meter_code)
+            if equipment_id:
+                stmt=stmt.where(EquipmentMeter.equipment_id==equipment_id)
+            return list(s.scalars(stmt))
+
+    def save_meter(self, data: dict[str, Any], expected_version: int | None = None):
+        payload=dict(data)
+        with self.session() as s:
+            if not s.scalar(select(Equipment).where(Equipment.equipment_id==payload.get("equipment_id",""))):
+                raise ValueError("Equipment not found")
+            item=s.scalar(select(EquipmentMeter).where(
+                EquipmentMeter.equipment_id==payload["equipment_id"],
+                EquipmentMeter.meter_code==payload["meter_code"],
+            ))
+            if item:
+                payload.pop("current_value",None)
+                payload.pop("last_reading_at",None)
+                self._update_versioned(item,payload,expected_version,"Equipment meter")
+            else:
+                item=EquipmentMeter(**payload)
+                s.add(item)
+            s.flush()
+            return item
+
+    def list_meter_readings(self, equipment_id: str, meter_code: str = "", limit: int = 500):
+        with self.session() as s:
+            stmt=select(MeterReading).where(MeterReading.equipment_id==equipment_id)
+            if meter_code:
+                stmt=stmt.where(MeterReading.meter_code==meter_code)
+            stmt=stmt.order_by(MeterReading.recorded_at.desc(),MeterReading.id.desc()).limit(max(1,min(int(limit),5000)))
+            return list(s.scalars(stmt))
+
+    def record_meter_reading(
+        self,
+        equipment_id: str,
+        meter_code: str,
+        value: float,
+        user: str,
+        note: str = "",
+        reset: bool = False,
+        workstation: str = "",
+        expected_version: int | None = None,
+    ):
+        with self.session() as s:
+            stmt=select(EquipmentMeter).where(
+                EquipmentMeter.equipment_id==equipment_id,
+                EquipmentMeter.meter_code==meter_code,
+            )
+            if self.url.startswith("postgresql"):
+                stmt=stmt.with_for_update()
+            meter=s.scalar(stmt)
+            if not meter:
+                raise ValueError("Equipment meter not found")
+            if expected_version is not None and meter.version!=expected_version:
+                raise RuntimeError("CONFLICT: Meter changed by another user. Refresh and retry.")
+            value=float(value)
+            if value<0:
+                raise ValueError("Meter reading cannot be negative")
+            if value<meter.current_value and not reset:
+                raise ValueError("Meter reading cannot decrease unless an explicit reset is recorded.")
+            now=datetime.utcnow()
+            reading=MeterReading(
+                equipment_id=equipment_id,
+                meter_code=meter_code,
+                value=value,
+                reading_type="Reset" if reset else "Reading",
+                note=note.strip(),
+                recorded_by=user,
+                workstation=workstation,
+                recorded_at=now,
+            )
+            s.add(reading)
+            meter.current_value=value
+            meter.last_reading_at=now
+            meter.version+=1
+            s.add(AuditLog(
+                user=user,
+                action="METER_RESET" if reset else "METER_READING",
+                entity_type="EQUIPMENT_METER",
+                entity_key=f"{equipment_id}:{meter_code}",
+                detail=json.dumps({"value":value,"unit":meter.unit,"note":note.strip()},sort_keys=True),
+                workstation=workstation,
+                created_at=now,
+            ))
+            s.flush()
+        tasks=self.evaluate_usage_triggers(equipment_id,meter_code,user=user,workstation=workstation)
+        return reading,tasks
+
+    def save_pm_usage_trigger(self, data: dict[str, Any], expected_version: int | None = None):
+        payload=dict(data)
+        interval=float(payload.get("interval_value") or 0)
+        if interval<=0:
+            raise ValueError("Usage trigger interval must be greater than zero.")
+        with self.session() as s:
+            meter=s.scalar(select(EquipmentMeter).where(
+                EquipmentMeter.equipment_id==payload.get("equipment_id",""),
+                EquipmentMeter.meter_code==payload.get("meter_code",""),
+            ))
+            if not meter:
+                raise ValueError("Configured equipment meter not found")
+            if not s.scalar(select(PMDefinition).where(PMDefinition.pm_id==payload.get("pm_id",""))):
+                raise ValueError("PM definition not found")
+            item=s.scalar(select(PMUsageTrigger).where(PMUsageTrigger.trigger_id==payload["trigger_id"]))
+            if item:
+                payload.pop("equipment_id",None)
+                payload.pop("pm_id",None)
+                payload.pop("meter_code",None)
+                payload.pop("last_trigger_value",None)
+                payload.pop("next_trigger_value",None)
+                self._update_versioned(item,payload,expected_version,"PM usage trigger")
+            else:
+                base=float(payload.pop("start_value",meter.current_value) or 0.0)
+                payload["last_trigger_value"]=base
+                payload["next_trigger_value"]=base+interval
+                item=PMUsageTrigger(**payload)
+                s.add(item)
+            s.flush()
+            return item
+
+    def list_pm_usage_triggers(self, equipment_id: str = ""):
+        with self.session() as s:
+            stmt=select(PMUsageTrigger).order_by(PMUsageTrigger.equipment_id,PMUsageTrigger.trigger_id)
+            if equipment_id:
+                stmt=stmt.where(PMUsageTrigger.equipment_id==equipment_id)
+            return list(s.scalars(stmt))
+
+    def list_pm_usage_occurrences(self, trigger_id: str = ""):
+        with self.session() as s:
+            stmt=select(PMUsageOccurrence).order_by(PMUsageOccurrence.created_at.desc())
+            if trigger_id:
+                stmt=stmt.where(PMUsageOccurrence.trigger_id==trigger_id)
+            return list(s.scalars(stmt))
+
+    def evaluate_usage_triggers(self, equipment_id: str, meter_code: str, user: str = "", workstation: str = ""):
+        created=[]
+        with self.session() as s:
+            meter=s.scalar(select(EquipmentMeter).where(
+                EquipmentMeter.equipment_id==equipment_id,
+                EquipmentMeter.meter_code==meter_code,
+            ))
+            if not meter:
+                return created
+            stmt=select(PMUsageTrigger).where(
+                PMUsageTrigger.equipment_id==equipment_id,
+                PMUsageTrigger.meter_code==meter_code,
+                PMUsageTrigger.active.is_(True),
+            )
+            if self.url.startswith("postgresql"):
+                stmt=stmt.with_for_update()
+            triggers=list(s.scalars(stmt))
+            for trigger in triggers:
+                if meter.current_value<trigger.next_trigger_value:
+                    continue
+                open_task=s.scalar(select(PMTask).where(
+                    PMTask.equipment_id==equipment_id,
+                    PMTask.pm_id==trigger.pm_id,
+                    PMTask.status.notin_(["Completed","Cancelled"]),
+                ))
+                if open_task:
+                    continue
+                definition=s.scalar(select(PMDefinition).where(PMDefinition.pm_id==trigger.pm_id))
+                now=datetime.utcnow()
+                threshold=trigger.next_trigger_value
+                task=PMTask(
+                    equipment_id=equipment_id,
+                    pm_id=trigger.pm_id,
+                    pm_name=definition.name if definition else trigger.pm_id,
+                    original_due_date=now,
+                    scheduled_date=now,
+                    status="Pending",
+                    estimated_hours=definition.estimated_hours if definition else 0.0,
+                    priority="High",
+                    sop_path=definition.sop_path if definition else "",
+                )
+                s.add(task)
+                s.flush()
+                s.add(PMUsageOccurrence(
+                    trigger_id=trigger.trigger_id,
+                    task_id=task.id,
+                    equipment_id=equipment_id,
+                    pm_id=trigger.pm_id,
+                    meter_code=meter_code,
+                    trigger_value=threshold,
+                    reading_value=meter.current_value,
+                ))
+                trigger.last_trigger_value=threshold
+                while trigger.next_trigger_value<=meter.current_value:
+                    trigger.next_trigger_value+=trigger.interval_value
+                trigger.version+=1
+                s.add(AuditLog(
+                    user=user,
+                    action="PM_USAGE_TRIGGER",
+                    entity_type="PM_TASK",
+                    entity_key=str(task.id),
+                    detail=json.dumps({
+                        "trigger_id":trigger.trigger_id,
+                        "equipment_id":equipment_id,
+                        "pm_id":trigger.pm_id,
+                        "meter_code":meter_code,
+                        "trigger_value":threshold,
+                        "reading_value":meter.current_value,
+                    },sort_keys=True),
+                    workstation=workstation,
+                ))
+                created.append(task)
+            s.flush()
+        return created
 
     def transition_equipment_state(
         self,
