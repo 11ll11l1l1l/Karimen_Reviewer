@@ -928,6 +928,73 @@ class Database:
             stmt=stmt.order_by(MeterReading.recorded_at.desc(),MeterReading.id.desc()).limit(max(1,min(int(limit),5000)))
             return list(s.scalars(stmt))
 
+    def _evaluate_usage_triggers_in_session(self, s, meter: EquipmentMeter, user: str = "", workstation: str = ""):
+        created=[]
+        stmt=select(PMUsageTrigger).where(
+            PMUsageTrigger.equipment_id==meter.equipment_id,
+            PMUsageTrigger.meter_code==meter.meter_code,
+            PMUsageTrigger.active.is_(True),
+        )
+        if self.url.startswith("postgresql"):
+            stmt=stmt.with_for_update()
+        triggers=list(s.scalars(stmt))
+        for trigger in triggers:
+            if meter.current_value<trigger.next_trigger_value:
+                continue
+            open_task=s.scalar(select(PMTask).where(
+                PMTask.equipment_id==meter.equipment_id,
+                PMTask.pm_id==trigger.pm_id,
+                PMTask.status.notin_(["Completed","Cancelled"]),
+            ))
+            if open_task:
+                continue
+            definition=s.scalar(select(PMDefinition).where(PMDefinition.pm_id==trigger.pm_id))
+            now=datetime.utcnow()
+            threshold=trigger.next_trigger_value
+            task=PMTask(
+                equipment_id=meter.equipment_id,
+                pm_id=trigger.pm_id,
+                pm_name=definition.name if definition else trigger.pm_id,
+                original_due_date=now,
+                scheduled_date=now,
+                status="Pending",
+                estimated_hours=definition.estimated_hours if definition else 0.0,
+                priority="High",
+                sop_path=definition.sop_path if definition else "",
+            )
+            s.add(task)
+            s.flush()
+            s.add(PMUsageOccurrence(
+                trigger_id=trigger.trigger_id,
+                task_id=task.id,
+                equipment_id=meter.equipment_id,
+                pm_id=trigger.pm_id,
+                meter_code=meter.meter_code,
+                trigger_value=threshold,
+                reading_value=meter.current_value,
+            ))
+            trigger.last_trigger_value=threshold
+            while trigger.next_trigger_value<=meter.current_value:
+                trigger.next_trigger_value+=trigger.interval_value
+            trigger.version+=1
+            s.add(AuditLog(
+                user=user,
+                action="PM_USAGE_TRIGGER",
+                entity_type="PM_TASK",
+                entity_key=str(task.id),
+                detail=json.dumps({
+                    "trigger_id":trigger.trigger_id,
+                    "equipment_id":meter.equipment_id,
+                    "pm_id":trigger.pm_id,
+                    "meter_code":meter.meter_code,
+                    "trigger_value":threshold,
+                    "reading_value":meter.current_value,
+                },sort_keys=True),
+                workstation=workstation,
+            ))
+            created.append(task)
+        return created
+
     def record_meter_reading(
         self,
         equipment_id: str,
@@ -971,18 +1038,34 @@ class Database:
             meter.current_value=value
             meter.last_reading_at=now
             meter.version+=1
+
+            if reset:
+                trigger_stmt=select(PMUsageTrigger).where(
+                    PMUsageTrigger.equipment_id==equipment_id,
+                    PMUsageTrigger.meter_code==meter_code,
+                    PMUsageTrigger.active.is_(True),
+                )
+                if self.url.startswith("postgresql"):
+                    trigger_stmt=trigger_stmt.with_for_update()
+                for trigger in s.scalars(trigger_stmt):
+                    trigger.last_trigger_value=value
+                    trigger.next_trigger_value=value+trigger.interval_value
+                    trigger.version+=1
+                created=[]
+            else:
+                created=self._evaluate_usage_triggers_in_session(s,meter,user=user,workstation=workstation)
+
             s.add(AuditLog(
                 user=user,
                 action="METER_RESET" if reset else "METER_READING",
                 entity_type="EQUIPMENT_METER",
                 entity_key=f"{equipment_id}:{meter_code}",
-                detail=json.dumps({"value":value,"unit":meter.unit,"note":note.strip()},sort_keys=True),
+                detail=json.dumps({"value":value,"unit":meter.unit,"note":note.strip(),"pm_tasks_created":[t.id for t in created]},sort_keys=True),
                 workstation=workstation,
                 created_at=now,
             ))
             s.flush()
-        tasks=self.evaluate_usage_triggers(equipment_id,meter_code,user=user,workstation=workstation)
-        return reading,tasks
+            return reading,created
 
     def save_pm_usage_trigger(self, data: dict[str, Any], expected_version: int | None = None):
         payload=dict(data)
@@ -1030,79 +1113,19 @@ class Database:
             return list(s.scalars(stmt))
 
     def evaluate_usage_triggers(self, equipment_id: str, meter_code: str, user: str = "", workstation: str = ""):
-        created=[]
         with self.session() as s:
-            meter=s.scalar(select(EquipmentMeter).where(
+            stmt=select(EquipmentMeter).where(
                 EquipmentMeter.equipment_id==equipment_id,
                 EquipmentMeter.meter_code==meter_code,
-            ))
-            if not meter:
-                return created
-            stmt=select(PMUsageTrigger).where(
-                PMUsageTrigger.equipment_id==equipment_id,
-                PMUsageTrigger.meter_code==meter_code,
-                PMUsageTrigger.active.is_(True),
             )
             if self.url.startswith("postgresql"):
                 stmt=stmt.with_for_update()
-            triggers=list(s.scalars(stmt))
-            for trigger in triggers:
-                if meter.current_value<trigger.next_trigger_value:
-                    continue
-                open_task=s.scalar(select(PMTask).where(
-                    PMTask.equipment_id==equipment_id,
-                    PMTask.pm_id==trigger.pm_id,
-                    PMTask.status.notin_(["Completed","Cancelled"]),
-                ))
-                if open_task:
-                    continue
-                definition=s.scalar(select(PMDefinition).where(PMDefinition.pm_id==trigger.pm_id))
-                now=datetime.utcnow()
-                threshold=trigger.next_trigger_value
-                task=PMTask(
-                    equipment_id=equipment_id,
-                    pm_id=trigger.pm_id,
-                    pm_name=definition.name if definition else trigger.pm_id,
-                    original_due_date=now,
-                    scheduled_date=now,
-                    status="Pending",
-                    estimated_hours=definition.estimated_hours if definition else 0.0,
-                    priority="High",
-                    sop_path=definition.sop_path if definition else "",
-                )
-                s.add(task)
-                s.flush()
-                s.add(PMUsageOccurrence(
-                    trigger_id=trigger.trigger_id,
-                    task_id=task.id,
-                    equipment_id=equipment_id,
-                    pm_id=trigger.pm_id,
-                    meter_code=meter_code,
-                    trigger_value=threshold,
-                    reading_value=meter.current_value,
-                ))
-                trigger.last_trigger_value=threshold
-                while trigger.next_trigger_value<=meter.current_value:
-                    trigger.next_trigger_value+=trigger.interval_value
-                trigger.version+=1
-                s.add(AuditLog(
-                    user=user,
-                    action="PM_USAGE_TRIGGER",
-                    entity_type="PM_TASK",
-                    entity_key=str(task.id),
-                    detail=json.dumps({
-                        "trigger_id":trigger.trigger_id,
-                        "equipment_id":equipment_id,
-                        "pm_id":trigger.pm_id,
-                        "meter_code":meter_code,
-                        "trigger_value":threshold,
-                        "reading_value":meter.current_value,
-                    },sort_keys=True),
-                    workstation=workstation,
-                ))
-                created.append(task)
+            meter=s.scalar(stmt)
+            if not meter:
+                return []
+            created=self._evaluate_usage_triggers_in_session(s,meter,user=user,workstation=workstation)
             s.flush()
-        return created
+            return created
 
     def transition_equipment_state(
         self,
