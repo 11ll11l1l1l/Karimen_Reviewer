@@ -61,6 +61,17 @@ class ProductivityWorkspaceTests(unittest.TestCase):
             self.db.remove_attachment(row.id,"ee")
             self.assertEqual(self.db.list_attachments("TICKET","INC-9001"),[])
 
+    def test_equipment_activity_timeline_merges_incident_and_evidence(self):
+        with tempfile.TemporaryDirectory() as td:
+            path=os.path.join(td,"photo.txt")
+            with open(path,"w",encoding="utf-8") as handle:handle.write("evidence")
+            self.db.add_attachment("TICKET","INC-9001",path,equipment_id="ETCH-A01",created_by="ee")
+            timeline=self.db.equipment_activity_timeline("ETCH-A01")
+            kinds={x["kind"] for x in timeline}
+            self.assertIn("STATE",kinds)
+            self.assertIn("INCIDENT",kinds)
+            self.assertIn("EVIDENCE",kinds)
+
     def test_my_work_includes_owned_incident(self):
         rows=self.db.my_work("ee")
         self.assertTrue(any(x["kind"]=="INCIDENT" and x["key"]=="INC-9001" for x in rows))
