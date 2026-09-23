@@ -21,6 +21,15 @@ class Base(DeclarativeBase):
     pass
 
 
+class SchemaMigration(Base):
+    __tablename__ = "schema_migrations"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    revision: Mapped[str] = mapped_column(String(80), unique=True, index=True)
+    checksum: Mapped[str] = mapped_column(String(64))
+    description: Mapped[str] = mapped_column(String(250))
+    applied_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
 class User(Base):
     __tablename__ = "users"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -754,10 +763,76 @@ class Database:
         args = {"check_same_thread": False} if self.url.startswith("sqlite") else {}
         self.engine = create_engine(self.url, future=True, pool_pre_ping=True, connect_args=args)
         self.Session = sessionmaker(bind=self.engine, autoflush=False, expire_on_commit=False, future=True)
-        Base.metadata.create_all(self.engine)
+        inspector=inspect(self.engine)
+        existing=set(inspector.get_table_names())
+        if not existing:
+            Base.metadata.create_all(self.engine)
+            self._record_bootstrap_migrations()
+        else:
+            SchemaMigration.__table__.create(self.engine,checkfirst=True)
+            self._apply_schema_migrations()
         self._assert_schema_compatible()
         self._bootstrap_legacy_event_history()
         self._bootstrap_factory_hierarchy()
+
+    @staticmethod
+    def _migration_checksum(revision: str, description: str) -> str:
+        return hashlib.sha256(f"{revision}|{description}".encode("utf-8")).hexdigest()
+
+    def _migration_plan(self):
+        return [
+            ("20260923_001","Create additive production-core tables",lambda: [
+                table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
+            ]),
+            ("20260923_002","Create operational event and lookup indexes",self._migration_indexes),
+        ]
+
+    def _migration_indexes(self):
+        statements=[
+            "CREATE INDEX IF NOT EXISTS ix_eq_state_equipment_time ON equipment_state_events (equipment_id, changed_at)",
+            "CREATE INDEX IF NOT EXISTS ix_ticket_state_ticket_time ON ticket_state_events (ticket_no, changed_at)",
+            "CREATE INDEX IF NOT EXISTS ix_ticket_escalation_ticket_time ON ticket_escalation_events (ticket_no, occurred_at)",
+            "CREATE INDEX IF NOT EXISTS ix_meter_reading_equipment_meter_time ON meter_readings (equipment_id, meter_code, recorded_at)",
+            "CREATE INDEX IF NOT EXISTS ix_qualification_equipment_status ON qualification_runs (equipment_id, status)",
+            "CREATE INDEX IF NOT EXISTS ix_pm_task_equipment_status ON pm_tasks (equipment_id, status)",
+        ]
+        with self.engine.begin() as conn:
+            for sql in statements:conn.exec_driver_sql(sql)
+
+    def _record_bootstrap_migrations(self):
+        SchemaMigration.__table__.create(self.engine,checkfirst=True)
+        with self.Session.begin() as s:
+            for revision,description,_ in self._migration_plan():
+                if not s.scalar(select(SchemaMigration).where(SchemaMigration.revision==revision)):
+                    s.add(SchemaMigration(
+                        revision=revision,
+                        checksum=self._migration_checksum(revision,description),
+                        description=description,
+                    ))
+
+    def _apply_schema_migrations(self):
+        SchemaMigration.__table__.create(self.engine,checkfirst=True)
+        with self.Session() as s:
+            applied={row.revision:row for row in s.scalars(select(SchemaMigration))}
+        for revision,description,apply_fn in self._migration_plan():
+            expected=self._migration_checksum(revision,description)
+            row=applied.get(revision)
+            if row:
+                if row.checksum!=expected:
+                    raise RuntimeError(
+                        f"DATABASE MIGRATION CHECKSUM MISMATCH for {revision}. "
+                        "Migration history was modified after deployment."
+                    )
+                continue
+            apply_fn()
+            with self.Session.begin() as s:
+                s.add(SchemaMigration(
+                    revision=revision,checksum=expected,description=description,
+                ))
+
+    def list_schema_migrations(self):
+        with self.session() as s:
+            return list(s.scalars(select(SchemaMigration).order_by(SchemaMigration.applied_at,SchemaMigration.id)))
 
     def _assert_schema_compatible(self):
         """Fail fast if an existing database is missing model columns.
