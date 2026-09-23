@@ -94,6 +94,26 @@ class EquipmentLocationAssignment(Base):
     __table_args__ = (UniqueConstraint("equipment_id","node_code","active",name="uq_equipment_location_active"),)
 
 
+class ApprovalDelegation(Base):
+    __tablename__ = "approval_delegations"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    delegator: Mapped[str] = mapped_column(String(80), index=True)
+    delegate: Mapped[str] = mapped_column(String(80), index=True)
+    permission: Mapped[str] = mapped_column(String(100), index=True)
+    scope_type: Mapped[str] = mapped_column(String(30), default="GLOBAL")
+    scope_key: Mapped[str] = mapped_column(String(180), default="")
+    starts_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    ends_at: Mapped[datetime] = mapped_column(DateTime, index=True)
+    reason: Mapped[str] = mapped_column(Text)
+    active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    created_by: Mapped[str] = mapped_column(String(80), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    revoked_by: Mapped[str] = mapped_column(String(80), default="")
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    revoke_reason: Mapped[str] = mapped_column(Text, default="")
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
 class UserAccessPolicy(Base):
     __tablename__ = "user_access_policies"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -1191,6 +1211,112 @@ class Database:
             guard+=1
         return result
 
+    def list_approval_delegations(self, active_only: bool = False):
+        now=datetime.utcnow()
+        with self.session() as s:
+            stmt=select(ApprovalDelegation).order_by(ApprovalDelegation.created_at.desc())
+            if active_only:
+                stmt=stmt.where(
+                    ApprovalDelegation.active.is_(True),
+                    ApprovalDelegation.starts_at<=now,
+                    ApprovalDelegation.ends_at>now,
+                )
+            return list(s.scalars(stmt))
+
+    def _delegation_scope_allows(self, s, row: ApprovalDelegation, equipment_id: str) -> bool:
+        scope=(row.scope_type or "GLOBAL").upper()
+        if scope=="GLOBAL":return True
+        if not equipment_id:return False
+        if scope=="EQUIPMENT":return row.scope_key==equipment_id
+        if scope=="NODE":
+            assignment=s.scalar(select(EquipmentLocationAssignment).where(
+                EquipmentLocationAssignment.equipment_id==equipment_id,
+                EquipmentLocationAssignment.active.is_(True),
+            ))
+            return bool(assignment and row.scope_key in self._node_ancestors(s,assignment.node_code))
+        return False
+
+    def delegated_permission(self, username: str, permission: str, equipment_id: str = "") -> bool:
+        now=datetime.utcnow()
+        with self.session() as s:
+            rows=list(s.scalars(select(ApprovalDelegation).where(
+                ApprovalDelegation.delegate==username,
+                ApprovalDelegation.permission==permission,
+                ApprovalDelegation.active.is_(True),
+                ApprovalDelegation.starts_at<=now,
+                ApprovalDelegation.ends_at>now,
+            )))
+            return any(self._delegation_scope_allows(s,row,equipment_id) for row in rows)
+
+    def create_approval_delegation(
+        self,
+        delegator: str,
+        delegate: str,
+        permission: str,
+        ends_at: datetime,
+        reason: str,
+        actor: str,
+        scope_type: str = "GLOBAL",
+        scope_key: str = "",
+        starts_at: datetime | None = None,
+        workstation: str = "",
+    ):
+        if permission in {"user.admin","workflow.override"}:
+            raise ValueError(f"Permission '{permission}' cannot be delegated.")
+        if permission not in PERMISSIONS:
+            raise ValueError("Unknown permission.")
+        if delegator==delegate:raise ValueError("Delegator and delegate must be different users.")
+        if not reason.strip():raise ValueError("Delegation reason is required.")
+        starts_at=starts_at or datetime.utcnow()
+        if ends_at<=starts_at:raise ValueError("Delegation end must be after its start.")
+        scope_type=scope_type.upper()
+        if scope_type not in {"GLOBAL","EQUIPMENT","NODE"}:raise ValueError("Delegation scope must be GLOBAL, EQUIPMENT, or NODE.")
+        with self.session() as s:
+            delegator_user=s.scalar(select(User).where(User.username==delegator,User.active.is_(True)))
+            delegate_user=s.scalar(select(User).where(User.username==delegate,User.active.is_(True)))
+            actor_user=s.scalar(select(User).where(User.username==actor,User.active.is_(True)))
+            if not delegator_user or not delegate_user or not actor_user:raise ValueError("Delegator, delegate, and actor must be active EMS users.")
+            delegator_ctx={"username":delegator_user.username,"role":delegator_user.role}
+            if not self._direct_permission(delegator_ctx,permission):
+                raise PermissionError("Delegator does not directly own the permission being delegated.")
+            if actor!=delegator and actor_user.role!="Administrator":
+                raise PermissionError("Only the delegator or an Administrator may create this delegation.")
+            if scope_type=="EQUIPMENT" and not s.scalar(select(Equipment).where(Equipment.equipment_id==scope_key)):
+                raise ValueError("Delegation equipment scope not found.")
+            if scope_type=="NODE" and not s.scalar(select(FactoryNode).where(FactoryNode.node_code==scope_key)):
+                raise ValueError("Delegation factory-node scope not found.")
+            row=ApprovalDelegation(
+                delegator=delegator,delegate=delegate,permission=permission,
+                scope_type=scope_type,scope_key=scope_key,starts_at=starts_at,ends_at=ends_at,
+                reason=reason.strip(),created_by=actor,
+            )
+            s.add(row);s.flush()
+            s.add(AuditLog(
+                user=actor,action="APPROVAL_DELEGATION_CREATE",entity_type="DELEGATION",entity_key=str(row.id),
+                detail=json.dumps({"delegator":delegator,"delegate":delegate,"permission":permission,
+                    "scope_type":scope_type,"scope_key":scope_key,"starts_at":starts_at.isoformat(),
+                    "ends_at":ends_at.isoformat(),"reason":reason.strip()},sort_keys=True),
+                workstation=workstation,
+            ))
+            return row
+
+    def revoke_approval_delegation(self, delegation_id: int, actor: str, reason: str, workstation: str = ""):
+        if not reason.strip():raise ValueError("Revocation reason is required.")
+        with self.session() as s:
+            row=s.get(ApprovalDelegation,delegation_id)
+            if not row:raise ValueError("Delegation not found.")
+            actor_user=s.scalar(select(User).where(User.username==actor,User.active.is_(True)))
+            if not actor_user:raise PermissionError("Active actor required.")
+            if actor!=row.delegator and actor_user.role!="Administrator":
+                raise PermissionError("Only the delegator or an Administrator may revoke this delegation.")
+            if not row.active:return row
+            row.active=False;row.revoked_by=actor;row.revoked_at=datetime.utcnow();row.revoke_reason=reason.strip();row.version+=1
+            s.add(AuditLog(
+                user=actor,action="APPROVAL_DELEGATION_REVOKE",entity_type="DELEGATION",entity_key=str(row.id),
+                detail=reason.strip(),workstation=workstation,
+            ))
+            s.flush();return row
+
     def user_access_policy(self, username: str):
         with self.session() as s:
             return s.scalar(select(UserAccessPolicy).where(UserAccessPolicy.username==username))
@@ -1271,8 +1397,9 @@ class Database:
                 raise PermissionError("Authenticated active EMS user is required for this operation.")
             if user:
                 user_ctx={"username":user.username,"role":user.role}
-                if not self.has_permission(user_ctx,permission):
-                    raise PermissionError(f"User '{username}' lacks permission '{permission}'.")
+                if not self._direct_permission(user_ctx,permission):
+                    if not self.delegated_permission(username,permission,equipment_id):
+                        raise PermissionError(f"User '{username}' lacks permission '{permission}'.")
         if equipment_id:
             self.assert_equipment_scope(username,equipment_id,permission)
 
@@ -1411,11 +1538,23 @@ class Database:
         with self.session() as s:
             return {x.permission: x.allowed for x in s.scalars(select(UserPermission).where(UserPermission.username == username))}
 
+    def _direct_permission(self, user: dict[str, Any], permission: str) -> bool:
+        overrides=self.permission_overrides(user["username"])
+        if permission in overrides:return overrides[permission]
+        base=ROLE_PERMISSIONS.get(user.get("role","Read Only"),{"view"})
+        return "*" in base or permission in base
+
     def has_permission(self, user: dict[str, Any], permission: str) -> bool:
-        overrides = self.permission_overrides(user["username"])
-        if permission in overrides: return overrides[permission]
-        base = ROLE_PERMISSIONS.get(user.get("role", "Read Only"), {"view"})
-        return "*" in base or permission in base or (permission != "view" and "*" in base)
+        if self._direct_permission(user,permission):return True
+        now=datetime.utcnow()
+        with self.session() as s:
+            return bool(s.scalar(select(func.count()).select_from(ApprovalDelegation).where(
+                ApprovalDelegation.delegate==user["username"],
+                ApprovalDelegation.permission==permission,
+                ApprovalDelegation.active.is_(True),
+                ApprovalDelegation.starts_at<=now,
+                ApprovalDelegation.ends_at>now,
+            )) or 0)
 
     def save_integration_endpoint(self, data: dict[str, Any], expected_version: int | None = None):
         payload=dict(data)
