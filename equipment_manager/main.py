@@ -90,7 +90,7 @@ class LoginDialog(QDialog):
         f = QFormLayout(); self.username = QLineEdit(); self.password = QLineEdit(); self.password.setEchoMode(QLineEdit.EchoMode.Password); f.addRow("Username", self.username); f.addRow("Password", self.password); v.addLayout(f)
         b = QPushButton("Login"); b.clicked.connect(self.login); v.addWidget(b); self.password.returnPressed.connect(self.login)
     def login(self):
-        user = self.db.authenticate(self.username.text(), self.password.text())
+        user = self.db.authenticate(self.username.text(), self.password.text(), workstation=WORKSTATION)
         if not user: QMessageBox.warning(self, "Login", "Invalid username/password or inactive account."); return
         self.user = user; self.db.audit(user["username"], "LOGIN", "SESSION", WORKSTATION, workstation=WORKSTATION); self.accept()
 
@@ -1018,36 +1018,61 @@ class UserDialog(QDialog):
 
 class AdminPage(QWidget):
     def __init__(self,db,user):
-        super().__init__();self.db=db;self.user=user;self.rows=[];v=QVBoxLayout(self);h=QHBoxLayout();add=QPushButton("Add User");role=QPushButton("Change Role");toggle=QPushButton("Enable / Disable");reset=QPushButton("Reset Password");override=QPushButton("Permission Override");add.clicked.connect(self.add);role.clicked.connect(self.role);toggle.clicked.connect(self.toggle);reset.clicked.connect(self.reset);override.clicked.connect(self.override);allowed=db.has_permission(user,"user.admin") or user.get("role")=="Administrator";[x.setEnabled(allowed) for x in [add,role,toggle,reset,override]];[h.addWidget(x) for x in [add,role,toggle,reset,override]];h.addStretch(1);v.addLayout(h);self.table=make_table(["Username","Display Name","Role","Active","Last Login","Created"]);v.addWidget(self.table);self.refresh()
-    def refresh(self):self.rows=self.db.list_users();fill_table(self.table,self.rows,["username","display_name","role","active","last_login","created_at"])
+        super().__init__();self.db=db;self.user=user;self.rows=[];self.attempts=[];v=QVBoxLayout(self)
+        h=QHBoxLayout();add=QPushButton("Add User");role=QPushButton("Change Role");toggle=QPushButton("Enable / Disable");reset=QPushButton("Reset Password");unlock=QPushButton("Unlock Login");override=QPushButton("Permission Override")
+        add.clicked.connect(self.add);role.clicked.connect(self.role);toggle.clicked.connect(self.toggle);reset.clicked.connect(self.reset);unlock.clicked.connect(self.unlock);override.clicked.connect(self.override)
+        allowed=db.has_permission(user,"user.admin") or user.get("role")=="Administrator";[x.setEnabled(allowed) for x in [add,role,toggle,reset,unlock,override]];[h.addWidget(x) for x in [add,role,toggle,reset,unlock,override]];h.addStretch(1);v.addLayout(h)
+        tabs=QTabWidget()
+        wu=QWidget();vu=QVBoxLayout(wu);self.table=make_table(["Username","Display Name","Role","Active","Last Login","Created"]);vu.addWidget(self.table);tabs.addTab(wu,"Users")
+        wa=QWidget();va=QVBoxLayout(wa);self.attempt_table=make_table(["Username","Success","Reason","Workstation","Attempted"]);va.addWidget(self.attempt_table);tabs.addTab(wa,"Login Attempts")
+        v.addWidget(tabs);self.refresh()
+
+    def refresh(self):
+        self.rows=self.db.list_users();fill_table(self.table,self.rows,["username","display_name","role","active","last_login","created_at"])
+        self.attempts=self.db.list_login_attempts(limit=500);fill_table(self.attempt_table,self.attempts,["username","success","reason","workstation","attempted_at"])
+
     def current(self):return selected_row(self.table,self.rows)
+
     def add(self):
         d=UserDialog(self)
         if d.exec()==QDialog.DialogCode.Accepted:
             try:self.db.create_user(d.username.text(),d.name.text(),d.password.text(),d.role.currentText());self.refresh()
             except Exception as exc:QMessageBox.critical(self,"User",str(exc))
+
     def role(self):
         row=self.current()
         if not row:return
         val,ok=QInputDialog.getItem(self,"Role","Role",list(ROLE_PERMISSIONS),list(ROLE_PERMISSIONS).index(row.role) if row.role in ROLE_PERMISSIONS else 0,False)
         if ok:self.db.update_user(row.username,role=val);self.refresh()
+
     def toggle(self):
         row=self.current()
         if row:self.db.update_user(row.username,active=not row.active);self.refresh()
+
     def reset(self):
         row=self.current()
         if not row:return
         pw,ok=QInputDialog.getText(self,"Password","New password",QLineEdit.EchoMode.Password)
         if ok:
-            try:self.db.update_user(row.username,password=pw);QMessageBox.information(self,"Password","Password updated.")
+            try:self.db.update_user(row.username,password=pw);QMessageBox.information(self,"Password","Password updated and login lockout cleared.");self.refresh()
             except Exception as exc:QMessageBox.critical(self,"Password",str(exc))
+
+    def unlock(self):
+        row=self.current()
+        if not row:return
+        try:
+            self.db.unlock_user(row.username,self.user["username"],WORKSTATION)
+            QMessageBox.information(self,"Login","Login lockout cleared.")
+            self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"Login",str(exc))
+
     def override(self):
         row=self.current()
         if not row:return
         perm,ok=QInputDialog.getItem(self,"Permission Override","Permission",PERMISSIONS,0,False)
         if not ok:return
         choice,ok=QInputDialog.getItem(self,"Permission Override",f"{row.username}: {perm}",["Allow","Deny","Use Role Default"],0,False)
-        if ok:self.db.set_permission_override(row.username,perm,{"Allow":True,"Deny":False,"Use Role Default":None}[choice])
+        if ok:self.db.set_permission_override(row.username,perm,{"Allow":True,"Deny":False,"Use Role Default":None}[choice]);self.refresh()
 
 
 class ReliabilityPage(QWidget):
