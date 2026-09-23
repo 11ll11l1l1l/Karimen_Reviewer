@@ -862,12 +862,37 @@ class AdminPage(QWidget):
         if ok:self.db.set_permission_override(row.username,perm,{"Allow":True,"Deny":False,"Use Role Default":None}[choice])
 
 
+class ReliabilityPage(QWidget):
+    def __init__(self,db):
+        super().__init__(); self.db=db; self.rows=[]
+        v=QVBoxLayout(self); h=QHBoxLayout()
+        title=QLabel("Equipment Reliability"); title.setStyleSheet("font-size:18pt;font-weight:700")
+        self.days=QSpinBox(); self.days.setRange(1,3650); self.days.setValue(30); self.days.setSuffix(" days")
+        refresh=QPushButton("Refresh"); refresh.clicked.connect(self.refresh)
+        h.addWidget(title); h.addStretch(1); h.addWidget(QLabel("Period")); h.addWidget(self.days); h.addWidget(refresh); v.addLayout(h)
+        note=QLabel("Metrics are derived from governed equipment state events. Unplanned downtime is counted when the state class is UNPLANNED_DOWNTIME.")
+        note.setWordWrap(True); note.setStyleSheet("color:#5a6670"); v.addWidget(note)
+        self.table=make_table(["Equipment","Availability %","Failures","Unplanned h","Planned h","Total Down h","MTTR h","MTBF h","Current State"])
+        v.addWidget(self.table); self.refresh()
+
+    def refresh(self):
+        try:self.rows=self.db.reliability_report(self.days.value())
+        except Exception as exc:QMessageBox.critical(self,"Reliability",str(exc));return
+        self.table.setRowCount(len(self.rows))
+        fields=["equipment_id","availability_pct","failure_count","unplanned_downtime_hours","planned_downtime_hours","downtime_hours","mttr_hours","mtbf_hours","current_state"]
+        for r,row in enumerate(self.rows):
+            for col,field in enumerate(fields):
+                value=row.get(field,"")
+                if isinstance(value,float): value=f"{value:.2f}"
+                self.table.setItem(r,col,ti(value))
+
+
 class MainWindow(QMainWindow):
     def __init__(self,db,user):
         super().__init__();self.db=db;self.user=user;self.setWindowTitle(APP_TITLE);self.resize(1450,850);root=QWidget();self.setCentralWidget(root);h=QHBoxLayout(root);self.nav=QListWidget();self.nav.setFixedWidth(210);self.stack=QStackedWidget();h.addWidget(self.nav);h.addWidget(self.stack,1)
         self.pages=[]
         def add(name,page):self.nav.addItem(name);self.stack.addWidget(page);self.pages.append(page)
-        self.dashboard=DashboardPage(db);add("Dashboard",self.dashboard);add("Equipment",EquipmentPage(db,user));self.layout=LayoutPage(db,user);add("Layout / Map",self.layout);add("PM",PMPage(db,user));add("Issue Tickets",TicketPage(db,user));add("Disposition / Release",ControlPage(db,user));add("Endorsements",EndorsementPage(db,user));self.inventory=InventoryPage(db,user);add("Inventory",self.inventory);add("Documents",DocumentPage(db,user));add("Administration",AdminPage(db,user))
+        self.dashboard=DashboardPage(db);add("Dashboard",self.dashboard);add("Equipment",EquipmentPage(db,user));self.layout=LayoutPage(db,user);add("Layout / Map",self.layout);add("PM",PMPage(db,user));add("Issue Tickets",TicketPage(db,user));add("Reliability",ReliabilityPage(db));add("Disposition / Release",ControlPage(db,user));add("Endorsements",EndorsementPage(db,user));self.inventory=InventoryPage(db,user);add("Inventory",self.inventory);add("Documents",DocumentPage(db,user));add("Administration",AdminPage(db,user))
         self.inventory.show_map_part.connect(self.show_part_map);self.nav.currentRowChanged.connect(self.stack.setCurrentIndex);self.nav.setCurrentRow(0)
         self.statusBar().showMessage(f"{user['display_name']} — {user['role']} — {WORKSTATION}")
         refresh=QAction("Refresh",self);refresh.setShortcut(QKeySequence("F5"));refresh.triggered.connect(self.refresh_current);self.addAction(refresh);self.timer=QTimer(self);self.timer.timeout.connect(self.dashboard.refresh);self.timer.start(30000)
