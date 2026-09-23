@@ -1847,6 +1847,11 @@ class Database:
             eq.status = target_state
             eq.version += 1
             eq.updated_at = now
+            self._queue_integration_event(s,"equipment.state.changed","EQUIPMENT",equipment_id,{
+                "equipment_id":equipment_id,"from_state":previous,"to_state":target_state,
+                "reason_code":reason_code,"reason_text":reason_text.strip(),"owner":owner.strip(),
+                "related_ticket":related_ticket.strip(),"changed_by":user,"changed_at":now.isoformat(),
+            })
             s.add(AuditLog(
                 user=user,
                 action="STATE_TRANSITION",
@@ -2219,6 +2224,10 @@ class Database:
             task.status = "Completed"
             task.last_completion_date = now
             task.version += 1
+            self._queue_integration_event(s,"maintenance.pm.completed","PM_TASK",str(task.id),{
+                "task_id":task.id,"equipment_id":task.equipment_id,"pm_id":task.pm_id,
+                "completed_by":user,"completed_at":now.isoformat(),
+            })
             s.flush()
             return ex
 
@@ -2448,6 +2457,11 @@ class Database:
                 changed_at=now,
             )
             s.add(event)
+            self._queue_integration_event(s,"incident.state.changed","TICKET",ticket_no,{
+                "ticket_no":ticket_no,"equipment_id":item.equipment_id,"from_state":previous,
+                "to_state":target_state,"reason_code":reason_code,"owner":item.owner,
+                "changed_by":user,"changed_at":now.isoformat(),
+            })
             s.add(AuditLog(
                 user=user,
                 action="TICKET_STATE_TRANSITION",
@@ -2723,6 +2737,11 @@ class Database:
             if user in {row.started_by,row.submitted_by,row.verified_by}:raise ValueError("Independent final approval required.")
             now=datetime.utcnow();row.status="Approved";row.approved_by=user;row.approved_at=now;row.expires_at=(now+timedelta(days=int(valid_days))) if valid_days else None;row.version+=1
             s.add(QualificationEvent(run_no=row.run_no,action="APPROVE",user=user,detail=note.strip(),workstation=workstation,occurred_at=now))
+            self._queue_integration_event(s,"qualification.approved","QUALIFICATION_RUN",row.run_no,{
+                "run_no":row.run_no,"equipment_id":row.equipment_id,"protocol_id":row.protocol_id,
+                "protocol_revision":row.protocol_revision,"approved_by":user,
+                "approved_at":now.isoformat(),"expires_at":row.expires_at.isoformat() if row.expires_at else None,
+            })
             s.add(AuditLog(
                 user=user,action="QUALIFICATION_APPROVE",entity_type="QUALIFICATION_RUN",entity_key=row.run_no,
                 detail=json.dumps({"equipment_id":row.equipment_id,"protocol_id":row.protocol_id,"protocol_revision":row.protocol_revision,"expires_at":row.expires_at.isoformat() if row.expires_at else None},sort_keys=True),
@@ -2923,6 +2942,10 @@ class Database:
             r.approved_by=user
             r.approved_at=datetime.utcnow()
             r.version+=1
+            self._queue_integration_event(s,"equipment.released","EQUIPMENT",r.equipment_id,{
+                "equipment_id":r.equipment_id,"release_id":r.id,"approved_by":user,
+                "approved_at":r.approved_at.isoformat(),"related_ticket":r.related_ticket,
+            })
             s.add(AuditLog(
                 user=user,
                 action="RELEASE_APPROVE",
