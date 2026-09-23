@@ -671,6 +671,22 @@ class EquipmentRelease(Base):
     version: Mapped[int] = mapped_column(Integer, default=1)
 
 
+class WorkLog(Base):
+    __tablename__ = "work_logs"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    equipment_id: Mapped[str] = mapped_column(String(100), default="", index=True)
+    entity_type: Mapped[str] = mapped_column(String(40), index=True)
+    entity_key: Mapped[str] = mapped_column(String(120), index=True)
+    username: Mapped[str] = mapped_column(String(80), index=True)
+    work_type: Mapped[str] = mapped_column(String(80), default="Engineering")
+    started_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    ended_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    duration_minutes: Mapped[float] = mapped_column(Float, default=0.0)
+    note: Mapped[str] = mapped_column(Text, default="")
+    status: Mapped[str] = mapped_column(String(30), default="Active", index=True)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
 class Endorsement(Base):
     __tablename__ = "endorsements"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -884,19 +900,19 @@ AUTH_LOCKOUT_MINUTES = 15
 
 ROLE_PERMISSIONS = {
     "Administrator": {"*"},
-    "Manager": {"view", "qualification.edit", "qualification.execute", "qualification.verify", "qualification.approve", "equipment.meter.record", "equipment.edit", "equipment.transition", "equipment.component.edit", "pm.edit", "pm.execute", "pm.approve", "pm.defer", "pm.defer.approve", "ticket.edit", "disposition.edit", "release.approve", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
-    "Supervisor": {"view", "qualification.execute", "qualification.verify", "qualification.approve", "equipment.meter.record", "equipment.edit", "equipment.transition", "equipment.component.edit", "pm.edit", "pm.execute", "pm.defer", "pm.defer.approve", "ticket.edit", "disposition.edit", "release.verify", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
-    "Equipment Engineer": {"view", "qualification.edit", "qualification.execute", "qualification.verify", "equipment.meter.record", "equipment.edit", "equipment.transition", "equipment.component.edit", "pm.edit", "pm.execute", "pm.defer", "ticket.edit", "disposition.edit", "release.verify", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
-    "Maintenance": {"view", "qualification.execute", "equipment.meter.record", "equipment.component.edit", "pm.execute", "pm.defer", "ticket.edit", "endorsement.edit", "inventory.consume", "inventory.reserve", "document.link"},
-    "Technician": {"view", "equipment.meter.record", "pm.execute", "ticket.edit", "inventory.consume", "document.link"},
-    "Process Engineer": {"view", "qualification.verify", "qualification.approve", "ticket.edit", "release.verify", "document.link", "report.view"},
+    "Manager": {"view", "worklog.edit", "qualification.edit", "qualification.execute", "qualification.verify", "qualification.approve", "equipment.meter.record", "equipment.edit", "equipment.transition", "equipment.component.edit", "pm.edit", "pm.execute", "pm.approve", "pm.defer", "pm.defer.approve", "ticket.edit", "disposition.edit", "release.approve", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
+    "Supervisor": {"view", "worklog.edit", "qualification.execute", "qualification.verify", "qualification.approve", "equipment.meter.record", "equipment.edit", "equipment.transition", "equipment.component.edit", "pm.edit", "pm.execute", "pm.defer", "pm.defer.approve", "ticket.edit", "disposition.edit", "release.verify", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
+    "Equipment Engineer": {"view", "worklog.edit", "qualification.edit", "qualification.execute", "qualification.verify", "equipment.meter.record", "equipment.edit", "equipment.transition", "equipment.component.edit", "pm.edit", "pm.execute", "pm.defer", "ticket.edit", "disposition.edit", "release.verify", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
+    "Maintenance": {"view", "worklog.edit", "qualification.execute", "equipment.meter.record", "equipment.component.edit", "pm.execute", "pm.defer", "ticket.edit", "endorsement.edit", "inventory.consume", "inventory.reserve", "document.link"},
+    "Technician": {"view", "worklog.edit", "equipment.meter.record", "pm.execute", "ticket.edit", "inventory.consume", "document.link"},
+    "Process Engineer": {"view", "worklog.edit", "qualification.verify", "qualification.approve", "ticket.edit", "release.verify", "document.link", "report.view"},
     "Inventory Controller": {"view", "inventory.edit", "inventory.consume", "inventory.reserve", "document.link"},
     "Document Controller": {"view", "document.link", "document.control"},
     "Read Only": {"view", "report.view"},
 }
 
 PERMISSIONS = [
-    "view", "qualification.edit", "qualification.execute", "qualification.verify", "qualification.approve", "equipment.edit", "equipment.transition", "equipment.component.edit", "equipment.meter.record", "layout.edit", "pm.edit", "pm.execute", "pm.approve", "pm.defer", "pm.defer.approve",
+    "view", "worklog.edit", "qualification.edit", "qualification.execute", "qualification.verify", "qualification.approve", "equipment.edit", "equipment.transition", "equipment.component.edit", "equipment.meter.record", "layout.edit", "pm.edit", "pm.execute", "pm.approve", "pm.defer", "pm.defer.approve",
     "ticket.edit", "disposition.edit", "release.verify", "release.approve", "endorsement.edit",
     "inventory.edit", "inventory.consume", "inventory.reserve", "document.link", "document.control",
     "user.admin", "audit.view", "report.view",
@@ -3449,6 +3465,54 @@ class Database:
             ))
             s.flush()
             return r
+
+    def start_work_log(
+        self,
+        entity_type: str,
+        entity_key: str,
+        equipment_id: str,
+        user: str,
+        work_type: str = "Engineering",
+        note: str = "",
+    ):
+        if equipment_id:self.assert_authorized(user,"worklog.edit",equipment_id)
+        with self.session() as s:
+            active=s.scalar(select(WorkLog).where(
+                WorkLog.username==user,WorkLog.entity_type==entity_type,
+                WorkLog.entity_key==entity_key,WorkLog.status=="Active",
+            ))
+            if active:return active
+            row=WorkLog(
+                equipment_id=equipment_id,entity_type=entity_type,entity_key=str(entity_key),
+                username=user,work_type=work_type,note=note.strip(),status="Active",
+            )
+            s.add(row);s.flush();return row
+
+    def stop_work_log(self, work_log_id: int, user: str, note: str = ""):
+        with self.session() as s:
+            stmt=select(WorkLog).where(WorkLog.id==work_log_id)
+            if self.url.startswith("postgresql"):stmt=stmt.with_for_update()
+            row=s.scalar(stmt)
+            if not row:raise ValueError("Work log not found")
+            if row.status!="Active":raise ValueError("Work log is already closed.")
+            actor=s.scalar(select(User).where(User.username==user))
+            if row.username!=user and not (actor and actor.role in {"Administrator","Manager","Supervisor"}):
+                raise PermissionError("Only the worker or an authorized supervisor can close this work log.")
+            now=datetime.utcnow();row.ended_at=now;row.duration_minutes=max(0.0,(now-row.started_at).total_seconds()/60.0);row.status="Completed";row.version+=1
+            if note.strip():row.note=(row.note+"\n"+note.strip()).strip()
+            self._queue_integration_event(s,"labor.work.completed","WORK_LOG",str(row.id),{
+                "work_log_id":row.id,"equipment_id":row.equipment_id,"entity_type":row.entity_type,
+                "entity_key":row.entity_key,"username":row.username,"work_type":row.work_type,
+                "duration_minutes":row.duration_minutes,"ended_at":now.isoformat(),
+            })
+            s.flush();return row
+
+    def list_work_logs(self, equipment_id: str = "", active_only: bool = False, limit: int = 1000):
+        with self.session() as s:
+            stmt=select(WorkLog).order_by(WorkLog.started_at.desc()).limit(max(1,min(int(limit),5000)))
+            if equipment_id:stmt=stmt.where(WorkLog.equipment_id==equipment_id)
+            if active_only:stmt=stmt.where(WorkLog.status=="Active")
+            return list(s.scalars(stmt))
 
     def save_endorsement(self, data: dict[str, Any], expected_version: int | None = None):
         with self.session() as s:
