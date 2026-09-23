@@ -842,8 +842,32 @@ class Database:
                     raise ValueError("Root cause must be documented before resolution/verification.")
                 if not (item.corrective_action or "").strip():
                     raise ValueError("Corrective action must be documented before resolution/verification.")
-            if target_state == "Closed" and not (item.verification or "").strip():
-                raise ValueError("Verification evidence/result must be documented before closure.")
+
+            if target_state == "Verification":
+                resolver = s.scalar(
+                    select(TicketStateEvent)
+                    .where(TicketStateEvent.ticket_no == ticket_no, TicketStateEvent.to_state == "Resolved")
+                    .order_by(TicketStateEvent.changed_at.desc(), TicketStateEvent.id.desc())
+                )
+                if resolver and resolver.changed_by == user:
+                    raise ValueError(
+                        "Independent verification required: the resolver cannot verify their own corrective action."
+                    )
+
+            if target_state == "Closed":
+                if not (item.verification or "").strip():
+                    raise ValueError("Verification evidence/result must be documented before closure.")
+                verifier = s.scalar(
+                    select(TicketStateEvent)
+                    .where(TicketStateEvent.ticket_no == ticket_no, TicketStateEvent.to_state == "Verification")
+                    .order_by(TicketStateEvent.changed_at.desc(), TicketStateEvent.id.desc())
+                )
+                if not verifier:
+                    raise ValueError("A verification lifecycle event is required before closure.")
+                if verifier.changed_by != user:
+                    raise ValueError(
+                        "The engineer who performed independent verification must perform the closure transition."
+                    )
 
             now = datetime.utcnow()
             previous = item.status
