@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
 )
 
 from database import Database, PERMISSIONS, ROLE_PERMISSIONS
+from backup import create_backup, verify_backup
 from domain import REASON_CODES, TICKET_REASON_CODES, allowed_targets, allowed_ticket_targets
 from services import (
     auto_mapping, calculate_next_due, copy_clipboard_image, dataframe_to_pm_backlog,
@@ -90,7 +91,7 @@ class LoginDialog(QDialog):
         f = QFormLayout(); self.username = QLineEdit(); self.password = QLineEdit(); self.password.setEchoMode(QLineEdit.EchoMode.Password); f.addRow("Username", self.username); f.addRow("Password", self.password); v.addLayout(f)
         b = QPushButton("Login"); b.clicked.connect(self.login); v.addWidget(b); self.password.returnPressed.connect(self.login)
     def login(self):
-        user = self.db.authenticate(self.username.text(), self.password.text())
+        user = self.db.authenticate(self.username.text(), self.password.text(), workstation=WORKSTATION)
         if not user: QMessageBox.warning(self, "Login", "Invalid username/password or inactive account."); return
         self.user = user; self.db.audit(user["username"], "LOGIN", "SESSION", WORKSTATION, workstation=WORKSTATION); self.accept()
 
@@ -994,8 +995,29 @@ class InventoryPage(QWidget):
 
 class DocumentPage(QWidget):
     def __init__(self,db,user):
-        super().__init__();self.db=db;self.user=user;self.rows=[];v=QVBoxLayout(self);h=QHBoxLayout();self.type=QLineEdit();self.type.setPlaceholderText("Entity type e.g. Equipment");self.key=QLineEdit();self.key.setPlaceholderText("Entity key");find=QPushButton("Filter");add=QPushButton("Link File");openb=QPushButton("Open Read-Only");find.clicked.connect(self.refresh);add.clicked.connect(self.add);openb.clicked.connect(self.open);add.setEnabled(db.has_permission(user,"document.link"));h.addWidget(self.type);h.addWidget(self.key);h.addWidget(find);h.addWidget(add);h.addWidget(openb);v.addLayout(h);self.table=make_table(["Entity","Key","Type","Title","Revision","Status","Path","Added By","Time"]);v.addWidget(self.table);self.refresh()
-    def refresh(self):self.rows=self.db.list_documents(self.type.text().strip(),self.key.text().strip());fill_table(self.table,self.rows,["entity_type","entity_key","document_type","title","revision","status","path","added_by","added_at"])
+        super().__init__();self.db=db;self.user=user;self.rows=[];self.cdocs=[];self.revisions=[]
+        v=QVBoxLayout(self);h=QHBoxLayout();self.type=QLineEdit();self.type.setPlaceholderText("Entity type e.g. Equipment");self.key=QLineEdit();self.key.setPlaceholderText("Entity key");find=QPushButton("Filter");find.clicked.connect(self.refresh);h.addWidget(self.type);h.addWidget(self.key);h.addWidget(find);v.addLayout(h)
+        tabs=QTabWidget()
+
+        wl=QWidget();vl=QVBoxLayout(wl);hl=QHBoxLayout();add=QPushButton("Link File");openb=QPushButton("Open Read-Only");add.clicked.connect(self.add);openb.clicked.connect(self.open);add.setEnabled(db.has_permission(user,"document.link"));hl.addWidget(add);hl.addWidget(openb);hl.addStretch(1);vl.addLayout(hl)
+        self.table=make_table(["Entity","Key","Type","Title","Revision","Status","Path","Added By","Time"]);vl.addWidget(self.table);tabs.addTab(wl,"Linked Files")
+
+        wc=QWidget();vc=QVBoxLayout(wc);hc=QHBoxLayout();newdoc=QPushButton("New Controlled Document");addrev=QPushButton("Add Revision");approve=QPushButton("Approve Revision");reject=QPushButton("Reject Revision");open_eff=QPushButton("Open Effective");verify=QPushButton("Verify File")
+        newdoc.clicked.connect(self.new_controlled);addrev.clicked.connect(self.add_revision);approve.clicked.connect(self.approve_revision);reject.clicked.connect(self.reject_revision);open_eff.clicked.connect(self.open_effective);verify.clicked.connect(self.verify_revision)
+        cancontrol=db.has_permission(user,"document.control");[x.setEnabled(cancontrol) for x in [newdoc,addrev,approve,reject]]
+        for x in [newdoc,addrev,approve,reject,open_eff,verify]:hc.addWidget(x)
+        hc.addStretch(1);vc.addLayout(hc)
+        self.cdoc_table=make_table(["Document ID","Entity","Key","Type","Title","Owner","Status","Current Revision","Created By","Ver"]);self.cdoc_table.itemSelectionChanged.connect(self.load_revisions);vc.addWidget(self.cdoc_table,1)
+        self.rev_table=make_table(["ID","Revision","Status","SHA-256","Summary","Created By","Approved By","Effective","Expires","Path","Ver"]);vc.addWidget(self.rev_table,1)
+        tabs.addTab(wc,"Controlled Documents")
+        v.addWidget(tabs);self.refresh()
+
+    def refresh(self):
+        et=self.type.text().strip();ek=self.key.text().strip()
+        self.rows=self.db.list_documents(et,ek);fill_table(self.table,self.rows,["entity_type","entity_key","document_type","title","revision","status","path","added_by","added_at"])
+        self.cdocs=self.db.list_controlled_documents(et,ek);fill_table(self.cdoc_table,self.cdocs,["document_id","entity_type","entity_key","document_type","title","owner","status","current_revision","created_by","version"])
+        self.load_revisions()
+
     def add(self):
         p,_=QFileDialog.getOpenFileName(self,"Link Existing File")
         if not p:return
@@ -1003,12 +1025,82 @@ class DocumentPage(QWidget):
         if not ok:return
         dtype,ok=QInputDialog.getItem(self,"Type","Document type",["SOP","Manual","Drawing","Report","Engineering Analysis","Vendor Report","Calibration Certificate","Image","Log","Spreadsheet","Other"],0,False)
         if not ok:return
-        self.db.add_document({"entity_type":self.type.text().strip() or "General","entity_key":self.key.text().strip(),"document_type":dtype,"title":title,"path":p,"status":"Active","added_by":self.user["username"]});self.refresh()
+        try:self.db.add_document({"entity_type":self.type.text().strip() or "General","entity_key":self.key.text().strip(),"document_type":dtype,"title":title,"path":p,"status":"Active","added_by":self.user["username"]});self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"Document",str(exc))
+
     def open(self):
         row=selected_row(self.table,self.rows)
         if row:
             try:readonly_open_copy(row.path)
             except Exception as exc:QMessageBox.critical(self,"Open",str(exc))
+
+    def new_controlled(self):
+        doc_id,ok=QInputDialog.getText(self,"Controlled Document","Document ID")
+        if not ok or not doc_id.strip():return
+        title,ok=QInputDialog.getText(self,"Controlled Document","Title")
+        if not ok or not title.strip():return
+        dtype,ok=QInputDialog.getItem(self,"Controlled Document","Type",["SOP","Specification","Work Instruction","Drawing","Calibration Procedure","Safety Procedure","Quality Procedure","Other"],0,False)
+        if not ok:return
+        owner,ok=QInputDialog.getText(self,"Controlled Document","Document owner")
+        if not ok:return
+        try:
+            self.db.create_controlled_document({
+                "document_id":doc_id.strip(),"entity_type":self.type.text().strip() or "General","entity_key":self.key.text().strip(),
+                "document_type":dtype,"title":title.strip(),"owner":owner.strip(),
+            },self.user["username"],WORKSTATION)
+            self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"Controlled Document",str(exc))
+
+    def current_cdoc(self):return selected_row(self.cdoc_table,self.cdocs)
+    def current_revision(self):return selected_row(self.rev_table,self.revisions)
+
+    def load_revisions(self):
+        doc=self.current_cdoc()
+        self.revisions=self.db.list_controlled_revisions(doc.document_id) if doc else []
+        fill_table(self.rev_table,self.revisions,["id","revision","status","file_sha256","change_summary","created_by","approved_by","effective_at","expires_at","path","version"])
+
+    def add_revision(self):
+        doc=self.current_cdoc()
+        if not doc:return
+        path,_=QFileDialog.getOpenFileName(self,"Controlled Revision File")
+        if not path:return
+        rev,ok=QInputDialog.getText(self,"Revision","Revision identifier")
+        if not ok or not rev.strip():return
+        summary,ok=QInputDialog.getText(self,"Revision","Change summary")
+        if not ok:return
+        try:self.db.add_controlled_revision(doc.document_id,rev,path,summary,self.user["username"],WORKSTATION);self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"Controlled Revision",str(exc))
+
+    def approve_revision(self):
+        row=self.current_revision()
+        if not row:return
+        if QMessageBox.question(self,"Approve Revision",f"Make {row.document_id} revision {row.revision} effective now?")!=QMessageBox.StandardButton.Yes:return
+        try:self.db.approve_controlled_revision(row.id,self.user["username"],workstation=WORKSTATION,expected_version=row.version);self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"Controlled Revision",str(exc))
+
+    def reject_revision(self):
+        row=self.current_revision()
+        if not row:return
+        reason,ok=QInputDialog.getText(self,"Reject Revision","Reason")
+        if not ok:return
+        try:self.db.reject_controlled_revision(row.id,self.user["username"],reason,WORKSTATION,row.version);self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"Controlled Revision",str(exc))
+
+    def open_effective(self):
+        doc=self.current_cdoc()
+        if not doc:return
+        row=self.db.effective_controlled_revision(doc.document_id)
+        if not row:QMessageBox.warning(self,"Controlled Document","No effective non-expired revision.");return
+        ok,digest=self.db.verify_controlled_revision_file(row.id)
+        if not ok:QMessageBox.critical(self,"Controlled Document",f"File integrity check failed: {digest}");return
+        try:readonly_open_copy(row.path)
+        except Exception as exc:QMessageBox.critical(self,"Open",str(exc))
+
+    def verify_revision(self):
+        row=self.current_revision()
+        if not row:return
+        ok,detail=self.db.verify_controlled_revision_file(row.id)
+        QMessageBox.information(self,"Integrity","PASS — SHA-256 matches." if ok else f"FAIL — {detail}")
 
 
 class UserDialog(QDialog):
@@ -1018,36 +1110,81 @@ class UserDialog(QDialog):
 
 class AdminPage(QWidget):
     def __init__(self,db,user):
-        super().__init__();self.db=db;self.user=user;self.rows=[];v=QVBoxLayout(self);h=QHBoxLayout();add=QPushButton("Add User");role=QPushButton("Change Role");toggle=QPushButton("Enable / Disable");reset=QPushButton("Reset Password");override=QPushButton("Permission Override");add.clicked.connect(self.add);role.clicked.connect(self.role);toggle.clicked.connect(self.toggle);reset.clicked.connect(self.reset);override.clicked.connect(self.override);allowed=db.has_permission(user,"user.admin") or user.get("role")=="Administrator";[x.setEnabled(allowed) for x in [add,role,toggle,reset,override]];[h.addWidget(x) for x in [add,role,toggle,reset,override]];h.addStretch(1);v.addLayout(h);self.table=make_table(["Username","Display Name","Role","Active","Last Login","Created"]);v.addWidget(self.table);self.refresh()
-    def refresh(self):self.rows=self.db.list_users();fill_table(self.table,self.rows,["username","display_name","role","active","last_login","created_at"])
+        super().__init__();self.db=db;self.user=user;self.rows=[];self.attempts=[];v=QVBoxLayout(self)
+        h=QHBoxLayout();add=QPushButton("Add User");role=QPushButton("Change Role");toggle=QPushButton("Enable / Disable");reset=QPushButton("Reset Password");unlock=QPushButton("Unlock Login");override=QPushButton("Permission Override");backupb=QPushButton("Create DB Backup");verifyb=QPushButton("Verify Backup")
+        add.clicked.connect(self.add);role.clicked.connect(self.role);toggle.clicked.connect(self.toggle);reset.clicked.connect(self.reset);unlock.clicked.connect(self.unlock);override.clicked.connect(self.override);backupb.clicked.connect(self.create_backup);verifyb.clicked.connect(self.verify_backup)
+        allowed=db.has_permission(user,"user.admin") or user.get("role")=="Administrator";[x.setEnabled(allowed) for x in [add,role,toggle,reset,unlock,override,backupb,verifyb]];[h.addWidget(x) for x in [add,role,toggle,reset,unlock,override,backupb,verifyb]];h.addStretch(1);v.addLayout(h)
+        tabs=QTabWidget()
+        wu=QWidget();vu=QVBoxLayout(wu);self.table=make_table(["Username","Display Name","Role","Active","Last Login","Created"]);vu.addWidget(self.table);tabs.addTab(wu,"Users")
+        wa=QWidget();va=QVBoxLayout(wa);self.attempt_table=make_table(["Username","Success","Reason","Workstation","Attempted"]);va.addWidget(self.attempt_table);tabs.addTab(wa,"Login Attempts")
+        v.addWidget(tabs);self.refresh()
+
+    def refresh(self):
+        self.rows=self.db.list_users();fill_table(self.table,self.rows,["username","display_name","role","active","last_login","created_at"])
+        self.attempts=self.db.list_login_attempts(limit=500);fill_table(self.attempt_table,self.attempts,["username","success","reason","workstation","attempted_at"])
+
     def current(self):return selected_row(self.table,self.rows)
+
     def add(self):
         d=UserDialog(self)
         if d.exec()==QDialog.DialogCode.Accepted:
             try:self.db.create_user(d.username.text(),d.name.text(),d.password.text(),d.role.currentText());self.refresh()
             except Exception as exc:QMessageBox.critical(self,"User",str(exc))
+
     def role(self):
         row=self.current()
         if not row:return
         val,ok=QInputDialog.getItem(self,"Role","Role",list(ROLE_PERMISSIONS),list(ROLE_PERMISSIONS).index(row.role) if row.role in ROLE_PERMISSIONS else 0,False)
         if ok:self.db.update_user(row.username,role=val);self.refresh()
+
     def toggle(self):
         row=self.current()
         if row:self.db.update_user(row.username,active=not row.active);self.refresh()
+
     def reset(self):
         row=self.current()
         if not row:return
         pw,ok=QInputDialog.getText(self,"Password","New password",QLineEdit.EchoMode.Password)
         if ok:
-            try:self.db.update_user(row.username,password=pw);QMessageBox.information(self,"Password","Password updated.")
+            try:self.db.update_user(row.username,password=pw);QMessageBox.information(self,"Password","Password updated and login lockout cleared.");self.refresh()
             except Exception as exc:QMessageBox.critical(self,"Password",str(exc))
+
+    def unlock(self):
+        row=self.current()
+        if not row:return
+        try:
+            self.db.unlock_user(row.username,self.user["username"],WORKSTATION)
+            QMessageBox.information(self,"Login","Login lockout cleared.")
+            self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"Login",str(exc))
+
     def override(self):
         row=self.current()
         if not row:return
         perm,ok=QInputDialog.getItem(self,"Permission Override","Permission",PERMISSIONS,0,False)
         if not ok:return
         choice,ok=QInputDialog.getItem(self,"Permission Override",f"{row.username}: {perm}",["Allow","Deny","Use Role Default"],0,False)
-        if ok:self.db.set_permission_override(row.username,perm,{"Allow":True,"Deny":False,"Use Role Default":None}[choice])
+        if ok:self.db.set_permission_override(row.username,perm,{"Allow":True,"Deny":False,"Use Role Default":None}[choice]);self.refresh()
+
+    def create_backup(self):
+        postgres=self.db.url.startswith("postgresql")
+        filt="PostgreSQL Backup (*.dump)" if postgres else "SQLite Backup (*.db)"
+        default=str(Path.cwd()/("equipment_backup.dump" if postgres else "equipment_backup.db"))
+        path,_=QFileDialog.getSaveFileName(self,"Create Database Backup",default,filt)
+        if not path:return
+        try:
+            result=create_backup(self.db.url,path)
+            self.db.audit(self.user["username"],"DATABASE_BACKUP","SYSTEM",result["path"],detail=result["verification"],workstation=WORKSTATION)
+            QMessageBox.information(self,"Backup",f"Verified backup created.\n{result['path']}\n{result['size_bytes']} bytes\n{result['verification']}")
+        except Exception as exc:QMessageBox.critical(self,"Backup",str(exc))
+
+    def verify_backup(self):
+        filt="PostgreSQL Backup (*.dump)" if self.db.url.startswith("postgresql") else "SQLite Backup (*.db)"
+        path,_=QFileDialog.getOpenFileName(self,"Verify Database Backup","",filt)
+        if not path:return
+        ok,detail=verify_backup(self.db.url,path)
+        if ok:QMessageBox.information(self,"Backup Verification","PASS — "+detail)
+        else:QMessageBox.critical(self,"Backup Verification","FAIL — "+detail)
 
 
 class ReliabilityPage(QWidget):

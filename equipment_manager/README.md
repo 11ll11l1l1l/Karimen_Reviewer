@@ -4,6 +4,16 @@ Local Windows desktop equipment-management system isolated under `equipment_mana
 
 ## Current build
 
+### Final production hardening
+
+- Authentication now records login attempts and applies timed lockout after repeated password failures. Successful login, administrator unlock, or password reset clears the lockout state.
+- The Administration screen exposes recent login attempts and explicit account unlock.
+- Controlled documents are separate from ordinary linked evidence. Controlled revisions are SHA-256 fingerprinted, require independent approval, support effective/expiry dates, and automatically supersede the previous effective revision.
+- Effective controlled documents are integrity-checked before read-only opening; file changes after registration block approval/opening.
+- Database backups are verified at creation: SQLite uses the native backup API plus `PRAGMA integrity_check`; PostgreSQL uses custom-format `pg_dump` plus `pg_restore --list` verification.
+- Administrators can create and verify database backups from the desktop; `BACKUP_WINDOWS.bat` provides a simple Windows operator path.
+- EMS CI includes PostgreSQL 16 transaction tests and a Windows runner that installs the full desktop dependencies and launches both PySide6 shells offscreen.
+
 ### Production completion Wave 2
 
 - PM deferrals now use a controlled request → independent approve/reject workflow. The schedule is not changed until approval, and every request includes reason, risk assessment and mitigation.

@@ -46,3 +46,25 @@ jobs:
           PYTHONPATH: equipment_manager
           EMS_TEST_POSTGRES_URL: postgresql+psycopg://ems_test:ems_test@127.0.0.1:5432/ems_test
         run: python -m unittest discover -s equipment_manager/tests -v
+
+
+  windows-gui-smoke:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: equipment_manager/requirements.txt
+      - name: Install full EMS desktop dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r equipment_manager/requirements.txt
+      - name: Compile EMS desktop source
+        run: python -m compileall -q equipment_manager
+      - name: Launch both PySide6 desktop shells offscreen
+        env:
+          PYTHONPATH: equipment_manager
+          QT_QPA_PLATFORM: offscreen
+        run: python equipment_manager/tests/gui_smoke.py
