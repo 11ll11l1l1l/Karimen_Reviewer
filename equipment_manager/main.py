@@ -616,20 +616,20 @@ class ControlPage(QWidget):
     def new_release(self):
         d=ReleaseDialog(self.db,self)
         if d.exec()==QDialog.DialogCode.Accepted:
-            try:self.db.create_release_request(d.eq.text().strip(),d.ticket.text().strip(),d.check_data(),d.notes.toPlainText().strip(),self.user["username"]);self.refresh()
+            try:self.db.create_release_request(d.eq.text().strip(),d.ticket.text().strip(),d.check_data(),d.notes.toPlainText().strip(),self.user["username"],workstation=WORKSTATION);self.refresh()
             except Exception as exc:QMessageBox.critical(self,"Release",str(exc))
     def verify_release(self):
         row=selected_row(self.rtable,self.rel)
         if not row:return
         d=ReleaseDialog(self.db,self,row);d.eq.setReadOnly(True)
         if d.exec()==QDialog.DialogCode.Accepted:
-            try:self.db.verify_release(row.id,d.check_data(),self.user["username"],row.version);self.refresh()
+            try:self.db.verify_release(row.id,d.check_data(),self.user["username"],row.version,workstation=WORKSTATION);self.refresh()
             except Exception as exc:QMessageBox.critical(self,"Release",str(exc))
     def approve_release(self):
         row=selected_row(self.rtable,self.rel)
         if not row:return
         if QMessageBox.question(self,"Approve Release",f"Release {row.equipment_id} to service?")!=QMessageBox.StandardButton.Yes:return
-        try:self.db.approve_release(row.id,self.user["username"],row.version);self.refresh()
+        try:self.db.approve_release(row.id,self.user["username"],row.version,workstation=WORKSTATION);self.refresh()
         except Exception as exc:QMessageBox.critical(self,"Release",str(exc))
 
 
