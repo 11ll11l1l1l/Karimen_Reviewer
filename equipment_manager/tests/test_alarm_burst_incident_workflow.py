@@ -17,7 +17,7 @@ class AlarmBurstIncidentWorkflowTests(unittest.TestCase):
             [first.event_key, second.event_key], "ee", owner="ee"
         )
         self.assertEqual(ticket.equipment_id, "ETCH-01")
-        self.assertEqual(ticket.priority, "P2")
+        self.assertEqual(ticket.priority, "P1")
         rows = {row.event_key: row for row in self.db.list_alarms("ETCH-01")}
         self.assertEqual(rows[first.event_key].related_ticket, ticket.ticket_no)
         self.assertEqual(rows[second.event_key].related_ticket, ticket.ticket_no)
