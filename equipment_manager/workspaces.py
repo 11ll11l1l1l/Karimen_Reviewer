@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
 
 from attachment_store import store_attachment_file, store_clipboard_image
 from services import readonly_open_copy
+from table_productivity import install_table_productivity
 
 FILE_ROOT=os.getenv("EMS_FILE_ROOT",str(Path.cwd()/"equipment_files"))
 
@@ -29,6 +30,7 @@ def _table(headers: list[str]) -> QTableWidget:
     table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
     table.setAlternatingRowColors(True)
     table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+    install_table_productivity(table,headers[0] if headers else "EMS Export")
     return table
 
 
