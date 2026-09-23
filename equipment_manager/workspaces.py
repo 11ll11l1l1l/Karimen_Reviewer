@@ -291,7 +291,7 @@ class MyWorkWorkspace(QWidget):
     @staticmethod
     def _entity_for(row: dict) -> str:
         kind=row.get("kind","")
-        return {"INCIDENT":"TICKET","PM":"PM_TASK","EQUIPMENT":"EQUIPMENT","QUALIFICATION":"QUALIFICATION","VERIFY":"QUALIFICATION","APPROVAL":"EQUIPMENT","RELEASE":"EQUIPMENT","HANDOVER":"ENDORSEMENT"}.get(kind,kind)
+        return {"INCIDENT":"TICKET","PM":"PM_EXECUTION","EQUIPMENT":"EQUIPMENT","QUALIFICATION":"QUALIFICATION","VERIFY":"QUALIFICATION","APPROVAL":"EQUIPMENT","RELEASE":"EQUIPMENT","HANDOVER":"ENDORSEMENT"}.get(kind,kind)
 
     def refresh(self):
         self.rows=self.db.my_work(self.user["username"],250)
@@ -375,7 +375,7 @@ class Equipment360Workspace(QWidget):
 
     def open_current_pm(self):
         if self.current_pm:
-            row=self.current_pm[0];self.open_entity.emit("PM_TASK",str(row.id),row.equipment_id)
+            row=self.current_pm[0];self.open_entity.emit("PM_EXECUTION",str(row.id),row.equipment_id)
 
     def open_map(self):
         if self.eq:self.open_entity.emit("MAP",self.eq.equipment_id,self.eq.equipment_id)
