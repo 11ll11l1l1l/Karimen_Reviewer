@@ -1809,7 +1809,7 @@ class Database:
         q=(query or "").strip()
         if not q:return []
         like=f"%{q}%";out=[]
-        max_each=max(5,min(25,int(limit)//5 or 5))
+        max_each=max(5,min(20,int(limit)//8 or 5))
         def add(entity_type,key,title,subtitle="",equipment_id=""):
             if len(out)>=limit:return
             out.append({
@@ -1844,6 +1844,21 @@ class Database:
             )).limit(max_each)):
                 equipment_id=row.entity_key if row.entity_type.upper()=="EQUIPMENT" else ""
                 add("DOCUMENT",row.document_id,f"{row.document_id} — {row.title}",f"{row.status} · {row.entity_type}:{row.entity_key}",equipment_id)
+            for row in s.scalars(select(EquipmentComponent).where(or_(
+                EquipmentComponent.component_id.ilike(like),EquipmentComponent.name.ilike(like),EquipmentComponent.part_number.ilike(like),
+                EquipmentComponent.serial_number.ilike(like),EquipmentComponent.equipment_id.ilike(like),
+            )).limit(max_each)):
+                add("COMPONENT",row.component_id,f"{row.component_id} — {row.name}",f"{row.status} · {row.part_number} · {row.equipment_id}",row.equipment_id)
+            for row in s.scalars(select(QualificationRun).where(or_(
+                QualificationRun.run_no.ilike(like),QualificationRun.protocol_id.ilike(like),QualificationRun.protocol_name.ilike(like),
+                QualificationRun.equipment_id.ilike(like),QualificationRun.status.ilike(like),
+            )).order_by(QualificationRun.started_at.desc()).limit(max_each)):
+                add("QUALIFICATION",row.run_no,f"{row.run_no} — {row.protocol_name}",f"{row.status} · {row.equipment_id}",row.equipment_id)
+            for row in s.scalars(select(Endorsement).where(or_(
+                Endorsement.endorsement_no.ilike(like),Endorsement.equipment_id.ilike(like),Endorsement.current_condition.ilike(like),
+                Endorsement.pending_work.ilike(like),Endorsement.next_owner.ilike(like),
+            )).order_by(Endorsement.created_at.desc()).limit(max_each)):
+                add("ENDORSEMENT",row.endorsement_no,f"{row.endorsement_no} — {row.equipment_id}",f"{row.status} · {row.pending_work}",row.equipment_id)
         return out[:limit]
 
     def my_work(self, username: str, limit: int = 200) -> list[dict[str, Any]]:
