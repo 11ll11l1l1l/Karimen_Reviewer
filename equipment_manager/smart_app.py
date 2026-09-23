@@ -37,6 +37,7 @@ from main import (
     InventoryPage,
     LoginDialog,
     PMPage,
+    ReliabilityPage,
     TicketPage,
 )
 from smart_map import SmartLayoutPage
@@ -207,6 +208,7 @@ class SmartMainWindow(QMainWindow):
         add("Live FAB Map", self.layout_page)
         add("PM Planning / Execution", PMPage(db, user))
         add("Issue / Repair Tickets", TicketPage(db, user))
+        add("Reliability / MTBF", ReliabilityPage(db))
         add("Disposition / Release", ControlPage(db, user))
         add("Shift Endorsements", EndorsementPage(db, user))
         self.inventory = InventoryPage(db, user)
