@@ -25,6 +25,7 @@ from version import __version__
 from domain import REASON_CODES, TICKET_REASON_CODES, allowed_targets, allowed_ticket_targets
 from workspaces import AttachmentPanel
 from table_productivity import install_table_productivity
+from excel_import_studio import run_mapping_studio
 from services import (
     auto_mapping, calculate_next_due, copy_clipboard_image, dataframe_to_pm_backlog,
     dataframe_to_pm_specs, evaluate_measurement, pm_parts_readiness, read_clipboard_table,
@@ -711,11 +712,30 @@ class PMPage(QWidget):
         if len(sheets)==1:return 0
         x,ok=QInputDialog.getItem(self,"Worksheet","Choose worksheet",sheets,0,False);return x if ok else None
     def _import_backlog_df(self,df):
-        mapping=auto_mapping(list(df.columns)); rows,errors=dataframe_to_pm_backlog(df,mapping)
-        if not rows:QMessageBox.warning(self,"Import","No valid rows.\n"+"\n".join(errors[:10]));return
-        if QMessageBox.question(self,"Import",f"Import {len(rows)} rows? Errors/warnings: {len(errors)}")!=QMessageBox.StandardButton.Yes:return
-        for row in rows:self.db.upsert_pm_task(row)
-        self.refresh();QMessageBox.information(self,"Import",f"Imported {len(rows)} rows; {len(errors)} skipped/warned.")
+        fields=[
+            ("equipment_id","Equipment ID"),("pm_id","PM ID"),("pm_name","PM name"),
+            ("original_due_date","Original due date"),("scheduled_date","Scheduled date"),("last_completion_date","Last completion"),
+            ("status","Status"),("assigned_to","Assigned to"),("estimated_hours","Estimated hours"),("priority","Priority"),
+            ("deferral_reason","Deferral reason"),("sop_path","SOP path"),("report_path","Report path"),
+        ]
+        mapping=run_mapping_studio(
+            self,self.db,self.user["username"],"excel_mapping.pm_backlog",df,fields,
+            auto_mapping(list(df.columns)),{"equipment_id"},"PM Backlog Import Studio",
+        )
+        if mapping is None:return
+        rows,errors=dataframe_to_pm_backlog(df,mapping)
+        if not rows:QMessageBox.warning(self,"Import","No valid rows.\n"+"\n".join(errors[:20]));return
+        sample="\n".join(errors[:10])
+        prompt=f"Validated {len(rows)} row(s). {len(errors)} row warning/error(s).\n\n{sample}\n\nCommit import?"
+        if QMessageBox.question(self,"Import preview",prompt)!=QMessageBox.StandardButton.Yes:return
+        imported=0;failures=[]
+        for row in rows:
+            try:self.db.upsert_pm_task(row);imported+=1
+            except Exception as exc:failures.append(f"{row.get('equipment_id')} / {row.get('pm_id')}: {exc}")
+        self.refresh()
+        detail=f"Imported {imported} row(s). Source validation warnings: {len(errors)}. Commit failures: {len(failures)}."
+        if failures:detail+="\n"+"\n".join(failures[:12])
+        QMessageBox.information(self,"Import complete",detail)
     def import_backlog(self):
         path,_=QFileDialog.getOpenFileName(self,"Import PM Backlog","","Excel/CSV (*.xlsx *.xlsm *.csv)")
         if not path:return
@@ -725,15 +745,33 @@ class PMPage(QWidget):
         try:self._import_backlog_df(read_clipboard_table(QApplication.clipboard().text()))
         except Exception as exc:QMessageBox.critical(self,"Paste",str(exc))
     def _import_specs_df(self,df):
-        mapping=auto_mapping(list(df.columns)); default=""
+        fields=[
+            ("pm_id","PM ID"),("step_no","Step number"),("activity","Activity / check item"),("method","Method"),
+            ("spec","Specification / acceptance"),("unit","Unit"),("target","Target"),("warning_low","Warning low"),
+            ("warning_high","Warning high"),("control_low","Control low"),("control_high","Control high"),
+            ("spec_low","Spec low"),("spec_high","Spec high"),("reaction_plan","Reaction plan"),
+            ("sop_path","SOP path"),("sop_page","SOP page"),("sop_section","SOP section"),
+        ]
+        mapping=run_mapping_studio(
+            self,self.db,self.user["username"],"excel_mapping.pm_specs",df,fields,
+            auto_mapping(list(df.columns)),{"activity"},"PM Checklist / Specification Import Studio",
+        )
+        if mapping is None:return
+        default=""
         if "pm_id" not in mapping:
-            default,ok=QInputDialog.getText(self,"PM ID","Enter PM ID for pasted/imported steps:")
-            if not ok:return
+            default,ok=QInputDialog.getText(self,"PM ID","No PM ID column is mapped. Apply all imported steps to PM ID:")
+            if not ok or not default.strip():return
         rows,warns=dataframe_to_pm_specs(df,mapping,default.strip())
-        if not rows:QMessageBox.warning(self,"Import","No valid steps.\n"+"\n".join(warns[:10]));return
-        revise=QMessageBox.question(self,"Revision","Create controlled revisions for existing steps?")==QMessageBox.StandardButton.Yes
-        for row in rows:self.db.upsert_pm_spec(row,revise)
-        self.refresh();QMessageBox.information(self,"Import",f"Imported {len(rows)} steps; warnings {len(warns)}")
+        if not rows:QMessageBox.warning(self,"Import","No valid steps.\n"+"\n".join(warns[:20]));return
+        revise=QMessageBox.question(self,"Controlled revision",f"Validated {len(rows)} step(s), warnings: {len(warns)}.\nCreate controlled revisions for existing steps?")==QMessageBox.StandardButton.Yes
+        imported=0;failures=[]
+        for row in rows:
+            try:self.db.upsert_pm_spec(row,revise);imported+=1
+            except Exception as exc:failures.append(f"{row.get('pm_id')} step {row.get('step_no')}: {exc}")
+        self.refresh()
+        detail=f"Imported {imported} step(s). Validation warnings: {len(warns)}. Commit failures: {len(failures)}."
+        if failures:detail+="\n"+"\n".join(failures[:12])
+        QMessageBox.information(self,"Import complete",detail)
     def import_specs(self):
         path,_=QFileDialog.getOpenFileName(self,"Import PM Specs","","Excel/CSV (*.xlsx *.xlsm *.csv)")
         if not path:return
