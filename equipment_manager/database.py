@@ -2297,6 +2297,38 @@ class Database:
             })
             s.flush();return ticket
 
+    def create_incident_from_alarm_burst(
+        self,
+        event_keys: list[str],
+        user: str,
+        *,
+        owner: str = "",
+        workstation: str = "",
+    ):
+        """Create or reuse one incident and link all alarms in one burst.
+
+        Every source alarm is checked to ensure it belongs to the same tool.
+        The original individual alarm workflow remains the source of truth.
+        """
+        keys=list(dict.fromkeys(str(key).strip() for key in event_keys if str(key).strip()))
+        if not keys: raise ValueError("Select at least one alarm for burst incident creation.")
+        alarms=self.list_alarms_for_event_keys(keys)
+        if len(alarms)!=len(keys): raise ValueError("One or more burst alarms no longer exist.")
+        equipment_ids={alarm.equipment_id for alarm in alarms}
+        if len(equipment_ids)!=1: raise ValueError("A burst incident can only contain one equipment ID.")
+        existing={alarm.related_ticket for alarm in alarms if alarm.related_ticket}
+        if len(existing)>1: raise ValueError("Burst alarms already link to different incidents.")
+        ticket=self.create_incident_from_alarm(keys[0],user,owner=owner,workstation=workstation)
+        for key in keys[1:]:
+            self.link_alarm_to_ticket(key,ticket.ticket_no,user,workstation)
+        return ticket
+
+    def list_alarms_for_event_keys(self, event_keys: list[str]):
+        keys=[str(key).strip() for key in event_keys if str(key).strip()]
+        if not keys:return []
+        with self.session() as s:
+            return list(s.scalars(select(EquipmentAlarmEvent).where(EquipmentAlarmEvent.event_key.in_(keys))))
+
     def acknowledge_alarm(self, event_key: str, user: str):
         with self.session() as s:
             row=s.scalar(select(EquipmentAlarmEvent).where(EquipmentAlarmEvent.event_key==event_key))
