@@ -847,6 +847,148 @@ class TicketPage(QWidget):
             except Exception as exc:QMessageBox.critical(self,"Investigation",str(exc))
 
 
+class QualificationProtocolDialog(QDialog):
+    def __init__(self,row=None,parent=None):
+        super().__init__(parent);self.row=row;self.setWindowTitle("Qualification Protocol")
+        f=QFormLayout(self);self.protocol=QLineEdit();self.name=QLineEdit();self.eq=QLineEdit();self.eqtype=QLineEdit();self.checks=QTextEdit()
+        self.checks.setPlaceholderText("One required qualification check per line")
+        for label,w in [("Protocol ID",self.protocol),("Name",self.name),("Equipment ID (optional)",self.eq),("Equipment Type (optional)",self.eqtype),("Checks",self.checks)]:f.addRow(label,w)
+        b=QDialogButtonBox(QDialogButtonBox.StandardButton.Save|QDialogButtonBox.StandardButton.Cancel);b.accepted.connect(self.accept);b.rejected.connect(self.reject);f.addRow(b)
+        if row:
+            self.protocol.setText(row.protocol_id);self.protocol.setReadOnly(True);self.name.setText(row.name);self.eq.setText(row.equipment_id);self.eqtype.setText(row.equipment_type)
+            try:
+                checks=json.loads(row.checks_json or "[]")
+                self.checks.setPlainText("\n".join(str(x.get("label","")) for x in checks))
+            except Exception:pass
+    def data(self):
+        checks=[x.strip() for x in self.checks.toPlainText().splitlines() if x.strip()]
+        return {"protocol_id":self.protocol.text().strip(),"name":self.name.text().strip(),"equipment_id":self.eq.text().strip(),"equipment_type":self.eqtype.text().strip(),"checks":checks}
+
+
+class QualificationPage(QWidget):
+    def __init__(self,db,user):
+        super().__init__();self.db=db;self.user=user;self.protocols=[];self.runs=[];self.check_rows=[];self.check_results={}
+        v=QVBoxLayout(self);tabs=QTabWidget();v.addWidget(tabs)
+
+        wp=QWidget();vp=QVBoxLayout(wp);hp=QHBoxLayout();newp=QPushButton("New Protocol");revp=QPushButton("New Revision")
+        newp.clicked.connect(self.new_protocol);revp.clicked.connect(self.revise_protocol)
+        newp.setEnabled(db.has_permission(user,"qualification.edit"));revp.setEnabled(db.has_permission(user,"qualification.edit"))
+        hp.addWidget(newp);hp.addWidget(revp);hp.addStretch(1);vp.addLayout(hp)
+        self.ptable=make_table(["Protocol","Revision","Name","Equipment","Type","Active","Created By","Created","Ver"]);vp.addWidget(self.ptable);tabs.addTab(wp,"Protocols")
+
+        wr=QWidget();vr=QVBoxLayout(wr);hr=QHBoxLayout()
+        start=QPushButton("Start Run");result=QPushButton("Enter Result");submit=QPushButton("Submit");verify=QPushButton("Verify");approve=QPushButton("Approve");reject=QPushButton("Reject")
+        start.clicked.connect(self.start_run);result.clicked.connect(self.enter_result);submit.clicked.connect(self.submit_run);verify.clicked.connect(self.verify_run);approve.clicked.connect(self.approve_run);reject.clicked.connect(self.reject_run)
+        start.setEnabled(db.has_permission(user,"qualification.execute"));result.setEnabled(db.has_permission(user,"qualification.execute"));submit.setEnabled(db.has_permission(user,"qualification.execute"))
+        verify.setEnabled(db.has_permission(user,"qualification.verify"));approve.setEnabled(db.has_permission(user,"qualification.approve"));reject.setEnabled(db.has_permission(user,"qualification.verify") or db.has_permission(user,"qualification.approve"))
+        for x in [start,result,submit,verify,approve,reject]:hr.addWidget(x)
+        hr.addStretch(1);vr.addLayout(hr)
+        self.rtable=make_table(["Run","Equipment","Protocol","Rev","Status","Started By","Submitted By","Verified By","Approved By","Expires","Ver"]);self.rtable.itemSelectionChanged.connect(self.load_checks);vr.addWidget(self.rtable,2)
+        self.ctable=make_table(["Check ID","Check","Acceptance","Result","Comment","Evidence","Entered By"]);vr.addWidget(self.ctable,1)
+        tabs.addTab(wr,"Qualification Runs");self.refresh()
+
+    def refresh(self):
+        self.protocols=self.db.list_qualification_protocols(active_only=False)
+        fill_table(self.ptable,self.protocols,["protocol_id","revision","name","equipment_id","equipment_type","active","created_by","created_at","version"])
+        current=selected_row(self.rtable,self.runs);run_no=current.run_no if current else ""
+        self.runs=self.db.list_qualification_runs()
+        fill_table(self.rtable,self.runs,["run_no","equipment_id","protocol_id","protocol_revision","status","started_by","submitted_by","verified_by","approved_by","expires_at","version"])
+        if run_no:
+            for i,row in enumerate(self.runs):
+                if row.run_no==run_no:self.rtable.selectRow(i);break
+        self.load_checks()
+
+    def selected_protocol(self):return selected_row(self.ptable,self.protocols)
+    def selected_run(self):return selected_row(self.rtable,self.runs)
+
+    def new_protocol(self):
+        d=QualificationProtocolDialog(parent=self)
+        if d.exec()==QDialog.DialogCode.Accepted:
+            try:self.db.save_qualification_protocol(user=self.user["username"],workstation=WORKSTATION,**d.data());self.refresh()
+            except Exception as exc:QMessageBox.critical(self,"Qualification Protocol",str(exc))
+
+    def revise_protocol(self):
+        row=self.selected_protocol()
+        if not row:return
+        d=QualificationProtocolDialog(row,self)
+        if d.exec()==QDialog.DialogCode.Accepted:
+            try:self.db.save_qualification_protocol(user=self.user["username"],workstation=WORKSTATION,create_revision=True,**d.data());self.refresh()
+            except Exception as exc:QMessageBox.critical(self,"Qualification Protocol",str(exc))
+
+    def start_run(self):
+        eq,ok=QInputDialog.getText(self,"Qualification Run","Equipment ID")
+        if not ok or not eq.strip():return
+        active=[p for p in self.db.list_qualification_protocols() if (not p.equipment_id or p.equipment_id==eq.strip())]
+        if not active:QMessageBox.warning(self,"Qualification","No active qualification protocol available.");return
+        labels=[f"{p.protocol_id} R{p.revision} — {p.name}" for p in active]
+        choice,ok=QInputDialog.getItem(self,"Qualification Run","Protocol",labels,0,False)
+        if not ok:return
+        p=active[labels.index(choice)]
+        try:self.db.start_qualification_run(eq.strip(),p.protocol_id,self.user["username"],workstation=WORKSTATION);self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"Qualification",str(exc))
+
+    def load_checks(self):
+        row=self.selected_run()
+        if not row:self.check_rows=[];self.check_results={};self.ctable.setRowCount(0);return
+        try:self.check_rows,self.check_results=self.db.qualification_run_checks(row.id)
+        except Exception:self.check_rows=[];self.check_results={}
+        self.ctable.setRowCount(len(self.check_rows))
+        for r,check in enumerate(self.check_rows):
+            res=self.check_results.get(check["check_id"],{})
+            vals=[check.get("check_id"),check.get("label"),check.get("acceptance"),res.get("result",""),res.get("comment",""),res.get("evidence_path",""),res.get("entered_by","")]
+            for col,val in enumerate(vals):self.ctable.setItem(r,col,ti(val))
+
+    def enter_result(self):
+        run=self.selected_run();idx=self.ctable.currentRow()
+        if not run or not (0<=idx<len(self.check_rows)):return
+        check=self.check_rows[idx]
+        value,ok=QInputDialog.getItem(self,"Qualification Result",check["label"],["PASS","FAIL","NA"],0,False)
+        if not ok:return
+        comment,ok=QInputDialog.getText(self,"Qualification Result","Comment")
+        if not ok:return
+        evidence=""
+        if QMessageBox.question(self,"Evidence","Attach evidence file?")==QMessageBox.StandardButton.Yes:
+            evidence,_=QFileDialog.getOpenFileName(self,"Evidence")
+        try:
+            self.db.save_qualification_result(run.id,check["check_id"],value,comment,self.user["username"],evidence,WORKSTATION,run.version)
+            self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"Qualification",str(exc))
+
+    def submit_run(self):
+        run=self.selected_run()
+        if not run:return
+        conclusion,ok=QInputDialog.getText(self,"Submit Qualification","Conclusion")
+        if not ok:return
+        try:self.db.submit_qualification_run(run.id,self.user["username"],conclusion,WORKSTATION,run.version);self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"Qualification",str(exc))
+
+    def verify_run(self):
+        run=self.selected_run()
+        if not run:return
+        note,ok=QInputDialog.getText(self,"Verify Qualification","Verification note")
+        if not ok:return
+        try:self.db.verify_qualification_run(run.id,self.user["username"],note,WORKSTATION,run.version);self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"Qualification",str(exc))
+
+    def approve_run(self):
+        run=self.selected_run()
+        if not run:return
+        days,ok=QInputDialog.getInt(self,"Approve Qualification","Validity days (0 = no expiry)",30,0,3650)
+        if not ok:return
+        note,ok=QInputDialog.getText(self,"Approve Qualification","Approval note")
+        if not ok:return
+        try:self.db.approve_qualification_run(run.id,self.user["username"],days or None,note,WORKSTATION,run.version);self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"Qualification",str(exc))
+
+    def reject_run(self):
+        run=self.selected_run()
+        if not run:return
+        reason,ok=QInputDialog.getText(self,"Reject Qualification","Reason")
+        if not ok:return
+        try:self.db.reject_qualification_run(run.id,self.user["username"],reason,WORKSTATION,run.version);self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"Qualification",str(exc))
+
+
 class DispositionDialog(QDialog):
     def __init__(self,parent=None):
         super().__init__(parent);self.setWindowTitle("Equipment Disposition");f=QFormLayout(self);self.eq=QLineEdit();self.state=QComboBox();self.state.addItems(["Released With Conditions","Restricted Use","Engineering Use","Monitoring","Hold","PM Hold","Quality Hold","Safety Hold","Waiting Parts","Waiting Vendor","Qualification","Decommission","Scrap"]);self.reason=QTextEdit();self.rest=QTextEdit();self.criteria=QTextEdit();self.ticket=QLineEdit();f.addRow("Equipment",self.eq);f.addRow("State",self.state);f.addRow("Reason",self.reason);f.addRow("Restrictions",self.rest);f.addRow("Release Criteria",self.criteria);f.addRow("Related Ticket",self.ticket);b=QDialogButtonBox(QDialogButtonBox.StandardButton.Save|QDialogButtonBox.StandardButton.Cancel);b.accepted.connect(self.accept);b.rejected.connect(self.reject);f.addRow(b)
@@ -864,7 +1006,7 @@ class ReleaseDialog(QDialog):
         b=QDialogButtonBox(QDialogButtonBox.StandardButton.Save|QDialogButtonBox.StandardButton.Cancel);b.accepted.connect(self.accept);b.rejected.connect(self.reject);v.addWidget(b)
     def precheck(self):
         if not self.eq.text().strip():return
-        p=self.db.release_precheck(self.eq.text().strip());self.checks["critical_tickets_cleared"].setChecked(p["critical_tickets_open"]==0);QMessageBox.information(self,"Precheck",f"Open P1/P2 tickets: {p['critical_tickets_open']}\nOverdue PM: {p['overdue_pm']}")
+        p=self.db.release_precheck(self.eq.text().strip());self.checks["critical_tickets_cleared"].setChecked(p["critical_tickets_open"]==0);q=("Not required" if not p.get("qualification_required") else ("PASS — "+p.get("qualification_run_no","") if p.get("qualification_valid") else "REQUIRED / NOT APPROVED"));QMessageBox.information(self,"Precheck",f"Open P1/P2 tickets: {p['critical_tickets_open']}\nOverdue PM: {p['overdue_pm']}\nQualification: {q}")
     def check_data(self):return {k:c.isChecked() for k,c in self.checks.items()}
 
 
@@ -1217,7 +1359,7 @@ class MainWindow(QMainWindow):
         super().__init__();self.db=db;self.user=user;self.setWindowTitle(APP_TITLE);self.resize(1450,850);root=QWidget();self.setCentralWidget(root);h=QHBoxLayout(root);self.nav=QListWidget();self.nav.setFixedWidth(210);self.stack=QStackedWidget();h.addWidget(self.nav);h.addWidget(self.stack,1)
         self.pages=[]
         def add(name,page):self.nav.addItem(name);self.stack.addWidget(page);self.pages.append(page)
-        self.dashboard=DashboardPage(db);add("Dashboard",self.dashboard);add("Equipment",EquipmentPage(db,user));self.layout=LayoutPage(db,user);add("Layout / Map",self.layout);add("PM",PMPage(db,user));add("Issue Tickets",TicketPage(db,user));add("Reliability",ReliabilityPage(db));add("Disposition / Release",ControlPage(db,user));add("Endorsements",EndorsementPage(db,user));self.inventory=InventoryPage(db,user);add("Inventory",self.inventory);add("Documents",DocumentPage(db,user));add("Administration",AdminPage(db,user))
+        self.dashboard=DashboardPage(db);add("Dashboard",self.dashboard);add("Equipment",EquipmentPage(db,user));self.layout=LayoutPage(db,user);add("Layout / Map",self.layout);add("PM",PMPage(db,user));add("Issue Tickets",TicketPage(db,user));add("Qualification",QualificationPage(db,user));add("Reliability",ReliabilityPage(db));add("Disposition / Release",ControlPage(db,user));add("Endorsements",EndorsementPage(db,user));self.inventory=InventoryPage(db,user);add("Inventory",self.inventory);add("Documents",DocumentPage(db,user));add("Administration",AdminPage(db,user))
         self.inventory.show_map_part.connect(self.show_part_map);self.nav.currentRowChanged.connect(self.stack.setCurrentIndex);self.nav.setCurrentRow(0)
         self.statusBar().showMessage(f"{user['display_name']} — {user['role']} — {WORKSTATION}")
         refresh=QAction("Refresh",self);refresh.setShortcut(QKeySequence("F5"));refresh.triggered.connect(self.refresh_current);self.addAction(refresh);self.timer=QTimer(self);self.timer.timeout.connect(self.dashboard.refresh);self.timer.start(30000)

@@ -410,6 +410,57 @@ class Disposition(Base):
     version: Mapped[int] = mapped_column(Integer, default=1)
 
 
+class QualificationProtocol(Base):
+    __tablename__ = "qualification_protocols"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    protocol_id: Mapped[str] = mapped_column(String(120), index=True)
+    revision: Mapped[int] = mapped_column(Integer, default=1)
+    name: Mapped[str] = mapped_column(String(250))
+    equipment_id: Mapped[str] = mapped_column(String(100), default="", index=True)
+    equipment_type: Mapped[str] = mapped_column(String(120), default="")
+    checks_json: Mapped[str] = mapped_column(Text, default="[]")
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_by: Mapped[str] = mapped_column(String(120))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    __table_args__ = (UniqueConstraint("protocol_id","revision",name="uq_qualification_protocol_revision"),)
+
+
+class QualificationRun(Base):
+    __tablename__ = "qualification_runs"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    run_no: Mapped[str] = mapped_column(String(120), unique=True, index=True)
+    equipment_id: Mapped[str] = mapped_column(String(100), index=True)
+    protocol_id: Mapped[str] = mapped_column(String(120), index=True)
+    protocol_revision: Mapped[int] = mapped_column(Integer)
+    protocol_name: Mapped[str] = mapped_column(String(250), default="")
+    frozen_checks_json: Mapped[str] = mapped_column(Text, default="[]")
+    results_json: Mapped[str] = mapped_column(Text, default="{}")
+    status: Mapped[str] = mapped_column(String(40), default="In Progress", index=True)
+    started_by: Mapped[str] = mapped_column(String(120))
+    started_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    submitted_by: Mapped[str] = mapped_column(String(120), default="")
+    submitted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    verified_by: Mapped[str] = mapped_column(String(120), default="")
+    verified_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    approved_by: Mapped[str] = mapped_column(String(120), default="")
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    conclusion: Mapped[str] = mapped_column(Text, default="")
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
+class QualificationEvent(Base):
+    __tablename__ = "qualification_events"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    run_no: Mapped[str] = mapped_column(String(120), index=True)
+    action: Mapped[str] = mapped_column(String(60), index=True)
+    user: Mapped[str] = mapped_column(String(120), index=True)
+    detail: Mapped[str] = mapped_column(Text, default="")
+    workstation: Mapped[str] = mapped_column(String(120), default="")
+    occurred_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
 class EquipmentRelease(Base):
     __tablename__ = "equipment_releases"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -591,19 +642,19 @@ AUTH_LOCKOUT_MINUTES = 15
 
 ROLE_PERMISSIONS = {
     "Administrator": {"*"},
-    "Manager": {"view", "equipment.meter.record", "equipment.edit", "equipment.transition", "equipment.component.edit", "pm.edit", "pm.execute", "pm.approve", "pm.defer", "pm.defer.approve", "ticket.edit", "disposition.edit", "release.approve", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
-    "Supervisor": {"view", "equipment.meter.record", "equipment.edit", "equipment.transition", "equipment.component.edit", "pm.edit", "pm.execute", "pm.defer", "pm.defer.approve", "ticket.edit", "disposition.edit", "release.verify", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
-    "Equipment Engineer": {"view", "equipment.meter.record", "equipment.edit", "equipment.transition", "equipment.component.edit", "pm.edit", "pm.execute", "pm.defer", "ticket.edit", "disposition.edit", "release.verify", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
-    "Maintenance": {"view", "equipment.meter.record", "equipment.component.edit", "pm.execute", "pm.defer", "ticket.edit", "endorsement.edit", "inventory.consume", "inventory.reserve", "document.link"},
+    "Manager": {"view", "qualification.edit", "qualification.execute", "qualification.verify", "qualification.approve", "equipment.meter.record", "equipment.edit", "equipment.transition", "equipment.component.edit", "pm.edit", "pm.execute", "pm.approve", "pm.defer", "pm.defer.approve", "ticket.edit", "disposition.edit", "release.approve", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
+    "Supervisor": {"view", "qualification.execute", "qualification.verify", "qualification.approve", "equipment.meter.record", "equipment.edit", "equipment.transition", "equipment.component.edit", "pm.edit", "pm.execute", "pm.defer", "pm.defer.approve", "ticket.edit", "disposition.edit", "release.verify", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
+    "Equipment Engineer": {"view", "qualification.edit", "qualification.execute", "qualification.verify", "equipment.meter.record", "equipment.edit", "equipment.transition", "equipment.component.edit", "pm.edit", "pm.execute", "pm.defer", "ticket.edit", "disposition.edit", "release.verify", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
+    "Maintenance": {"view", "qualification.execute", "equipment.meter.record", "equipment.component.edit", "pm.execute", "pm.defer", "ticket.edit", "endorsement.edit", "inventory.consume", "inventory.reserve", "document.link"},
     "Technician": {"view", "equipment.meter.record", "pm.execute", "ticket.edit", "inventory.consume", "document.link"},
-    "Process Engineer": {"view", "ticket.edit", "release.verify", "document.link", "report.view"},
+    "Process Engineer": {"view", "qualification.verify", "qualification.approve", "ticket.edit", "release.verify", "document.link", "report.view"},
     "Inventory Controller": {"view", "inventory.edit", "inventory.consume", "inventory.reserve", "document.link"},
     "Document Controller": {"view", "document.link", "document.control"},
     "Read Only": {"view", "report.view"},
 }
 
 PERMISSIONS = [
-    "view", "equipment.edit", "equipment.transition", "equipment.component.edit", "equipment.meter.record", "layout.edit", "pm.edit", "pm.execute", "pm.approve", "pm.defer", "pm.defer.approve",
+    "view", "qualification.edit", "qualification.execute", "qualification.verify", "qualification.approve", "equipment.edit", "equipment.transition", "equipment.component.edit", "equipment.meter.record", "layout.edit", "pm.edit", "pm.execute", "pm.approve", "pm.defer", "pm.defer.approve",
     "ticket.edit", "disposition.edit", "release.verify", "release.approve", "endorsement.edit",
     "inventory.edit", "inventory.consume", "inventory.reserve", "document.link", "document.control",
     "user.admin", "audit.view", "report.view",
@@ -635,6 +686,7 @@ class Database:
         self.Session = sessionmaker(bind=self.engine, autoflush=False, expire_on_commit=False, future=True)
         Base.metadata.create_all(self.engine)
         self._assert_schema_compatible()
+        self._bootstrap_legacy_event_history()
 
     def _assert_schema_compatible(self):
         """Fail fast if an existing database is missing model columns.
@@ -667,6 +719,66 @@ class Database:
             return True,"Schema matches application model"
         except Exception as exc:
             return False,str(exc)
+
+    def _bootstrap_legacy_event_history(self):
+        """Backfill baseline event history for databases created before governed workflows.
+
+        New installations already create events at record creation. This only acts
+        on records that have no event history at all, so it is idempotent.
+        """
+        legacy_ticket_states={"In Progress":"Investigation","Completed":"Closed"}
+        with self.session() as s:
+            equipment=list(s.scalars(select(Equipment)))
+            for eq in equipment:
+                exists=s.scalar(select(func.count()).select_from(EquipmentStateEvent).where(
+                    EquipmentStateEvent.equipment_id==eq.equipment_id
+                ))
+                if exists:
+                    continue
+                state=eq.status if eq.status in EQUIPMENT_STATES else "Available"
+                if eq.status!=state:
+                    eq.status=state
+                    eq.version+=1
+                occurred=eq.updated_at or datetime.utcnow()
+                s.add(EquipmentStateEvent(
+                    equipment_id=eq.equipment_id,
+                    from_state="",
+                    to_state=state,
+                    state_class=STATE_CLASS.get(state,""),
+                    downtime=state in DOWNTIME_STATES,
+                    reason_code="INITIAL_STATE",
+                    reason_text="Baseline state captured during governed-workflow upgrade",
+                    owner=eq.owner or "",
+                    changed_by="system-migration",
+                    workstation="DATABASE-UPGRADE",
+                    changed_at=occurred,
+                ))
+
+            tickets=list(s.scalars(select(Ticket)))
+            for ticket in tickets:
+                exists=s.scalar(select(func.count()).select_from(TicketStateEvent).where(
+                    TicketStateEvent.ticket_no==ticket.ticket_no
+                ))
+                if exists:
+                    continue
+                state=legacy_ticket_states.get(ticket.status,ticket.status)
+                if state not in TICKET_STATES:
+                    state="Open"
+                if ticket.status!=state:
+                    ticket.status=state
+                    ticket.version+=1
+                occurred=ticket.updated_at or ticket.created_at or datetime.utcnow()
+                s.add(TicketStateEvent(
+                    ticket_no=ticket.ticket_no,
+                    from_state="",
+                    to_state=state,
+                    reason_code="INITIAL_STATE",
+                    note="Baseline lifecycle state captured during governed-workflow upgrade",
+                    owner=ticket.owner or "",
+                    changed_by="system-migration",
+                    workstation="DATABASE-UPGRADE",
+                    changed_at=occurred,
+                ))
 
     @contextmanager
     def session(self):
@@ -1854,11 +1966,301 @@ class Database:
             if active_only: stmt=stmt.where(Disposition.active.is_(True))
             return list(s.scalars(stmt))
 
+    @staticmethod
+    def _normalize_qualification_checks(checks: list[Any]) -> list[dict[str, Any]]:
+        normalized=[]
+        seen=set()
+        for idx,item in enumerate(checks or [],start=1):
+            if isinstance(item,str):
+                check_id=f"Q{idx:02d}"
+                label=item.strip()
+                acceptance="Pass"
+            elif isinstance(item,dict):
+                check_id=str(item.get("check_id") or f"Q{idx:02d}").strip()
+                label=str(item.get("label") or item.get("name") or "").strip()
+                acceptance=str(item.get("acceptance") or "Pass").strip()
+            else:
+                raise ValueError("Qualification checks must be strings or objects.")
+            if not check_id or not label:
+                raise ValueError("Every qualification check needs an ID and label.")
+            if check_id in seen:
+                raise ValueError(f"Duplicate qualification check ID: {check_id}")
+            seen.add(check_id)
+            normalized.append({"check_id":check_id,"label":label,"acceptance":acceptance})
+        if not normalized:
+            raise ValueError("Qualification protocol requires at least one check.")
+        return normalized
+
+    def save_qualification_protocol(
+        self,
+        protocol_id: str,
+        name: str,
+        checks: list[Any],
+        user: str,
+        equipment_id: str = "",
+        equipment_type: str = "",
+        create_revision: bool = False,
+        workstation: str = "",
+    ):
+        protocol_id=protocol_id.strip()
+        name=name.strip()
+        if not protocol_id or not name:
+            raise ValueError("Protocol ID and name are required.")
+        normalized=self._normalize_qualification_checks(checks)
+        with self.session() as s:
+            if equipment_id and not s.scalar(select(Equipment).where(Equipment.equipment_id==equipment_id)):
+                raise ValueError("Qualification protocol equipment not found.")
+            current=s.scalar(
+                select(QualificationProtocol)
+                .where(QualificationProtocol.protocol_id==protocol_id,QualificationProtocol.active.is_(True))
+                .order_by(QualificationProtocol.revision.desc())
+            )
+            if current and not create_revision:
+                raise ValueError("Active protocol exists. Create a controlled revision instead.")
+            revision=1
+            if current:
+                current.active=False
+                current.version+=1
+                revision=current.revision+1
+            row=QualificationProtocol(
+                protocol_id=protocol_id,revision=revision,name=name,equipment_id=equipment_id.strip(),
+                equipment_type=equipment_type.strip(),checks_json=json.dumps(normalized,sort_keys=True),
+                active=True,created_by=user,
+            )
+            s.add(row)
+            s.add(AuditLog(
+                user=user,action="QUALIFICATION_PROTOCOL_REVISION",entity_type="QUALIFICATION_PROTOCOL",
+                entity_key=f"{protocol_id}:R{revision}",
+                detail=json.dumps({"equipment_id":equipment_id,"equipment_type":equipment_type,"checks":len(normalized)},sort_keys=True),
+                workstation=workstation,
+            ))
+            s.flush()
+            return row
+
+    def list_qualification_protocols(self, active_only: bool = True):
+        with self.session() as s:
+            stmt=select(QualificationProtocol).order_by(QualificationProtocol.protocol_id,QualificationProtocol.revision.desc())
+            if active_only:
+                stmt=stmt.where(QualificationProtocol.active.is_(True))
+            return list(s.scalars(stmt))
+
+    def start_qualification_run(
+        self,
+        equipment_id: str,
+        protocol_id: str,
+        user: str,
+        run_no: str = "",
+        workstation: str = "",
+    ):
+        with self.session() as s:
+            eq=s.scalar(select(Equipment).where(Equipment.equipment_id==equipment_id))
+            if not eq:
+                raise ValueError("Equipment not found")
+            protocol=s.scalar(
+                select(QualificationProtocol)
+                .where(QualificationProtocol.protocol_id==protocol_id,QualificationProtocol.active.is_(True))
+                .order_by(QualificationProtocol.revision.desc())
+            )
+            if not protocol:
+                raise ValueError("Active qualification protocol not found")
+            if protocol.equipment_id and protocol.equipment_id!=equipment_id:
+                raise ValueError("Protocol is controlled for another equipment.")
+            if protocol.equipment_type and protocol.equipment_type!=eq.equipment_type:
+                raise ValueError("Protocol equipment type does not match this equipment.")
+            existing=s.scalar(select(QualificationRun).where(
+                QualificationRun.equipment_id==equipment_id,
+                QualificationRun.status.in_(["In Progress","Submitted","Verified"]),
+            ))
+            if existing:
+                raise ValueError(f"Open qualification run already exists: {existing.run_no}")
+            run_no=run_no.strip() or f"QUAL-{equipment_id}-{datetime.utcnow():%Y%m%d%H%M%S%f}"
+            row=QualificationRun(
+                run_no=run_no,equipment_id=equipment_id,protocol_id=protocol.protocol_id,
+                protocol_revision=protocol.revision,protocol_name=protocol.name,
+                frozen_checks_json=protocol.checks_json,results_json="{}",
+                status="In Progress",started_by=user,
+            )
+            s.add(row);s.flush()
+            s.add(QualificationEvent(run_no=row.run_no,action="START",user=user,detail=f"{protocol.protocol_id} R{protocol.revision}",workstation=workstation))
+            return row
+
+    def list_qualification_runs(self, equipment_id: str = ""):
+        with self.session() as s:
+            stmt=select(QualificationRun).order_by(QualificationRun.started_at.desc())
+            if equipment_id:
+                stmt=stmt.where(QualificationRun.equipment_id==equipment_id)
+            return list(s.scalars(stmt))
+
+    def qualification_run_checks(self, run_id: int) -> tuple[list[dict[str,Any]],dict[str,Any]]:
+        with self.session() as s:
+            row=s.get(QualificationRun,run_id)
+            if not row:
+                raise ValueError("Qualification run not found")
+            return json.loads(row.frozen_checks_json or "[]"),json.loads(row.results_json or "{}")
+
+    def save_qualification_result(
+        self,
+        run_id: int,
+        check_id: str,
+        result: str,
+        comment: str,
+        user: str,
+        evidence_path: str = "",
+        workstation: str = "",
+        expected_version: int | None = None,
+    ):
+        result=result.strip().upper()
+        if result not in {"PASS","FAIL","NA"}:
+            raise ValueError("Qualification result must be PASS, FAIL, or NA.")
+        with self.session() as s:
+            stmt=select(QualificationRun).where(QualificationRun.id==run_id)
+            if self.url.startswith("postgresql"):stmt=stmt.with_for_update()
+            row=s.scalar(stmt)
+            if not row:raise ValueError("Qualification run not found")
+            if expected_version is not None and row.version!=expected_version:
+                raise RuntimeError("CONFLICT: Qualification run changed by another user.")
+            if row.status!="In Progress":
+                raise ValueError("Only In Progress qualification runs can be edited.")
+            checks=json.loads(row.frozen_checks_json or "[]")
+            valid_ids={str(x["check_id"]) for x in checks}
+            if check_id not in valid_ids:
+                raise ValueError("Check is not part of the frozen qualification protocol.")
+            results=json.loads(row.results_json or "{}")
+            results[check_id]={"result":result,"comment":comment.strip(),"evidence_path":evidence_path.strip(),"entered_by":user,"entered_at":datetime.utcnow().isoformat()}
+            row.results_json=json.dumps(results,sort_keys=True)
+            row.version+=1
+            s.add(QualificationEvent(run_no=row.run_no,action="RESULT",user=user,detail=json.dumps({"check_id":check_id,"result":result},sort_keys=True),workstation=workstation))
+            s.flush();return row
+
+    def submit_qualification_run(
+        self,
+        run_id: int,
+        user: str,
+        conclusion: str = "",
+        workstation: str = "",
+        expected_version: int | None = None,
+    ):
+        with self.session() as s:
+            stmt=select(QualificationRun).where(QualificationRun.id==run_id)
+            if self.url.startswith("postgresql"):stmt=stmt.with_for_update()
+            row=s.scalar(stmt)
+            if not row:raise ValueError("Qualification run not found")
+            if expected_version is not None and row.version!=expected_version:raise RuntimeError("CONFLICT: Qualification run changed by another user.")
+            if row.status!="In Progress":raise ValueError("Qualification run is not In Progress.")
+            checks=json.loads(row.frozen_checks_json or "[]")
+            results=json.loads(row.results_json or "{}")
+            missing=[x["check_id"] for x in checks if x["check_id"] not in results]
+            if missing:raise ValueError(f"Missing qualification results: {missing}")
+            failed=[cid for cid,r in results.items() if r.get("result")=="FAIL"]
+            if failed:raise ValueError(f"Qualification contains failed checks: {failed}")
+            now=datetime.utcnow()
+            row.status="Submitted";row.submitted_by=user;row.submitted_at=now;row.conclusion=conclusion.strip();row.version+=1
+            s.add(QualificationEvent(run_no=row.run_no,action="SUBMIT",user=user,detail=row.conclusion,workstation=workstation,occurred_at=now))
+            s.flush();return row
+
+    def verify_qualification_run(
+        self,
+        run_id: int,
+        user: str,
+        note: str = "",
+        workstation: str = "",
+        expected_version: int | None = None,
+    ):
+        with self.session() as s:
+            stmt=select(QualificationRun).where(QualificationRun.id==run_id)
+            if self.url.startswith("postgresql"):stmt=stmt.with_for_update()
+            row=s.scalar(stmt)
+            if not row:raise ValueError("Qualification run not found")
+            if expected_version is not None and row.version!=expected_version:raise RuntimeError("CONFLICT: Qualification run changed by another user.")
+            if row.status!="Submitted":raise ValueError("Only Submitted qualification runs can be verified.")
+            if user in {row.started_by,row.submitted_by}:raise ValueError("Independent verification required.")
+            now=datetime.utcnow();row.status="Verified";row.verified_by=user;row.verified_at=now;row.version+=1
+            s.add(QualificationEvent(run_no=row.run_no,action="VERIFY",user=user,detail=note.strip(),workstation=workstation,occurred_at=now))
+            s.flush();return row
+
+    def approve_qualification_run(
+        self,
+        run_id: int,
+        user: str,
+        valid_days: int | None = None,
+        note: str = "",
+        workstation: str = "",
+        expected_version: int | None = None,
+    ):
+        with self.session() as s:
+            stmt=select(QualificationRun).where(QualificationRun.id==run_id)
+            if self.url.startswith("postgresql"):stmt=stmt.with_for_update()
+            row=s.scalar(stmt)
+            if not row:raise ValueError("Qualification run not found")
+            if expected_version is not None and row.version!=expected_version:raise RuntimeError("CONFLICT: Qualification run changed by another user.")
+            if row.status!="Verified":raise ValueError("Only Verified qualification runs can be approved.")
+            if user in {row.started_by,row.submitted_by,row.verified_by}:raise ValueError("Independent final approval required.")
+            now=datetime.utcnow();row.status="Approved";row.approved_by=user;row.approved_at=now;row.expires_at=(now+timedelta(days=int(valid_days))) if valid_days else None;row.version+=1
+            s.add(QualificationEvent(run_no=row.run_no,action="APPROVE",user=user,detail=note.strip(),workstation=workstation,occurred_at=now))
+            s.add(AuditLog(
+                user=user,action="QUALIFICATION_APPROVE",entity_type="QUALIFICATION_RUN",entity_key=row.run_no,
+                detail=json.dumps({"equipment_id":row.equipment_id,"protocol_id":row.protocol_id,"protocol_revision":row.protocol_revision,"expires_at":row.expires_at.isoformat() if row.expires_at else None},sort_keys=True),
+                workstation=workstation,created_at=now,
+            ))
+            s.flush();return row
+
+    def reject_qualification_run(
+        self,
+        run_id: int,
+        user: str,
+        reason: str,
+        workstation: str = "",
+        expected_version: int | None = None,
+    ):
+        if not reason.strip():raise ValueError("Rejection reason is required.")
+        with self.session() as s:
+            row=s.get(QualificationRun,run_id)
+            if not row:raise ValueError("Qualification run not found")
+            if expected_version is not None and row.version!=expected_version:raise RuntimeError("CONFLICT: Qualification run changed by another user.")
+            if row.status not in {"Submitted","Verified"}:raise ValueError("Only Submitted or Verified runs can be rejected.")
+            if user==row.started_by:raise ValueError("Independent rejection review required.")
+            row.status="Rejected";row.conclusion=(row.conclusion+"\nREJECTED: "+reason.strip()).strip();row.version+=1
+            s.add(QualificationEvent(run_no=row.run_no,action="REJECT",user=user,detail=reason.strip(),workstation=workstation))
+            s.flush();return row
+
+    def latest_valid_qualification(self, equipment_id: str):
+        now=datetime.utcnow()
+        with self.session() as s:
+            return s.scalar(
+                select(QualificationRun)
+                .where(
+                    QualificationRun.equipment_id==equipment_id,
+                    QualificationRun.status=="Approved",
+                    ((QualificationRun.expires_at.is_(None)) | (QualificationRun.expires_at>now)),
+                )
+                .order_by(QualificationRun.approved_at.desc(),QualificationRun.id.desc())
+            )
+
     def release_precheck(self, equipment_id: str) -> dict[str, Any]:
         with self.session() as s:
             critical = int(s.scalar(select(func.count()).select_from(Ticket).where(Ticket.equipment_id==equipment_id,Ticket.priority.in_(["P1","P2"]),Ticket.status.notin_(["Closed","Cancelled"]))) or 0)
             overdue = int(s.scalar(select(func.count()).select_from(PMTask).where(PMTask.equipment_id==equipment_id,PMTask.status=="Overdue")) or 0)
-            return {"critical_tickets_open": critical, "overdue_pm": overdue}
+            eq=s.scalar(select(Equipment).where(Equipment.equipment_id==equipment_id))
+            qualification_required=bool(eq and (eq.status=="Qualification" or eq.disposition=="Qualification"))
+            valid_qualification=None
+            if qualification_required:
+                now=datetime.utcnow()
+                valid_qualification=s.scalar(
+                    select(QualificationRun)
+                    .where(
+                        QualificationRun.equipment_id==equipment_id,
+                        QualificationRun.status=="Approved",
+                        ((QualificationRun.expires_at.is_(None)) | (QualificationRun.expires_at>now)),
+                    )
+                    .order_by(QualificationRun.approved_at.desc(),QualificationRun.id.desc())
+                )
+            return {
+                "critical_tickets_open":critical,
+                "overdue_pm":overdue,
+                "qualification_required":qualification_required,
+                "qualification_valid":bool(valid_qualification),
+                "qualification_run_no":valid_qualification.run_no if valid_qualification else "",
+            }
 
     def create_release_request(
         self,
@@ -1963,6 +2365,19 @@ class Database:
             eq=s.scalar(eq_stmt)
             if not eq:
                 raise ValueError("Equipment not found")
+            if eq.status=="Qualification" or eq.disposition=="Qualification":
+                now=datetime.utcnow()
+                valid_qualification=s.scalar(
+                    select(QualificationRun)
+                    .where(
+                        QualificationRun.equipment_id==r.equipment_id,
+                        QualificationRun.status=="Approved",
+                        ((QualificationRun.expires_at.is_(None)) | (QualificationRun.expires_at>now)),
+                    )
+                    .order_by(QualificationRun.approved_at.desc(),QualificationRun.id.desc())
+                )
+                if not valid_qualification:
+                    raise ValueError("Cannot release equipment from Qualification without an approved, non-expired qualification run.")
             for d in s.scalars(select(Disposition).where(Disposition.equipment_id==r.equipment_id,Disposition.active.is_(True))):
                 d.active=False
             s.add(Disposition(

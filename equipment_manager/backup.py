@@ -107,7 +107,8 @@ def main() -> int:
     parser.add_argument("path",nargs="?")
     args=parser.parse_args()
     url=os.getenv("EMS_DATABASE_URL","sqlite:///equipment_manager.db")
-    path=args.path or default_backup_path(url)
+    backup_root=os.getenv("EMS_BACKUP_ROOT","equipment_backups")
+    path=args.path or default_backup_path(url,backup_root)
     if args.action=="backup":
         result=create_backup(url,path)
         print(f"BACKUP VERIFIED: {result['path']} ({result['size_bytes']} bytes) — {result['verification']}")
