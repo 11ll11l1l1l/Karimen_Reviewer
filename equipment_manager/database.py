@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import secrets
 from contextlib import contextmanager
 from datetime import datetime, timedelta
@@ -1082,6 +1083,42 @@ class RecoveryDrill(Base):
     performed_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
 
 
+class RecordComment(Base):
+    __tablename__ = "record_comments"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    entity_type: Mapped[str] = mapped_column(String(60), index=True)
+    entity_key: Mapped[str] = mapped_column(String(180), index=True)
+    equipment_id: Mapped[str] = mapped_column(String(100), default="", index=True)
+    body: Mapped[str] = mapped_column(Text)
+    created_by: Mapped[str] = mapped_column(String(80), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    edited_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class RecordWatcher(Base):
+    __tablename__ = "record_watchers"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    entity_type: Mapped[str] = mapped_column(String(60), index=True)
+    entity_key: Mapped[str] = mapped_column(String(180), index=True)
+    username: Mapped[str] = mapped_column(String(80), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    __table_args__ = (UniqueConstraint("entity_type","entity_key","username",name="uq_record_watcher"),)
+
+
+class RecordMention(Base):
+    __tablename__ = "record_mentions"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    comment_id: Mapped[int] = mapped_column(Integer, index=True)
+    entity_type: Mapped[str] = mapped_column(String(60), index=True)
+    entity_key: Mapped[str] = mapped_column(String(180), index=True)
+    equipment_id: Mapped[str] = mapped_column(String(100), default="", index=True)
+    username: Mapped[str] = mapped_column(String(80), index=True)
+    mentioned_by: Mapped[str] = mapped_column(String(80), default="")
+    mentioned_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    read_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    __table_args__ = (UniqueConstraint("comment_id","username",name="uq_comment_mention"),)
+
+
 class AuditLog(Base):
     __tablename__ = "audit_log"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -1177,6 +1214,9 @@ class Database:
                 table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
             ]),
             ("20260923_007","Create part catalog and approved-alternate logistics tables",lambda: [
+                table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
+            ]),
+            ("20260923_008","Create record collaboration comments watchers and mentions",lambda: [
                 table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
             ]),
         ]
@@ -2028,6 +2068,14 @@ class Database:
             if self.has_permission(userctx,"qualification.approve"):
                 for run in s.scalars(select(QualificationRun).where(QualificationRun.status=="Verified")):
                     rows.append({"severity":"HIGH","kind":"APPROVAL","key":run.run_no,"equipment_id":run.equipment_id,"summary":f"Qualification approval — {run.protocol_name}","owner":username,"age_hours":0.0})
+        for mention in self.list_user_mentions(username,True,limit):
+            rows.append({
+                "severity":"MEDIUM","kind":"MENTION","key":str(mention.id),
+                "entity_type":mention.entity_type,"entity_key":mention.entity_key,
+                "equipment_id":mention.equipment_id,
+                "summary":f"@mention from {mention.mentioned_by} on {mention.entity_type}:{mention.entity_key}",
+                "owner":username,"age_hours":0.0,
+            })
         rank={"CRITICAL":0,"HIGH":1,"MEDIUM":2,"LOW":3}
         dedup={}
         for row in rows:
@@ -2097,6 +2145,89 @@ class Database:
             if not row or not row.active:raise ValueError("Attachment not found")
             row.active=False
             s.add(AuditLog(user=user or "system",action="ATTACHMENT_REMOVE",entity_type=row.entity_type,entity_key=row.entity_key,detail=str(row.id)))
+            s.flush();return row
+
+    def add_record_comment(
+        self, entity_type: str, entity_key: str, body: str, user: str,
+        equipment_id: str = "", workstation: str = "",
+    ):
+        et=entity_type.strip().upper();ek=str(entity_key).strip();body=body.strip()
+        if not et or not ek or not body:raise ValueError("Record and comment text are required.")
+        with self.session() as s:
+            comment=RecordComment(
+                entity_type=et,entity_key=ek,equipment_id=equipment_id.strip(),
+                body=body,created_by=user,
+            )
+            s.add(comment);s.flush()
+            watcher=s.scalar(select(RecordWatcher).where(
+                RecordWatcher.entity_type==et,RecordWatcher.entity_key==ek,RecordWatcher.username==user
+            ))
+            if not watcher:s.add(RecordWatcher(entity_type=et,entity_key=ek,username=user))
+            names=set(re.findall(r"(?<![A-Za-z0-9_.-])@([A-Za-z0-9_.-]{1,80})",body))
+            if names:
+                valid={x.username for x in s.scalars(select(User).where(User.username.in_(names),User.active.is_(True)))}
+                for username in valid:
+                    if username==user:continue
+                    s.add(RecordMention(
+                        comment_id=comment.id,entity_type=et,entity_key=ek,equipment_id=equipment_id.strip(),
+                        username=username,mentioned_by=user,
+                    ))
+            s.add(AuditLog(
+                user=user,action="COMMENT_ADD",entity_type=et,entity_key=ek,
+                detail=json.dumps({"comment_id":comment.id,"mentions":sorted(names)},sort_keys=True),
+                workstation=workstation,
+            ))
+            self._queue_integration_event(s,"collaboration.comment.added",et,ek,{
+                "comment_id":comment.id,"entity_type":et,"entity_key":ek,"equipment_id":equipment_id,
+                "created_by":user,"mentioned_users":sorted(names),
+            })
+            return comment
+
+    def list_record_comments(self, entity_type: str, entity_key: str, limit: int = 500):
+        with self.session() as s:return list(s.scalars(
+            select(RecordComment).where(
+                RecordComment.entity_type==entity_type.strip().upper(),
+                RecordComment.entity_key==str(entity_key),
+            ).order_by(RecordComment.created_at,RecordComment.id).limit(max(1,min(int(limit),5000)))
+        ))
+
+    def set_record_watch(self, entity_type: str, entity_key: str, username: str, watching: bool):
+        et=entity_type.strip().upper();ek=str(entity_key)
+        with self.session() as s:
+            row=s.scalar(select(RecordWatcher).where(
+                RecordWatcher.entity_type==et,RecordWatcher.entity_key==ek,RecordWatcher.username==username
+            ))
+            if watching and not row:
+                row=RecordWatcher(entity_type=et,entity_key=ek,username=username);s.add(row)
+            elif not watching and row:
+                s.delete(row);row=None
+            return row
+
+    def is_watching_record(self, entity_type: str, entity_key: str, username: str) -> bool:
+        with self.session() as s:return bool(s.scalar(select(func.count()).select_from(RecordWatcher).where(
+            RecordWatcher.entity_type==entity_type.strip().upper(),
+            RecordWatcher.entity_key==str(entity_key),RecordWatcher.username==username,
+        )))
+
+    def list_record_watchers(self, entity_type: str, entity_key: str):
+        with self.session() as s:return list(s.scalars(
+            select(RecordWatcher).where(
+                RecordWatcher.entity_type==entity_type.strip().upper(),
+                RecordWatcher.entity_key==str(entity_key),
+            ).order_by(RecordWatcher.username)
+        ))
+
+    def list_user_mentions(self, username: str, unread_only: bool = True, limit: int = 200):
+        with self.session() as s:
+            stmt=select(RecordMention).where(RecordMention.username==username)
+            if unread_only:stmt=stmt.where(RecordMention.read_at.is_(None))
+            return list(s.scalars(stmt.order_by(RecordMention.mentioned_at.desc()).limit(max(1,min(int(limit),1000)))))
+
+    def mark_mention_read(self, mention_id: int, username: str):
+        with self.session() as s:
+            row=s.get(RecordMention,mention_id)
+            if not row or row.username!=username:raise ValueError("Mention not found.")
+            if row.read_at is None:row.read_at=datetime.utcnow()
             s.flush();return row
 
     def audit(self, user: str, action: str, entity_type: str, entity_key: str = "", detail: str = "", workstation: str = ""):
