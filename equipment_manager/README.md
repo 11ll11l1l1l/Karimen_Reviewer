@@ -1,8 +1,20 @@
 # Equipment Management System
 
-Local Windows desktop equipment-management system isolated under `equipment_manager/` from the Karimen Reviewer application. The codebase intentionally remains at three Python source files: `main.py`, `database.py`, and `services.py`.
+Local Windows desktop equipment-management system isolated under `equipment_manager/` from the Karimen Reviewer application. The production-core refactor now separates governed domain rules into `domain.py` instead of keeping all behavior inside GUI/database CRUD code.
 
 ## Current build
+
+### Production-core state governance
+
+- Equipment operational state is no longer editable as ordinary master data.
+- State changes follow an explicit transition graph with reason-code and evidence requirements.
+- Downtime/waiting states require accountable ownership; failure/waiting states require linked issue tickets.
+- Scheduled PM transitions require a related PM task; qualification and decommissioning use dedicated reasons.
+- Production entry is blocked while the equipment disposition does not permit operation.
+- Every state change is version-checked and written to the append-only `equipment_state_events` timeline plus the audit log in the same transaction.
+- PostgreSQL state transitions acquire a row lock so two users cannot independently transition the same tool at the same time.
+- Equipment creation now creates the initial state event; ordinary master-data edits cannot bypass status/disposition workflows.
+- Dedicated EMS CI compiles the equipment module and runs state-machine unit + database integration tests.
 
 - Login page and first-run administrator creation; no default password is committed.
 - PostgreSQL-ready multi-user architecture. SQLite remains a local/demo fallback only and must not be placed on the shared drive.
