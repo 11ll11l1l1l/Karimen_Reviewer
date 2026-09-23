@@ -12,7 +12,7 @@ from PySide6.QtWidgets import (
     QTabWidget, QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget,
 )
 
-from attachment_store import store_attachment_file, store_clipboard_image
+from attachment_store import duplicate_attachment_file, store_attachment_file, store_clipboard_image
 from services import readonly_open_copy
 from table_productivity import install_table_productivity
 
@@ -61,13 +61,15 @@ class AttachmentPanel(QWidget):
         self.paste_button=QPushButton("Paste screenshot")
         self.open_button=QPushButton("Open")
         self.edit_button=QPushButton("Edit metadata")
+        self.copy_button=QPushButton("Copy to record")
         self.remove_button=QPushButton("Remove link")
         self.add_button.clicked.connect(self.add_files)
         self.paste_button.clicked.connect(self.paste_screenshot)
         self.open_button.clicked.connect(self.open_selected)
         self.edit_button.clicked.connect(self.edit_selected)
+        self.copy_button.clicked.connect(self.copy_selected)
         self.remove_button.clicked.connect(self.remove_selected)
-        for b in [self.add_button,self.paste_button,self.open_button,self.edit_button,self.remove_button]:buttons.addWidget(b)
+        for b in [self.add_button,self.paste_button,self.open_button,self.edit_button,self.copy_button,self.remove_button]:buttons.addWidget(b)
         buttons.addStretch(1);root.addLayout(buttons)
         self.table=_table(["Name","Category","Caption","Tags","Type","Size","Added by","Added"])
         self.table.doubleClicked.connect(self.open_selected);self.table.itemSelectionChanged.connect(self.update_preview)
@@ -89,7 +91,7 @@ class AttachmentPanel(QWidget):
 
     def refresh(self):
         enabled=bool(self.entity_type and self.entity_key)
-        for b in [self.add_button,self.paste_button,self.open_button,self.edit_button,self.remove_button]:b.setEnabled(enabled)
+        for b in [self.add_button,self.paste_button,self.open_button,self.edit_button,self.copy_button,self.remove_button]:b.setEnabled(enabled)
         self.rows=self.db.list_attachments(self.entity_type,self.entity_key) if enabled else []
         _fill_objects(self.table,self.rows,["original_name","category","caption","tags","media_type","file_size","created_by","created_at"])
         self.empty.setVisible(not enabled or not self.rows)
@@ -172,6 +174,26 @@ class AttachmentPanel(QWidget):
         if not ok:return
         try:self.db.update_attachment_metadata(row.id,caption,tags,category,self.user["username"]);self.refresh();self.changed.emit()
         except Exception as exc:QMessageBox.critical(self,"Attachment",str(exc))
+
+    def copy_selected(self):
+        row=_selected(self.table,self.rows)
+        if not row:return
+        target_type,ok=QInputDialog.getItem(self,"Copy attachment","Target record type",["EQUIPMENT","TICKET","PM_EXECUTION","QUALIFICATION","ALARM","RELEASE","ENDORSEMENT","WORK_LOG"],0,False)
+        if not ok:return
+        target_key,ok=QInputDialog.getText(self,"Copy attachment","Target record key / ID")
+        if not ok or not target_key.strip():return
+        equipment_id=self.equipment_id
+        if target_type=="EQUIPMENT":equipment_id=target_key.strip()
+        try:
+            stored=duplicate_attachment_file(row.stored_path,FILE_ROOT,target_type,target_key.strip())
+            self.db.add_attachment(
+                target_type,target_key.strip(),stored["stored_path"],
+                original_name=row.original_name,media_type=row.media_type,category=row.category,
+                caption=row.caption,tags=row.tags,equipment_id=equipment_id,
+                created_by=self.user["username"],copied_from_id=row.id,
+            )
+            QMessageBox.information(self,"Attachment",f"Copied to {target_type}:{target_key.strip()} with provenance retained.")
+        except Exception as exc:QMessageBox.critical(self,"Attachment copy",str(exc))
 
     def remove_selected(self):
         row=_selected(self.table,self.rows)
