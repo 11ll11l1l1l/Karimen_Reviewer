@@ -8,7 +8,7 @@ from contextlib import contextmanager
 from datetime import datetime, timedelta
 from typing import Any
 
-from sqlalchemy import Boolean, DateTime, Float, Integer, String, Text, UniqueConstraint, create_engine, func, select
+from sqlalchemy import Boolean, DateTime, Float, Integer, String, Text, UniqueConstraint, create_engine, func, inspect, select
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 
 from domain import (
@@ -523,6 +523,39 @@ class Database:
         self.engine = create_engine(self.url, future=True, pool_pre_ping=True, connect_args=args)
         self.Session = sessionmaker(bind=self.engine, autoflush=False, expire_on_commit=False, future=True)
         Base.metadata.create_all(self.engine)
+        self._assert_schema_compatible()
+
+    def _assert_schema_compatible(self):
+        """Fail fast if an existing database is missing model columns.
+
+        SQLAlchemy create_all() can add new tables but intentionally does not alter
+        existing tables. Without this guard, an old production database may appear
+        to start successfully and then fail later during an operational workflow.
+        """
+        inspector=inspect(self.engine)
+        actual_tables=set(inspector.get_table_names())
+        errors=[]
+        for table in Base.metadata.sorted_tables:
+            if table.name not in actual_tables:
+                errors.append(f"missing table {table.name}")
+                continue
+            actual_columns={col["name"] for col in inspector.get_columns(table.name)}
+            expected_columns={col.name for col in table.columns}
+            missing=sorted(expected_columns-actual_columns)
+            if missing:
+                errors.append(f"{table.name}: missing columns {', '.join(missing)}")
+        if errors:
+            raise RuntimeError(
+                "DATABASE SCHEMA INCOMPATIBLE. Controlled migration required before use: "
+                + "; ".join(errors)
+            )
+
+    def schema_health(self) -> tuple[bool,str]:
+        try:
+            self._assert_schema_compatible()
+            return True,"Schema matches application model"
+        except Exception as exc:
+            return False,str(exc)
 
     @contextmanager
     def session(self):
