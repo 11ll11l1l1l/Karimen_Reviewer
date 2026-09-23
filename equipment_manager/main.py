@@ -355,6 +355,17 @@ class EquipmentPage(QWidget):
         try:self._equipment_import_df(read_clipboard_table(QApplication.clipboard().text()))
         except Exception as exc:QMessageBox.critical(self,"Equipment paste",str(exc))
 
+    def select_equipment(self,equipment_id: str):
+        self.search.setText("")
+        self.refresh()
+        for i,row in enumerate(self.rows):
+            if row.equipment_id==equipment_id:
+                self.table.selectRow(i)
+                item=self.table.item(i,0)
+                if item:self.table.scrollToItem(item)
+                self.load_details()
+                break
+
     def add(self):
         d=EquipmentDialog(parent=self)
         if d.exec()==QDialog.DialogCode.Accepted:
