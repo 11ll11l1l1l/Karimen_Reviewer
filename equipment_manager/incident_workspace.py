@@ -80,9 +80,10 @@ class IncidentWorkspace(QWidget):
         self.title=QLabel("Incident Workspace");self.title.setStyleSheet("font-size:20pt;font-weight:800")
         self.status=QLabel();self.status.setStyleSheet("font-size:12pt;font-weight:700")
         self.open_eq=QPushButton("Open Equipment");self.open_eq.clicked.connect(self.open_equipment)
+        self.work_order_button=QPushButton("Create / Open Work Order");self.work_order_button.clicked.connect(self.open_work_order)
         legacy=QPushButton("Lifecycle / troubleshooting editor");legacy.clicked.connect(self.open_legacy)
         refresh=QPushButton("Refresh");refresh.clicked.connect(self.refresh)
-        head.addWidget(self.title);head.addWidget(self.status);head.addStretch(1);head.addWidget(self.open_eq);head.addWidget(legacy);head.addWidget(refresh);root.addLayout(head)
+        head.addWidget(self.title);head.addWidget(self.status);head.addStretch(1);head.addWidget(self.open_eq);head.addWidget(self.work_order_button);head.addWidget(legacy);head.addWidget(refresh);root.addLayout(head)
         self.context=QLabel("Select an incident from Global Search, My Work, or Equipment 360.");self.context.setWordWrap(True);self.context.setStyleSheet("color:#647581;");root.addWidget(self.context)
 
         self.tabs=QTabWidget();root.addWidget(self.tabs,1)
@@ -211,6 +212,13 @@ class IncidentWorkspace(QWidget):
         if not ok:return
         try:self.db.verify_incident_action(row.id,self.user["username"],note,row.version);self.refresh()
         except Exception as exc:QMessageBox.critical(self,"Incident action",str(exc))
+
+    def open_work_order(self):
+        if not self.ticket:return
+        try:
+            row=self.db.create_work_order_from_ticket(self.ticket.ticket_no,self.user["username"],"INCIDENT-WORKSPACE")
+            self.open_entity.emit("WORK_ORDER",row.work_order_no,row.equipment_id)
+        except Exception as exc:QMessageBox.critical(self,"Work order",str(exc))
 
     def open_equipment(self):
         if self.ticket:self.open_entity.emit("EQUIPMENT",self.ticket.equipment_id,self.ticket.equipment_id)
