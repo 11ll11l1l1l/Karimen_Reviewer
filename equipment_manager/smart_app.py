@@ -33,6 +33,7 @@ from pm_execution_workspace import PMExecutionWorkspace
 from work_order_workspace import WorkOrderWorkspace
 from shift_handover_workspace import ShiftHandoverWorkspace
 from analytics_workspace import EngineeringAnalyticsWorkspace
+from inventory_logistics_workspace import InventoryLogisticsWorkspace
 from version import __version__
 from demo_data import active_tickets, seed_demo_data
 from main import (
@@ -232,7 +233,8 @@ class SmartMainWindow(QMainWindow):
         self.work_page=add("Work / Labor",WorkLogPage(db,user))
         self.shift_workspace=add("Shift Operations / Handover",ShiftHandoverWorkspace(db,user))
         self.endorsement_page=add("Handover Records",EndorsementPage(db,user))
-        self.inventory=add("Parts / Inventory",InventoryPage(db,user))
+        self.inventory_logistics=add("Parts / Inventory Logistics",InventoryLogisticsWorkspace(db,user))
+        self.inventory=add("Parts / Inventory (Legacy)",InventoryPage(db,user))
         self.document_page=add("SOPs / Documents",DocumentPage(db,user))
         self.admin_page=add("Users / Administration",AdminPage(db,user))
 
@@ -244,6 +246,7 @@ class SmartMainWindow(QMainWindow):
         self.work_order_workspace.open_entity.connect(self.open_entity)
         self.shift_workspace.open_entity.connect(self.open_entity)
         self.analytics_workspace.open_entity.connect(self.open_entity)
+        self.inventory_logistics.open_entity.connect(self.open_entity)
         self.incident_workspace.open_entity.connect(self.open_entity)
         self.alarm_page.open_incident.connect(lambda ticket,equipment:self.open_entity("TICKET",ticket,equipment))
         self.inventory.show_map_part.connect(self.show_part_map)
@@ -352,8 +355,8 @@ class SmartMainWindow(QMainWindow):
             return
         if entity_type=="PART":
             part=entity_key.split("@",1)[0]
-            self.inventory.search.setText(part)
-            self.open_page("Parts / Inventory")
+            self.inventory_logistics.set_part(part)
+            self.open_page("Parts / Inventory Logistics")
             return
         if entity_type=="DOCUMENT":
             if hasattr(self.document_page,"select_document"):self.document_page.select_document(entity_key)
