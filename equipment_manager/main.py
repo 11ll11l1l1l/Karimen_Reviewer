@@ -994,8 +994,29 @@ class InventoryPage(QWidget):
 
 class DocumentPage(QWidget):
     def __init__(self,db,user):
-        super().__init__();self.db=db;self.user=user;self.rows=[];v=QVBoxLayout(self);h=QHBoxLayout();self.type=QLineEdit();self.type.setPlaceholderText("Entity type e.g. Equipment");self.key=QLineEdit();self.key.setPlaceholderText("Entity key");find=QPushButton("Filter");add=QPushButton("Link File");openb=QPushButton("Open Read-Only");find.clicked.connect(self.refresh);add.clicked.connect(self.add);openb.clicked.connect(self.open);add.setEnabled(db.has_permission(user,"document.link"));h.addWidget(self.type);h.addWidget(self.key);h.addWidget(find);h.addWidget(add);h.addWidget(openb);v.addLayout(h);self.table=make_table(["Entity","Key","Type","Title","Revision","Status","Path","Added By","Time"]);v.addWidget(self.table);self.refresh()
-    def refresh(self):self.rows=self.db.list_documents(self.type.text().strip(),self.key.text().strip());fill_table(self.table,self.rows,["entity_type","entity_key","document_type","title","revision","status","path","added_by","added_at"])
+        super().__init__();self.db=db;self.user=user;self.rows=[];self.cdocs=[];self.revisions=[]
+        v=QVBoxLayout(self);h=QHBoxLayout();self.type=QLineEdit();self.type.setPlaceholderText("Entity type e.g. Equipment");self.key=QLineEdit();self.key.setPlaceholderText("Entity key");find=QPushButton("Filter");find.clicked.connect(self.refresh);h.addWidget(self.type);h.addWidget(self.key);h.addWidget(find);v.addLayout(h)
+        tabs=QTabWidget()
+
+        wl=QWidget();vl=QVBoxLayout(wl);hl=QHBoxLayout();add=QPushButton("Link File");openb=QPushButton("Open Read-Only");add.clicked.connect(self.add);openb.clicked.connect(self.open);add.setEnabled(db.has_permission(user,"document.link"));hl.addWidget(add);hl.addWidget(openb);hl.addStretch(1);vl.addLayout(hl)
+        self.table=make_table(["Entity","Key","Type","Title","Revision","Status","Path","Added By","Time"]);vl.addWidget(self.table);tabs.addTab(wl,"Linked Files")
+
+        wc=QWidget();vc=QVBoxLayout(wc);hc=QHBoxLayout();newdoc=QPushButton("New Controlled Document");addrev=QPushButton("Add Revision");approve=QPushButton("Approve Revision");reject=QPushButton("Reject Revision");open_eff=QPushButton("Open Effective");verify=QPushButton("Verify File")
+        newdoc.clicked.connect(self.new_controlled);addrev.clicked.connect(self.add_revision);approve.clicked.connect(self.approve_revision);reject.clicked.connect(self.reject_revision);open_eff.clicked.connect(self.open_effective);verify.clicked.connect(self.verify_revision)
+        cancontrol=db.has_permission(user,"document.control");[x.setEnabled(cancontrol) for x in [newdoc,addrev,approve,reject]]
+        for x in [newdoc,addrev,approve,reject,open_eff,verify]:hc.addWidget(x)
+        hc.addStretch(1);vc.addLayout(hc)
+        self.cdoc_table=make_table(["Document ID","Entity","Key","Type","Title","Owner","Status","Current Revision","Created By","Ver"]);self.cdoc_table.itemSelectionChanged.connect(self.load_revisions);vc.addWidget(self.cdoc_table,1)
+        self.rev_table=make_table(["ID","Revision","Status","SHA-256","Summary","Created By","Approved By","Effective","Expires","Path","Ver"]);vc.addWidget(self.rev_table,1)
+        tabs.addTab(wc,"Controlled Documents")
+        v.addWidget(tabs);self.refresh()
+
+    def refresh(self):
+        et=self.type.text().strip();ek=self.key.text().strip()
+        self.rows=self.db.list_documents(et,ek);fill_table(self.table,self.rows,["entity_type","entity_key","document_type","title","revision","status","path","added_by","added_at"])
+        self.cdocs=self.db.list_controlled_documents(et,ek);fill_table(self.cdoc_table,self.cdocs,["document_id","entity_type","entity_key","document_type","title","owner","status","current_revision","created_by","version"])
+        self.load_revisions()
+
     def add(self):
         p,_=QFileDialog.getOpenFileName(self,"Link Existing File")
         if not p:return
@@ -1003,12 +1024,82 @@ class DocumentPage(QWidget):
         if not ok:return
         dtype,ok=QInputDialog.getItem(self,"Type","Document type",["SOP","Manual","Drawing","Report","Engineering Analysis","Vendor Report","Calibration Certificate","Image","Log","Spreadsheet","Other"],0,False)
         if not ok:return
-        self.db.add_document({"entity_type":self.type.text().strip() or "General","entity_key":self.key.text().strip(),"document_type":dtype,"title":title,"path":p,"status":"Active","added_by":self.user["username"]});self.refresh()
+        try:self.db.add_document({"entity_type":self.type.text().strip() or "General","entity_key":self.key.text().strip(),"document_type":dtype,"title":title,"path":p,"status":"Active","added_by":self.user["username"]});self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"Document",str(exc))
+
     def open(self):
         row=selected_row(self.table,self.rows)
         if row:
             try:readonly_open_copy(row.path)
             except Exception as exc:QMessageBox.critical(self,"Open",str(exc))
+
+    def new_controlled(self):
+        doc_id,ok=QInputDialog.getText(self,"Controlled Document","Document ID")
+        if not ok or not doc_id.strip():return
+        title,ok=QInputDialog.getText(self,"Controlled Document","Title")
+        if not ok or not title.strip():return
+        dtype,ok=QInputDialog.getItem(self,"Controlled Document","Type",["SOP","Specification","Work Instruction","Drawing","Calibration Procedure","Safety Procedure","Quality Procedure","Other"],0,False)
+        if not ok:return
+        owner,ok=QInputDialog.getText(self,"Controlled Document","Document owner")
+        if not ok:return
+        try:
+            self.db.create_controlled_document({
+                "document_id":doc_id.strip(),"entity_type":self.type.text().strip() or "General","entity_key":self.key.text().strip(),
+                "document_type":dtype,"title":title.strip(),"owner":owner.strip(),
+            },self.user["username"],WORKSTATION)
+            self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"Controlled Document",str(exc))
+
+    def current_cdoc(self):return selected_row(self.cdoc_table,self.cdocs)
+    def current_revision(self):return selected_row(self.rev_table,self.revisions)
+
+    def load_revisions(self):
+        doc=self.current_cdoc()
+        self.revisions=self.db.list_controlled_revisions(doc.document_id) if doc else []
+        fill_table(self.rev_table,self.revisions,["id","revision","status","file_sha256","change_summary","created_by","approved_by","effective_at","expires_at","path","version"])
+
+    def add_revision(self):
+        doc=self.current_cdoc()
+        if not doc:return
+        path,_=QFileDialog.getOpenFileName(self,"Controlled Revision File")
+        if not path:return
+        rev,ok=QInputDialog.getText(self,"Revision","Revision identifier")
+        if not ok or not rev.strip():return
+        summary,ok=QInputDialog.getText(self,"Revision","Change summary")
+        if not ok:return
+        try:self.db.add_controlled_revision(doc.document_id,rev,path,summary,self.user["username"],WORKSTATION);self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"Controlled Revision",str(exc))
+
+    def approve_revision(self):
+        row=self.current_revision()
+        if not row:return
+        if QMessageBox.question(self,"Approve Revision",f"Make {row.document_id} revision {row.revision} effective now?")!=QMessageBox.StandardButton.Yes:return
+        try:self.db.approve_controlled_revision(row.id,self.user["username"],workstation=WORKSTATION,expected_version=row.version);self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"Controlled Revision",str(exc))
+
+    def reject_revision(self):
+        row=self.current_revision()
+        if not row:return
+        reason,ok=QInputDialog.getText(self,"Reject Revision","Reason")
+        if not ok:return
+        try:self.db.reject_controlled_revision(row.id,self.user["username"],reason,WORKSTATION,row.version);self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"Controlled Revision",str(exc))
+
+    def open_effective(self):
+        doc=self.current_cdoc()
+        if not doc:return
+        row=self.db.effective_controlled_revision(doc.document_id)
+        if not row:QMessageBox.warning(self,"Controlled Document","No effective non-expired revision.");return
+        ok,digest=self.db.verify_controlled_revision_file(row.id)
+        if not ok:QMessageBox.critical(self,"Controlled Document",f"File integrity check failed: {digest}");return
+        try:readonly_open_copy(row.path)
+        except Exception as exc:QMessageBox.critical(self,"Open",str(exc))
+
+    def verify_revision(self):
+        row=self.current_revision()
+        if not row:return
+        ok,detail=self.db.verify_controlled_revision_file(row.id)
+        QMessageBox.information(self,"Integrity","PASS — SHA-256 matches." if ok else f"FAIL — {detail}")
 
 
 class UserDialog(QDialog):
