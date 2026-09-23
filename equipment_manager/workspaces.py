@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
 
 from attachment_store import duplicate_attachment_file, store_attachment_file, store_clipboard_image
 from services import readonly_open_copy
+from image_annotator import ImageAnnotationDialog
 from table_productivity import install_table_productivity
 
 FILE_ROOT=os.getenv("EMS_FILE_ROOT",str(Path.cwd()/"equipment_files"))
@@ -62,14 +63,16 @@ class AttachmentPanel(QWidget):
         self.open_button=QPushButton("Open")
         self.edit_button=QPushButton("Edit metadata")
         self.copy_button=QPushButton("Copy to record")
+        self.annotate_button=QPushButton("Annotate image")
         self.remove_button=QPushButton("Remove link")
         self.add_button.clicked.connect(self.add_files)
         self.paste_button.clicked.connect(self.paste_screenshot)
         self.open_button.clicked.connect(self.open_selected)
         self.edit_button.clicked.connect(self.edit_selected)
         self.copy_button.clicked.connect(self.copy_selected)
+        self.annotate_button.clicked.connect(self.annotate_selected)
         self.remove_button.clicked.connect(self.remove_selected)
-        for b in [self.add_button,self.paste_button,self.open_button,self.edit_button,self.copy_button,self.remove_button]:buttons.addWidget(b)
+        for b in [self.add_button,self.paste_button,self.open_button,self.edit_button,self.copy_button,self.annotate_button,self.remove_button]:buttons.addWidget(b)
         buttons.addStretch(1);root.addLayout(buttons)
         self.table=_table(["Name","Category","Caption","Tags","Type","Size","Added by","Added"])
         self.table.doubleClicked.connect(self.open_selected);self.table.itemSelectionChanged.connect(self.update_preview)
@@ -91,7 +94,7 @@ class AttachmentPanel(QWidget):
 
     def refresh(self):
         enabled=bool(self.entity_type and self.entity_key)
-        for b in [self.add_button,self.paste_button,self.open_button,self.edit_button,self.copy_button,self.remove_button]:b.setEnabled(enabled)
+        for b in [self.add_button,self.paste_button,self.open_button,self.edit_button,self.copy_button,self.annotate_button,self.remove_button]:b.setEnabled(enabled)
         self.rows=self.db.list_attachments(self.entity_type,self.entity_key) if enabled else []
         _fill_objects(self.table,self.rows,["original_name","category","caption","tags","media_type","file_size","created_by","created_at"])
         self.empty.setVisible(not enabled or not self.rows)
@@ -174,6 +177,25 @@ class AttachmentPanel(QWidget):
         if not ok:return
         try:self.db.update_attachment_metadata(row.id,caption,tags,category,self.user["username"]);self.refresh();self.changed.emit()
         except Exception as exc:QMessageBox.critical(self,"Attachment",str(exc))
+
+    def annotate_selected(self):
+        row=_selected(self.table,self.rows)
+        if not row:return
+        if not (row.media_type or "").startswith("image/"):
+            QMessageBox.information(self,"Annotation","Select an image attachment to annotate.");return
+        try:
+            dialog=ImageAnnotationDialog(row.stored_path,self)
+            if dialog.exec()!=QDialog.DialogCode.Accepted or not dialog.output_path:return
+            stored=store_attachment_file(dialog.output_path,FILE_ROOT,self.entity_type,self.entity_key)
+            self.db.add_attachment(
+                self.entity_type,self.entity_key,stored["stored_path"],
+                original_name=stored["original_name"],media_type="image/png",
+                category="Annotated Evidence",caption=(row.caption+" [annotated]").strip(),
+                tags=row.tags,equipment_id=self.equipment_id,created_by=self.user["username"],
+                copied_from_id=row.id,
+            )
+            self.refresh();self.changed.emit()
+        except Exception as exc:QMessageBox.critical(self,"Annotation",str(exc))
 
     def copy_selected(self):
         row=_selected(self.table,self.rows)
