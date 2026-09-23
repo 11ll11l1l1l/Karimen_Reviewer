@@ -2735,6 +2735,84 @@ class Database:
     def get_pm_task(self, task_id: int):
         with self.session() as s: return s.get(PMTask, task_id)
 
+    def plan_pm_task(
+        self,
+        task_id: int,
+        user: str,
+        *,
+        scheduled_date: datetime | None = None,
+        assigned_to: str | None = None,
+        expected_version: int | None = None,
+        workstation: str = "",
+    ):
+        with self.session() as s:
+            stmt=select(PMTask).where(PMTask.id==task_id)
+            if self.url.startswith("postgresql"):stmt=stmt.with_for_update()
+            task=s.scalar(stmt)
+            if not task:raise ValueError("PM task not found")
+            self.assert_authorized(user,"pm.edit",task.equipment_id)
+            if expected_version is not None and task.version!=expected_version:
+                raise RuntimeError("CONFLICT: PM task changed by another user. Refresh and retry.")
+            if task.status in {"Completed","Cancelled","In Progress"}:
+                raise ValueError(f"Cannot re-plan PM task in {task.status} state.")
+            changes={}
+            if scheduled_date is not None:
+                definition=s.scalar(select(PMDefinition).where(PMDefinition.pm_id==task.pm_id))
+                original=task.original_due_date
+                if original and definition and task.status!="Deferred":
+                    earliest=original-timedelta(days=max(0,definition.early_window_days or 0))
+                    latest=original+timedelta(days=max(0,definition.grace_days or 0))
+                    if scheduled_date<earliest:
+                        raise ValueError(f"Scheduled date is before the controlled early-execution window ({earliest:%Y-%m-%d}).")
+                    if scheduled_date>latest:
+                        raise ValueError(f"Scheduled date exceeds the controlled grace window ({latest:%Y-%m-%d}). Use the PM deferral workflow.")
+                if task.status=="Deferred" and task.scheduled_date and scheduled_date>task.scheduled_date:
+                    raise ValueError("A deferred PM cannot be moved later than its approved deferred date without a new deferral.")
+                task.scheduled_date=scheduled_date;changes["scheduled_date"]=scheduled_date.isoformat()
+                if task.status in {"Pending","Overdue"}:task.status="Scheduled"
+            if assigned_to is not None:
+                task.assigned_to=assigned_to.strip();changes["assigned_to"]=task.assigned_to
+            if not changes:return task
+            task.version+=1
+            task.updated_at=datetime.utcnow()
+            s.add(AuditLog(
+                user=user,action="PM_PLAN_UPDATE",entity_type="PM_TASK",entity_key=str(task.id),
+                detail=json.dumps(changes,sort_keys=True),workstation=workstation,
+            ))
+            self._queue_integration_event(s,"maintenance.pm.planned","PM_TASK",str(task.id),{
+                "task_id":task.id,"equipment_id":task.equipment_id,"pm_id":task.pm_id,
+                "status":task.status,"scheduled_date":task.scheduled_date.isoformat() if task.scheduled_date else None,
+                "assigned_to":task.assigned_to,"changed_by":user,
+            })
+            s.flush();return task
+
+    def pm_planning_rows(self, days: int = 60, include_overdue: bool = True) -> list[dict[str, Any]]:
+        horizon=max(1,min(int(days),730))
+        now=datetime.utcnow();end=now+timedelta(days=horizon)
+        with self.session() as s:
+            tasks=list(s.scalars(select(PMTask).where(PMTask.status.notin_(["Completed","Cancelled"])).order_by(PMTask.scheduled_date,PMTask.original_due_date,PMTask.priority)))
+            definitions={x.pm_id:x for x in s.scalars(select(PMDefinition))}
+        rows=[]
+        for task in tasks:
+            due=task.original_due_date
+            planned=task.scheduled_date or due
+            if planned and planned>end and not (include_overdue and due and due<now):continue
+            definition=definitions.get(task.pm_id)
+            early=(due-timedelta(days=max(0,definition.early_window_days or 0))) if due and definition else due
+            latest=(due+timedelta(days=max(0,definition.grace_days or 0))) if due and definition else due
+            if due and now>latest if latest else False:window="OVERDUE"
+            elif planned and early and planned<early:window="TOO EARLY"
+            elif planned and latest and planned>latest and task.status!="Deferred":window="OUTSIDE GRACE"
+            elif task.status=="Deferred":window="DEFERRED"
+            else:window="IN WINDOW"
+            rows.append({
+                "id":task.id,"equipment_id":task.equipment_id,"pm_id":task.pm_id,"pm_name":task.pm_name,
+                "original_due_date":due,"scheduled_date":planned,"status":task.status,"assigned_to":task.assigned_to,
+                "estimated_hours":float(task.estimated_hours or 0),"priority":task.priority,"window":window,
+                "early_date":early,"latest_date":latest,"version":task.version,
+            })
+        return rows
+
     def request_pm_deferral(
         self,
         task_id: int,
