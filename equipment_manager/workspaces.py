@@ -328,7 +328,7 @@ class Equipment360Workspace(QWidget):
 
         overview=QWidget();ov=QVBoxLayout(overview)
         self.metrics=QGridLayout();ov.addLayout(self.metrics);self.metric_labels={}
-        for i,key in enumerate(["Active alarms","Open incidents","Open PM","Qualification","Release","Availability 30d","MTBF 30d","MTTR 30d"]):
+        for i,key in enumerate(["Active alarms","Open incidents","Open PM","Open work orders","Qualification","Release","Availability 30d","MTBF 30d","MTTR 30d"]):
             card=QFrame();card.setFrameShape(QFrame.Shape.StyledPanel);box=QVBoxLayout(card);value=QLabel("—");value.setStyleSheet("font-size:18pt;font-weight:700");box.addWidget(value);box.addWidget(QLabel(key));self.metric_labels[key]=value;self.metrics.addWidget(card,i//4,i%4)
         ov.addStretch(1);self.tabs.addTab(overview,"Overview")
 
@@ -407,6 +407,7 @@ class Equipment360Workspace(QWidget):
         tickets=[x for x in self.db.list_tickets() if x.equipment_id==eq.equipment_id]
         alarms=self.db.list_alarms(eq.equipment_id,False,500)
         pm=[x for x in self.db.list_pm_tasks() if x.equipment_id==eq.equipment_id]
+        work_orders=self.db.list_work_orders(eq.equipment_id)
         work=self.db.list_work_logs(eq.equipment_id,False,500)
         qual=self.db.list_qualification_runs(eq.equipment_id)
         releases=[x for x in self.db.list_release_requests() if x.equipment_id==eq.equipment_id]
@@ -434,6 +435,7 @@ class Equipment360Workspace(QWidget):
         self.relationships=[]
         for x in tickets:self.relationships.append({"entity_type":"TICKET","entity_key":x.ticket_no,"title":x.title,"status":x.status})
         for x in pm:self.relationships.append({"entity_type":"PM_TASK","entity_key":x.id,"title":f"{x.pm_id} — {x.pm_name}","status":x.status})
+        for x in work_orders:self.relationships.append({"entity_type":"WORK_ORDER","entity_key":x.work_order_no,"title":x.title,"status":x.status})
         for x in alarms:self.relationships.append({"entity_type":"ALARM","entity_key":x.event_key,"title":f"{x.alarm_code} — {x.message}","status":x.state})
         for x in qual:self.relationships.append({"entity_type":"QUALIFICATION","entity_key":x.run_no,"title":x.protocol_name,"status":x.status})
         for x in releases:self.relationships.append({"entity_type":"RELEASE","entity_key":x.id,"title":"Equipment release","status":x.status})
@@ -449,6 +451,7 @@ class Equipment360Workspace(QWidget):
         self.metric_labels["Active alarms"].setText(str(sum(1 for x in alarms if x.state=="ACTIVE")))
         self.metric_labels["Open incidents"].setText(str(sum(1 for x in tickets if x.status not in {"Closed","Cancelled"})))
         self.metric_labels["Open PM"].setText(str(sum(1 for x in pm if x.status not in {"Completed","Cancelled"})))
+        self.metric_labels["Open work orders"].setText(str(sum(1 for x in work_orders if x.status not in {"Completed","Cancelled"})))
         self.metric_labels["Qualification"].setText(qual[0].status if qual else "None")
         pending=[x for x in releases if x.status!="Approved / Released"]
         self.metric_labels["Release"].setText(pending[0].status if pending else eq.disposition)
