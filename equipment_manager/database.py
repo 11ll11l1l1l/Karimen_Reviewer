@@ -826,6 +826,18 @@ class IntegrationDelivery(Base):
     __table_args__ = (UniqueConstraint("event_id","endpoint_id",name="uq_integration_delivery"),)
 
 
+class RecoveryDrill(Base):
+    __tablename__ = "recovery_drills"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    backup_path: Mapped[str] = mapped_column(Text)
+    database_type: Mapped[str] = mapped_column(String(30))
+    success: Mapped[bool] = mapped_column(Boolean)
+    detail: Mapped[str] = mapped_column(Text, default="")
+    performed_by: Mapped[str] = mapped_column(String(120), default="")
+    workstation: Mapped[str] = mapped_column(String(120), default="")
+    performed_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
 class AuditLog(Base):
     __tablename__ = "audit_log"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -1428,6 +1440,23 @@ class Database:
     def integration_delivery_status(self, limit: int = 500):
         with self.session() as s:
             return list(s.scalars(select(IntegrationDelivery).order_by(IntegrationDelivery.id.desc()).limit(limit)))
+
+    def record_recovery_drill(self, backup_path: str, database_type: str, success: bool, detail: str, user: str = "", workstation: str = ""):
+        with self.session() as s:
+            row=RecoveryDrill(
+                backup_path=backup_path,database_type=database_type,success=bool(success),
+                detail=detail,performed_by=user,workstation=workstation,
+            )
+            s.add(row)
+            s.add(AuditLog(
+                user=user,action="RECOVERY_DRILL_PASS" if success else "RECOVERY_DRILL_FAIL",
+                entity_type="SYSTEM",entity_key=backup_path,detail=detail,workstation=workstation,
+            ))
+            s.flush();return row
+
+    def list_recovery_drills(self, limit: int = 100):
+        with self.session() as s:
+            return list(s.scalars(select(RecoveryDrill).order_by(RecoveryDrill.performed_at.desc()).limit(max(1,min(int(limit),1000)))))
 
     def audit(self, user: str, action: str, entity_type: str, entity_key: str = "", detail: str = "", workstation: str = ""):
         with self.session() as s:
