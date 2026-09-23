@@ -27,6 +27,7 @@ from domain import REASON_CODES, TICKET_REASON_CODES, allowed_targets, allowed_t
 from workspaces import AttachmentPanel
 from table_productivity import configure_productivity_context, install_table_productivity
 from excel_import_studio import run_mapping_studio
+from excel_reconcile import confirm_reconciliation, reconcile_equipment, reconcile_inventory
 from services import (
     auto_mapping, calculate_next_due, copy_clipboard_image, dataframe_to_equipment, dataframe_to_inventory, dataframe_to_pm_backlog,
     dataframe_to_pm_specs, evaluate_measurement, pm_parts_readiness, read_clipboard_table,
@@ -360,14 +361,18 @@ class EquipmentPage(QWidget):
         if mapping is None:return
         rows,errors=dataframe_to_equipment(df,mapping)
         if not rows:QMessageBox.warning(self,"Equipment import","No valid rows.\n"+"\n".join(errors[:20]));return
-        if QMessageBox.question(self,"Equipment import",f"Validated {len(rows)} equipment row(s); {len(errors)} warning/error row(s). Commit changes?")!=QMessageBox.StandardButton.Yes:return
+        actions=reconcile_equipment(self.db,rows,mapping)
+        if not any(x["status"] in {"CREATE","UPDATE"} for x in actions):
+            QMessageBox.information(self,"Equipment import","No changes detected.");return
+        if not confirm_reconciliation(self,"Equipment Master Reconciliation",actions):return
         imported=0;failures=[]
-        for data in rows:
+        for action in actions:
+            if action["status"]=="UNCHANGED":continue
+            data=action["data"];current=action["current"]
             try:
-                current=self.db.get_equipment(data["equipment_id"])
                 self.db.save_equipment(data,current.version if current else None,user=self.user["username"],workstation=WORKSTATION);imported+=1
             except Exception as exc:failures.append(f"{data.get('equipment_id')}: {exc}")
-        self.refresh();detail=f"Imported/updated {imported} equipment row(s). Failures: {len(failures)}."
+        self.refresh();detail=f"Applied {imported} equipment create/update row(s). Source warnings: {len(errors)}. Failures: {len(failures)}."
         if failures:detail+="\n"+"\n".join(failures[:12])
         QMessageBox.information(self,"Equipment import",detail)
 
@@ -1538,14 +1543,17 @@ class InventoryPage(QWidget):
         if mapping is None:return
         rows,errors=dataframe_to_inventory(df,mapping)
         if not rows:QMessageBox.warning(self,"Inventory import","No valid rows.\n"+"\n".join(errors[:20]));return
-        if QMessageBox.question(self,"Inventory import",f"Validated {len(rows)} inventory row(s); {len(errors)} warning/error row(s). Commit changes?")!=QMessageBox.StandardButton.Yes:return
+        actions=reconcile_inventory(self.db,rows,mapping)
+        if not any(x["status"] in {"CREATE","UPDATE"} for x in actions):
+            QMessageBox.information(self,"Inventory import","No changes detected.");return
+        if not confirm_reconciliation(self,"Inventory Reconciliation",actions):return
         imported=0;failures=[]
-        for data in rows:
-            try:
-                existing=next((x for x in self.db.list_inventory(data["part_number"]) if x.part_number==data["part_number"] and x.location_code==data["location_code"]),None)
-                self.db.save_inventory_item(data,existing.version if existing else None);imported+=1
+        for action in actions:
+            if action["status"]=="UNCHANGED":continue
+            data=action["data"];existing=action["current"]
+            try:self.db.save_inventory_item(data,existing.version if existing else None);imported+=1
             except Exception as exc:failures.append(f"{data.get('part_number')} @ {data.get('location_code')}: {exc}")
-        self.refresh();detail=f"Imported/updated {imported} inventory row(s). Failures: {len(failures)}."
+        self.refresh();detail=f"Applied {imported} inventory create/update row(s). Source warnings: {len(errors)}. Failures: {len(failures)}."
         if failures:detail+="\n"+"\n".join(failures[:12])
         QMessageBox.information(self,"Inventory import",detail)
 
