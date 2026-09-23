@@ -1391,6 +1391,7 @@ class Database:
 
     def assert_authorized(self, username: str, permission: str, equipment_id: str = ""):
         strict=os.getenv("EMS_STRICT_AUTHZ","0").strip().lower() in {"1","true","yes","on"}
+        delegated=False
         with self.session() as s:
             user=s.scalar(select(User).where(User.username==username)) if username else None
             if strict and (not user or not user.active):
@@ -1398,9 +1399,10 @@ class Database:
             if user:
                 user_ctx={"username":user.username,"role":user.role}
                 if not self._direct_permission(user_ctx,permission):
-                    if not self.delegated_permission(username,permission,equipment_id):
+                    delegated=self.delegated_permission(username,permission,equipment_id)
+                    if not delegated:
                         raise PermissionError(f"User '{username}' lacks permission '{permission}'.")
-        if equipment_id:
+        if equipment_id and not delegated:
             self.assert_equipment_scope(username,equipment_id,permission)
 
     @contextmanager
