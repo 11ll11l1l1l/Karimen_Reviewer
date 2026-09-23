@@ -154,7 +154,7 @@ class MaintenancePlanningWorkspace(QWidget):
     def open_selected(self):
         rows=self._selected_board_rows()
         if rows:
-            row=rows[0];self.open_entity.emit("PM_TASK",str(row["id"]),row["equipment_id"])
+            row=rows[0];self.open_entity.emit("PM_EXECUTION",str(row["id"]),row["equipment_id"])
 
     def open_day_selected(self):
         i=self.day_table.currentRow()
