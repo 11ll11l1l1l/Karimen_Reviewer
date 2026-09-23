@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
     QGridLayout,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QListWidget,
     QMainWindow,
     QPushButton,
@@ -47,6 +48,7 @@ from main import (
     WorkLogPage,
 )
 from smart_map import SmartLayoutPage
+from workspaces import Equipment360Workspace, MyWorkWorkspace, SearchWorkspace
 
 DEMO_MODE=os.getenv("EMS_DEMO_MODE","0").strip().lower() in {"1","true","yes","on"}
 
@@ -161,6 +163,11 @@ class SmartMainWindow(QMainWindow):
         brand.addWidget(app_subtitle)
         top_layout.addLayout(brand)
         top_layout.addStretch(1)
+        self.global_search=QLineEdit()
+        self.global_search.setPlaceholderText("Search equipment, tickets, PM, alarms, parts…")
+        self.global_search.setMinimumWidth(360)
+        self.global_search.returnPressed.connect(self.run_global_search)
+        top_layout.addWidget(self.global_search)
         user_label = QLabel(f"{user['display_name']}  |  {user['role']}  |  {WORKSTATION}")
         user_label.setStyleSheet("color:#c8d6df;")
         top_layout.addWidget(user_label)
@@ -177,32 +184,38 @@ class SmartMainWindow(QMainWindow):
         body_layout.addWidget(self.stack, 1)
         outer.addWidget(body, 1)
 
+        self.page_index={}
         def add(name, page):
             self.nav.addItem(name)
             self.stack.addWidget(page)
+            self.page_index[name]=self.stack.count()-1
+            return page
 
-        self.layout_page = SmartLayoutPage(db, user)
-        self.dashboard = SmartDashboardPage(db, lambda: self.nav.setCurrentRow(2))
-        add("Operations Overview", self.dashboard)
-        add("Equipment Registry", EquipmentPage(db, user))
-        add("Live FAB Map", self.layout_page)
-        add("PM Planning / Execution", PMPage(db, user))
-        add("Issue / Repair Tickets", TicketPage(db, user))
-        add("Alarms / Events", AlarmPage(db, user))
-        add("Qualification", QualificationPage(db, user))
-        add("Reliability / MTBF", ReliabilityPage(db))
-        add("Disposition / Release", ControlPage(db, user))
-        add("Work / Labor", WorkLogPage(db, user))
-        add("Shift Endorsements", EndorsementPage(db, user))
-        self.inventory = InventoryPage(db, user)
-        add("Parts / Inventory", self.inventory)
-        add("SOPs / Documents", DocumentPage(db, user))
-        add("Users / Administration", AdminPage(db, user))
+        self.search_workspace=add("Global Search",SearchWorkspace(db,user))
+        self.my_work=add("My Work",MyWorkWorkspace(db,user))
+        self.dashboard=add("Operations Overview",SmartDashboardPage(db,lambda:self.open_page("Live FAB Map")))
+        self.equipment360=add("Equipment 360",Equipment360Workspace(db,user))
+        self.equipment_page=add("Equipment Registry",EquipmentPage(db,user))
+        self.layout_page=add("Live FAB Map",SmartLayoutPage(db,user))
+        self.pm_page=add("PM Planning / Execution",PMPage(db,user))
+        self.ticket_page=add("Issue / Repair Tickets",TicketPage(db,user))
+        self.alarm_page=add("Alarms / Events",AlarmPage(db,user))
+        self.qualification_page=add("Qualification",QualificationPage(db,user))
+        self.reliability_page=add("Reliability / MTBF",ReliabilityPage(db))
+        self.control_page=add("Disposition / Release",ControlPage(db,user))
+        self.work_page=add("Work / Labor",WorkLogPage(db,user))
+        self.endorsement_page=add("Shift Endorsements",EndorsementPage(db,user))
+        self.inventory=add("Parts / Inventory",InventoryPage(db,user))
+        self.document_page=add("SOPs / Documents",DocumentPage(db,user))
+        self.admin_page=add("Users / Administration",AdminPage(db,user))
 
+        self.search_workspace.open_entity.connect(self.open_entity)
+        self.my_work.open_entity.connect(self.open_entity)
+        self.equipment360.open_entity.connect(self.open_entity)
         self.inventory.show_map_part.connect(self.show_part_map)
         self.nav.currentRowChanged.connect(self.stack.setCurrentIndex)
         self.nav.currentRowChanged.connect(lambda _index: self.refresh_current())
-        self.nav.setCurrentRow(0)
+        self.nav.setCurrentRow(self.page_index["Operations Overview"])
 
         refresh = QAction("Refresh", self)
         refresh.setShortcut(QKeySequence("F5"))
@@ -212,9 +225,49 @@ class SmartMainWindow(QMainWindow):
         self.timer.timeout.connect(self.dashboard.refresh)
         self.timer.start(30000)
 
+    def open_page(self,name: str):
+        index=self.page_index.get(name)
+        if index is not None:self.nav.setCurrentRow(index)
+
+    def run_global_search(self):
+        query=self.global_search.text().strip()
+        self.search_workspace.set_query(query)
+        self.open_page("Global Search")
+
+    def open_entity(self,entity_type: str,entity_key: str,equipment_id: str=""):
+        entity_type=(entity_type or "").upper()
+        if entity_type=="EQUIPMENT" or (equipment_id and entity_type in {"ALARM","QUALIFICATION","DOCUMENT","RELEASE"}):
+            target=entity_key if entity_type=="EQUIPMENT" else equipment_id
+            self.equipment360.set_equipment(target)
+            self.open_page("Equipment 360")
+            return
+        if entity_type=="TICKET":
+            if hasattr(self.ticket_page,"select_ticket"):self.ticket_page.select_ticket(entity_key)
+            self.open_page("Issue / Repair Tickets")
+            return
+        if entity_type=="PM_TASK":
+            try:key=int(entity_key)
+            except Exception:key=0
+            if hasattr(self.pm_page,"select_task"):self.pm_page.select_task(key)
+            self.open_page("PM Planning / Execution")
+            return
+        if entity_type=="PART":
+            part=entity_key.split("@",1)[0]
+            self.inventory.search.setText(part)
+            self.open_page("Parts / Inventory")
+            return
+        if entity_type=="ENDORSEMENT":
+            if hasattr(self.endorsement_page,"select_endorsement"):self.endorsement_page.select_endorsement(entity_key)
+            self.open_page("Shift Endorsements")
+            return
+        if equipment_id:
+            self.equipment360.set_equipment(equipment_id);self.open_page("Equipment 360")
+            return
+        self.open_page("Global Search")
+
     def show_part_map(self, part):
         self.layout_page.highlight_inventory(part)
-        self.nav.setCurrentRow(2)
+        self.open_page("Live FAB Map")
 
     def refresh_current(self):
         page = self.stack.currentWidget()
