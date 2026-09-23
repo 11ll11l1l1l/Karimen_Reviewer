@@ -28,6 +28,7 @@ from workspaces import AttachmentPanel
 from table_productivity import configure_productivity_context, install_table_productivity
 from excel_import_studio import run_mapping_studio
 from excel_reconcile import confirm_reconciliation, reconcile_equipment, reconcile_inventory
+from alarm_correlation import correlate_alarm_bursts
 from services import (
     auto_mapping, calculate_next_due, copy_clipboard_image, dataframe_to_equipment, dataframe_to_inventory, dataframe_to_pm_backlog,
     dataframe_to_pm_specs, evaluate_measurement, pm_parts_readiness, read_clipboard_table,
@@ -1919,19 +1920,21 @@ class AdminPage(QWidget):
 class AlarmPage(QWidget):
     open_incident=Signal(str,str)
     def __init__(self,db,user):
-        super().__init__();self.db=db;self.user=user;self.rows=[];self.pareto=[]
+        super().__init__();self.db=db;self.user=user;self.rows=[];self.pareto=[];self.bursts=[]
         v=QVBoxLayout(self);h=QHBoxLayout();title=QLabel("Equipment Alarms / Events");title.setStyleSheet("font-size:18pt;font-weight:700")
         self.eq=QLineEdit();self.eq.setPlaceholderText("Equipment filter");active=QCheckBox("Active only");active.setChecked(True);self.active_only=active
         refresh=QPushButton("Refresh");refresh.clicked.connect(self.refresh);ack=QPushButton("Acknowledge");ack.clicked.connect(self.acknowledge)
         create_inc=QPushButton("Create Incident");create_inc.clicked.connect(self.create_incident)
         link_inc=QPushButton("Link Existing");link_inc.clicked.connect(self.link_incident)
         open_inc=QPushButton("Open Incident");open_inc.clicked.connect(self.open_related_incident)
+        burst_inc=QPushButton("Create Burst Incident");burst_inc.clicked.connect(self.create_burst_incident)
         manual=QPushButton("Record Manual Alarm");manual.clicked.connect(self.manual_alarm)
-        can_ticket=db.has_permission(user,"ticket.edit");manual.setEnabled(can_ticket);create_inc.setEnabled(can_ticket);link_inc.setEnabled(can_ticket)
-        h.addWidget(title);h.addStretch(1);h.addWidget(self.eq);h.addWidget(active);h.addWidget(refresh);h.addWidget(ack);h.addWidget(create_inc);h.addWidget(link_inc);h.addWidget(open_inc);h.addWidget(manual);v.addLayout(h)
+        can_ticket=db.has_permission(user,"ticket.edit");manual.setEnabled(can_ticket);create_inc.setEnabled(can_ticket);link_inc.setEnabled(can_ticket);burst_inc.setEnabled(can_ticket)
+        h.addWidget(title);h.addStretch(1);h.addWidget(self.eq);h.addWidget(active);h.addWidget(refresh);h.addWidget(ack);h.addWidget(create_inc);h.addWidget(link_inc);h.addWidget(open_inc);h.addWidget(burst_inc);h.addWidget(manual);v.addLayout(h)
         tabs=QTabWidget()
         wa=QWidget();va=QVBoxLayout(wa);self.table=make_table(["Event","Equipment","Alarm Code","Severity","Message","Source","State","Occurred","Ack By","Ack At","Cleared","Ticket"]);self.table.itemSelectionChanged.connect(self.load_attachment);va.addWidget(self.table);tabs.addTab(wa,"Alarm History")
         wp=QWidget();vp=QVBoxLayout(wp);self.pareto_table=make_table(["Alarm Code","Message","Count"]);vp.addWidget(self.pareto_table);tabs.addTab(wp,"30-Day Pareto")
+        wb=QWidget();vb=QVBoxLayout(wb);self.burst_table=make_table(["Burst","Equipment","Alarm Code","Severity","Count","First Seen","Last Seen","Duration s","Source Events"]);vb.addWidget(self.burst_table);tabs.addTab(wb,"Correlated Bursts")
         self.attachments=AttachmentPanel(db,user);tabs.addTab(self.attachments,"Evidence / Attachments")
         v.addWidget(tabs);self.eq.textChanged.connect(self.refresh);self.active_only.stateChanged.connect(self.refresh);self.refresh()
 
@@ -1940,6 +1943,11 @@ class AlarmPage(QWidget):
         self.rows=self.db.list_alarms(equipment,active_only=self.active_only.isChecked())
         fill_table(self.table,self.rows,["event_key","equipment_id","alarm_code","severity","message","source","state","occurred_at","acknowledged_by","acknowledged_at","cleared_at","related_ticket"])
         self.pareto=self.db.alarm_pareto(30,equipment)
+        self.bursts=correlate_alarm_bursts([{"id":row.event_key,"equipment_id":row.equipment_id,"alarm_code":row.alarm_code,"severity":row.severity,"occurred_at":row.occurred_at} for row in self.rows])
+        self.burst_table.setRowCount(len(self.bursts))
+        for r,burst in enumerate(self.bursts):
+            values=[burst.burst_key,burst.equipment_id,burst.alarm_code,burst.severity,burst.count,burst.first_seen,burst.last_seen,f"{burst.duration_seconds:.0f}",", ".join(burst.alarm_ids)]
+            for col,value in enumerate(values):self.burst_table.setItem(r,col,ti(value))
         self.pareto_table.setRowCount(len(self.pareto))
         for r,row in enumerate(self.pareto):
             for col,key in enumerate(["alarm_code","message","count"]):self.pareto_table.setItem(r,col,ti(row.get(key,"")))
@@ -1965,6 +1973,15 @@ class AlarmPage(QWidget):
             ticket=self.db.create_incident_from_alarm(row.event_key,self.user["username"],owner=self.user["username"],workstation=WORKSTATION)
             self.refresh();self.open_incident.emit(ticket.ticket_no,ticket.equipment_id)
         except Exception as exc:QMessageBox.critical(self,"Create Incident",str(exc))
+
+    def create_burst_incident(self):
+        burst=selected_row(self.burst_table,self.bursts)
+        if not burst:return
+        if QMessageBox.question(self,"Create Burst Incident",f"Create one incident for {burst.count} {burst.alarm_code} alarms on {burst.equipment_id}?")!=QMessageBox.StandardButton.Yes:return
+        try:
+            ticket=self.db.create_incident_from_alarm_burst(list(burst.alarm_ids),self.user["username"],owner=self.user["username"],workstation=WORKSTATION)
+            self.refresh();self.open_incident.emit(ticket.ticket_no,ticket.equipment_id)
+        except Exception as exc:QMessageBox.critical(self,"Create Burst Incident",str(exc))
 
     def link_incident(self):
         row=selected_row(self.table,self.rows)
