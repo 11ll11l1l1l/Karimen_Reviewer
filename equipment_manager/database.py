@@ -895,6 +895,35 @@ class StorageLocation(Base):
     version: Mapped[int] = mapped_column(Integer, default=1)
 
 
+class PartCatalog(Base):
+    __tablename__ = "part_catalog"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    part_number: Mapped[str] = mapped_column(String(120), unique=True, index=True)
+    description: Mapped[str] = mapped_column(String(300), default="")
+    category: Mapped[str] = mapped_column(String(120), default="")
+    manufacturer: Mapped[str] = mapped_column(String(120), default="")
+    supplier: Mapped[str] = mapped_column(String(180), default="")
+    supplier_part_number: Mapped[str] = mapped_column(String(160), default="", index=True)
+    barcode: Mapped[str] = mapped_column(String(180), default="", index=True)
+    lead_time_days: Mapped[int] = mapped_column(Integer, default=0)
+    reorder_qty: Mapped[float] = mapped_column(Float, default=0.0)
+    notes: Mapped[str] = mapped_column(Text, default="")
+    active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
+class PartAlternate(Base):
+    __tablename__ = "part_alternates"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    part_number: Mapped[str] = mapped_column(String(120), index=True)
+    alternate_part_number: Mapped[str] = mapped_column(String(120), index=True)
+    approved: Mapped[bool] = mapped_column(Boolean, default=True)
+    note: Mapped[str] = mapped_column(Text, default="")
+    created_by: Mapped[str] = mapped_column(String(120), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    __table_args__ = (UniqueConstraint("part_number","alternate_part_number",name="uq_part_alternate"),)
+
+
 class InventoryItem(Base):
     __tablename__ = "inventory_items"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -1145,6 +1174,9 @@ class Database:
                 table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
             ]),
             ("20260923_006","Create governed work-order and relationship tables",lambda: [
+                table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
+            ]),
+            ("20260923_007","Create part catalog and approved-alternate logistics tables",lambda: [
                 table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
             ]),
         ]
@@ -4992,6 +5024,162 @@ class Database:
 
     def list_storage_locations(self):
         with self.session() as s: return list(s.scalars(select(StorageLocation).order_by(StorageLocation.location_code)))
+
+    def save_part_catalog(self, data: dict[str, Any], expected_version: int | None = None):
+        payload=dict(data);part=str(payload.get("part_number","")).strip()
+        if not part:raise ValueError("Part number is required.")
+        payload["part_number"]=part
+        with self.session() as s:
+            row=s.scalar(select(PartCatalog).where(PartCatalog.part_number==part))
+            if row:self._update_versioned(row,payload,expected_version,"Part catalog")
+            else:row=PartCatalog(**payload);s.add(row)
+            s.flush();return row
+
+    def list_part_catalog(self, search_text: str = "", active_only: bool = False):
+        with self.session() as s:
+            stmt=select(PartCatalog).order_by(PartCatalog.part_number)
+            if search_text:
+                q=f"%{search_text}%"
+                stmt=stmt.where(or_(
+                    PartCatalog.part_number.ilike(q),PartCatalog.description.ilike(q),
+                    PartCatalog.supplier.ilike(q),PartCatalog.supplier_part_number.ilike(q),
+                    PartCatalog.barcode.ilike(q),
+                ))
+            if active_only:stmt=stmt.where(PartCatalog.active.is_(True))
+            return list(s.scalars(stmt))
+
+    def resolve_part_scan(self, value: str):
+        code=(value or "").strip()
+        if not code:return None
+        with self.session() as s:
+            catalog=s.scalar(select(PartCatalog).where(or_(
+                PartCatalog.part_number==code,PartCatalog.barcode==code,PartCatalog.supplier_part_number==code
+            )))
+            if catalog:return catalog.part_number
+            item=s.scalar(select(InventoryItem).where(InventoryItem.part_number==code))
+            return item.part_number if item else None
+
+    def save_part_alternate(self, part_number: str, alternate_part_number: str, user: str, approved: bool=True, note: str=""):
+        part_number=part_number.strip();alternate_part_number=alternate_part_number.strip()
+        if not part_number or not alternate_part_number:raise ValueError("Primary and alternate part numbers are required.")
+        if part_number==alternate_part_number:raise ValueError("Alternate part must differ from the primary part.")
+        with self.session() as s:
+            row=s.scalar(select(PartAlternate).where(
+                PartAlternate.part_number==part_number,PartAlternate.alternate_part_number==alternate_part_number
+            ))
+            if row:row.approved=bool(approved);row.note=note.strip()
+            else:
+                row=PartAlternate(part_number=part_number,alternate_part_number=alternate_part_number,approved=bool(approved),note=note.strip(),created_by=user)
+                s.add(row)
+            s.flush();return row
+
+    def list_part_alternates(self, part_number: str = "", approved_only: bool = False):
+        with self.session() as s:
+            stmt=select(PartAlternate).order_by(PartAlternate.part_number,PartAlternate.alternate_part_number)
+            if part_number:stmt=stmt.where(PartAlternate.part_number==part_number)
+            if approved_only:stmt=stmt.where(PartAlternate.approved.is_(True))
+            return list(s.scalars(stmt))
+
+    def receive_inventory(self, part_number: str, location_code: str, qty: float, user: str, reference: str="", note: str=""):
+        if qty<=0:raise ValueError("Received quantity must be positive.")
+        self.assert_authorized(user,"inventory.edit")
+        with self.session() as s:
+            stmt=select(InventoryItem).where(InventoryItem.part_number==part_number,InventoryItem.location_code==location_code)
+            if self.url.startswith("postgresql"):stmt=stmt.with_for_update()
+            item=s.scalar(stmt)
+            if not item:
+                catalog=s.scalar(select(PartCatalog).where(PartCatalog.part_number==part_number))
+                item=InventoryItem(
+                    part_number=part_number,description=catalog.description if catalog else "",
+                    category=catalog.category if catalog else "",manufacturer=catalog.manufacturer if catalog else "",
+                    quantity=0.0,min_quantity=0.0,unit="ea",condition="Available",location_code=location_code,
+                );s.add(item);s.flush()
+            item.quantity=float(item.quantity or 0)+float(qty);item.version+=1
+            tx=InventoryTransaction(
+                part_number=part_number,location_code=location_code,transaction_type="Receive",
+                quantity=float(qty),user=user,note=" | ".join(x for x in [reference.strip(),note.strip()] if x),
+            )
+            s.add(tx);s.add(AuditLog(user=user,action="INVENTORY_RECEIVE",entity_type="PART",entity_key=f"{part_number}@{location_code}",detail=f"{qty:g} {reference}".strip()))
+            s.flush();return item,tx
+
+    def transfer_inventory(self, part_number: str, from_location: str, to_location: str, qty: float, user: str, note: str=""):
+        if qty<=0:raise ValueError("Transfer quantity must be positive.")
+        if from_location==to_location:raise ValueError("Source and destination must differ.")
+        self.assert_authorized(user,"inventory.edit")
+        with self.session() as s:
+            stmt=select(InventoryItem).where(InventoryItem.part_number==part_number,InventoryItem.location_code==from_location)
+            if self.url.startswith("postgresql"):stmt=stmt.with_for_update()
+            source=s.scalar(stmt)
+            if not source or float(source.quantity or 0)<qty:raise ValueError("Insufficient source stock.")
+            dest_stmt=select(InventoryItem).where(InventoryItem.part_number==part_number,InventoryItem.location_code==to_location)
+            if self.url.startswith("postgresql"):dest_stmt=dest_stmt.with_for_update()
+            dest=s.scalar(dest_stmt)
+            if not dest:
+                dest=InventoryItem(
+                    part_number=part_number,description=source.description,category=source.category,
+                    manufacturer=source.manufacturer,model=source.model,compatible_equipment=source.compatible_equipment,
+                    quantity=0.0,min_quantity=0.0,unit=source.unit,condition=source.condition,
+                    location_code=to_location,image_path=source.image_path,notes=source.notes,
+                );s.add(dest);s.flush()
+            source.quantity-=qty;source.version+=1;dest.quantity+=qty;dest.version+=1
+            transfer_key=secrets.token_hex(6)
+            out=InventoryTransaction(part_number=part_number,location_code=from_location,transaction_type="Transfer Out",quantity=-qty,user=user,note=f"{transfer_key} → {to_location} {note}".strip())
+            inc=InventoryTransaction(part_number=part_number,location_code=to_location,transaction_type="Transfer In",quantity=qty,user=user,note=f"{transfer_key} ← {from_location} {note}".strip())
+            s.add_all([out,inc]);s.flush();return source,dest
+
+    def cycle_count_inventory(self, part_number: str, location_code: str, counted_qty: float, user: str, reason: str=""):
+        if counted_qty<0:raise ValueError("Counted quantity cannot be negative.")
+        self.assert_authorized(user,"inventory.edit")
+        with self.session() as s:
+            stmt=select(InventoryItem).where(InventoryItem.part_number==part_number,InventoryItem.location_code==location_code)
+            if self.url.startswith("postgresql"):stmt=stmt.with_for_update()
+            item=s.scalar(stmt)
+            if not item:raise ValueError("Inventory item not found.")
+            previous=float(item.quantity or 0);delta=float(counted_qty)-previous
+            item.quantity=float(counted_qty);item.version+=1
+            tx=InventoryTransaction(
+                part_number=part_number,location_code=location_code,transaction_type="Cycle Count",
+                quantity=delta,user=user,note=f"Count {previous:g} → {counted_qty:g}. {reason}".strip(),
+            )
+            s.add(tx);s.add(AuditLog(user=user,action="INVENTORY_CYCLE_COUNT",entity_type="PART",entity_key=f"{part_number}@{location_code}",detail=tx.note))
+            s.flush();return item,tx
+
+    def inventory_reorder_queue(self) -> list[dict[str, Any]]:
+        with self.session() as s:
+            items=list(s.scalars(select(InventoryItem).where(InventoryItem.condition=="Available")))
+            reservations=list(s.scalars(select(InventoryReservation).where(InventoryReservation.status=="Reserved")))
+            catalog={x.part_number:x for x in s.scalars(select(PartCatalog))}
+        reserved={}
+        for row in reservations:
+            reserved[(row.part_number,row.location_code)]=reserved.get((row.part_number,row.location_code),0.0)+float(row.quantity or 0)
+            if not row.location_code:reserved[(row.part_number,"*")]=reserved.get((row.part_number,"*"),0.0)+float(row.quantity or 0)
+        rows=[]
+        for item in items:
+            on_hand=float(item.quantity or 0);res=reserved.get((item.part_number,item.location_code),0.0)+reserved.get((item.part_number,"*"),0.0)
+            available=max(0.0,on_hand-res);minimum=float(item.min_quantity or 0)
+            if available>minimum:continue
+            cat=catalog.get(item.part_number)
+            rows.append({
+                "part_number":item.part_number,"description":item.description,"location_code":item.location_code,
+                "on_hand":on_hand,"reserved":res,"available":available,"min_quantity":minimum,
+                "shortage_to_min":max(0.0,minimum-available),
+                "suggested_order_qty":float(cat.reorder_qty or 0) if cat else 0.0,
+                "supplier":cat.supplier if cat else "","supplier_part_number":cat.supplier_part_number if cat else "",
+                "lead_time_days":cat.lead_time_days if cat else 0,
+            })
+        rows.sort(key=lambda x:(-x["shortage_to_min"],x["part_number"],x["location_code"]))
+        return rows
+
+    def pm_kit_status(self, task_id: int) -> dict[str, Any]:
+        readiness=self.pm_task_readiness(task_id)
+        reservations=[x for x in self.list_reservations() if x.pm_task_id==task_id]
+        for part in readiness["parts"]:
+            part["alternates"]=[x.alternate_part_number for x in self.list_part_alternates(part["part_number"],True)]
+        readiness["reservations"]=[{
+            "id":x.id,"part_number":x.part_number,"location_code":x.location_code,
+            "quantity":x.quantity,"status":x.status,"reserved_by":x.reserved_by,
+        } for x in reservations]
+        return readiness
 
     def save_inventory_item(self, data: dict[str, Any], expected_version: int | None = None):
         with self.session() as s:
