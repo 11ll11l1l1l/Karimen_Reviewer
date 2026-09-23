@@ -703,6 +703,43 @@ class ControlledDocumentRevision(Base):
     __table_args__ = (UniqueConstraint("document_id","revision",name="uq_controlled_document_revision"),)
 
 
+class IntegrationEndpoint(Base):
+    __tablename__ = "integration_endpoints"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    endpoint_id: Mapped[str] = mapped_column(String(100), unique=True, index=True)
+    name: Mapped[str] = mapped_column(String(180), default="")
+    adapter_type: Mapped[str] = mapped_column(String(30), index=True)
+    target: Mapped[str] = mapped_column(Text)
+    topics: Mapped[str] = mapped_column(Text, default="*")
+    auth_env: Mapped[str] = mapped_column(String(120), default="")
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
+class IntegrationEvent(Base):
+    __tablename__ = "integration_events"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    event_id: Mapped[str] = mapped_column(String(40), unique=True, index=True, default=lambda: secrets.token_hex(16))
+    topic: Mapped[str] = mapped_column(String(100), index=True)
+    entity_type: Mapped[str] = mapped_column(String(60), index=True)
+    entity_key: Mapped[str] = mapped_column(String(160), index=True)
+    payload_json: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
+class IntegrationDelivery(Base):
+    __tablename__ = "integration_deliveries"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    event_id: Mapped[str] = mapped_column(String(40), index=True)
+    endpoint_id: Mapped[str] = mapped_column(String(100), index=True)
+    status: Mapped[str] = mapped_column(String(30), default="Pending", index=True)
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    next_attempt_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    last_error: Mapped[str] = mapped_column(Text, default="")
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    __table_args__ = (UniqueConstraint("event_id","endpoint_id",name="uq_integration_delivery"),)
+
+
 class AuditLog(Base):
     __tablename__ = "audit_log"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -1237,6 +1274,74 @@ class Database:
         if permission in overrides: return overrides[permission]
         base = ROLE_PERMISSIONS.get(user.get("role", "Read Only"), {"view"})
         return "*" in base or permission in base or (permission != "view" and "*" in base)
+
+    def save_integration_endpoint(self, data: dict[str, Any], expected_version: int | None = None):
+        payload=dict(data)
+        adapter=str(payload.get("adapter_type","")).upper()
+        if adapter not in {"FILE","HTTP"}:raise ValueError("Integration adapter must be FILE or HTTP.")
+        payload["adapter_type"]=adapter
+        if not str(payload.get("endpoint_id","")).strip() or not str(payload.get("target","")).strip():
+            raise ValueError("Endpoint ID and target are required.")
+        with self.session() as s:
+            row=s.scalar(select(IntegrationEndpoint).where(IntegrationEndpoint.endpoint_id==payload["endpoint_id"]))
+            if row:self._update_versioned(row,payload,expected_version,"Integration endpoint")
+            else:row=IntegrationEndpoint(**payload);s.add(row)
+            s.flush();return row
+
+    def list_integration_endpoints(self, enabled_only: bool = False):
+        with self.session() as s:
+            stmt=select(IntegrationEndpoint).order_by(IntegrationEndpoint.endpoint_id)
+            if enabled_only:stmt=stmt.where(IntegrationEndpoint.enabled.is_(True))
+            return list(s.scalars(stmt))
+
+    def _queue_integration_event(self, s, topic: str, entity_type: str, entity_key: str, payload: dict[str, Any]):
+        event=IntegrationEvent(
+            topic=topic,entity_type=entity_type,entity_key=str(entity_key),
+            payload_json=json.dumps(payload,default=str,sort_keys=True),
+        )
+        s.add(event);s.flush()
+        endpoints=list(s.scalars(select(IntegrationEndpoint).where(IntegrationEndpoint.enabled.is_(True))))
+        for endpoint in endpoints:
+            topics={x.strip() for x in (endpoint.topics or "*").split(",") if x.strip()}
+            if "*" in topics or topic in topics:
+                s.add(IntegrationDelivery(event_id=event.event_id,endpoint_id=endpoint.endpoint_id))
+        return event
+
+    def pending_integration_deliveries(self, limit: int = 100):
+        now=datetime.utcnow()
+        with self.session() as s:
+            deliveries=list(s.scalars(
+                select(IntegrationDelivery)
+                .where(
+                    IntegrationDelivery.status.in_(["Pending","Retry"]),
+                    ((IntegrationDelivery.next_attempt_at.is_(None)) | (IntegrationDelivery.next_attempt_at<=now)),
+                )
+                .order_by(IntegrationDelivery.id)
+                .limit(max(1,min(int(limit),1000)))
+            ))
+            result=[]
+            for delivery in deliveries:
+                event=s.scalar(select(IntegrationEvent).where(IntegrationEvent.event_id==delivery.event_id))
+                endpoint=s.scalar(select(IntegrationEndpoint).where(IntegrationEndpoint.endpoint_id==delivery.endpoint_id))
+                if event and endpoint and endpoint.enabled:result.append((delivery,event,endpoint))
+            return result
+
+    def mark_integration_delivery(self, delivery_id: int, success: bool, error: str = ""):
+        with self.session() as s:
+            row=s.get(IntegrationDelivery,delivery_id)
+            if not row:raise ValueError("Integration delivery not found")
+            row.attempts+=1
+            if success:
+                row.status="Sent";row.sent_at=datetime.utcnow();row.last_error="";row.next_attempt_at=None
+            else:
+                row.status="Retry";row.last_error=error[:4000]
+                delay=min(3600,30*(2**min(row.attempts,7)))
+                row.next_attempt_at=datetime.utcnow()+timedelta(seconds=delay)
+            s.flush();return row
+
+    def integration_delivery_status(self, limit: int = 500):
+        with self.session() as s:
+            return list(s.scalars(select(IntegrationDelivery).order_by(IntegrationDelivery.id.desc()).limit(limit)))
 
     def audit(self, user: str, action: str, entity_type: str, entity_key: str = "", detail: str = "", workstation: str = ""):
         with self.session() as s:
