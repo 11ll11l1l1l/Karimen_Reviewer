@@ -129,6 +129,26 @@ class PMTask(Base):
     __table_args__ = (UniqueConstraint("equipment_id", "pm_id", "original_due_date", name="uq_pm_backlog"),)
 
 
+class PMDeferral(Base):
+    __tablename__ = "pm_deferrals"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    task_id: Mapped[int] = mapped_column(Integer, index=True)
+    equipment_id: Mapped[str] = mapped_column(String(100), index=True)
+    pm_id: Mapped[str] = mapped_column(String(100), index=True)
+    original_due_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    requested_due_date: Mapped[datetime] = mapped_column(DateTime)
+    reason: Mapped[str] = mapped_column(Text)
+    risk_assessment: Mapped[str] = mapped_column(Text)
+    mitigation: Mapped[str] = mapped_column(Text)
+    requested_by: Mapped[str] = mapped_column(String(120), index=True)
+    requested_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    status: Mapped[str] = mapped_column(String(30), default="Pending", index=True)
+    reviewed_by: Mapped[str] = mapped_column(String(120), default="")
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    review_note: Mapped[str] = mapped_column(Text, default="")
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
 class PMSpec(Base):
     __tablename__ = "pm_specs"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -422,10 +442,10 @@ PBKDF2_ROUNDS = 310_000
 
 ROLE_PERMISSIONS = {
     "Administrator": {"*"},
-    "Manager": {"view", "equipment.edit", "equipment.transition", "pm.edit", "pm.execute", "pm.approve", "ticket.edit", "disposition.edit", "release.approve", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
-    "Supervisor": {"view", "equipment.edit", "equipment.transition", "pm.edit", "pm.execute", "ticket.edit", "disposition.edit", "release.verify", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
-    "Equipment Engineer": {"view", "equipment.edit", "equipment.transition", "pm.edit", "pm.execute", "ticket.edit", "disposition.edit", "release.verify", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
-    "Maintenance": {"view", "pm.execute", "ticket.edit", "endorsement.edit", "inventory.consume", "inventory.reserve", "document.link"},
+    "Manager": {"view", "equipment.edit", "equipment.transition", "pm.edit", "pm.execute", "pm.approve", "pm.defer", "pm.defer.approve", "ticket.edit", "disposition.edit", "release.approve", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
+    "Supervisor": {"view", "equipment.edit", "equipment.transition", "pm.edit", "pm.execute", "pm.defer", "pm.defer.approve", "ticket.edit", "disposition.edit", "release.verify", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
+    "Equipment Engineer": {"view", "equipment.edit", "equipment.transition", "pm.edit", "pm.execute", "pm.defer", "ticket.edit", "disposition.edit", "release.verify", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
+    "Maintenance": {"view", "pm.execute", "pm.defer", "ticket.edit", "endorsement.edit", "inventory.consume", "inventory.reserve", "document.link"},
     "Technician": {"view", "pm.execute", "ticket.edit", "inventory.consume", "document.link"},
     "Process Engineer": {"view", "ticket.edit", "release.verify", "document.link", "report.view"},
     "Inventory Controller": {"view", "inventory.edit", "inventory.consume", "inventory.reserve", "document.link"},
@@ -434,7 +454,7 @@ ROLE_PERMISSIONS = {
 }
 
 PERMISSIONS = [
-    "view", "equipment.edit", "equipment.transition", "layout.edit", "pm.edit", "pm.execute", "pm.approve",
+    "view", "equipment.edit", "equipment.transition", "layout.edit", "pm.edit", "pm.execute", "pm.approve", "pm.defer", "pm.defer.approve",
     "ticket.edit", "disposition.edit", "release.verify", "release.approve", "endorsement.edit",
     "inventory.edit", "inventory.consume", "inventory.reserve", "document.link", "document.control",
     "user.admin", "audit.view", "report.view",
@@ -731,6 +751,129 @@ class Database:
 
     def get_pm_task(self, task_id: int):
         with self.session() as s: return s.get(PMTask, task_id)
+
+    def request_pm_deferral(
+        self,
+        task_id: int,
+        requested_due_date: datetime,
+        reason: str,
+        risk_assessment: str,
+        mitigation: str,
+        user: str,
+        workstation: str = "",
+        expected_task_version: int | None = None,
+    ):
+        if not reason.strip() or not risk_assessment.strip() or not mitigation.strip():
+            raise ValueError("Deferral reason, risk assessment, and mitigation are all required.")
+        with self.session() as s:
+            stmt=select(PMTask).where(PMTask.id==task_id)
+            if self.url.startswith("postgresql"):
+                stmt=stmt.with_for_update()
+            task=s.scalar(stmt)
+            if not task:
+                raise ValueError("PM task not found")
+            if expected_task_version is not None and task.version!=expected_task_version:
+                raise RuntimeError("CONFLICT: PM task changed by another user. Refresh and retry.")
+            if task.status in {"Completed","Cancelled","In Progress"}:
+                raise ValueError(f"PM task in state '{task.status}' cannot be deferred.")
+            if not task.original_due_date:
+                raise ValueError("PM task has no controlled original due date.")
+            if requested_due_date <= task.original_due_date:
+                raise ValueError("Requested deferred due date must be later than the original due date.")
+            pending=s.scalar(select(PMDeferral).where(PMDeferral.task_id==task_id,PMDeferral.status=="Pending"))
+            if pending:
+                raise ValueError("A PM deferral request is already pending for this task.")
+            row=PMDeferral(
+                task_id=task.id,
+                equipment_id=task.equipment_id,
+                pm_id=task.pm_id,
+                original_due_date=task.original_due_date,
+                requested_due_date=requested_due_date,
+                reason=reason.strip(),
+                risk_assessment=risk_assessment.strip(),
+                mitigation=mitigation.strip(),
+                requested_by=user,
+            )
+            s.add(row)
+            s.flush()
+            s.add(AuditLog(
+                user=user,
+                action="PM_DEFERRAL_REQUEST",
+                entity_type="PM_DEFERRAL",
+                entity_key=str(row.id),
+                detail=json.dumps({
+                    "task_id":task.id,
+                    "equipment_id":task.equipment_id,
+                    "pm_id":task.pm_id,
+                    "original_due_date":task.original_due_date.isoformat(),
+                    "requested_due_date":requested_due_date.isoformat(),
+                },sort_keys=True),
+                workstation=workstation,
+            ))
+            return row
+
+    def list_pm_deferrals(self, pending_only: bool = False):
+        with self.session() as s:
+            stmt=select(PMDeferral).order_by(PMDeferral.requested_at.desc())
+            if pending_only:
+                stmt=stmt.where(PMDeferral.status=="Pending")
+            return list(s.scalars(stmt))
+
+    def review_pm_deferral(
+        self,
+        deferral_id: int,
+        approve: bool,
+        user: str,
+        review_note: str = "",
+        workstation: str = "",
+        expected_version: int | None = None,
+    ):
+        with self.session() as s:
+            stmt=select(PMDeferral).where(PMDeferral.id==deferral_id)
+            if self.url.startswith("postgresql"):
+                stmt=stmt.with_for_update()
+            row=s.scalar(stmt)
+            if not row:
+                raise ValueError("PM deferral request not found")
+            if expected_version is not None and row.version!=expected_version:
+                raise RuntimeError("CONFLICT: PM deferral changed by another user. Refresh and retry.")
+            if row.status!="Pending":
+                raise ValueError("PM deferral request has already been reviewed.")
+            if row.requested_by==user:
+                raise ValueError("Independent review required: requester cannot approve/reject their own PM deferral.")
+            task_stmt=select(PMTask).where(PMTask.id==row.task_id)
+            if self.url.startswith("postgresql"):
+                task_stmt=task_stmt.with_for_update()
+            task=s.scalar(task_stmt)
+            if not task:
+                raise ValueError("Related PM task no longer exists")
+            now=datetime.utcnow()
+            row.status="Approved" if approve else "Rejected"
+            row.reviewed_by=user
+            row.reviewed_at=now
+            row.review_note=review_note.strip()
+            row.version+=1
+            if approve:
+                task.scheduled_date=row.requested_due_date
+                task.status="Deferred"
+                task.deferral_reason=row.reason
+                task.version+=1
+            s.add(AuditLog(
+                user=user,
+                action="PM_DEFERRAL_APPROVE" if approve else "PM_DEFERRAL_REJECT",
+                entity_type="PM_DEFERRAL",
+                entity_key=str(row.id),
+                detail=json.dumps({
+                    "task_id":row.task_id,
+                    "equipment_id":row.equipment_id,
+                    "requested_by":row.requested_by,
+                    "requested_due_date":row.requested_due_date.isoformat(),
+                    "review_note":row.review_note,
+                },sort_keys=True),
+                workstation=workstation,
+            ))
+            s.flush()
+            return row
 
     def upsert_pm_spec(self, data: dict[str, Any], create_revision: bool = False):
         with self.session() as s:
