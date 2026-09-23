@@ -11,7 +11,7 @@ from typing import Any
 from PySide6.QtCore import Qt, QTimer, Signal
 from PySide6.QtGui import QAction, QBrush, QColor, QKeySequence, QPixmap
 from PySide6.QtWidgets import (
-    QAbstractItemView, QApplication, QCheckBox, QComboBox, QDateEdit, QDialog, QDialogButtonBox, QDoubleSpinBox,
+    QAbstractItemView, QApplication, QCheckBox, QComboBox, QDateEdit, QDateTimeEdit, QDialog, QDialogButtonBox, QDoubleSpinBox,
     QFileDialog, QFormLayout, QGraphicsItem, QGraphicsPixmapItem, QGraphicsRectItem, QGraphicsScene,
     QGraphicsTextItem, QGraphicsView, QGridLayout, QHBoxLayout, QHeaderView, QLabel, QLineEdit,
     QListWidget, QMainWindow, QMessageBox, QPushButton, QSpinBox, QStackedWidget, QTabWidget,
@@ -782,6 +782,38 @@ class TicketStateDialog(QDialog):
         }
 
 
+class TicketOperationalControlDialog(QDialog):
+    def __init__(self,row=None,parent=None):
+        super().__init__(parent);self.row=row;self.setWindowTitle("Incident Operational Control");self.setMinimumWidth(650)
+        f=QFormLayout(self)
+        self.containment=QTextEdit();self.impact=QTextEdit();self.lots=QTextEdit();self.risk=QTextEdit()
+        self.deadlines={}
+        for key,label in [("response_due_at","Response Due"),("containment_due_at","Containment Due"),("resolution_due_at","Resolution Due")]:
+            box=QCheckBox("Set");dt=QDateTimeEdit();dt.setCalendarPopup(True);dt.setDateTime(datetime.now());dt.setDisplayFormat("yyyy-MM-dd HH:mm")
+            rowbox=QHBoxLayout();rowbox.addWidget(box);rowbox.addWidget(dt,1);f.addRow(label,rowbox);self.deadlines[key]=(box,dt)
+        f.insertRow(0,"Containment",self.containment);f.insertRow(1,"Production Impact",self.impact);f.insertRow(2,"Affected Lots / Material",self.lots);f.insertRow(3,"Safety / Quality Risk",self.risk)
+        if row:
+            self.containment.setPlainText(row.containment);self.impact.setPlainText(row.production_impact);self.lots.setPlainText(row.affected_lots);self.risk.setPlainText(row.safety_quality_risk)
+            for key,(box,dt) in self.deadlines.items():
+                value=getattr(row,key,None)
+                if value:
+                    box.setChecked(True);dt.setDateTime(value)
+        note=QLabel("Overdue response, containment, and resolution deadlines automatically raise escalation levels and appear on the Operations Command Center.")
+        note.setWordWrap(True);note.setStyleSheet("color:#5a6670");f.addRow("",note)
+        b=QDialogButtonBox(QDialogButtonBox.StandardButton.Save|QDialogButtonBox.StandardButton.Cancel);b.accepted.connect(self.accept);b.rejected.connect(self.reject);f.addRow(b)
+
+    def data(self):
+        payload={
+            "containment":self.containment.toPlainText().strip(),
+            "production_impact":self.impact.toPlainText().strip(),
+            "affected_lots":self.lots.toPlainText().strip(),
+            "safety_quality_risk":self.risk.toPlainText().strip(),
+        }
+        for key,(box,dt) in self.deadlines.items():
+            payload[key]=dt.dateTime().toPython() if box.isChecked() else None
+        return payload
+
+
 class InvestigationDialog(QDialog):
     def __init__(self,parent=None):
         super().__init__(parent);self.setWindowTitle("Investigation Step");f=QFormLayout(self);self.obs=QTextEdit();self.check=QTextEdit();self.result=QTextEdit();self.concl=QTextEdit();self.action=QTextEdit();self.evidence=QLineEdit();browse=QPushButton("Browse");browse.clicked.connect(self.browse);hb=QHBoxLayout();hb.addWidget(self.evidence);hb.addWidget(browse)
@@ -797,17 +829,19 @@ class InvestigationDialog(QDialog):
 
 class TicketPage(QWidget):
     def __init__(self,db,user):
-        super().__init__();self.db=db;self.user=user;self.rows=[];self.inv=[];self.lifecycle=[]
+        super().__init__();self.db=db;self.user=user;self.rows=[];self.inv=[];self.lifecycle=[];self.control=None;self.escalations=[]
         v=QVBoxLayout(self);h=QHBoxLayout()
-        add=QPushButton("New Ticket");edit=QPushButton("Edit Details");state=QPushButton("Change Status");invest=QPushButton("Add Investigation Step")
-        add.clicked.connect(self.add);edit.clicked.connect(self.edit);state.clicked.connect(self.change_state);invest.clicked.connect(self.add_investigation)
-        allowed=db.has_permission(user,"ticket.edit");add.setEnabled(allowed);edit.setEnabled(allowed);state.setEnabled(allowed);invest.setEnabled(allowed)
-        h.addWidget(add);h.addWidget(edit);h.addWidget(state);h.addWidget(invest);h.addStretch(1);v.addLayout(h)
+        add=QPushButton("New Ticket");edit=QPushButton("Edit Details");state=QPushButton("Change Status");invest=QPushButton("Add Investigation Step");control=QPushButton("Operational Control")
+        add.clicked.connect(self.add);edit.clicked.connect(self.edit);state.clicked.connect(self.change_state);invest.clicked.connect(self.add_investigation);control.clicked.connect(self.edit_operational_control)
+        allowed=db.has_permission(user,"ticket.edit");add.setEnabled(allowed);edit.setEnabled(allowed);state.setEnabled(allowed);invest.setEnabled(allowed);control.setEnabled(allowed)
+        h.addWidget(add);h.addWidget(edit);h.addWidget(state);h.addWidget(invest);h.addWidget(control);h.addStretch(1);v.addLayout(h)
         self.table=make_table(["Ticket","Equipment","Title","Severity","Priority","Status","Owner","Updated","Ver"]);self.table.itemSelectionChanged.connect(self.load_details);v.addWidget(self.table,2)
 
         tabs=QTabWidget()
         wi=QWidget();vi=QVBoxLayout(wi);self.invtable=make_table(["#","Observation","Check","Result","Conclusion","Action","By","Time"]);vi.addWidget(self.invtable);tabs.addTab(wi,"Troubleshooting History")
         wl=QWidget();vl=QVBoxLayout(wl);self.lifetable=make_table(["From","To","Reason","Note","Owner","Changed By","Time"]);vl.addWidget(self.lifetable);tabs.addTab(wl,"Lifecycle History")
+        wo=QWidget();vo=QVBoxLayout(wo);self.control_table=make_table(["Containment","Production Impact","Affected Lots","Safety/Quality Risk","Response Due","Containment Due","Resolution Due","Esc Level","Esc Reason"]);vo.addWidget(self.control_table,1)
+        self.escalation_table=make_table(["From Level","To Level","Reason","User","Time"]);vo.addWidget(self.escalation_table,1);tabs.addTab(wo,"Operational Control / SLA")
         v.addWidget(tabs,1);self.refresh()
 
     def refresh(self):
@@ -862,8 +896,28 @@ class TicketPage(QWidget):
         row=selected_row(self.table,self.rows)
         self.inv=self.db.list_ticket_investigations(row.ticket_no) if row else []
         self.lifecycle=self.db.list_ticket_state_events(row.ticket_no) if row else []
+        self.control=self.db.ticket_operational_control(row.ticket_no) if row else None
+        self.escalations=self.db.list_ticket_escalations(row.ticket_no) if row else []
         fill_table(self.invtable,self.inv,["sequence","observation","check_performed","result","conclusion","action","entered_by","entered_at"])
         fill_table(self.lifetable,self.lifecycle,["from_state","to_state","reason_code","note","owner","changed_by","changed_at"])
+        controls=[self.control] if self.control else []
+        fill_table(self.control_table,controls,["containment","production_impact","affected_lots","safety_quality_risk","response_due_at","containment_due_at","resolution_due_at","escalation_level","escalation_reason"])
+        fill_table(self.escalation_table,self.escalations,["from_level","to_level","reason","user","occurred_at"])
+
+    def edit_operational_control(self):
+        row=selected_row(self.table,self.rows)
+        if not row:return
+        current=self.db.ticket_operational_control(row.ticket_no)
+        d=TicketOperationalControlDialog(current,self)
+        if d.exec()==QDialog.DialogCode.Accepted:
+            try:
+                self.db.save_ticket_operational_control(
+                    row.ticket_no,d.data(),self.user["username"],WORKSTATION,
+                    current.version if current else None,
+                )
+                self.db.evaluate_ticket_escalations()
+                self.load_details()
+            except Exception as exc:QMessageBox.critical(self,"Operational Control",str(exc))
 
     def add_investigation(self):
         row=selected_row(self.table,self.rows)
