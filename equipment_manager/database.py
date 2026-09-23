@@ -62,6 +62,48 @@ class LoginAttempt(Base):
     attempted_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
 
 
+class FactoryNode(Base):
+    __tablename__ = "factory_nodes"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    node_code: Mapped[str] = mapped_column(String(180), unique=True, index=True)
+    parent_code: Mapped[str] = mapped_column(String(180), default="", index=True)
+    node_type: Mapped[str] = mapped_column(String(40), index=True)
+    name: Mapped[str] = mapped_column(String(180))
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
+class EquipmentLocationAssignment(Base):
+    __tablename__ = "equipment_location_assignments"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    equipment_id: Mapped[str] = mapped_column(String(100), index=True)
+    node_code: Mapped[str] = mapped_column(String(180), index=True)
+    active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    assigned_by: Mapped[str] = mapped_column(String(120), default="")
+    assigned_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    ended_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    __table_args__ = (UniqueConstraint("equipment_id","node_code","active",name="uq_equipment_location_active"),)
+
+
+class UserAccessPolicy(Base):
+    __tablename__ = "user_access_policies"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    username: Mapped[str] = mapped_column(String(80), unique=True, index=True)
+    scope_mode: Mapped[str] = mapped_column(String(30), default="UNRESTRICTED")
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
+class UserEquipmentScope(Base):
+    __tablename__ = "user_equipment_scopes"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    username: Mapped[str] = mapped_column(String(80), index=True)
+    scope_type: Mapped[str] = mapped_column(String(30), index=True)
+    scope_key: Mapped[str] = mapped_column(String(180), index=True)
+    permission: Mapped[str] = mapped_column(String(100), default="*")
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    __table_args__ = (UniqueConstraint("username","scope_type","scope_key","permission",name="uq_user_equipment_scope"),)
+
+
 class Equipment(Base):
     __tablename__ = "equipment"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -687,6 +729,7 @@ class Database:
         Base.metadata.create_all(self.engine)
         self._assert_schema_compatible()
         self._bootstrap_legacy_event_history()
+        self._bootstrap_factory_hierarchy()
 
     def _assert_schema_compatible(self):
         """Fail fast if an existing database is missing model columns.
@@ -779,6 +822,160 @@ class Database:
                     workstation="DATABASE-UPGRADE",
                     changed_at=occurred,
                 ))
+
+    @staticmethod
+    def _factory_code(parent: str, node_type: str, name: str) -> str:
+        clean="".join(ch if ch.isalnum() else "-" for ch in (name or "").strip().upper()).strip("-") or "UNSPECIFIED"
+        base=f"{node_type.upper()}:{clean}"
+        return f"{parent}/{base}" if parent else base
+
+    def _bootstrap_factory_hierarchy(self):
+        with self.session() as s:
+            for eq in s.scalars(select(Equipment)):
+                parent=""
+                levels=[
+                    ("Site",eq.site),
+                    ("Building",eq.building),
+                    ("Floor",eq.floor),
+                    ("Area",eq.area),
+                    ("Line",eq.line_cell),
+                ]
+                deepest=""
+                for node_type,name in levels:
+                    if not (name or "").strip():
+                        continue
+                    code=self._factory_code(parent,node_type,name)
+                    if not s.scalar(select(FactoryNode).where(FactoryNode.node_code==code)):
+                        s.add(FactoryNode(node_code=code,parent_code=parent,node_type=node_type,name=name.strip()))
+                        s.flush()
+                    parent=code
+                    deepest=code
+                if deepest:
+                    active=s.scalar(select(EquipmentLocationAssignment).where(
+                        EquipmentLocationAssignment.equipment_id==eq.equipment_id,
+                        EquipmentLocationAssignment.active.is_(True),
+                    ))
+                    if not active:
+                        s.add(EquipmentLocationAssignment(
+                            equipment_id=eq.equipment_id,node_code=deepest,active=True,
+                            assigned_by="system-migration",
+                        ))
+
+    def list_factory_nodes(self, active_only: bool = True):
+        with self.session() as s:
+            stmt=select(FactoryNode).order_by(FactoryNode.node_code)
+            if active_only:stmt=stmt.where(FactoryNode.active.is_(True))
+            return list(s.scalars(stmt))
+
+    def equipment_location(self, equipment_id: str):
+        with self.session() as s:
+            return s.scalar(select(EquipmentLocationAssignment).where(
+                EquipmentLocationAssignment.equipment_id==equipment_id,
+                EquipmentLocationAssignment.active.is_(True),
+            ))
+
+    def set_equipment_location(self, equipment_id: str, node_code: str, user: str, workstation: str = ""):
+        with self.session() as s:
+            eq=s.scalar(select(Equipment).where(Equipment.equipment_id==equipment_id))
+            if not eq:raise ValueError("Equipment not found")
+            node=s.scalar(select(FactoryNode).where(FactoryNode.node_code==node_code,FactoryNode.active.is_(True)))
+            if not node:raise ValueError("Factory location node not found")
+            now=datetime.utcnow()
+            for old in s.scalars(select(EquipmentLocationAssignment).where(
+                EquipmentLocationAssignment.equipment_id==equipment_id,
+                EquipmentLocationAssignment.active.is_(True),
+            )):
+                old.active=False;old.ended_at=now
+            row=EquipmentLocationAssignment(
+                equipment_id=equipment_id,node_code=node_code,active=True,
+                assigned_by=user,assigned_at=now,
+            )
+            s.add(row)
+            s.add(AuditLog(
+                user=user,action="EQUIPMENT_LOCATION_ASSIGN",entity_type="EQUIPMENT",
+                entity_key=equipment_id,detail=node_code,workstation=workstation,
+            ))
+            s.flush();return row
+
+    def _node_ancestors(self, s, node_code: str) -> set[str]:
+        result=set()
+        current=node_code
+        guard=0
+        while current and guard<32:
+            if current in result:break
+            result.add(current)
+            node=s.scalar(select(FactoryNode).where(FactoryNode.node_code==current))
+            current=node.parent_code if node else ""
+            guard+=1
+        return result
+
+    def set_user_access_policy(self, username: str, scope_mode: str):
+        mode=scope_mode.strip().upper()
+        if mode not in {"UNRESTRICTED","RESTRICTED"}:
+            raise ValueError("Scope mode must be UNRESTRICTED or RESTRICTED.")
+        with self.session() as s:
+            if not s.scalar(select(User).where(User.username==username)):
+                raise ValueError("User not found")
+            row=s.scalar(select(UserAccessPolicy).where(UserAccessPolicy.username==username))
+            if row:
+                row.scope_mode=mode;row.version+=1
+            else:
+                row=UserAccessPolicy(username=username,scope_mode=mode);s.add(row)
+            s.flush();return row
+
+    def list_user_scopes(self, username: str):
+        with self.session() as s:
+            return list(s.scalars(select(UserEquipmentScope).where(
+                UserEquipmentScope.username==username,
+                UserEquipmentScope.active.is_(True),
+            ).order_by(UserEquipmentScope.scope_type,UserEquipmentScope.scope_key)))
+
+    def add_user_scope(self, username: str, scope_type: str, scope_key: str, permission: str = "*"):
+        scope_type=scope_type.strip().upper()
+        if scope_type not in {"EQUIPMENT","NODE"}:raise ValueError("Scope type must be EQUIPMENT or NODE.")
+        with self.session() as s:
+            if not s.scalar(select(User).where(User.username==username)):raise ValueError("User not found")
+            if scope_type=="EQUIPMENT" and not s.scalar(select(Equipment).where(Equipment.equipment_id==scope_key)):
+                raise ValueError("Scoped equipment not found")
+            if scope_type=="NODE" and not s.scalar(select(FactoryNode).where(FactoryNode.node_code==scope_key)):
+                raise ValueError("Scoped factory node not found")
+            row=s.scalar(select(UserEquipmentScope).where(
+                UserEquipmentScope.username==username,UserEquipmentScope.scope_type==scope_type,
+                UserEquipmentScope.scope_key==scope_key,UserEquipmentScope.permission==permission,
+            ))
+            if row:
+                row.active=True
+            else:
+                row=UserEquipmentScope(username=username,scope_type=scope_type,scope_key=scope_key,permission=permission,active=True);s.add(row)
+            s.flush();return row
+
+    def clear_user_scopes(self, username: str):
+        with self.session() as s:
+            for row in s.scalars(select(UserEquipmentScope).where(UserEquipmentScope.username==username,UserEquipmentScope.active.is_(True))):
+                row.active=False
+
+    def equipment_in_scope(self, username: str, equipment_id: str, permission: str = "*") -> bool:
+        with self.session() as s:
+            user=s.scalar(select(User).where(User.username==username))
+            if user and user.role=="Administrator":return True
+            policy=s.scalar(select(UserAccessPolicy).where(UserAccessPolicy.username==username))
+            if not policy or policy.scope_mode!="RESTRICTED":return True
+            scopes=list(s.scalars(select(UserEquipmentScope).where(
+                UserEquipmentScope.username==username,UserEquipmentScope.active.is_(True),
+            )))
+            if any(x.scope_type=="EQUIPMENT" and x.scope_key==equipment_id and x.permission in {"*",permission} for x in scopes):
+                return True
+            assignment=s.scalar(select(EquipmentLocationAssignment).where(
+                EquipmentLocationAssignment.equipment_id==equipment_id,
+                EquipmentLocationAssignment.active.is_(True),
+            ))
+            if not assignment:return False
+            ancestors=self._node_ancestors(s,assignment.node_code)
+            return any(x.scope_type=="NODE" and x.scope_key in ancestors and x.permission in {"*",permission} for x in scopes)
+
+    def assert_equipment_scope(self, username: str, equipment_id: str, permission: str = "*"):
+        if username and not self.equipment_in_scope(username,equipment_id,permission):
+            raise PermissionError(f"User '{username}' is not authorized for equipment {equipment_id}.")
 
     @contextmanager
     def session(self):
