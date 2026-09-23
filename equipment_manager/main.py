@@ -20,11 +20,15 @@ from PySide6.QtWidgets import (
 
 from database import Database, PERMISSIONS, ROLE_PERMISSIONS
 from backup import create_backup, verify_backup
+from attachment_store import store_attachment_file
 from logging_config import configure_logging, install_exception_hook
 from version import __version__
 from domain import REASON_CODES, TICKET_REASON_CODES, allowed_targets, allowed_ticket_targets
+from workspaces import AttachmentPanel
+from table_productivity import configure_productivity_context, install_table_productivity
+from excel_import_studio import run_mapping_studio
 from services import (
-    auto_mapping, calculate_next_due, copy_clipboard_image, dataframe_to_pm_backlog,
+    auto_mapping, calculate_next_due, copy_clipboard_image, dataframe_to_equipment, dataframe_to_inventory, dataframe_to_pm_backlog,
     dataframe_to_pm_specs, evaluate_measurement, pm_parts_readiness, read_clipboard_table,
     read_table, readonly_open_copy, workbook_sheets, workload_by_day,
 )
@@ -69,7 +73,9 @@ def make_table(headers: list[str]) -> QTableWidget:
     t = QTableWidget(); t.setColumnCount(len(headers)); t.setHorizontalHeaderLabels(headers)
     t.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
     t.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+    t.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
     t.setAlternatingRowColors(True)
+    install_table_productivity(t,headers[0] if headers else "EMS Export")
     return t
 
 
@@ -274,10 +280,10 @@ class EquipmentPage(QWidget):
     def __init__(self, db, user):
         super().__init__(); self.db=db; self.user=user; self.rows=[]; self.history=[]; self.components=[]; self.component_events=[]; self.meters=[]; self.meter_readings=[]
         v=QVBoxLayout(self); h=QHBoxLayout(); self.search=QLineEdit(); self.search.setPlaceholderText("Search equipment..."); self.search.textChanged.connect(self.refresh)
-        add=QPushButton("Add"); edit=QPushButton("Edit Master Data"); transition=QPushButton("Change State")
-        add.clicked.connect(self.add); edit.clicked.connect(self.edit); transition.clicked.connect(self.change_state)
-        add.setEnabled(db.has_permission(user,"equipment.edit")); edit.setEnabled(db.has_permission(user,"equipment.edit")); transition.setEnabled(db.has_permission(user,"equipment.transition"))
-        h.addWidget(self.search,1); h.addWidget(add); h.addWidget(edit); h.addWidget(transition); v.addLayout(h)
+        add=QPushButton("Add"); edit=QPushButton("Edit Master Data"); transition=QPushButton("Change State");imp=QPushButton("Import Excel/CSV");paste=QPushButton("Paste from Excel");bulk=QPushButton("Bulk Edit Selected")
+        add.clicked.connect(self.add); edit.clicked.connect(self.edit); transition.clicked.connect(self.change_state);imp.clicked.connect(self.import_equipment);paste.clicked.connect(self.paste_equipment);bulk.clicked.connect(self.bulk_edit)
+        canedit=db.has_permission(user,"equipment.edit");add.setEnabled(canedit);edit.setEnabled(canedit);imp.setEnabled(canedit);paste.setEnabled(canedit);bulk.setEnabled(canedit);transition.setEnabled(db.has_permission(user,"equipment.transition"))
+        h.addWidget(self.search,1); h.addWidget(add); h.addWidget(edit);h.addWidget(imp);h.addWidget(paste);h.addWidget(bulk); h.addWidget(transition); v.addLayout(h)
         self.table=make_table(["ID","Name","Type","Area","Line/Cell","Status","Disposition","Owner","Criticality","Ver"])
         self.table.doubleClicked.connect(self.edit); self.table.itemSelectionChanged.connect(self.load_details); v.addWidget(self.table,2)
 
@@ -313,6 +319,83 @@ class EquipmentPage(QWidget):
                 if row.equipment_id==current_id:
                     self.table.selectRow(i); break
         self.load_details()
+
+    def bulk_edit(self):
+        selected=sorted({idx.row() for idx in self.table.selectedIndexes()})
+        rows=[self.rows[i] for i in selected if 0<=i<len(self.rows)]
+        if not rows:
+            QMessageBox.information(self,"Bulk edit","Select one or more equipment rows.");return
+        field,ok=QInputDialog.getItem(self,"Bulk edit equipment","Field",["Owner","Criticality"],0,False)
+        if not ok:return
+        if field=="Owner":
+            value,ok=QInputDialog.getText(self,"Bulk edit equipment",f"New owner for {len(rows)} equipment")
+        else:
+            value,ok=QInputDialog.getItem(self,"Bulk edit equipment","Criticality",["Low","Normal","High","Critical"],1,False)
+        if not ok:return
+        if QMessageBox.question(self,"Confirm bulk edit",f"Update {field} on {len(rows)} equipment record(s)?")!=QMessageBox.StandardButton.Yes:return
+        failures=[];updated=0
+        for row in rows:
+            data={
+                "equipment_id":row.equipment_id,"name":row.name,"equipment_type":row.equipment_type,
+                "manufacturer":row.manufacturer,"model":row.model,"serial_number":row.serial_number,
+                "asset_number":row.asset_number,"site":row.site,"building":row.building,"floor":row.floor,
+                "area":row.area,"line_cell":row.line_cell,"owner":value.strip() if field=="Owner" else row.owner,
+                "criticality":value if field=="Criticality" else row.criticality,
+                "map_x":row.map_x,"map_y":row.map_y,
+            }
+            try:self.db.save_equipment(data,row.version,user=self.user["username"],workstation=WORKSTATION);updated+=1
+            except Exception as exc:failures.append(f"{row.equipment_id}: {exc}")
+        self.refresh()
+        text=f"Updated {updated}/{len(rows)} equipment record(s)."
+        if failures:text+="\n"+"\n".join(failures[:12])
+        QMessageBox.information(self,"Bulk edit",text)
+
+    def _equipment_import_df(self,df):
+        fields=[
+            ("equipment_id","Equipment ID"),("name","Name"),("equipment_type","Equipment type"),("manufacturer","Manufacturer"),
+            ("model","Model"),("serial_number","Serial number"),("asset_number","Asset number"),("site","Site"),("building","Building"),
+            ("floor","Floor"),("area","Area"),("line_cell","Line / Bay / Cell"),("owner","Owner"),("criticality","Criticality"),
+        ]
+        mapping=run_mapping_studio(self,self.db,self.user["username"],"excel_mapping.equipment_master",df,fields,auto_mapping(list(df.columns)),{"equipment_id"},"Equipment Master Import Studio")
+        if mapping is None:return
+        rows,errors=dataframe_to_equipment(df,mapping)
+        if not rows:QMessageBox.warning(self,"Equipment import","No valid rows.\n"+"\n".join(errors[:20]));return
+        if QMessageBox.question(self,"Equipment import",f"Validated {len(rows)} equipment row(s); {len(errors)} warning/error row(s). Commit changes?")!=QMessageBox.StandardButton.Yes:return
+        imported=0;failures=[]
+        for data in rows:
+            try:
+                current=self.db.get_equipment(data["equipment_id"])
+                self.db.save_equipment(data,current.version if current else None,user=self.user["username"],workstation=WORKSTATION);imported+=1
+            except Exception as exc:failures.append(f"{data.get('equipment_id')}: {exc}")
+        self.refresh();detail=f"Imported/updated {imported} equipment row(s). Failures: {len(failures)}."
+        if failures:detail+="\n"+"\n".join(failures[:12])
+        QMessageBox.information(self,"Equipment import",detail)
+
+    def import_equipment(self):
+        path,_=QFileDialog.getOpenFileName(self,"Import Equipment Master","","Excel/CSV (*.xlsx *.xlsm *.csv)")
+        if not path:return
+        try:
+            sheets=workbook_sheets(path);sheet=sheets[0]
+            if len(sheets)>1:
+                sheet,ok=QInputDialog.getItem(self,"Import Equipment","Sheet",sheets,0,False)
+                if not ok:return
+            self._equipment_import_df(read_table(path,sheet))
+        except Exception as exc:QMessageBox.critical(self,"Equipment import",str(exc))
+
+    def paste_equipment(self):
+        try:self._equipment_import_df(read_clipboard_table(QApplication.clipboard().text()))
+        except Exception as exc:QMessageBox.critical(self,"Equipment paste",str(exc))
+
+    def select_equipment(self,equipment_id: str):
+        self.search.setText("")
+        self.refresh()
+        for i,row in enumerate(self.rows):
+            if row.equipment_id==equipment_id:
+                self.table.selectRow(i)
+                item=self.table.item(i,0)
+                if item:self.table.scrollToItem(item)
+                self.load_details()
+                break
 
     def add(self):
         d=EquipmentDialog(parent=self)
@@ -550,6 +633,7 @@ class PMExecutionDialog(QDialog):
         if img.isNull():QMessageBox.warning(self,"Clipboard","Clipboard does not contain an image.");return
         try:
             path=copy_clipboard_image(img,FILE_ROOT,"PM",f"{self.task.id}_step_{spec.step_no}");current=self.results.get(spec.step_no)
+            self.db.add_attachment("PM_EXECUTION",str(self.execrow.id),path,original_name=Path(path).name,media_type="image/png",category="Screenshot",caption=f"{self.task.pm_id} step {spec.step_no}: {spec.activity}",equipment_id=self.task.equipment_id,created_by=self.user["username"])
             data={"value_text":current.value_text if current else "Evidence attached","value_numeric":current.value_numeric if current else None,"result":current.result if current else "RECORDED","entered_by":self.user["username"],"evidence_path":path}
             self.db.save_pm_result(self.execrow.id,spec.step_no,data,current.version if current else None);self.refresh()
         except Exception as exc:QMessageBox.critical(self,"Evidence",str(exc))
@@ -562,7 +646,11 @@ class PMExecutionDialog(QDialog):
         note,ok=QInputDialog.getText(self,"Acknowledge Requirement",req.description)
         if not ok:return
         evidence=""
-        if QMessageBox.question(self,"Evidence","Attach evidence file?")==QMessageBox.StandardButton.Yes:evidence,_=QFileDialog.getOpenFileName(self,"Requirement Evidence")
+        if QMessageBox.question(self,"Evidence","Attach evidence file?")==QMessageBox.StandardButton.Yes:
+            source,_=QFileDialog.getOpenFileName(self,"Requirement Evidence")
+            if source:
+                stored=store_attachment_file(source,FILE_ROOT,"PM_EXECUTION",str(self.execrow.id));evidence=stored["stored_path"]
+                self.db.add_attachment("PM_EXECUTION",str(self.execrow.id),evidence,original_name=stored["original_name"],media_type=stored["media_type"],category="Requirement Evidence",caption=req.description,equipment_id=self.task.equipment_id,created_by=self.user["username"])
         try:self.db.acknowledge_pm_requirement(self.execrow.id,req.requirement_id,self.user["username"],note,evidence);self.refresh()
         except Exception as exc:QMessageBox.critical(self,"PM Requirement",str(exc))
 
@@ -660,6 +748,15 @@ class PMPage(QWidget):
         self.load_usage_occurrences()
         self.condition_triggers=self.db.list_pm_condition_triggers();fill_table(self.condition_trigger_table,self.condition_triggers,["trigger_id","equipment_id","pm_id","meter_code","comparator","threshold","reset_threshold","latched","active","version"])
         self.load_condition_occurrences()
+    def select_task(self,task_id: int):
+        self.refresh();self.tabs.setCurrentIndex(1)
+        for i,row in enumerate(self.tasks):
+            if row.id==task_id:
+                self.task_table.selectRow(i)
+                item=self.task_table.item(i,0)
+                if item:self.task_table.scrollToItem(item)
+                break
+
     def add_def(self):
         d=PMDefinitionDialog(parent=self)
         if d.exec()==QDialog.DialogCode.Accepted:
@@ -699,11 +796,30 @@ class PMPage(QWidget):
         if len(sheets)==1:return 0
         x,ok=QInputDialog.getItem(self,"Worksheet","Choose worksheet",sheets,0,False);return x if ok else None
     def _import_backlog_df(self,df):
-        mapping=auto_mapping(list(df.columns)); rows,errors=dataframe_to_pm_backlog(df,mapping)
-        if not rows:QMessageBox.warning(self,"Import","No valid rows.\n"+"\n".join(errors[:10]));return
-        if QMessageBox.question(self,"Import",f"Import {len(rows)} rows? Errors/warnings: {len(errors)}")!=QMessageBox.StandardButton.Yes:return
-        for row in rows:self.db.upsert_pm_task(row)
-        self.refresh();QMessageBox.information(self,"Import",f"Imported {len(rows)} rows; {len(errors)} skipped/warned.")
+        fields=[
+            ("equipment_id","Equipment ID"),("pm_id","PM ID"),("pm_name","PM name"),
+            ("original_due_date","Original due date"),("scheduled_date","Scheduled date"),("last_completion_date","Last completion"),
+            ("status","Status"),("assigned_to","Assigned to"),("estimated_hours","Estimated hours"),("priority","Priority"),
+            ("deferral_reason","Deferral reason"),("sop_path","SOP path"),("report_path","Report path"),
+        ]
+        mapping=run_mapping_studio(
+            self,self.db,self.user["username"],"excel_mapping.pm_backlog",df,fields,
+            auto_mapping(list(df.columns)),{"equipment_id"},"PM Backlog Import Studio",
+        )
+        if mapping is None:return
+        rows,errors=dataframe_to_pm_backlog(df,mapping)
+        if not rows:QMessageBox.warning(self,"Import","No valid rows.\n"+"\n".join(errors[:20]));return
+        sample="\n".join(errors[:10])
+        prompt=f"Validated {len(rows)} row(s). {len(errors)} row warning/error(s).\n\n{sample}\n\nCommit import?"
+        if QMessageBox.question(self,"Import preview",prompt)!=QMessageBox.StandardButton.Yes:return
+        imported=0;failures=[]
+        for row in rows:
+            try:self.db.upsert_pm_task(row);imported+=1
+            except Exception as exc:failures.append(f"{row.get('equipment_id')} / {row.get('pm_id')}: {exc}")
+        self.refresh()
+        detail=f"Imported {imported} row(s). Source validation warnings: {len(errors)}. Commit failures: {len(failures)}."
+        if failures:detail+="\n"+"\n".join(failures[:12])
+        QMessageBox.information(self,"Import complete",detail)
     def import_backlog(self):
         path,_=QFileDialog.getOpenFileName(self,"Import PM Backlog","","Excel/CSV (*.xlsx *.xlsm *.csv)")
         if not path:return
@@ -713,15 +829,33 @@ class PMPage(QWidget):
         try:self._import_backlog_df(read_clipboard_table(QApplication.clipboard().text()))
         except Exception as exc:QMessageBox.critical(self,"Paste",str(exc))
     def _import_specs_df(self,df):
-        mapping=auto_mapping(list(df.columns)); default=""
+        fields=[
+            ("pm_id","PM ID"),("step_no","Step number"),("activity","Activity / check item"),("method","Method"),
+            ("spec","Specification / acceptance"),("unit","Unit"),("target","Target"),("warning_low","Warning low"),
+            ("warning_high","Warning high"),("control_low","Control low"),("control_high","Control high"),
+            ("spec_low","Spec low"),("spec_high","Spec high"),("reaction_plan","Reaction plan"),
+            ("sop_path","SOP path"),("sop_page","SOP page"),("sop_section","SOP section"),
+        ]
+        mapping=run_mapping_studio(
+            self,self.db,self.user["username"],"excel_mapping.pm_specs",df,fields,
+            auto_mapping(list(df.columns)),{"activity"},"PM Checklist / Specification Import Studio",
+        )
+        if mapping is None:return
+        default=""
         if "pm_id" not in mapping:
-            default,ok=QInputDialog.getText(self,"PM ID","Enter PM ID for pasted/imported steps:")
-            if not ok:return
+            default,ok=QInputDialog.getText(self,"PM ID","No PM ID column is mapped. Apply all imported steps to PM ID:")
+            if not ok or not default.strip():return
         rows,warns=dataframe_to_pm_specs(df,mapping,default.strip())
-        if not rows:QMessageBox.warning(self,"Import","No valid steps.\n"+"\n".join(warns[:10]));return
-        revise=QMessageBox.question(self,"Revision","Create controlled revisions for existing steps?")==QMessageBox.StandardButton.Yes
-        for row in rows:self.db.upsert_pm_spec(row,revise)
-        self.refresh();QMessageBox.information(self,"Import",f"Imported {len(rows)} steps; warnings {len(warns)}")
+        if not rows:QMessageBox.warning(self,"Import","No valid steps.\n"+"\n".join(warns[:20]));return
+        revise=QMessageBox.question(self,"Controlled revision",f"Validated {len(rows)} step(s), warnings: {len(warns)}.\nCreate controlled revisions for existing steps?")==QMessageBox.StandardButton.Yes
+        imported=0;failures=[]
+        for row in rows:
+            try:self.db.upsert_pm_spec(row,revise);imported+=1
+            except Exception as exc:failures.append(f"{row.get('pm_id')} step {row.get('step_no')}: {exc}")
+        self.refresh()
+        detail=f"Imported {imported} step(s). Validation warnings: {len(warns)}. Commit failures: {len(failures)}."
+        if failures:detail+="\n"+"\n".join(failures[:12])
+        QMessageBox.information(self,"Import complete",detail)
     def import_specs(self):
         path,_=QFileDialog.getOpenFileName(self,"Import PM Specs","","Excel/CSV (*.xlsx *.xlsm *.csv)")
         if not path:return
@@ -936,11 +1070,12 @@ class TicketPage(QWidget):
         h.addWidget(add);h.addWidget(edit);h.addWidget(state);h.addWidget(invest);h.addWidget(control);h.addStretch(1);v.addLayout(h)
         self.table=make_table(["Ticket","Equipment","Title","Severity","Priority","Status","Owner","Updated","Ver"]);self.table.itemSelectionChanged.connect(self.load_details);v.addWidget(self.table,2)
 
-        tabs=QTabWidget()
+        tabs=QTabWidget();self.tabs=tabs
         wi=QWidget();vi=QVBoxLayout(wi);self.invtable=make_table(["#","Observation","Check","Result","Conclusion","Action","By","Time"]);vi.addWidget(self.invtable);tabs.addTab(wi,"Troubleshooting History")
         wl=QWidget();vl=QVBoxLayout(wl);self.lifetable=make_table(["From","To","Reason","Note","Owner","Changed By","Time"]);vl.addWidget(self.lifetable);tabs.addTab(wl,"Lifecycle History")
         wo=QWidget();vo=QVBoxLayout(wo);self.control_table=make_table(["Containment","Production Impact","Affected Lots","Safety/Quality Risk","Response Due","Containment Due","Resolution Due","Esc Level","Esc Reason"]);vo.addWidget(self.control_table,1)
         self.escalation_table=make_table(["From Level","To Level","Reason","User","Time"]);vo.addWidget(self.escalation_table,1);tabs.addTab(wo,"Operational Control / SLA")
+        self.attachments=AttachmentPanel(db,user);tabs.addTab(self.attachments,"Evidence / Attachments")
         v.addWidget(tabs,1);self.refresh()
 
     def refresh(self):
@@ -950,6 +1085,15 @@ class TicketPage(QWidget):
             for i,row in enumerate(self.rows):
                 if row.ticket_no==current_no:self.table.selectRow(i);break
         self.load_details()
+
+    def select_ticket(self,ticket_no: str):
+        self.refresh()
+        for i,row in enumerate(self.rows):
+            if row.ticket_no==ticket_no:
+                self.table.selectRow(i)
+                item=self.table.item(i,0)
+                if item:self.table.scrollToItem(item)
+                break
 
     def add(self):
         d=TicketDialog(parent=self)
@@ -1002,6 +1146,7 @@ class TicketPage(QWidget):
         controls=[self.control] if self.control else []
         fill_table(self.control_table,controls,["containment","production_impact","affected_lots","safety_quality_risk","response_due_at","containment_due_at","resolution_due_at","escalation_level","escalation_reason"])
         fill_table(self.escalation_table,self.escalations,["from_level","to_level","reason","user","occurred_at"])
+        self.attachments.set_entity("TICKET",row.ticket_no,row.equipment_id) if row else self.attachments.set_entity("","")
 
     def edit_operational_control(self):
         row=selected_row(self.table,self.rows)
@@ -1024,7 +1169,12 @@ class TicketPage(QWidget):
         d=InvestigationDialog(self)
         if d.exec()==QDialog.DialogCode.Accepted:
             try:
-                self.db.add_ticket_investigation(row.ticket_no,d.data(self.user["username"]))
+                payload=d.data(self.user["username"])
+                source=payload.get("evidence_path","")
+                if source:
+                    stored=store_attachment_file(source,FILE_ROOT,"TICKET",row.ticket_no);payload["evidence_path"]=stored["stored_path"]
+                    self.db.add_attachment("TICKET",row.ticket_no,stored["stored_path"],original_name=stored["original_name"],media_type=stored["media_type"],category="Investigation Evidence",caption=payload.get("observation",""),equipment_id=row.equipment_id,created_by=self.user["username"])
+                self.db.add_ticket_investigation(row.ticket_no,payload)
                 self.db.audit(self.user["username"],"ADD_INVESTIGATION","TICKET",row.ticket_no,workstation=WORKSTATION)
                 self.load_details()
             except Exception as exc:QMessageBox.critical(self,"Investigation",str(exc))
@@ -1051,7 +1201,7 @@ class QualificationProtocolDialog(QDialog):
 class QualificationPage(QWidget):
     def __init__(self,db,user):
         super().__init__();self.db=db;self.user=user;self.protocols=[];self.runs=[];self.check_rows=[];self.check_results={}
-        v=QVBoxLayout(self);tabs=QTabWidget();v.addWidget(tabs)
+        v=QVBoxLayout(self);tabs=QTabWidget();self.tabs=tabs;v.addWidget(tabs)
 
         wp=QWidget();vp=QVBoxLayout(wp);hp=QHBoxLayout();newp=QPushButton("New Protocol");revp=QPushButton("New Revision")
         newp.clicked.connect(self.new_protocol);revp.clicked.connect(self.revise_protocol)
@@ -1068,7 +1218,9 @@ class QualificationPage(QWidget):
         hr.addStretch(1);vr.addLayout(hr)
         self.rtable=make_table(["Run","Equipment","Protocol","Rev","Status","Started By","Submitted By","Verified By","Approved By","Expires","Ver"]);self.rtable.itemSelectionChanged.connect(self.load_checks);vr.addWidget(self.rtable,2)
         self.ctable=make_table(["Check ID","Check","Acceptance","Result","Comment","Evidence","Entered By"]);vr.addWidget(self.ctable,1)
-        tabs.addTab(wr,"Qualification Runs");self.refresh()
+        tabs.addTab(wr,"Qualification Runs")
+        self.attachments=AttachmentPanel(db,user);tabs.addTab(self.attachments,"Evidence / Attachments")
+        self.refresh()
 
     def refresh(self):
         self.protocols=self.db.list_qualification_protocols(active_only=False)
@@ -1083,6 +1235,12 @@ class QualificationPage(QWidget):
 
     def selected_protocol(self):return selected_row(self.ptable,self.protocols)
     def selected_run(self):return selected_row(self.rtable,self.runs)
+
+    def select_run(self,run_no: str):
+        self.refresh();self.tabs.setCurrentIndex(1)
+        for i,row in enumerate(self.runs):
+            if row.run_no==run_no:
+                self.rtable.selectRow(i);break
 
     def new_protocol(self):
         d=QualificationProtocolDialog(parent=self)
@@ -1112,7 +1270,9 @@ class QualificationPage(QWidget):
 
     def load_checks(self):
         row=self.selected_run()
-        if not row:self.check_rows=[];self.check_results={};self.ctable.setRowCount(0);return
+        if not row:
+            self.check_rows=[];self.check_results={};self.ctable.setRowCount(0);self.attachments.set_entity("","");return
+        self.attachments.set_entity("QUALIFICATION",row.run_no,row.equipment_id)
         try:self.check_rows,self.check_results=self.db.qualification_run_checks(row.id)
         except Exception:self.check_rows=[];self.check_results={}
         self.ctable.setRowCount(len(self.check_rows))
@@ -1131,7 +1291,10 @@ class QualificationPage(QWidget):
         if not ok:return
         evidence=""
         if QMessageBox.question(self,"Evidence","Attach evidence file?")==QMessageBox.StandardButton.Yes:
-            evidence,_=QFileDialog.getOpenFileName(self,"Evidence")
+            source,_=QFileDialog.getOpenFileName(self,"Evidence")
+            if source:
+                stored=store_attachment_file(source,FILE_ROOT,"QUALIFICATION",run.run_no);evidence=stored["stored_path"]
+                self.db.add_attachment("QUALIFICATION",run.run_no,evidence,original_name=stored["original_name"],media_type=stored["media_type"],category="Qualification Evidence",caption=f"{check['check_id']} — {check['label']}",equipment_id=run.equipment_id,created_by=self.user["username"])
         try:
             self.db.save_qualification_result(run.id,check["check_id"],value,comment,self.user["username"],evidence,WORKSTATION,run.version)
             self.refresh()
@@ -1197,8 +1360,18 @@ class ControlPage(QWidget):
     def __init__(self,db,user):
         super().__init__();self.db=db;self.user=user;self.disp=[];self.rel=[];v=QVBoxLayout(self);tabs=QTabWidget();v.addWidget(tabs)
         wd=QWidget();vd=QVBoxLayout(wd);bd=QPushButton("New Disposition");bd.clicked.connect(self.new_disp);bd.setEnabled(db.has_permission(user,"disposition.edit"));vd.addWidget(bd);self.dtable=make_table(["Equipment","State","Reason","Restrictions","Criteria","Ticket","Created By","Approved By","Effective"]);vd.addWidget(self.dtable);tabs.addTab(wd,"Disposition")
-        wr=QWidget();vr=QVBoxLayout(wr);hr=QHBoxLayout();new=QPushButton("New Release Request");verify=QPushButton("Verify Selected");approve=QPushButton("Approve / Release");new.clicked.connect(self.new_release);verify.clicked.connect(self.verify_release);approve.clicked.connect(self.approve_release);new.setEnabled(db.has_permission(user,"release.verify") or db.has_permission(user,"disposition.edit"));verify.setEnabled(db.has_permission(user,"release.verify"));approve.setEnabled(db.has_permission(user,"release.approve"));hr.addWidget(new);hr.addWidget(verify);hr.addWidget(approve);hr.addStretch(1);vr.addLayout(hr);self.rtable=make_table(["ID","Equipment","Ticket","Status","Requested By","Verified By","Approved By","Requested","Ver"]);vr.addWidget(self.rtable);tabs.addTab(wr,"Release Verification");self.refresh()
-    def refresh(self):self.disp=self.db.list_dispositions();fill_table(self.dtable,self.disp,["equipment_id","state","reason","restrictions","release_criteria","related_ticket","created_by","approved_by","effective_at"]);self.rel=self.db.list_release_requests();fill_table(self.rtable,self.rel,["id","equipment_id","related_ticket","status","requested_by","verified_by","approved_by","requested_at","version"])
+        wr=QWidget();vr=QVBoxLayout(wr);hr=QHBoxLayout();new=QPushButton("New Release Request");verify=QPushButton("Verify Selected");approve=QPushButton("Approve / Release");new.clicked.connect(self.new_release);verify.clicked.connect(self.verify_release);approve.clicked.connect(self.approve_release);new.setEnabled(db.has_permission(user,"release.verify") or db.has_permission(user,"disposition.edit"));verify.setEnabled(db.has_permission(user,"release.verify"));approve.setEnabled(db.has_permission(user,"release.approve"));hr.addWidget(new);hr.addWidget(verify);hr.addWidget(approve);hr.addStretch(1);vr.addLayout(hr);self.rtable=make_table(["ID","Equipment","Ticket","Status","Requested By","Verified By","Approved By","Requested","Ver"]);self.rtable.itemSelectionChanged.connect(self.load_release_attachment);vr.addWidget(self.rtable,2);self.release_attachments=AttachmentPanel(db,user);vr.addWidget(self.release_attachments,1);tabs.addTab(wr,"Release Verification");self.refresh()
+    def refresh(self):
+        self.disp=self.db.list_dispositions();fill_table(self.dtable,self.disp,["equipment_id","state","reason","restrictions","release_criteria","related_ticket","created_by","approved_by","effective_at"])
+        current=selected_row(self.rtable,self.rel);rid=current.id if current else None
+        self.rel=self.db.list_release_requests();fill_table(self.rtable,self.rel,["id","equipment_id","related_ticket","status","requested_by","verified_by","approved_by","requested_at","version"])
+        if rid is not None:
+            for i,row in enumerate(self.rel):
+                if row.id==rid:self.rtable.selectRow(i);break
+        self.load_release_attachment()
+    def load_release_attachment(self):
+        row=selected_row(self.rtable,self.rel)
+        self.release_attachments.set_entity("RELEASE",str(row.id),row.equipment_id) if row else self.release_attachments.set_entity("","")
     def new_disp(self):
         d=DispositionDialog(self)
         if d.exec()==QDialog.DialogCode.Accepted:
@@ -1271,8 +1444,21 @@ class EndorsementDialog(QDialog):
 
 class EndorsementPage(QWidget):
     def __init__(self,db,user):
-        super().__init__();self.db=db;self.user=user;self.rows=[];v=QVBoxLayout(self);h=QHBoxLayout();add=QPushButton("New Endorsement");ack=QPushButton("Acknowledge Selected");add.clicked.connect(self.add);ack.clicked.connect(self.ack);allowed=db.has_permission(user,"endorsement.edit");add.setEnabled(allowed);ack.setEnabled(allowed);h.addWidget(add);h.addWidget(ack);h.addStretch(1);v.addLayout(h);self.table=make_table(["No","Equipment","Condition","Pending","Restrictions","Next Owner","Status","Created By","Ack By","Time"]);v.addWidget(self.table);self.refresh()
-    def refresh(self):self.rows=self.db.list_endorsements();fill_table(self.table,self.rows,["endorsement_no","equipment_id","current_condition","pending_work","restrictions","next_owner","status","created_by","acknowledged_by","created_at"])
+        super().__init__();self.db=db;self.user=user;self.rows=[];v=QVBoxLayout(self);h=QHBoxLayout();add=QPushButton("New Endorsement");ack=QPushButton("Acknowledge Selected");add.clicked.connect(self.add);ack.clicked.connect(self.ack);allowed=db.has_permission(user,"endorsement.edit");add.setEnabled(allowed);ack.setEnabled(allowed);h.addWidget(add);h.addWidget(ack);h.addStretch(1);v.addLayout(h);self.table=make_table(["No","Equipment","Condition","Pending","Restrictions","Next Owner","Status","Created By","Ack By","Time"]);self.table.itemSelectionChanged.connect(self.load_attachments);v.addWidget(self.table,2);self.attachments=AttachmentPanel(db,user);v.addWidget(self.attachments,1);self.refresh()
+    def refresh(self):
+        current=selected_row(self.table,self.rows);key=current.endorsement_no if current else ""
+        self.rows=self.db.list_endorsements();fill_table(self.table,self.rows,["endorsement_no","equipment_id","current_condition","pending_work","restrictions","next_owner","status","created_by","acknowledged_by","created_at"])
+        if key:
+            for i,row in enumerate(self.rows):
+                if row.endorsement_no==key:self.table.selectRow(i);break
+        self.load_attachments()
+    def load_attachments(self):
+        row=selected_row(self.table,self.rows)
+        self.attachments.set_entity("ENDORSEMENT",row.endorsement_no,row.equipment_id) if row else self.attachments.set_entity("","")
+    def select_endorsement(self,key: str):
+        self.refresh()
+        for i,row in enumerate(self.rows):
+            if row.endorsement_no==key:self.table.selectRow(i);break
     def add(self):
         d=EndorsementDialog(self)
         if d.exec()==QDialog.DialogCode.Accepted:
@@ -1308,10 +1494,76 @@ class InventoryPage(QWidget):
     show_map_part=Signal(str)
     def __init__(self,db,user):
         super().__init__();self.db=db;self.user=user;self.items=[];self.locs=[];self.res=[];v=QVBoxLayout(self);tabs=QTabWidget();v.addWidget(tabs)
-        wi=QWidget();vi=QVBoxLayout(wi);hi=QHBoxLayout();self.search=QLineEdit();self.search.setPlaceholderText("Search part / description / location");self.search.textChanged.connect(self.refresh);add=QPushButton("Add Item");edit=QPushButton("Edit");consume=QPushButton("Consume");reserve=QPushButton("Reserve");show=QPushButton("Show on Map");add.clicked.connect(self.add_item);edit.clicked.connect(self.edit_item);consume.clicked.connect(self.consume);reserve.clicked.connect(self.reserve);show.clicked.connect(self.map_item);add.setEnabled(db.has_permission(user,"inventory.edit"));edit.setEnabled(db.has_permission(user,"inventory.edit"));consume.setEnabled(db.has_permission(user,"inventory.consume") or db.has_permission(user,"inventory.edit"));reserve.setEnabled(db.has_permission(user,"inventory.reserve"));hi.addWidget(self.search,1);[hi.addWidget(x) for x in [add,edit,consume,reserve,show]];vi.addLayout(hi);self.itable=make_table(["Part","Description","Qty","Min","Unit","Condition","Location","Image","Ver"]);vi.addWidget(self.itable);tabs.addTab(wi,"Inventory")
+        wi=QWidget();vi=QVBoxLayout(wi);hi=QHBoxLayout();self.search=QLineEdit();self.search.setPlaceholderText("Search part / description / location");self.search.textChanged.connect(self.refresh);add=QPushButton("Add Item");edit=QPushButton("Edit");imp=QPushButton("Import Excel/CSV");paste=QPushButton("Paste from Excel");bulk=QPushButton("Bulk Edit Selected");consume=QPushButton("Consume");reserve=QPushButton("Reserve");show=QPushButton("Show on Map");add.clicked.connect(self.add_item);edit.clicked.connect(self.edit_item);imp.clicked.connect(self.import_inventory);paste.clicked.connect(self.paste_inventory);bulk.clicked.connect(self.bulk_edit_inventory);consume.clicked.connect(self.consume);reserve.clicked.connect(self.reserve);show.clicked.connect(self.map_item);canedit=db.has_permission(user,"inventory.edit");add.setEnabled(canedit);edit.setEnabled(canedit);imp.setEnabled(canedit);paste.setEnabled(canedit);bulk.setEnabled(canedit);consume.setEnabled(db.has_permission(user,"inventory.consume") or canedit);reserve.setEnabled(db.has_permission(user,"inventory.reserve"));hi.addWidget(self.search,1);[hi.addWidget(x) for x in [add,edit,imp,paste,bulk,consume,reserve,show]];vi.addLayout(hi);self.itable=make_table(["Part","Description","Qty","Min","Unit","Condition","Location","Image","Ver"]);vi.addWidget(self.itable);tabs.addTab(wi,"Inventory")
         wl=QWidget();vl=QVBoxLayout(wl);addl=QPushButton("Add Storage Location");addl.clicked.connect(self.add_loc);addl.setEnabled(db.has_permission(user,"inventory.edit"));vl.addWidget(addl);self.ltable=make_table(["Code","Name","Building","Floor","Area","Cabinet","Shelf","Bin","Image","Ver"]);vl.addWidget(self.ltable);tabs.addTab(wl,"Storage Locations")
         wr=QWidget();vr=QVBoxLayout(wr);rel=QPushButton("Release Selected Reservation");rel.clicked.connect(self.release_res);rel.setEnabled(db.has_permission(user,"inventory.reserve"));vr.addWidget(rel);self.rtable=make_table(["ID","Part","Location","Qty","PM Task","Equipment","Status","Reserved By","Time","Ver"]);vr.addWidget(self.rtable);tabs.addTab(wr,"Reservations");self.refresh()
     def refresh(self):self.items=self.db.list_inventory(self.search.text().strip());fill_table(self.itable,self.items,["part_number","description","quantity","min_quantity","unit","condition","location_code","image_path","version"]);self.locs=self.db.list_storage_locations();fill_table(self.ltable,self.locs,["location_code","name","building","floor","area","cabinet","shelf","drawer_bin","image_path","version"]);self.res=self.db.list_reservations();fill_table(self.rtable,self.res,["id","part_number","location_code","quantity","pm_task_id","equipment_id","status","reserved_by","reserved_at","version"])
+    def bulk_edit_inventory(self):
+        selected=sorted({idx.row() for idx in self.itable.selectedIndexes()})
+        rows=[self.items[i] for i in selected if 0<=i<len(self.items)]
+        if not rows:
+            QMessageBox.information(self,"Bulk edit","Select one or more inventory rows.");return
+        field,ok=QInputDialog.getItem(self,"Bulk edit inventory","Field",["Condition","Minimum quantity","Unit"],0,False)
+        if not ok:return
+        if field=="Condition":
+            value,ok=QInputDialog.getItem(self,"Bulk edit inventory","Condition",["Available","Reserved","Quarantine","Repair","Scrap"],0,False)
+        elif field=="Minimum quantity":
+            value,ok=QInputDialog.getDouble(self,"Bulk edit inventory","Minimum quantity",0,0,1e12,3)
+        else:
+            value,ok=QInputDialog.getText(self,"Bulk edit inventory","Unit")
+        if not ok:return
+        if QMessageBox.question(self,"Confirm bulk edit",f"Update {field} on {len(rows)} inventory record(s)?")!=QMessageBox.StandardButton.Yes:return
+        failures=[];updated=0
+        for row in rows:
+            data={
+                "part_number":row.part_number,"description":row.description,"quantity":row.quantity,
+                "min_quantity":float(value) if field=="Minimum quantity" else row.min_quantity,
+                "unit":value.strip() if field=="Unit" else row.unit,
+                "condition":value if field=="Condition" else row.condition,
+                "location_code":row.location_code,"image_path":row.image_path,
+            }
+            try:self.db.save_inventory_item(data,row.version);updated+=1
+            except Exception as exc:failures.append(f"{row.part_number} @ {row.location_code}: {exc}")
+        self.refresh()
+        text=f"Updated {updated}/{len(rows)} inventory record(s)."
+        if failures:text+="\n"+"\n".join(failures[:12])
+        QMessageBox.information(self,"Bulk edit",text)
+
+    def _inventory_import_df(self,df):
+        fields=[
+            ("part_number","Part number"),("description","Description"),("quantity","Quantity"),("min_quantity","Minimum quantity"),
+            ("unit","Unit"),("condition","Condition"),("location_code","Location code"),("image_path","Image path"),
+        ]
+        mapping=run_mapping_studio(self,self.db,self.user["username"],"excel_mapping.inventory",df,fields,auto_mapping(list(df.columns)),{"part_number","location_code"},"Inventory Import Studio")
+        if mapping is None:return
+        rows,errors=dataframe_to_inventory(df,mapping)
+        if not rows:QMessageBox.warning(self,"Inventory import","No valid rows.\n"+"\n".join(errors[:20]));return
+        if QMessageBox.question(self,"Inventory import",f"Validated {len(rows)} inventory row(s); {len(errors)} warning/error row(s). Commit changes?")!=QMessageBox.StandardButton.Yes:return
+        imported=0;failures=[]
+        for data in rows:
+            try:
+                existing=next((x for x in self.db.list_inventory(data["part_number"]) if x.part_number==data["part_number"] and x.location_code==data["location_code"]),None)
+                self.db.save_inventory_item(data,existing.version if existing else None);imported+=1
+            except Exception as exc:failures.append(f"{data.get('part_number')} @ {data.get('location_code')}: {exc}")
+        self.refresh();detail=f"Imported/updated {imported} inventory row(s). Failures: {len(failures)}."
+        if failures:detail+="\n"+"\n".join(failures[:12])
+        QMessageBox.information(self,"Inventory import",detail)
+
+    def import_inventory(self):
+        path,_=QFileDialog.getOpenFileName(self,"Import Inventory","","Excel/CSV (*.xlsx *.xlsm *.csv)")
+        if not path:return
+        try:
+            sheets=workbook_sheets(path);sheet=sheets[0]
+            if len(sheets)>1:
+                sheet,ok=QInputDialog.getItem(self,"Import Inventory","Sheet",sheets,0,False)
+                if not ok:return
+            self._inventory_import_df(read_table(path,sheet))
+        except Exception as exc:QMessageBox.critical(self,"Inventory import",str(exc))
+
+    def paste_inventory(self):
+        try:self._inventory_import_df(read_clipboard_table(QApplication.clipboard().text()))
+        except Exception as exc:QMessageBox.critical(self,"Inventory paste",str(exc))
+
     def add_item(self):
         d=InventoryDialog(parent=self)
         if d.exec()==QDialog.DialogCode.Accepted:
@@ -1379,6 +1631,14 @@ class DocumentPage(QWidget):
         self.rows=self.db.list_documents(et,ek);fill_table(self.table,self.rows,["entity_type","entity_key","document_type","title","revision","status","path","added_by","added_at"])
         self.cdocs=self.db.list_controlled_documents(et,ek);fill_table(self.cdoc_table,self.cdocs,["document_id","entity_type","entity_key","document_type","title","owner","status","current_revision","created_by","version"])
         self.load_revisions()
+
+    def select_document(self,document_id: str):
+        target=next((x for x in self.db.list_controlled_documents() if x.document_id==document_id),None)
+        if not target:return
+        self.type.setText(target.entity_type);self.key.setText(target.entity_key);self.refresh()
+        for i,row in enumerate(self.cdocs):
+            if row.document_id==document_id:
+                self.cdoc_table.selectRow(i);self.load_revisions();break
 
     def add(self):
         p,_=QFileDialog.getOpenFileName(self,"Link Existing File")
@@ -1657,8 +1917,9 @@ class AlarmPage(QWidget):
         manual=QPushButton("Record Manual Alarm");manual.clicked.connect(self.manual_alarm);manual.setEnabled(db.has_permission(user,"ticket.edit"))
         h.addWidget(title);h.addStretch(1);h.addWidget(self.eq);h.addWidget(active);h.addWidget(refresh);h.addWidget(ack);h.addWidget(manual);v.addLayout(h)
         tabs=QTabWidget()
-        wa=QWidget();va=QVBoxLayout(wa);self.table=make_table(["Event","Equipment","Alarm Code","Severity","Message","Source","State","Occurred","Ack By","Ack At","Cleared","Ticket"]);va.addWidget(self.table);tabs.addTab(wa,"Alarm History")
+        wa=QWidget();va=QVBoxLayout(wa);self.table=make_table(["Event","Equipment","Alarm Code","Severity","Message","Source","State","Occurred","Ack By","Ack At","Cleared","Ticket"]);self.table.itemSelectionChanged.connect(self.load_attachment);va.addWidget(self.table);tabs.addTab(wa,"Alarm History")
         wp=QWidget();vp=QVBoxLayout(wp);self.pareto_table=make_table(["Alarm Code","Message","Count"]);vp.addWidget(self.pareto_table);tabs.addTab(wp,"30-Day Pareto")
+        self.attachments=AttachmentPanel(db,user);tabs.addTab(self.attachments,"Evidence / Attachments")
         v.addWidget(tabs);self.eq.textChanged.connect(self.refresh);self.active_only.stateChanged.connect(self.refresh);self.refresh()
 
     def refresh(self):
@@ -1669,6 +1930,11 @@ class AlarmPage(QWidget):
         self.pareto_table.setRowCount(len(self.pareto))
         for r,row in enumerate(self.pareto):
             for col,key in enumerate(["alarm_code","message","count"]):self.pareto_table.setItem(r,col,ti(row.get(key,"")))
+        self.load_attachment()
+
+    def load_attachment(self):
+        row=selected_row(self.table,self.rows)
+        self.attachments.set_entity("ALARM",row.event_key,row.equipment_id) if row else self.attachments.set_entity("","")
 
     def acknowledge(self):
         row=selected_row(self.table,self.rows)
@@ -1716,7 +1982,7 @@ class ReliabilityPage(QWidget):
 
 class MainWindow(QMainWindow):
     def __init__(self,db,user):
-        super().__init__();self.db=db;self.user=user;self.setWindowTitle(APP_TITLE);self.resize(1450,850);root=QWidget();self.setCentralWidget(root);h=QHBoxLayout(root);self.nav=QListWidget();self.nav.setFixedWidth(210);self.stack=QStackedWidget();h.addWidget(self.nav);h.addWidget(self.stack,1)
+        super().__init__();self.db=db;self.user=user;configure_productivity_context(db,user["username"]);self.setWindowTitle(APP_TITLE);self.resize(1450,850);root=QWidget();self.setCentralWidget(root);h=QHBoxLayout(root);self.nav=QListWidget();self.nav.setFixedWidth(210);self.stack=QStackedWidget();h.addWidget(self.nav);h.addWidget(self.stack,1)
         self.pages=[]
         def add(name,page):self.nav.addItem(name);self.stack.addWidget(page);self.pages.append(page)
         self.dashboard=DashboardPage(db);add("Dashboard",self.dashboard);add("Equipment",EquipmentPage(db,user));self.layout=LayoutPage(db,user);add("Layout / Map",self.layout);add("PM",PMPage(db,user));add("Issue Tickets",TicketPage(db,user));add("Alarms / Events",AlarmPage(db,user));add("Qualification",QualificationPage(db,user));add("Reliability",ReliabilityPage(db));add("Disposition / Release",ControlPage(db,user));add("Work / Labor",WorkLogPage(db,user));add("Endorsements",EndorsementPage(db,user));self.inventory=InventoryPage(db,user);add("Inventory",self.inventory);add("Documents",DocumentPage(db,user));add("Administration",AdminPage(db,user))

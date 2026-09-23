@@ -6,7 +6,7 @@ This file is the persistent progress tracker for the full-production roadmap.
 
 **Program state:** Production-capable backend / pre-Alpha product UX
 
-**Current main:** `b67b82d7f1f9438ec597446375e63e863da9d290`
+**Current main:** `0abd64af4027bf3985f07b3bcc97b66441234419`\n\n**Active Internal Alpha wave:** `ems/internal-alpha-wave1`
 
 The backend already includes substantial industrial controls: governed equipment states, PM triggers and deferrals, ticket lifecycle and SLA/escalation, qualification/release, scoped RBAC, component hierarchy, alarms, reliability metrics, controlled documents, integration outbox, structured logging, migrations, recovery tooling, concurrency testing and Windows packaging.
 
@@ -16,11 +16,11 @@ The remaining program is primarily a **product/workflow/UX/interoperability tran
 
 | Milestone | Status | Notes |
 |---|---|---|
-| M0 Product baseline / UX architecture | IN PROGRESS | Comprehensive audit complete; roadmap established. New workspace/design-system implementation remains. |
-| M1 Shell / navigation / productivity | NOT STARTED | Existing Smart shell is not sufficient. |
-| M2 Equipment 360 / relationship graph | NOT STARTED | Backend relationships exist, unified workspace does not. |
-| M3 Universal evidence / attachments | NOT STARTED | PM screenshot evidence exists only as partial foundation. |
-| M4 Excel-first / bulk operations | NOT STARTED | PM import/paste exists only as partial foundation. |
+| M0 Product baseline / UX architecture | **COMPLETE** | Full roadmap + screen/workflow migration inventory committed; modular workspace architecture established. |
+| M1 Shell / navigation / productivity | **IN PROGRESS** | Global Search, My Work, recents/favorites, deep routing, Ctrl+K and back/forward navigation implemented. Persistent multi-record tabs and saved table views remain. |
+| M2 Equipment 360 / relationship graph | **IN PROGRESS** | Equipment 360 foundation implemented with cross-module tabs, favorites, reliability summary, direct ticket/PM routing and unified cross-feature activity timeline. Contextual inline actions and richer relationship graph remain. |
+| M3 Universal evidence / attachments | **IN PROGRESS** | Shared attachment model + storage + integrity metadata + drag/drop + Ctrl+V screenshot + image preview integrated into Equipment 360, tickets, qualification, alarms, handovers and release. Annotation, multi-record provenance/copy and richer gallery remain. |
+| M4 Excel-first / bulk operations | **IN PROGRESS** | All shared tables support clipboard copy and XLSX export. Reusable Import Studio with preview/manual mapping/account-saved mappings integrated into PM backlog/spec imports. Round-trip/bulk workflows across more entities remain. |
 | M5 PM planning / execution redesign | NOT STARTED | Strong backend, legacy UI. |
 | M6 Alarm / incident / RCA / CAPA | NOT STARTED | Strong backend lifecycle, workspace/RCA still shallow. |
 | M7 Work order / qualification / release | NOT STARTED | Qualification/release backend exists; orchestration/UI incomplete. |
@@ -35,11 +35,11 @@ The remaining program is primarily a **product/workflow/UX/interoperability tran
 
 ## Immediate execution order
 
-1. Finish M0 by defining the new reusable application shell/workspace architecture and replacing ad-hoc page conventions.
-2. Start M1: global search, recent/favorites, record navigation, persistent workspace tabs and common table/view infrastructure.
-3. Start M2 Equipment 360 foundation.
-4. Build M3 universal attachment/evidence service early because nearly every subsequent milestone depends on it.
-5. Build M4 reusable Excel Import Studio and universal export/paste infrastructure.
+1. Complete M1 persistent multi-record workspace tabs and account-saved table/view preferences.
+2. Continue M2 with contextual Equipment 360 actions, clickable relationship navigation and richer operating summary.
+3. Continue M3 with attachment provenance/copy, universal evidence on remaining operational surfaces and annotation foundation.
+4. Continue M4 by extending Import Studio / round-trip Excel to equipment master and inventory, then bulk edit.
+5. Begin M5 planning UI only after the shared M1-M4 infrastructure is stable and green.
 
 ## Reporting rule
 

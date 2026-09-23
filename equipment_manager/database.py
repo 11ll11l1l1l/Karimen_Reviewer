@@ -8,7 +8,7 @@ from contextlib import contextmanager
 from datetime import datetime, timedelta
 from typing import Any
 
-from sqlalchemy import Boolean, DateTime, Float, Integer, String, Text, UniqueConstraint, create_engine, func, inspect, select
+from sqlalchemy import Boolean, DateTime, Float, Integer, String, Text, UniqueConstraint, create_engine, func, inspect, or_, select
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 
 from domain import (
@@ -49,6 +49,61 @@ class UserPermission(Base):
     permission: Mapped[str] = mapped_column(String(100), index=True)
     allowed: Mapped[bool] = mapped_column(Boolean)
     __table_args__ = (UniqueConstraint("username", "permission", name="uq_user_permission"),)
+
+
+class UserRecentItem(Base):
+    __tablename__ = "user_recent_items"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    username: Mapped[str] = mapped_column(String(80), index=True)
+    entity_type: Mapped[str] = mapped_column(String(60), index=True)
+    entity_key: Mapped[str] = mapped_column(String(180), index=True)
+    title: Mapped[str] = mapped_column(String(250), default="")
+    equipment_id: Mapped[str] = mapped_column(String(100), default="", index=True)
+    opened_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    __table_args__ = (UniqueConstraint("username","entity_type","entity_key",name="uq_user_recent_item"),)
+
+
+class UserFavorite(Base):
+    __tablename__ = "user_favorites"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    username: Mapped[str] = mapped_column(String(80), index=True)
+    entity_type: Mapped[str] = mapped_column(String(60), index=True)
+    entity_key: Mapped[str] = mapped_column(String(180), index=True)
+    title: Mapped[str] = mapped_column(String(250), default="")
+    equipment_id: Mapped[str] = mapped_column(String(100), default="", index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    __table_args__ = (UniqueConstraint("username","entity_type","entity_key",name="uq_user_favorite"),)
+
+
+class UserPreference(Base):
+    __tablename__ = "user_preferences"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    username: Mapped[str] = mapped_column(String(80), index=True)
+    preference_key: Mapped[str] = mapped_column(String(180), index=True)
+    value_json: Mapped[str] = mapped_column(Text, default="null")
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    __table_args__ = (UniqueConstraint("username","preference_key",name="uq_user_preference"),)
+
+
+class EntityAttachment(Base):
+    __tablename__ = "entity_attachments"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    attachment_key: Mapped[str] = mapped_column(String(48), unique=True, index=True, default=lambda: secrets.token_hex(20))
+    entity_type: Mapped[str] = mapped_column(String(60), index=True)
+    entity_key: Mapped[str] = mapped_column(String(180), index=True)
+    equipment_id: Mapped[str] = mapped_column(String(100), default="", index=True)
+    category: Mapped[str] = mapped_column(String(60), default="Evidence", index=True)
+    original_name: Mapped[str] = mapped_column(String(260), default="")
+    stored_path: Mapped[str] = mapped_column(Text)
+    media_type: Mapped[str] = mapped_column(String(120), default="")
+    file_size: Mapped[int] = mapped_column(Integer, default=0)
+    file_sha256: Mapped[str] = mapped_column(String(64), default="")
+    caption: Mapped[str] = mapped_column(Text, default="")
+    tags: Mapped[str] = mapped_column(Text, default="")
+    copied_from_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    created_by: Mapped[str] = mapped_column(String(120), default="", index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
 
 
 class AuthSecurityState(Base):
@@ -576,6 +631,52 @@ class TicketEscalationEvent(Base):
     occurred_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
 
 
+class IncidentWhy(Base):
+    __tablename__ = "incident_whys"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    ticket_no: Mapped[str] = mapped_column(String(100), index=True)
+    sequence: Mapped[int] = mapped_column(Integer)
+    question: Mapped[str] = mapped_column(Text, default="")
+    answer: Mapped[str] = mapped_column(Text, default="")
+    updated_by: Mapped[str] = mapped_column(String(120), default="")
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    __table_args__ = (UniqueConstraint("ticket_no","sequence",name="uq_incident_why_sequence"),)
+
+
+class IncidentCausalFactor(Base):
+    __tablename__ = "incident_causal_factors"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    ticket_no: Mapped[str] = mapped_column(String(100), index=True)
+    category: Mapped[str] = mapped_column(String(60), default="Other", index=True)
+    factor_type: Mapped[str] = mapped_column(String(30), default="Suspected", index=True)
+    description: Mapped[str] = mapped_column(Text)
+    evidence: Mapped[str] = mapped_column(Text, default="")
+    status: Mapped[str] = mapped_column(String(30), default="Open", index=True)
+    created_by: Mapped[str] = mapped_column(String(120), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
+class IncidentAction(Base):
+    __tablename__ = "incident_actions"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    ticket_no: Mapped[str] = mapped_column(String(100), index=True)
+    action_type: Mapped[str] = mapped_column(String(30), default="Corrective", index=True)
+    description: Mapped[str] = mapped_column(Text)
+    owner: Mapped[str] = mapped_column(String(120), default="", index=True)
+    due_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    status: Mapped[str] = mapped_column(String(30), default="Open", index=True)
+    effectiveness_criteria: Mapped[str] = mapped_column(Text, default="")
+    completion_note: Mapped[str] = mapped_column(Text, default="")
+    completed_by: Mapped[str] = mapped_column(String(120), default="")
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    verification_note: Mapped[str] = mapped_column(Text, default="")
+    verified_by: Mapped[str] = mapped_column(String(120), default="")
+    verified_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
 class TicketStateEvent(Base):
     __tablename__ = "ticket_state_events"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -984,6 +1085,15 @@ class Database:
                 table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
             ]),
             ("20260923_002","Create operational event and lookup indexes",self._migration_indexes),
+            ("20260923_003","Create productivity workspace and universal evidence tables",lambda: [
+                table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
+            ]),
+            ("20260923_004","Create account-level productivity preferences",lambda: [
+                table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
+            ]),
+            ("20260923_005","Create structured incident RCA and CAPA tables",lambda: [
+                table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
+            ]),
         ]
 
     def _migration_indexes(self):
@@ -1642,6 +1752,254 @@ class Database:
     def list_recovery_drills(self, limit: int = 100):
         with self.session() as s:
             return list(s.scalars(select(RecoveryDrill).order_by(RecoveryDrill.performed_at.desc()).limit(max(1,min(int(limit),1000)))))
+
+    def set_user_preference(self, username: str, key: str, value: Any):
+        if not username or not key:raise ValueError("Username and preference key are required.")
+        encoded=json.dumps(value,default=str,sort_keys=True)
+        with self.session() as s:
+            row=s.scalar(select(UserPreference).where(UserPreference.username==username,UserPreference.preference_key==key))
+            if row:row.value_json=encoded;row.updated_at=datetime.utcnow()
+            else:row=UserPreference(username=username,preference_key=key,value_json=encoded);s.add(row)
+            s.flush();return row
+
+    def get_user_preference(self, username: str, key: str, default: Any = None):
+        with self.session() as s:
+            row=s.scalar(select(UserPreference).where(UserPreference.username==username,UserPreference.preference_key==key))
+            if not row:return default
+            try:return json.loads(row.value_json)
+            except Exception:return default
+
+    def list_user_preferences(self, username: str):
+        with self.session() as s:
+            rows=list(s.scalars(select(UserPreference).where(UserPreference.username==username).order_by(UserPreference.preference_key)))
+            result={}
+            for row in rows:
+                try:result[row.preference_key]=json.loads(row.value_json)
+                except Exception:result[row.preference_key]=None
+            return result
+
+    def record_recent_item(
+        self,
+        username: str,
+        entity_type: str,
+        entity_key: str,
+        title: str = "",
+        equipment_id: str = "",
+    ):
+        if not username or not entity_type or not entity_key:return
+        now=datetime.utcnow()
+        with self.session() as s:
+            row=s.scalar(select(UserRecentItem).where(
+                UserRecentItem.username==username,
+                UserRecentItem.entity_type==entity_type,
+                UserRecentItem.entity_key==entity_key,
+            ))
+            if row:
+                row.title=title or row.title;row.equipment_id=equipment_id or row.equipment_id;row.opened_at=now
+            else:
+                row=UserRecentItem(
+                    username=username,entity_type=entity_type,entity_key=entity_key,
+                    title=title,equipment_id=equipment_id,opened_at=now,
+                );s.add(row)
+            s.flush();return row
+
+    def list_recent_items(self, username: str, limit: int = 20):
+        with self.session() as s:
+            return list(s.scalars(
+                select(UserRecentItem)
+                .where(UserRecentItem.username==username)
+                .order_by(UserRecentItem.opened_at.desc())
+                .limit(max(1,min(int(limit),100)))
+            ))
+
+    def set_favorite(
+        self,
+        username: str,
+        entity_type: str,
+        entity_key: str,
+        favorite: bool,
+        title: str = "",
+        equipment_id: str = "",
+    ):
+        with self.session() as s:
+            row=s.scalar(select(UserFavorite).where(
+                UserFavorite.username==username,
+                UserFavorite.entity_type==entity_type,
+                UserFavorite.entity_key==entity_key,
+            ))
+            if favorite:
+                if not row:
+                    row=UserFavorite(
+                        username=username,entity_type=entity_type,entity_key=entity_key,
+                        title=title,equipment_id=equipment_id,
+                    );s.add(row)
+                else:
+                    row.title=title or row.title;row.equipment_id=equipment_id or row.equipment_id
+            elif row:
+                s.delete(row);row=None
+            s.flush();return row
+
+    def is_favorite(self, username: str, entity_type: str, entity_key: str) -> bool:
+        with self.session() as s:
+            return bool(s.scalar(select(func.count()).select_from(UserFavorite).where(
+                UserFavorite.username==username,
+                UserFavorite.entity_type==entity_type,
+                UserFavorite.entity_key==entity_key,
+            )))
+
+    def list_favorites(self, username: str):
+        with self.session() as s:
+            return list(s.scalars(
+                select(UserFavorite).where(UserFavorite.username==username)
+                .order_by(UserFavorite.entity_type,UserFavorite.title,UserFavorite.entity_key)
+            ))
+
+    def global_search(self, query: str, limit: int = 80) -> list[dict[str, Any]]:
+        q=(query or "").strip()
+        if not q:return []
+        like=f"%{q}%";out=[]
+        max_each=max(5,min(20,int(limit)//8 or 5))
+        def add(entity_type,key,title,subtitle="",equipment_id=""):
+            if len(out)>=limit:return
+            out.append({
+                "entity_type":entity_type,"entity_key":str(key),"title":str(title or key),
+                "subtitle":str(subtitle or ""),"equipment_id":str(equipment_id or ""),
+            })
+        with self.session() as s:
+            for row in s.scalars(select(Equipment).where(or_(
+                Equipment.equipment_id.ilike(like),Equipment.name.ilike(like),Equipment.equipment_type.ilike(like),
+                Equipment.model.ilike(like),Equipment.serial_number.ilike(like),Equipment.area.ilike(like),
+            )).limit(max_each)):
+                add("EQUIPMENT",row.equipment_id,f"{row.equipment_id} — {row.name}",f"{row.status} · {row.area} · {row.model}",row.equipment_id)
+            for row in s.scalars(select(Ticket).where(or_(
+                Ticket.ticket_no.ilike(like),Ticket.title.ilike(like),Ticket.description.ilike(like),
+                Ticket.equipment_id.ilike(like),Ticket.owner.ilike(like),
+            )).limit(max_each)):
+                add("TICKET",row.ticket_no,f"{row.ticket_no} — {row.title}",f"{row.priority} · {row.status} · {row.equipment_id}",row.equipment_id)
+            for row in s.scalars(select(PMTask).where(or_(
+                PMTask.pm_id.ilike(like),PMTask.pm_name.ilike(like),PMTask.equipment_id.ilike(like),PMTask.assigned_to.ilike(like),
+            )).limit(max_each)):
+                add("PM_TASK",row.id,f"{row.pm_id} — {row.pm_name}",f"{row.status} · {row.equipment_id}",row.equipment_id)
+            for row in s.scalars(select(EquipmentAlarmEvent).where(or_(
+                EquipmentAlarmEvent.alarm_code.ilike(like),EquipmentAlarmEvent.message.ilike(like),EquipmentAlarmEvent.equipment_id.ilike(like),
+            )).order_by(EquipmentAlarmEvent.occurred_at.desc()).limit(max_each)):
+                add("ALARM",row.event_key,f"{row.alarm_code} — {row.message}",f"{row.state} · {row.equipment_id}",row.equipment_id)
+            for row in s.scalars(select(InventoryItem).where(or_(
+                InventoryItem.part_number.ilike(like),InventoryItem.description.ilike(like),InventoryItem.location_code.ilike(like),
+            )).limit(max_each)):
+                add("PART",f"{row.part_number}@{row.location_code}",row.part_number,f"{row.description} · {row.location_code}")
+            for row in s.scalars(select(ControlledDocument).where(or_(
+                ControlledDocument.document_id.ilike(like),ControlledDocument.title.ilike(like),ControlledDocument.entity_key.ilike(like),
+            )).limit(max_each)):
+                equipment_id=row.entity_key if row.entity_type.upper()=="EQUIPMENT" else ""
+                add("DOCUMENT",row.document_id,f"{row.document_id} — {row.title}",f"{row.status} · {row.entity_type}:{row.entity_key}",equipment_id)
+            for row in s.scalars(select(EquipmentComponent).where(or_(
+                EquipmentComponent.component_id.ilike(like),EquipmentComponent.name.ilike(like),EquipmentComponent.part_number.ilike(like),
+                EquipmentComponent.serial_number.ilike(like),EquipmentComponent.equipment_id.ilike(like),
+            )).limit(max_each)):
+                add("COMPONENT",row.component_id,f"{row.component_id} — {row.name}",f"{row.status} · {row.part_number} · {row.equipment_id}",row.equipment_id)
+            for row in s.scalars(select(QualificationRun).where(or_(
+                QualificationRun.run_no.ilike(like),QualificationRun.protocol_id.ilike(like),QualificationRun.protocol_name.ilike(like),
+                QualificationRun.equipment_id.ilike(like),QualificationRun.status.ilike(like),
+            )).order_by(QualificationRun.started_at.desc()).limit(max_each)):
+                add("QUALIFICATION",row.run_no,f"{row.run_no} — {row.protocol_name}",f"{row.status} · {row.equipment_id}",row.equipment_id)
+            for row in s.scalars(select(Endorsement).where(or_(
+                Endorsement.endorsement_no.ilike(like),Endorsement.equipment_id.ilike(like),Endorsement.current_condition.ilike(like),
+                Endorsement.pending_work.ilike(like),Endorsement.next_owner.ilike(like),
+            )).order_by(Endorsement.created_at.desc()).limit(max_each)):
+                add("ENDORSEMENT",row.endorsement_no,f"{row.endorsement_no} — {row.equipment_id}",f"{row.status} · {row.pending_work}",row.equipment_id)
+        return out[:limit]
+
+    def my_work(self, username: str, limit: int = 200) -> list[dict[str, Any]]:
+        username=(username or "").strip()
+        if not username:return []
+        rows=[]
+        attention=self.operations_attention_queue(max(limit*2,200))
+        for item in attention:
+            if (item.get("owner") or "").strip().lower()==username.lower():
+                rows.append(dict(item))
+        with self.session() as s:
+            user=s.scalar(select(User).where(User.username==username))
+            userctx={"username":username,"role":user.role} if user else {"username":username,"role":"Read Only"}
+            if self.has_permission(userctx,"release.approve"):
+                for rel in s.scalars(select(EquipmentRelease).where(EquipmentRelease.status=="Verified")):
+                    rows.append({"severity":"HIGH","kind":"APPROVAL","key":str(rel.id),"equipment_id":rel.equipment_id,"summary":"Release approval required","owner":username,"age_hours":0.0})
+            if self.has_permission(userctx,"qualification.verify"):
+                for run in s.scalars(select(QualificationRun).where(QualificationRun.status=="Submitted")):
+                    rows.append({"severity":"HIGH","kind":"VERIFY","key":run.run_no,"equipment_id":run.equipment_id,"summary":f"Qualification verification — {run.protocol_name}","owner":username,"age_hours":0.0})
+            if self.has_permission(userctx,"qualification.approve"):
+                for run in s.scalars(select(QualificationRun).where(QualificationRun.status=="Verified")):
+                    rows.append({"severity":"HIGH","kind":"APPROVAL","key":run.run_no,"equipment_id":run.equipment_id,"summary":f"Qualification approval — {run.protocol_name}","owner":username,"age_hours":0.0})
+        rank={"CRITICAL":0,"HIGH":1,"MEDIUM":2,"LOW":3}
+        dedup={}
+        for row in rows:
+            dedup[(row.get("kind"),row.get("key"),row.get("summary"))]=row
+        result=list(dedup.values())
+        result.sort(key=lambda x:(rank.get(x.get("severity"),9),-float(x.get("age_hours") or 0)))
+        return result[:max(1,min(int(limit),1000))]
+
+    def add_attachment(
+        self,
+        entity_type: str,
+        entity_key: str,
+        stored_path: str,
+        *,
+        original_name: str = "",
+        media_type: str = "",
+        category: str = "Evidence",
+        caption: str = "",
+        tags: str = "",
+        equipment_id: str = "",
+        created_by: str = "",
+        copied_from_id: int | None = None,
+    ):
+        path=os.path.abspath(stored_path)
+        if not os.path.isfile(path):raise FileNotFoundError(path)
+        file_size=os.path.getsize(path)
+        digest=self._file_sha256(path)
+        with self.session() as s:
+            row=EntityAttachment(
+                entity_type=entity_type.strip().upper(),entity_key=str(entity_key),
+                equipment_id=equipment_id.strip(),category=category.strip() or "Evidence",
+                original_name=original_name.strip() or os.path.basename(path),stored_path=path,
+                media_type=media_type.strip(),file_size=file_size,file_sha256=digest,
+                caption=caption.strip(),tags=tags.strip(),created_by=created_by.strip(),
+                copied_from_id=copied_from_id,
+            )
+            s.add(row);s.flush()
+            s.add(AuditLog(
+                user=created_by or "system",action="ATTACHMENT_ADD",entity_type=row.entity_type,
+                entity_key=row.entity_key,detail=json.dumps({"attachment_key":row.attachment_key,"name":row.original_name,"sha256":digest},sort_keys=True),
+            ))
+            return row
+
+    def list_attachments(self, entity_type: str, entity_key: str, active_only: bool = True):
+        with self.session() as s:
+            stmt=select(EntityAttachment).where(
+                EntityAttachment.entity_type==entity_type.strip().upper(),
+                EntityAttachment.entity_key==str(entity_key),
+            ).order_by(EntityAttachment.created_at.desc(),EntityAttachment.id.desc())
+            if active_only:stmt=stmt.where(EntityAttachment.active.is_(True))
+            return list(s.scalars(stmt))
+
+    def get_attachment(self, attachment_id: int):
+        with self.session() as s:return s.get(EntityAttachment,attachment_id)
+
+    def update_attachment_metadata(self, attachment_id: int, caption: str, tags: str, category: str, user: str = ""):
+        with self.session() as s:
+            row=s.get(EntityAttachment,attachment_id)
+            if not row or not row.active:raise ValueError("Attachment not found")
+            row.caption=caption.strip();row.tags=tags.strip();row.category=category.strip() or "Evidence"
+            s.add(AuditLog(user=user or "system",action="ATTACHMENT_METADATA",entity_type=row.entity_type,entity_key=row.entity_key,detail=str(row.id)))
+            s.flush();return row
+
+    def remove_attachment(self, attachment_id: int, user: str = ""):
+        with self.session() as s:
+            row=s.get(EntityAttachment,attachment_id)
+            if not row or not row.active:raise ValueError("Attachment not found")
+            row.active=False
+            s.add(AuditLog(user=user or "system",action="ATTACHMENT_REMOVE",entity_type=row.entity_type,entity_key=row.entity_key,detail=str(row.id)))
+            s.flush();return row
 
     def audit(self, user: str, action: str, entity_type: str, entity_key: str = "", detail: str = "", workstation: str = ""):
         with self.session() as s:
@@ -2426,6 +2784,84 @@ class Database:
     def get_pm_task(self, task_id: int):
         with self.session() as s: return s.get(PMTask, task_id)
 
+    def plan_pm_task(
+        self,
+        task_id: int,
+        user: str,
+        *,
+        scheduled_date: datetime | None = None,
+        assigned_to: str | None = None,
+        expected_version: int | None = None,
+        workstation: str = "",
+    ):
+        with self.session() as s:
+            stmt=select(PMTask).where(PMTask.id==task_id)
+            if self.url.startswith("postgresql"):stmt=stmt.with_for_update()
+            task=s.scalar(stmt)
+            if not task:raise ValueError("PM task not found")
+            self.assert_authorized(user,"pm.edit",task.equipment_id)
+            if expected_version is not None and task.version!=expected_version:
+                raise RuntimeError("CONFLICT: PM task changed by another user. Refresh and retry.")
+            if task.status in {"Completed","Cancelled","In Progress"}:
+                raise ValueError(f"Cannot re-plan PM task in {task.status} state.")
+            changes={}
+            if scheduled_date is not None:
+                definition=s.scalar(select(PMDefinition).where(PMDefinition.pm_id==task.pm_id))
+                original=task.original_due_date
+                if original and definition and task.status!="Deferred":
+                    earliest=original-timedelta(days=max(0,definition.early_window_days or 0))
+                    latest=original+timedelta(days=max(0,definition.grace_days or 0))
+                    if scheduled_date<earliest:
+                        raise ValueError(f"Scheduled date is before the controlled early-execution window ({earliest:%Y-%m-%d}).")
+                    if scheduled_date>latest:
+                        raise ValueError(f"Scheduled date exceeds the controlled grace window ({latest:%Y-%m-%d}). Use the PM deferral workflow.")
+                if task.status=="Deferred" and task.scheduled_date and scheduled_date>task.scheduled_date:
+                    raise ValueError("A deferred PM cannot be moved later than its approved deferred date without a new deferral.")
+                task.scheduled_date=scheduled_date;changes["scheduled_date"]=scheduled_date.isoformat()
+                if task.status in {"Pending","Overdue"}:task.status="Scheduled"
+            if assigned_to is not None:
+                task.assigned_to=assigned_to.strip();changes["assigned_to"]=task.assigned_to
+            if not changes:return task
+            task.version+=1
+            task.updated_at=datetime.utcnow()
+            s.add(AuditLog(
+                user=user,action="PM_PLAN_UPDATE",entity_type="PM_TASK",entity_key=str(task.id),
+                detail=json.dumps(changes,sort_keys=True),workstation=workstation,
+            ))
+            self._queue_integration_event(s,"maintenance.pm.planned","PM_TASK",str(task.id),{
+                "task_id":task.id,"equipment_id":task.equipment_id,"pm_id":task.pm_id,
+                "status":task.status,"scheduled_date":task.scheduled_date.isoformat() if task.scheduled_date else None,
+                "assigned_to":task.assigned_to,"changed_by":user,
+            })
+            s.flush();return task
+
+    def pm_planning_rows(self, days: int = 60, include_overdue: bool = True) -> list[dict[str, Any]]:
+        horizon=max(1,min(int(days),730))
+        now=datetime.utcnow();end=now+timedelta(days=horizon)
+        with self.session() as s:
+            tasks=list(s.scalars(select(PMTask).where(PMTask.status.notin_(["Completed","Cancelled"])).order_by(PMTask.scheduled_date,PMTask.original_due_date,PMTask.priority)))
+            definitions={x.pm_id:x for x in s.scalars(select(PMDefinition))}
+        rows=[]
+        for task in tasks:
+            due=task.original_due_date
+            planned=task.scheduled_date or due
+            if planned and planned>end and not (include_overdue and due and due<now):continue
+            definition=definitions.get(task.pm_id)
+            early=(due-timedelta(days=max(0,definition.early_window_days or 0))) if due and definition else due
+            latest=(due+timedelta(days=max(0,definition.grace_days or 0))) if due and definition else due
+            if due and now>latest if latest else False:window="OVERDUE"
+            elif planned and early and planned<early:window="TOO EARLY"
+            elif planned and latest and planned>latest and task.status!="Deferred":window="OUTSIDE GRACE"
+            elif task.status=="Deferred":window="DEFERRED"
+            else:window="IN WINDOW"
+            rows.append({
+                "id":task.id,"equipment_id":task.equipment_id,"pm_id":task.pm_id,"pm_name":task.pm_name,
+                "original_due_date":due,"scheduled_date":planned,"status":task.status,"assigned_to":task.assigned_to,
+                "estimated_hours":float(task.estimated_hours or 0),"priority":task.priority,"window":window,
+                "early_date":early,"latest_date":latest,"version":task.version,
+            })
+        return rows
+
     def request_pm_deferral(
         self,
         task_id: int,
@@ -2750,6 +3186,10 @@ class Database:
                 sop_section=spec.sop_section,
             ))
 
+    def get_pm_execution_for_task(self, task_id: int):
+        with self.session() as s:
+            return s.scalar(select(PMExecution).where(PMExecution.task_id==task_id))
+
     def start_pm_execution(self, task_id: int, user: str):
         with self.session() as s:
             task_stmt = select(PMTask).where(PMTask.id == task_id)
@@ -2916,6 +3356,142 @@ class Database:
                 ))
             s.flush()
             return item
+
+    def list_incident_whys(self, ticket_no: str):
+        with self.session() as s:
+            return list(s.scalars(select(IncidentWhy).where(IncidentWhy.ticket_no==ticket_no).order_by(IncidentWhy.sequence)))
+
+    def save_incident_why(
+        self,
+        ticket_no: str,
+        sequence: int,
+        question: str,
+        answer: str,
+        user: str,
+        expected_version: int | None = None,
+        workstation: str = "",
+    ):
+        if sequence<1 or sequence>10:raise ValueError("Why sequence must be between 1 and 10.")
+        if not answer.strip():raise ValueError("Why analysis answer is required.")
+        with self.session() as s:
+            ticket=s.scalar(select(Ticket).where(Ticket.ticket_no==ticket_no))
+            if not ticket:raise ValueError("Ticket not found")
+            self.assert_authorized(user,"ticket.edit",ticket.equipment_id)
+            row=s.scalar(select(IncidentWhy).where(IncidentWhy.ticket_no==ticket_no,IncidentWhy.sequence==sequence))
+            if row:
+                if expected_version is not None and row.version!=expected_version:raise RuntimeError("CONFLICT: Why analysis changed by another user.")
+                row.question=question.strip();row.answer=answer.strip();row.updated_by=user;row.updated_at=datetime.utcnow();row.version+=1
+            else:
+                row=IncidentWhy(ticket_no=ticket_no,sequence=sequence,question=question.strip(),answer=answer.strip(),updated_by=user);s.add(row)
+            s.add(AuditLog(user=user,action="INCIDENT_WHY_UPDATE",entity_type="TICKET",entity_key=ticket_no,detail=json.dumps({"sequence":sequence,"answer":answer.strip()},sort_keys=True),workstation=workstation))
+            s.flush();return row
+
+    def list_incident_causal_factors(self, ticket_no: str):
+        with self.session() as s:
+            return list(s.scalars(select(IncidentCausalFactor).where(IncidentCausalFactor.ticket_no==ticket_no).order_by(IncidentCausalFactor.id)))
+
+    def save_incident_causal_factor(
+        self,
+        ticket_no: str,
+        data: dict[str, Any],
+        user: str,
+        factor_id: int | None = None,
+        expected_version: int | None = None,
+        workstation: str = "",
+    ):
+        categories={"Man","Machine","Method","Material","Measurement","Environment","Software","Process","Other"}
+        factor_types={"Suspected","Contributing","Verified Root Cause","Ruled Out"}
+        category=str(data.get("category","Other")).strip() or "Other"
+        factor_type=str(data.get("factor_type","Suspected")).strip() or "Suspected"
+        description=str(data.get("description","")).strip()
+        if category not in categories:raise ValueError("Unsupported causal-factor category.")
+        if factor_type not in factor_types:raise ValueError("Unsupported causal-factor type.")
+        if not description:raise ValueError("Causal-factor description is required.")
+        with self.session() as s:
+            ticket=s.scalar(select(Ticket).where(Ticket.ticket_no==ticket_no))
+            if not ticket:raise ValueError("Ticket not found")
+            self.assert_authorized(user,"ticket.edit",ticket.equipment_id)
+            row=s.get(IncidentCausalFactor,factor_id) if factor_id else None
+            if row:
+                if row.ticket_no!=ticket_no:raise ValueError("Causal factor does not belong to this incident.")
+                if expected_version is not None and row.version!=expected_version:raise RuntimeError("CONFLICT: Causal factor changed by another user.")
+                row.category=category;row.factor_type=factor_type;row.description=description
+                row.evidence=str(data.get("evidence","")).strip();row.status=str(data.get("status","Open")).strip() or "Open";row.version+=1
+            else:
+                row=IncidentCausalFactor(ticket_no=ticket_no,category=category,factor_type=factor_type,description=description,evidence=str(data.get("evidence","")).strip(),status=str(data.get("status","Open")).strip() or "Open",created_by=user);s.add(row)
+            s.add(AuditLog(user=user,action="INCIDENT_CAUSAL_FACTOR",entity_type="TICKET",entity_key=ticket_no,detail=json.dumps({"category":category,"factor_type":factor_type,"description":description},sort_keys=True),workstation=workstation))
+            s.flush();return row
+
+    def list_incident_actions(self, ticket_no: str):
+        with self.session() as s:
+            return list(s.scalars(select(IncidentAction).where(IncidentAction.ticket_no==ticket_no).order_by(IncidentAction.status,IncidentAction.due_at,IncidentAction.id)))
+
+    def save_incident_action(
+        self,
+        ticket_no: str,
+        data: dict[str, Any],
+        user: str,
+        action_id: int | None = None,
+        expected_version: int | None = None,
+        workstation: str = "",
+    ):
+        action_type=str(data.get("action_type","Corrective")).strip()
+        if action_type not in {"Containment","Corrective","Preventive","Follow-up"}:raise ValueError("Unsupported incident action type.")
+        description=str(data.get("description","")).strip()
+        if not description:raise ValueError("Action description is required.")
+        with self.session() as s:
+            ticket=s.scalar(select(Ticket).where(Ticket.ticket_no==ticket_no))
+            if not ticket:raise ValueError("Ticket not found")
+            self.assert_authorized(user,"ticket.edit",ticket.equipment_id)
+            row=s.get(IncidentAction,action_id) if action_id else None
+            if row:
+                if row.ticket_no!=ticket_no:raise ValueError("Action does not belong to this incident.")
+                if expected_version is not None and row.version!=expected_version:raise RuntimeError("CONFLICT: Incident action changed by another user.")
+                if row.status in {"Completed","Verified"}:raise ValueError("Completed/verified actions cannot be edited.")
+                row.action_type=action_type;row.description=description;row.owner=str(data.get("owner","")).strip()
+                row.due_at=data.get("due_at");row.effectiveness_criteria=str(data.get("effectiveness_criteria","")).strip();row.version+=1
+            else:
+                row=IncidentAction(ticket_no=ticket_no,action_type=action_type,description=description,owner=str(data.get("owner","")).strip(),due_at=data.get("due_at"),effectiveness_criteria=str(data.get("effectiveness_criteria","")).strip());s.add(row)
+            s.add(AuditLog(user=user,action="INCIDENT_ACTION_SAVE",entity_type="TICKET",entity_key=ticket_no,detail=description,workstation=workstation))
+            s.flush();return row
+
+    def complete_incident_action(self, action_id: int, user: str, note: str, expected_version: int | None = None, workstation: str = ""):
+        if not note.strip():raise ValueError("Completion note is required.")
+        with self.session() as s:
+            stmt=select(IncidentAction).where(IncidentAction.id==action_id)
+            if self.url.startswith("postgresql"):stmt=stmt.with_for_update()
+            row=s.scalar(stmt)
+            if not row:raise ValueError("Incident action not found")
+            ticket=s.scalar(select(Ticket).where(Ticket.ticket_no==row.ticket_no))
+            self.assert_authorized(user,"ticket.edit",ticket.equipment_id if ticket else "")
+            if expected_version is not None and row.version!=expected_version:raise RuntimeError("CONFLICT: Incident action changed by another user.")
+            if row.status=="Verified":return row
+            row.status="Completed";row.completion_note=note.strip();row.completed_by=user;row.completed_at=datetime.utcnow();row.version+=1
+            s.add(AuditLog(user=user,action="INCIDENT_ACTION_COMPLETE",entity_type="TICKET",entity_key=row.ticket_no,detail=json.dumps({"action_id":row.id,"note":note.strip()}),workstation=workstation))
+            s.flush();return row
+
+    def verify_incident_action(self, action_id: int, user: str, note: str, expected_version: int | None = None, workstation: str = ""):
+        if not note.strip():raise ValueError("Effectiveness verification note is required.")
+        with self.session() as s:
+            stmt=select(IncidentAction).where(IncidentAction.id==action_id)
+            if self.url.startswith("postgresql"):stmt=stmt.with_for_update()
+            row=s.scalar(stmt)
+            if not row:raise ValueError("Incident action not found")
+            ticket=s.scalar(select(Ticket).where(Ticket.ticket_no==row.ticket_no))
+            self.assert_authorized(user,"ticket.edit",ticket.equipment_id if ticket else "")
+            if expected_version is not None and row.version!=expected_version:raise RuntimeError("CONFLICT: Incident action changed by another user.")
+            if row.status!="Completed":raise ValueError("Action must be completed before effectiveness verification.")
+            if row.completed_by==user:raise ValueError("Independent verification required: action completer cannot verify effectiveness.")
+            row.status="Verified";row.verification_note=note.strip();row.verified_by=user;row.verified_at=datetime.utcnow();row.version+=1
+            s.add(AuditLog(user=user,action="INCIDENT_ACTION_VERIFY",entity_type="TICKET",entity_key=row.ticket_no,detail=json.dumps({"action_id":row.id,"note":note.strip()}),workstation=workstation))
+            s.flush();return row
+
+    def incident_similar_history(self, ticket_no: str, limit: int = 50):
+        with self.session() as s:
+            current=s.scalar(select(Ticket).where(Ticket.ticket_no==ticket_no))
+            if not current:return []
+            stmt=select(Ticket).where(Ticket.equipment_id==current.equipment_id,Ticket.ticket_no!=ticket_no).order_by(Ticket.created_at.desc()).limit(max(1,min(int(limit),200)))
+            return list(s.scalars(stmt))
 
     def ticket_operational_control(self, ticket_no: str):
         with self.session() as s:
@@ -3920,6 +4496,56 @@ class Database:
 
     def list_audit(self, limit: int=500):
         with self.session() as s: return list(s.scalars(select(AuditLog).order_by(AuditLog.created_at.desc()).limit(limit)))
+
+    def equipment_activity_timeline(self, equipment_id: str, limit: int = 500) -> list[dict[str, Any]]:
+        rows=[]
+        def add(when,kind,key,summary,user="",status="",source=""):
+            if when is None:return
+            rows.append({
+                "occurred_at":when,"kind":kind,"key":str(key),"summary":summary,
+                "user":user or "","status":status or "","source":source or "",
+            })
+        with self.session() as s:
+            for e in s.scalars(select(EquipmentStateEvent).where(EquipmentStateEvent.equipment_id==equipment_id)):
+                add(e.changed_at,"STATE",e.event_key,f"{e.from_state or '—'} → {e.to_state} · {e.reason_code}: {e.reason_text}",e.changed_by,e.to_state,"Equipment state")
+            tickets=list(s.scalars(select(Ticket).where(Ticket.equipment_id==equipment_id)))
+            ticket_nos=[x.ticket_no for x in tickets]
+            for t in tickets:
+                add(t.created_at,"INCIDENT",t.ticket_no,f"Created {t.priority} incident — {t.title}",t.created_by,t.status,"Ticket")
+            if ticket_nos:
+                for e in s.scalars(select(TicketStateEvent).where(TicketStateEvent.ticket_no.in_(ticket_nos))):
+                    add(e.changed_at,"INCIDENT",e.ticket_no,f"{e.from_state or '—'} → {e.to_state} · {e.reason_code}: {e.note}",e.changed_by,e.to_state,"Ticket lifecycle")
+            for a in s.scalars(select(EquipmentAlarmEvent).where(EquipmentAlarmEvent.equipment_id==equipment_id)):
+                add(a.occurred_at,"ALARM",a.event_key,f"{a.alarm_code} — {a.message}",a.acknowledged_by,a.state,a.source)
+                if a.cleared_at:add(a.cleared_at,"ALARM",a.event_key,f"{a.alarm_code} cleared",a.acknowledged_by,"CLEARED",a.source)
+            tasks=list(s.scalars(select(PMTask).where(PMTask.equipment_id==equipment_id)))
+            task_by_id={x.id:x for x in tasks}
+            for t in tasks:
+                add(t.updated_at or t.scheduled_date or t.original_due_date,"PM",t.id,f"{t.pm_id} — {t.pm_name}",t.assigned_to,t.status,"PM task")
+            if task_by_id:
+                for ex in s.scalars(select(PMExecution).where(PMExecution.task_id.in_(list(task_by_id)))):
+                    task=task_by_id.get(ex.task_id)
+                    label=f"{task.pm_id} — {task.pm_name}" if task else f"PM task {ex.task_id}"
+                    add(ex.started_at,"PM",ex.task_id,f"Execution started: {label}",ex.started_by,ex.status,"PM execution")
+                    if ex.completed_at:add(ex.completed_at,"PM",ex.task_id,f"Execution completed: {label}",ex.completed_by,"Completed","PM execution")
+            for w in s.scalars(select(WorkLog).where(WorkLog.equipment_id==equipment_id)):
+                add(w.started_at,"WORK",w.id,f"{w.work_type} started · {w.entity_type}:{w.entity_key}",w.username,w.status,"Labor")
+                if w.ended_at:add(w.ended_at,"WORK",w.id,f"{w.work_type} completed · {w.duration_minutes:.1f} min",w.username,"Completed","Labor")
+            for q in s.scalars(select(QualificationRun).where(QualificationRun.equipment_id==equipment_id)):
+                add(q.started_at,"QUALIFICATION",q.run_no,f"{q.protocol_id} R{q.protocol_revision} qualification started",q.started_by,q.status,"Qualification")
+                if q.submitted_at:add(q.submitted_at,"QUALIFICATION",q.run_no,"Qualification submitted",q.submitted_by,"Submitted","Qualification")
+                if q.verified_at:add(q.verified_at,"QUALIFICATION",q.run_no,"Qualification verified",q.verified_by,"Verified","Qualification")
+                if q.approved_at:add(q.approved_at,"QUALIFICATION",q.run_no,"Qualification approved",q.approved_by,"Approved","Qualification")
+            for r in s.scalars(select(EquipmentRelease).where(EquipmentRelease.equipment_id==equipment_id)):
+                add(r.requested_at,"RELEASE",r.id,"Release requested",r.requested_by,r.status,"Release")
+                if r.verified_at:add(r.verified_at,"RELEASE",r.id,"Release verified",r.verified_by,"Verified","Release")
+                if r.approved_at:add(r.approved_at,"RELEASE",r.id,"Equipment released",r.approved_by,"Approved / Released","Release")
+            for tx in s.scalars(select(InventoryTransaction).where(InventoryTransaction.equipment_id==equipment_id)):
+                add(tx.created_at,"PART",tx.id,f"{tx.transaction_type} {tx.quantity:g} × {tx.part_number} @ {tx.location_code}",tx.user,tx.transaction_type,"Inventory")
+            for att in s.scalars(select(EntityAttachment).where(EntityAttachment.equipment_id==equipment_id,EntityAttachment.active.is_(True))):
+                add(att.created_at,"EVIDENCE",att.attachment_key,f"{att.category}: {att.original_name} — {att.caption}".strip(" —"),att.created_by,"Attached",f"{att.entity_type}:{att.entity_key}")
+        rows.sort(key=lambda x:x["occurred_at"],reverse=True)
+        return rows[:max(1,min(int(limit),5000))]
 
     def reliability_summary(
         self,

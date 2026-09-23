@@ -1,0 +1,241 @@
+from __future__ import annotations
+
+from datetime import datetime
+import os
+from pathlib import Path
+
+from PySide6.QtCore import Signal
+from PySide6.QtWidgets import (
+    QAbstractItemView, QComboBox, QFileDialog, QHBoxLayout, QHeaderView, QLabel,
+    QLineEdit, QMessageBox, QPushButton, QSplitter, QTableWidget, QTableWidgetItem,
+    QTabWidget, QTextEdit, QVBoxLayout, QWidget, QInputDialog,
+)
+
+from attachment_store import store_attachment_file, store_clipboard_image
+from services import readonly_open_copy
+from table_productivity import install_table_productivity
+from workspaces import AttachmentPanel
+from PySide6.QtWidgets import QApplication
+
+FILE_ROOT=os.getenv("EMS_FILE_ROOT",str(Path.cwd()/"equipment_files"))
+
+
+def _item(value):
+    if isinstance(value,datetime):value=value.strftime("%Y-%m-%d %H:%M")
+    return QTableWidgetItem("" if value is None else str(value))
+
+
+def _table(headers):
+    t=QTableWidget(0,len(headers));t.setHorizontalHeaderLabels(headers)
+    t.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+    t.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+    t.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+    t.setAlternatingRowColors(True);t.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+    install_table_productivity(t,headers[0] if headers else "PM Execution")
+    return t
+
+
+def _selected(table,rows):
+    i=table.currentRow()
+    return rows[i] if 0<=i<len(rows) else None
+
+
+class PMExecutionWorkspace(QWidget):
+    open_entity=Signal(str,str,str)
+
+    def __init__(self,db,user,parent=None):
+        super().__init__(parent);self.db=db;self.user=user;self.task_id=0;self.task=None;self.execution=None
+        self.specs=[];self.results={};self.requirements=[];self.acks={}
+        root=QVBoxLayout(self);head=QHBoxLayout()
+        self.title=QLabel("Technician PM Runner");self.title.setStyleSheet("font-size:20pt;font-weight:800")
+        self.state=QLabel();self.state.setStyleSheet("font-size:12pt;font-weight:700")
+        self.start_button=QPushButton("Start / Resume");self.start_button.clicked.connect(self.start_resume)
+        self.complete_button=QPushButton("Complete PM");self.complete_button.clicked.connect(self.complete_pm)
+        self.open_eq=QPushButton("Open Equipment");self.open_eq.clicked.connect(self.open_equipment)
+        refresh=QPushButton("Refresh");refresh.clicked.connect(self.refresh)
+        head.addWidget(self.title);head.addWidget(self.state);head.addStretch(1)
+        for b in [self.open_eq,self.start_button,self.complete_button,refresh]:head.addWidget(b)
+        root.addLayout(head)
+        self.context=QLabel("Select a PM task from Maintenance Planner, My Work, Search, or Equipment 360.");self.context.setWordWrap(True);self.context.setStyleSheet("color:#647581;");root.addWidget(self.context)
+        self.progress=QLabel();self.progress.setStyleSheet("font-weight:700;");root.addWidget(self.progress)
+
+        tabs=QTabWidget();root.addWidget(tabs,1)
+        execute=QWidget();ev=QVBoxLayout(execute);split=QSplitter()
+        self.step_table=_table(["Step","Activity","Method","Input","Unit","Result","Value","By","Evidence"])
+        self.step_table.itemSelectionChanged.connect(self.load_step);split.addWidget(self.step_table)
+        inspector=QWidget();iv=QVBoxLayout(inspector)
+        self.step_title=QLabel("Select a checklist step");self.step_title.setWordWrap(True);self.step_title.setStyleSheet("font-size:13pt;font-weight:700")
+        self.method=QLabel();self.method.setWordWrap(True);self.specification=QLabel();self.specification.setWordWrap(True);self.reaction=QLabel();self.reaction.setWordWrap(True)
+        self.text_value=QLineEdit();self.text_value.setPlaceholderText("Enter result / value")
+        self.pass_fail=QComboBox();self.pass_fail.addItems(["PASS","FAIL"])
+        self.comment=QTextEdit();self.comment.setPlaceholderText("Comment / observation");self.comment.setMaximumHeight(100)
+        buttons=QHBoxLayout();save=QPushButton("Save step");save.clicked.connect(self.save_step);paste=QPushButton("Paste screenshot");paste.clicked.connect(self.paste_screenshot);fileb=QPushButton("Attach file");fileb.clicked.connect(self.attach_file);sop=QPushButton("Open SOP");sop.clicked.connect(self.open_sop)
+        for b in [save,paste,fileb,sop]:buttons.addWidget(b)
+        iv.addWidget(self.step_title);iv.addWidget(self.method);iv.addWidget(self.specification);iv.addWidget(self.reaction);iv.addWidget(self.text_value);iv.addWidget(self.pass_fail);iv.addWidget(QLabel("Comment"));iv.addWidget(self.comment);iv.addLayout(buttons);iv.addStretch(1)
+        split.addWidget(inspector);split.setStretchFactor(0,3);split.setStretchFactor(1,2);ev.addWidget(split);tabs.addTab(execute,"Checklist Runner")
+
+        req=QWidget();rv=QVBoxLayout(req);rh=QHBoxLayout();ack=QPushButton("Acknowledge selected requirement");ack.clicked.connect(self.ack_requirement);rh.addWidget(ack);rh.addStretch(1);rv.addLayout(rh)
+        self.req_table=_table(["Requirement","Type","Key","Description","Qty","Mandatory","Acknowledged by","Time"]);rv.addWidget(self.req_table);tabs.addTab(req,"Requirements / Readiness")
+
+        self.attachments=AttachmentPanel(db,user);tabs.addTab(self.attachments,"Execution Evidence")
+        self._enable_execution(False)
+
+    def _enable_execution(self,enabled):
+        self.complete_button.setEnabled(enabled)
+        self.step_table.setEnabled(enabled);self.req_table.setEnabled(enabled)
+
+    def set_task(self,task_id: int):
+        self.task_id=int(task_id or 0);self.execution=None;self.refresh()
+
+    def refresh(self):
+        self.task=self.db.get_pm_task(self.task_id) if self.task_id else None
+        if not self.task:
+            self.title.setText("Technician PM Runner");self.state.setText("");self.context.setText("Select a PM task from Maintenance Planner, My Work, Search, or Equipment 360.");self._enable_execution(False);return
+        t=self.task;self.title.setText(f"{t.pm_id} · {t.pm_name}");self.state.setText(t.status)
+        self.context.setText(f"{t.equipment_id}    Scheduled: {t.scheduled_date or t.original_due_date or '—'}    Assigned: {t.assigned_to or 'UNASSIGNED'}    Priority: {t.priority}")
+        # Viewing a task must not mutate its lifecycle. Existing execution is discovered read-only.
+        if self.execution is None:self.execution=self.db.get_pm_execution_for_task(t.id)
+        if self.execution:
+            self.specs=self.db.list_pm_execution_specs(self.execution.id);self.results={x.step_no:x for x in self.db.list_pm_results(self.execution.id)}
+            self.requirements=self.db.list_pm_execution_requirements(self.execution.id);self.acks={x.requirement_id:x for x in self.db.list_pm_requirement_acks(self.execution.id)}
+            self.fill_tables();self.attachments.set_entity("PM_EXECUTION",str(self.execution.id),t.equipment_id);self._enable_execution(self.execution.status!="Completed")
+        else:
+            self.specs=[];self.results={};self.requirements=[];self.acks={};self.step_table.setRowCount(0);self.req_table.setRowCount(0);self.progress.setText("Not started in this workspace. Click Start / Resume.");self.attachments.set_entity("PM_TASK",str(t.id),t.equipment_id);self._enable_execution(False)
+        self.open_eq.setEnabled(True)
+
+    def start_resume(self):
+        if not self.task:return
+        try:
+            self.execution=self.db.start_pm_execution(self.task.id,self.user["username"])
+            try:self.db.start_work_log("PM_EXECUTION",str(self.execution.id),self.task.equipment_id,self.user["username"],"Maintenance",f"{self.task.pm_id} execution")
+            except Exception:pass
+            self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"PM execution",str(exc))
+
+    def fill_tables(self):
+        self.step_table.setRowCount(len(self.specs))
+        for r,spec in enumerate(self.specs):
+            result=self.results.get(spec.step_no)
+            value=result.value_text if result and result.value_text else (result.value_numeric if result else "")
+            vals=[spec.step_no,spec.activity,spec.method,spec.input_type,spec.unit,result.result if result else "",value,result.entered_by if result else "",result.evidence_path if result else ""]
+            for c,val in enumerate(vals):self.step_table.setItem(r,c,_item(val))
+        self.req_table.setRowCount(len(self.requirements))
+        for r,req in enumerate(self.requirements):
+            ack=self.acks.get(req.requirement_id)
+            vals=[req.requirement_id,req.requirement_type,req.requirement_key,req.description,req.quantity,req.mandatory,ack.acknowledged_by if ack else "",ack.acknowledged_at if ack else ""]
+            for c,val in enumerate(vals):self.req_table.setItem(r,c,_item(val))
+        completed=len(self.results);total=len(self.specs);failed=sum(1 for x in self.results.values() if x.result in {"SPECIFICATION FAILURE","CONTROL FAILURE","FAIL","INVALID"})
+        req_done=sum(1 for x in self.requirements if x.requirement_type=="CERTIFICATION" or x.requirement_id in self.acks)
+        self.progress.setText(f"Checklist {completed}/{total} · Requirements {req_done}/{len(self.requirements)} · Blocking results {failed}")
+        if self.specs and self.step_table.currentRow()<0:self.step_table.selectRow(0)
+
+    def selected_spec(self):
+        return _selected(self.step_table,self.specs)
+
+    def load_step(self):
+        spec=self.selected_spec()
+        if not spec:
+            self.step_title.setText("Select a checklist step");return
+        current=self.results.get(spec.step_no)
+        self.step_title.setText(f"Step {spec.step_no} — {spec.activity}")
+        self.method.setText(f"Method: {spec.method or '—'}")
+        limits=[]
+        for label,val in [("Target",spec.target),("Warn L",spec.warning_low),("Warn H",spec.warning_high),("Control L",spec.control_low),("Control H",spec.control_high),("Spec L",spec.spec_low),("Spec H",spec.spec_high)]:
+            if val is not None:limits.append(f"{label} {val:g}")
+        if spec.acceptance_text:limits.append(spec.acceptance_text)
+        self.specification.setText("Acceptance: "+(" · ".join(limits) if limits else "recorded value / text"))
+        self.reaction.setText("Reaction plan: "+(spec.reaction_plan or "No reaction plan defined."))
+        self.pass_fail.setVisible(spec.input_type=="Pass / Fail");self.text_value.setVisible(spec.input_type!="Pass / Fail")
+        if current:
+            self.text_value.setText(current.value_text or (str(current.value_numeric) if current.value_numeric is not None else ""));self.comment.setPlainText(current.comment or "")
+            if spec.input_type=="Pass / Fail":self.pass_fail.setCurrentText("PASS" if current.result=="PASS" else "FAIL")
+        else:self.text_value.clear();self.comment.clear()
+
+    def save_step(self):
+        spec=self.selected_spec()
+        if not spec or not self.execution:return
+        current=self.results.get(spec.step_no);value_text="";value_numeric=None
+        if spec.input_type=="Pass / Fail":value_text=self.pass_fail.currentText()
+        elif spec.input_type=="Numeric":
+            raw=self.text_value.text().strip()
+            try:value_numeric=float(raw)
+            except Exception:QMessageBox.warning(self,"PM step","Enter a valid numeric value.");return
+            value_text=raw
+        else:value_text=self.text_value.text().strip()
+        evidence=current.evidence_path if current else ""
+        try:
+            saved=self.db.save_pm_result(self.execution.id,spec.step_no,{"value_text":value_text,"value_numeric":value_numeric,"comment":self.comment.toPlainText().strip(),"result":"","entered_by":self.user["username"],"evidence_path":evidence},current.version if current else None)
+            self.refresh()
+            if saved.result in {"SPECIFICATION FAILURE","CONTROL FAILURE","FAIL"}:
+                self.offer_incident(spec,saved)
+        except Exception as exc:QMessageBox.critical(self,"PM step",str(exc))
+
+    def paste_screenshot(self):
+        spec=self.selected_spec()
+        if not spec or not self.execution:return
+        image=QApplication.clipboard().image()
+        if image.isNull():QMessageBox.information(self,"Clipboard","Clipboard does not contain an image.");return
+        try:
+            stored=store_clipboard_image(image,FILE_ROOT,"PM_EXECUTION",str(self.execution.id))
+            att=self.db.add_attachment("PM_EXECUTION",str(self.execution.id),stored["stored_path"],original_name=stored["original_name"],media_type=stored["media_type"],category="Screenshot",caption=f"Step {spec.step_no} — {spec.activity}",equipment_id=self.task.equipment_id,created_by=self.user["username"])
+            current=self.results.get(spec.step_no)
+            if current:self.db.save_pm_result(self.execution.id,spec.step_no,{"value_text":current.value_text,"value_numeric":current.value_numeric,"comment":current.comment,"result":current.result,"entered_by":self.user["username"],"evidence_path":att.stored_path},current.version)
+            self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"Screenshot",str(exc))
+
+    def attach_file(self):
+        spec=self.selected_spec()
+        if not spec or not self.execution:return
+        source,_=QFileDialog.getOpenFileName(self,"Attach PM step evidence")
+        if not source:return
+        try:
+            stored=store_attachment_file(source,FILE_ROOT,"PM_EXECUTION",str(self.execution.id))
+            att=self.db.add_attachment("PM_EXECUTION",str(self.execution.id),stored["stored_path"],original_name=stored["original_name"],media_type=stored["media_type"],category="Step Evidence",caption=f"Step {spec.step_no} — {spec.activity}",equipment_id=self.task.equipment_id,created_by=self.user["username"])
+            current=self.results.get(spec.step_no)
+            if current:self.db.save_pm_result(self.execution.id,spec.step_no,{"value_text":current.value_text,"value_numeric":current.value_numeric,"comment":current.comment,"result":current.result,"entered_by":self.user["username"],"evidence_path":att.stored_path},current.version)
+            self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"Evidence",str(exc))
+
+    def open_sop(self):
+        spec=self.selected_spec()
+        if not spec or not spec.sop_path:QMessageBox.information(self,"SOP","No SOP path is frozen for this step.");return
+        try:readonly_open_copy(spec.sop_path)
+        except Exception as exc:QMessageBox.critical(self,"SOP",str(exc))
+
+    def ack_requirement(self):
+        req=_selected(self.req_table,self.requirements)
+        if not req or not self.execution:return
+        if req.requirement_type=="CERTIFICATION":QMessageBox.information(self,"Requirement","Certification is validated automatically at PM start.");return
+        if req.requirement_id in self.acks:QMessageBox.information(self,"Requirement","Already acknowledged.");return
+        note,ok=QInputDialog.getMultiLineText(self,"Acknowledge requirement",req.description)
+        if not ok:return
+        evidence=""
+        if QMessageBox.question(self,"Requirement","Attach evidence file?")==QMessageBox.StandardButton.Yes:
+            source,_=QFileDialog.getOpenFileName(self,"Requirement evidence")
+            if source:
+                stored=store_attachment_file(source,FILE_ROOT,"PM_EXECUTION",str(self.execution.id));evidence=stored["stored_path"]
+                self.db.add_attachment("PM_EXECUTION",str(self.execution.id),evidence,original_name=stored["original_name"],media_type=stored["media_type"],category="Requirement Evidence",caption=req.description,equipment_id=self.task.equipment_id,created_by=self.user["username"])
+        try:self.db.acknowledge_pm_requirement(self.execution.id,req.requirement_id,self.user["username"],note,evidence);self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"Requirement",str(exc))
+
+    def offer_incident(self,spec,result):
+        if QMessageBox.question(self,"Abnormal PM result",f"{result.result} on step {spec.step_no}.\nCreate an incident linked to this equipment now?")!=QMessageBox.StandardButton.Yes:return
+        no=f"PM-{self.task.id}-{spec.step_no}-{datetime.now():%Y%m%d%H%M%S}"
+        try:
+            self.db.save_ticket({"ticket_no":no,"equipment_id":self.task.equipment_id,"title":f"PM abnormal result — {self.task.pm_id} step {spec.step_no}","description":f"{spec.activity}\nResult: {result.result}\nValue: {result.value_text or result.value_numeric}\nReaction plan: {spec.reaction_plan}","severity":"S2","priority":"P2","owner":self.user["username"],"root_cause":"","corrective_action":"","verification":"","created_by":self.user["username"]})
+            self.open_entity.emit("TICKET",no,self.task.equipment_id)
+        except Exception as exc:QMessageBox.critical(self,"Create incident",str(exc))
+
+    def complete_pm(self):
+        if not self.execution:return
+        try:
+            self.db.complete_pm_execution(self.execution.id,self.user["username"])
+            for log in self.db.list_work_logs(self.task.equipment_id,True,200):
+                if log.username==self.user["username"] and log.entity_type=="PM_EXECUTION" and log.entity_key==str(self.execution.id):
+                    try:self.db.stop_work_log(log.id,self.user["username"],"PM execution completed")
+                    except Exception:pass
+            QMessageBox.information(self,"PM","PM completed successfully.");self.execution.status="Completed";self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"Complete PM",str(exc))
+
+    def open_equipment(self):
+        if self.task:self.open_entity.emit("EQUIPMENT",self.task.equipment_id,self.task.equipment_id)

@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
     QGridLayout,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QListWidget,
     QMainWindow,
     QPushButton,
@@ -26,6 +27,9 @@ from PySide6.QtWidgets import (
 
 from database import Database
 from logging_config import configure_logging, install_exception_hook
+from incident_workspace import IncidentWorkspace
+from maintenance_planner import MaintenancePlanningWorkspace
+from pm_execution_workspace import PMExecutionWorkspace
 from version import __version__
 from demo_data import active_tickets, seed_demo_data
 from main import (
@@ -47,6 +51,8 @@ from main import (
     WorkLogPage,
 )
 from smart_map import SmartLayoutPage
+from workspaces import EquipmentWorkspaceTabs, MyWorkWorkspace, SearchWorkspace
+from table_productivity import configure_productivity_context
 
 DEMO_MODE=os.getenv("EMS_DEMO_MODE","0").strip().lower() in {"1","true","yes","on"}
 
@@ -139,6 +145,10 @@ class SmartMainWindow(QMainWindow):
         super().__init__()
         self.db = db
         self.user = user
+        configure_productivity_context(db,user["username"])
+        self.nav_history=[]
+        self.nav_history_index=-1
+        self._history_suspended=False
         self.setWindowTitle(APP_TITLE + (" · Demo" if DEMO_MODE else " · Operations Control"))
         self.resize(1600, 930)
 
@@ -161,6 +171,21 @@ class SmartMainWindow(QMainWindow):
         brand.addWidget(app_subtitle)
         top_layout.addLayout(brand)
         top_layout.addStretch(1)
+        self.back_button=QPushButton("←")
+        self.back_button.setToolTip("Back (Alt+Left)")
+        self.back_button.setFixedWidth(34)
+        self.back_button.clicked.connect(self.go_back)
+        self.forward_button=QPushButton("→")
+        self.forward_button.setToolTip("Forward (Alt+Right)")
+        self.forward_button.setFixedWidth(34)
+        self.forward_button.clicked.connect(self.go_forward)
+        top_layout.addWidget(self.back_button)
+        top_layout.addWidget(self.forward_button)
+        self.global_search=QLineEdit()
+        self.global_search.setPlaceholderText("Search equipment, tickets, PM, alarms, parts…")
+        self.global_search.setMinimumWidth(360)
+        self.global_search.returnPressed.connect(self.run_global_search)
+        top_layout.addWidget(self.global_search)
         user_label = QLabel(f"{user['display_name']}  |  {user['role']}  |  {WORKSTATION}")
         user_label.setStyleSheet("color:#c8d6df;")
         top_layout.addWidget(user_label)
@@ -177,44 +202,161 @@ class SmartMainWindow(QMainWindow):
         body_layout.addWidget(self.stack, 1)
         outer.addWidget(body, 1)
 
+        self.page_index={}
         def add(name, page):
             self.nav.addItem(name)
             self.stack.addWidget(page)
+            self.page_index[name]=self.stack.count()-1
+            return page
 
-        self.layout_page = SmartLayoutPage(db, user)
-        self.dashboard = SmartDashboardPage(db, lambda: self.nav.setCurrentRow(2))
-        add("Operations Overview", self.dashboard)
-        add("Equipment Registry", EquipmentPage(db, user))
-        add("Live FAB Map", self.layout_page)
-        add("PM Planning / Execution", PMPage(db, user))
-        add("Issue / Repair Tickets", TicketPage(db, user))
-        add("Alarms / Events", AlarmPage(db, user))
-        add("Qualification", QualificationPage(db, user))
-        add("Reliability / MTBF", ReliabilityPage(db))
-        add("Disposition / Release", ControlPage(db, user))
-        add("Work / Labor", WorkLogPage(db, user))
-        add("Shift Endorsements", EndorsementPage(db, user))
-        self.inventory = InventoryPage(db, user)
-        add("Parts / Inventory", self.inventory)
-        add("SOPs / Documents", DocumentPage(db, user))
-        add("Users / Administration", AdminPage(db, user))
+        self.search_workspace=add("Global Search",SearchWorkspace(db,user))
+        self.my_work=add("My Work",MyWorkWorkspace(db,user))
+        self.dashboard=add("Operations Overview",SmartDashboardPage(db,lambda:self.open_page("Live FAB Map")))
+        self.equipment360=add("Equipment Workspaces",EquipmentWorkspaceTabs(db,user))
+        self.equipment_page=add("Equipment Registry",EquipmentPage(db,user))
+        self.layout_page=add("Live FAB Map",SmartLayoutPage(db,user))
+        self.maintenance_planner=add("Maintenance Planner",MaintenancePlanningWorkspace(db,user))
+        self.pm_execution=add("Technician PM Runner",PMExecutionWorkspace(db,user))
+        self.pm_page=add("PM Configuration",PMPage(db,user))
+        self.incident_workspace=add("Incident / RCA Workspace",IncidentWorkspace(db,user))
+        self.ticket_page=add("Ticket Lifecycle / Troubleshooting",TicketPage(db,user))
+        self.alarm_page=add("Alarms / Events",AlarmPage(db,user))
+        self.qualification_page=add("Qualification",QualificationPage(db,user))
+        self.reliability_page=add("Reliability / MTBF",ReliabilityPage(db))
+        self.control_page=add("Disposition / Release",ControlPage(db,user))
+        self.work_page=add("Work / Labor",WorkLogPage(db,user))
+        self.endorsement_page=add("Shift Endorsements",EndorsementPage(db,user))
+        self.inventory=add("Parts / Inventory",InventoryPage(db,user))
+        self.document_page=add("SOPs / Documents",DocumentPage(db,user))
+        self.admin_page=add("Users / Administration",AdminPage(db,user))
 
+        self.search_workspace.open_entity.connect(self.open_entity)
+        self.my_work.open_entity.connect(self.open_entity)
+        self.equipment360.open_entity.connect(self.open_entity)
+        self.maintenance_planner.open_entity.connect(self.open_entity)
+        self.pm_execution.open_entity.connect(self.open_entity)
+        self.incident_workspace.open_entity.connect(self.open_entity)
         self.inventory.show_map_part.connect(self.show_part_map)
         self.nav.currentRowChanged.connect(self.stack.setCurrentIndex)
-        self.nav.currentRowChanged.connect(lambda _index: self.refresh_current())
-        self.nav.setCurrentRow(0)
+        self.nav.currentRowChanged.connect(self._on_nav_changed)
+        self.nav.setCurrentRow(self.page_index["Operations Overview"])
 
         refresh = QAction("Refresh", self)
         refresh.setShortcut(QKeySequence("F5"))
         refresh.triggered.connect(self.refresh_current)
         self.addAction(refresh)
+        find_action=QAction("Global Search",self);find_action.setShortcut(QKeySequence("Ctrl+K"));find_action.triggered.connect(self.focus_global_search);self.addAction(find_action)
+        back_action=QAction("Back",self);back_action.setShortcut(QKeySequence("Alt+Left"));back_action.triggered.connect(self.go_back);self.addAction(back_action)
+        forward_action=QAction("Forward",self);forward_action.setShortcut(QKeySequence("Alt+Right"));forward_action.triggered.connect(self.go_forward);self.addAction(forward_action)
+        self._update_history_buttons()
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.dashboard.refresh)
         self.timer.start(30000)
 
+    def _on_nav_changed(self,index: int):
+        self.refresh_current()
+        if index<0:return
+        if not self._history_suspended:
+            name=self.nav.item(index).text()
+            if self.nav_history_index<0 or self.nav_history[self.nav_history_index]!=name:
+                self.nav_history=self.nav_history[:self.nav_history_index+1]
+                self.nav_history.append(name)
+                self.nav_history_index=len(self.nav_history)-1
+        self._update_history_buttons()
+
+    def _update_history_buttons(self):
+        self.back_button.setEnabled(self.nav_history_index>0)
+        self.forward_button.setEnabled(0<=self.nav_history_index<len(self.nav_history)-1)
+
+    def go_back(self):
+        if self.nav_history_index<=0:return
+        self.nav_history_index-=1;name=self.nav_history[self.nav_history_index]
+        self._history_suspended=True
+        try:self.nav.setCurrentRow(self.page_index[name])
+        finally:self._history_suspended=False
+        self._update_history_buttons()
+
+    def go_forward(self):
+        if self.nav_history_index<0 or self.nav_history_index>=len(self.nav_history)-1:return
+        self.nav_history_index+=1;name=self.nav_history[self.nav_history_index]
+        self._history_suspended=True
+        try:self.nav.setCurrentRow(self.page_index[name])
+        finally:self._history_suspended=False
+        self._update_history_buttons()
+
+    def focus_global_search(self):
+        self.global_search.setFocus()
+        self.global_search.selectAll()
+
+    def open_page(self,name: str):
+        index=self.page_index.get(name)
+        if index is not None:self.nav.setCurrentRow(index)
+
+    def run_global_search(self):
+        query=self.global_search.text().strip()
+        self.search_workspace.set_query(query)
+        self.open_page("Global Search")
+
+    def open_entity(self,entity_type: str,entity_key: str,equipment_id: str=""):
+        entity_type=(entity_type or "").upper()
+        if entity_type and entity_key:
+            self.db.record_recent_item(self.user["username"],entity_type,str(entity_key),f"{entity_type}: {entity_key}",equipment_id)
+        if entity_type=="REGISTRY":
+            target=equipment_id or entity_key
+            if hasattr(self.equipment_page,"select_equipment"):self.equipment_page.select_equipment(target)
+            self.open_page("Equipment Registry")
+            return
+        if entity_type=="MAP":
+            target=equipment_id or entity_key
+            self.layout_page.highlight_equipment(target)
+            self.open_page("Live FAB Map")
+            return
+        if entity_type=="EQUIPMENT" or (equipment_id and entity_type in {"ALARM","QUALIFICATION","DOCUMENT","RELEASE"}):
+            target=entity_key if entity_type=="EQUIPMENT" else equipment_id
+            self.equipment360.set_equipment(target)
+            self.open_page("Equipment Workspaces")
+            return
+        if entity_type=="TICKET":
+            self.incident_workspace.set_ticket(entity_key)
+            self.open_page("Incident / RCA Workspace")
+            return
+        if entity_type=="TICKET_LEGACY":
+            if hasattr(self.ticket_page,"select_ticket"):self.ticket_page.select_ticket(entity_key)
+            self.open_page("Ticket Lifecycle / Troubleshooting")
+            return
+        if entity_type in {"PM_TASK","PM_EXECUTION"}:
+            try:key=int(entity_key)
+            except Exception:key=0
+            self.pm_execution.set_task(key)
+            self.open_page("Technician PM Runner")
+            return
+        if entity_type=="PM_LEGACY":
+            try:key=int(entity_key)
+            except Exception:key=0
+            if hasattr(self.pm_page,"select_task"):self.pm_page.select_task(key)
+            self.open_page("PM Configuration")
+            return
+        if entity_type=="PART":
+            part=entity_key.split("@",1)[0]
+            self.inventory.search.setText(part)
+            self.open_page("Parts / Inventory")
+            return
+        if entity_type=="DOCUMENT":
+            if hasattr(self.document_page,"select_document"):self.document_page.select_document(entity_key)
+            self.open_page("SOPs / Documents")
+            return
+        if entity_type=="ENDORSEMENT":
+            if hasattr(self.endorsement_page,"select_endorsement"):self.endorsement_page.select_endorsement(entity_key)
+            self.open_page("Shift Endorsements")
+            return
+        if equipment_id:
+            self.equipment360.set_equipment(equipment_id);self.open_page("Equipment Workspaces")
+            return
+        self.open_page("Global Search")
+
     def show_part_map(self, part):
         self.layout_page.highlight_inventory(part)
-        self.nav.setCurrentRow(2)
+        self.open_page("Live FAB Map")
 
     def refresh_current(self):
         page = self.stack.currentWidget()
