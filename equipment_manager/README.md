@@ -1,3 +1,12 @@
+## Full-production program
+
+The product/workflow transformation is tracked in:
+
+- `FULL_PRODUCTION_ROADMAP.md` — milestone definitions, deliverables, dependencies and acceptance gates.
+- `PRODUCTION_PROGRESS.md` — current milestone state, immediate execution order and standing development-report format.
+
+A milestone is not complete merely because a backend method or button exists. The roadmap Definition of Done requires the user workflow, interconnectivity, evidence/Office behavior, testing and acceptance gate to be satisfied.
+
 # Equipment Management System
 
 Local Windows desktop equipment-management system isolated under `equipment_manager/` from the Karimen Reviewer application. The production-core refactor now separates governed domain rules into `domain.py` instead of keeping all behavior inside GUI/database CRUD code.
