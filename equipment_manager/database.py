@@ -720,19 +720,9 @@ class Database:
         if not payload.get("component_id","").strip():
             raise ValueError("Component ID is required.")
         with self.session() as s:
-            eq=s.scalar(select(Equipment).where(Equipment.equipment_id==payload.get("equipment_id","")))
-            if not eq:
-                raise ValueError("Parent equipment not found.")
-            parent_id=(payload.get("parent_component_id") or "").strip()
-            if parent_id:
-                if parent_id==payload["component_id"]:
-                    raise ValueError("Component cannot be its own parent.")
-                parent=s.scalar(select(EquipmentComponent).where(EquipmentComponent.component_id==parent_id))
-                if not parent or parent.equipment_id!=payload["equipment_id"] or parent.status=="Removed":
-                    raise ValueError("Parent component must be an installed component on the same equipment.")
-
             item=s.scalar(select(EquipmentComponent).where(EquipmentComponent.component_id==payload["component_id"]))
             if item:
+                # Placement/lifecycle fields are governed; ordinary edits cannot move or reinstall a component.
                 payload.pop("equipment_id",None)
                 payload.pop("parent_component_id",None)
                 payload.pop("status",None)
@@ -741,6 +731,16 @@ class Database:
                 self._update_versioned(item,payload,expected_version,"Equipment component")
                 event_type="MASTER_UPDATE"
             else:
+                eq=s.scalar(select(Equipment).where(Equipment.equipment_id==payload.get("equipment_id","")))
+                if not eq:
+                    raise ValueError("Parent equipment not found.")
+                parent_id=(payload.get("parent_component_id") or "").strip()
+                if parent_id:
+                    if parent_id==payload["component_id"]:
+                        raise ValueError("Component cannot be its own parent.")
+                    parent=s.scalar(select(EquipmentComponent).where(EquipmentComponent.component_id==parent_id))
+                    if not parent or parent.equipment_id!=payload["equipment_id"] or parent.status=="Removed":
+                        raise ValueError("Parent component must be an installed component on the same equipment.")
                 payload["status"]="Installed"
                 payload["installed_at"]=datetime.utcnow()
                 payload["removed_at"]=None
