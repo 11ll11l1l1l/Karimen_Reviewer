@@ -270,9 +270,14 @@ class Equipment360Workspace(QWidget):
         self.title=QLabel("Equipment 360");self.title.setStyleSheet("font-size:20pt;font-weight:800")
         self.state=QLabel();self.state.setStyleSheet("font-size:12pt;font-weight:700")
         self.favorite=QPushButton("☆ Favorite");self.favorite.clicked.connect(self.toggle_favorite)
+        self.incident_button=QPushButton("Open active incident");self.incident_button.clicked.connect(self.open_active_incident)
+        self.pm_button=QPushButton("Open current PM");self.pm_button.clicked.connect(self.open_current_pm)
+        registry_button=QPushButton("Registry / state");registry_button.clicked.connect(self.open_registry)
         map_button=QPushButton("Show on FAB map");map_button.clicked.connect(self.open_map)
         refresh=QPushButton("Refresh");refresh.clicked.connect(self.refresh)
-        head.addWidget(self.title);head.addWidget(self.state);head.addStretch(1);head.addWidget(map_button);head.addWidget(self.favorite);head.addWidget(refresh);root.addLayout(head)
+        head.addWidget(self.title);head.addWidget(self.state);head.addStretch(1)
+        for button in [self.incident_button,self.pm_button,registry_button,map_button,self.favorite,refresh]:head.addWidget(button)
+        root.addLayout(head)
         self.summary=QLabel("Select equipment from Global Search or another workspace.")
         self.summary.setWordWrap(True);self.summary.setStyleSheet("color:#647581;font-size:11pt;");root.addWidget(self.summary)
         self.tabs=QTabWidget();root.addWidget(self.tabs,1)
@@ -297,21 +302,34 @@ class Equipment360Workspace(QWidget):
         self.qual_table=_table(["Run","Protocol","Revision","Status","Started","Verified","Approved","Expires"]);self.release_table=_table(["ID","Status","Requested By","Verified By","Approved By","Requested","Approved"]);qv.addWidget(QLabel("Qualification"));qv.addWidget(self.qual_table,1);qv.addWidget(QLabel("Release"));qv.addWidget(self.release_table,1);self.tabs.addTab(qr,"Qualification / Release")
 
         cp=QWidget();cv=QVBoxLayout(cp)
-        self.component_table=_table(["Component","Parent","Name","Type","Part","Serial","Status","Usage"]);self.inventory_table=_table(["Part","Location","Type","Qty","Ticket","User","Time"]);cv.addWidget(QLabel("Installed components"));cv.addWidget(self.component_table,1);cv.addWidget(QLabel("Part transactions"));cv.addWidget(self.inventory_table,1);self.tabs.addTab(cp,"Components / Parts")
+        self.component_table=_table(["Component","Parent","Name","Type","Part","Serial","Status","Usage"]);self.meter_table=_table(["Meter","Name","Unit","Current","Last reading","Active"]);self.inventory_table=_table(["Part","Location","Type","Qty","Ticket","User","Time"]);cv.addWidget(QLabel("Installed components"));cv.addWidget(self.component_table,1);cv.addWidget(QLabel("Meters / counters"));cv.addWidget(self.meter_table,1);cv.addWidget(QLabel("Part transactions"));cv.addWidget(self.inventory_table,1);self.tabs.addTab(cp,"Components / Usage / Parts")
 
         docs=QWidget();dv=QVBoxLayout(docs);self.document_table=_table(["Document","Type","Title","Owner","Status","Revision"]);dv.addWidget(self.document_table);self.tabs.addTab(docs,"Documents")
 
+        ops=QWidget();opv=QVBoxLayout(ops);self.handover_table=_table(["No","Condition","Pending","Restrictions","Next owner","Status","Created"]);self.disposition_table=_table(["State","Reason","Restrictions","Release criteria","Ticket","Created by","Approved by","Effective"]);opv.addWidget(QLabel("Shift handovers"));opv.addWidget(self.handover_table,1);opv.addWidget(QLabel("Disposition history"));opv.addWidget(self.disposition_table,1);self.tabs.addTab(ops,"Handover / Disposition")
         self.attachments=AttachmentPanel(db,user);self.tabs.addTab(self.attachments,"Evidence / Attachments")
 
+        self.active_tickets=[];self.current_pm=[]
         self._clear()
 
     def _clear(self):
-        for table in [self.timeline_table,self.ticket_table,self.alarm_table,self.pm_table,self.work_table,self.qual_table,self.release_table,self.component_table,self.inventory_table,self.document_table]:table.setRowCount(0)
+        for table in [self.timeline_table,self.ticket_table,self.alarm_table,self.pm_table,self.work_table,self.qual_table,self.release_table,self.component_table,self.meter_table,self.inventory_table,self.document_table,self.handover_table,self.disposition_table]:table.setRowCount(0)
         for value in self.metric_labels.values():value.setText("—")
 
     def set_equipment(self,equipment_id: str):
         self.equipment_id=(equipment_id or "").strip()
         self.refresh()
+
+    def open_registry(self):
+        if self.eq:self.open_entity.emit("REGISTRY",self.eq.equipment_id,self.eq.equipment_id)
+
+    def open_active_incident(self):
+        if self.active_tickets:
+            row=self.active_tickets[0];self.open_entity.emit("TICKET",row.ticket_no,row.equipment_id)
+
+    def open_current_pm(self):
+        if self.current_pm:
+            row=self.current_pm[0];self.open_entity.emit("PM_TASK",str(row.id),row.equipment_id)
 
     def open_map(self):
         if self.eq:self.open_entity.emit("MAP",self.eq.equipment_id,self.eq.equipment_id)
@@ -347,8 +365,11 @@ class Equipment360Workspace(QWidget):
         qual=self.db.list_qualification_runs(eq.equipment_id)
         releases=[x for x in self.db.list_release_requests() if x.equipment_id==eq.equipment_id]
         comps=self.db.list_components(eq.equipment_id,False)
+        meters=self.db.list_meters(eq.equipment_id)
         inv=[x for x in self.db.list_inventory_transactions(1000) if x.equipment_id==eq.equipment_id]
         docs=self.db.list_controlled_documents("Equipment",eq.equipment_id)
+        handovers=[x for x in self.db.list_endorsements() if x.equipment_id==eq.equipment_id]
+        dispositions=[x for x in self.db.list_dispositions() if x.equipment_id==eq.equipment_id]
         rel=self.db.reliability_summary(eq.equipment_id)
 
         _fill_objects(self.timeline_table,activity,["occurred_at","kind","key","summary","status","user","source"])
@@ -359,10 +380,16 @@ class Equipment360Workspace(QWidget):
         _fill_objects(self.qual_table,qual,["run_no","protocol_id","protocol_revision","status","started_at","verified_at","approved_at","expires_at"])
         _fill_objects(self.release_table,releases,["id","status","requested_by","verified_by","approved_by","requested_at","approved_at"])
         _fill_objects(self.component_table,comps,["component_id","parent_component_id","name","component_type","part_number","serial_number","status","usage_value"])
+        _fill_objects(self.meter_table,meters,["meter_code","name","unit","current_value","last_reading_at","active"])
         _fill_objects(self.inventory_table,inv,["part_number","location_code","transaction_type","quantity","related_ticket","user","created_at"])
         _fill_objects(self.document_table,docs,["document_id","document_type","title","owner","status","current_revision"])
+        _fill_objects(self.handover_table,handovers,["endorsement_no","current_condition","pending_work","restrictions","next_owner","status","created_at"])
+        _fill_objects(self.disposition_table,dispositions,["state","reason","restrictions","release_criteria","related_ticket","created_by","approved_by","effective_at"])
         self.attachments.set_entity("EQUIPMENT",eq.equipment_id,eq.equipment_id)
 
+        self.active_tickets=sorted([x for x in tickets if x.status not in {"Closed","Cancelled"}],key=lambda x:(0 if x.priority=="P1" else 1 if x.priority=="P2" else 2,x.updated_at or x.created_at),reverse=False)
+        self.current_pm=sorted([x for x in pm if x.status not in {"Completed","Cancelled"}],key=lambda x:(0 if x.status=="Overdue" else 1,x.scheduled_date or x.original_due_date))
+        self.incident_button.setEnabled(bool(self.active_tickets));self.pm_button.setEnabled(bool(self.current_pm))
         self.metric_labels["Active alarms"].setText(str(sum(1 for x in alarms if x.state=="ACTIVE")))
         self.metric_labels["Open incidents"].setText(str(sum(1 for x in tickets if x.status not in {"Closed","Cancelled"})))
         self.metric_labels["Open PM"].setText(str(sum(1 for x in pm if x.status not in {"Completed","Cancelled"})))
