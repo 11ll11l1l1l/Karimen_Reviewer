@@ -1377,6 +1377,15 @@ class ControlPage(QWidget):
     def load_release_attachment(self):
         row=selected_row(self.rtable,self.rel)
         self.release_attachments.set_entity("RELEASE",str(row.id),row.equipment_id) if row else self.release_attachments.set_entity("","")
+    def select_release(self,release_id: int):
+        self.refresh()
+        for i,row in enumerate(self.rel):
+            if row.id==release_id:
+                self.rtable.selectRow(i)
+                item=self.rtable.item(i,0)
+                if item:self.rtable.scrollToItem(item)
+                break
+
     def new_disp(self):
         d=DispositionDialog(self)
         if d.exec()==QDialog.DialogCode.Accepted:
