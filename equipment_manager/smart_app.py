@@ -317,6 +317,10 @@ class SmartMainWindow(QMainWindow):
             self.inventory.search.setText(part)
             self.open_page("Parts / Inventory")
             return
+        if entity_type=="DOCUMENT":
+            if hasattr(self.document_page,"select_document"):self.document_page.select_document(entity_key)
+            self.open_page("SOPs / Documents")
+            return
         if entity_type=="ENDORSEMENT":
             if hasattr(self.endorsement_page,"select_endorsement"):self.endorsement_page.select_endorsement(entity_key)
             self.open_page("Shift Endorsements")
