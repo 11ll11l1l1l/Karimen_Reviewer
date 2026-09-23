@@ -1497,7 +1497,6 @@ class Database:
                 .where(EquipmentStateEvent.equipment_id==equipment_id,EquipmentStateEvent.changed_at<=start)
                 .order_by(EquipmentStateEvent.changed_at.desc(),EquipmentStateEvent.id.desc())
             )
-            state=before.to_state if before else "Available"
             events=list(s.scalars(
                 select(EquipmentStateEvent)
                 .where(
@@ -1507,8 +1506,18 @@ class Database:
                 )
                 .order_by(EquipmentStateEvent.changed_at,EquipmentStateEvent.id)
             ))
+            if before:
+                state=before.to_state
+                effective_start=start
+            elif events and events[0].reason_code=="INITIAL_STATE":
+                state=events[0].to_state
+                effective_start=events[0].changed_at
+                events=events[1:]
+            else:
+                state="Available"
+                effective_start=start
 
-        cursor=start
+        cursor=effective_start
         total_downtime=0.0
         unplanned=0.0
         planned=0.0
@@ -1522,7 +1531,7 @@ class Database:
                 total_downtime+=seconds
                 if cls=="UNPLANNED_DOWNTIME":
                     unplanned+=seconds
-                else:
+                elif cls=="PLANNED_DOWNTIME":
                     planned+=seconds
 
             new_unplanned=STATE_CLASS.get(event.to_state)=="UNPLANNED_DOWNTIME"
@@ -1538,10 +1547,10 @@ class Database:
             total_downtime+=seconds
             if cls=="UNPLANNED_DOWNTIME":
                 unplanned+=seconds
-            else:
+            elif cls=="PLANNED_DOWNTIME":
                 planned+=seconds
 
-        period=max(0.0,(end-start).total_seconds())
+        period=max(0.0,(end-effective_start).total_seconds())
         uptime=max(0.0,period-total_downtime)
         hours=lambda sec: sec/3600.0
         availability=(uptime/period*100.0) if period else 100.0
