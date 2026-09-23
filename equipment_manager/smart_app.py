@@ -44,6 +44,7 @@ from main import (
     QualificationPage,
     ReliabilityPage,
     TicketPage,
+    WorkLogPage,
 )
 from smart_map import SmartLayoutPage
 
@@ -219,6 +220,7 @@ class SmartMainWindow(QMainWindow):
         add("Qualification", QualificationPage(db, user))
         add("Reliability / MTBF", ReliabilityPage(db))
         add("Disposition / Release", ControlPage(db, user))
+        add("Work / Labor", WorkLogPage(db, user))
         add("Shift Endorsements", EndorsementPage(db, user))
         self.inventory = InventoryPage(db, user)
         add("Parts / Inventory", self.inventory)
