@@ -290,6 +290,11 @@ class SmartMainWindow(QMainWindow):
         entity_type=(entity_type or "").upper()
         if entity_type and entity_key:
             self.db.record_recent_item(self.user["username"],entity_type,str(entity_key),f"{entity_type}: {entity_key}",equipment_id)
+        if entity_type=="MAP":
+            target=equipment_id or entity_key
+            self.layout_page.highlight_equipment(target)
+            self.open_page("Live FAB Map")
+            return
         if entity_type=="EQUIPMENT" or (equipment_id and entity_type in {"ALARM","QUALIFICATION","DOCUMENT","RELEASE"}):
             target=entity_key if entity_type=="EQUIPMENT" else equipment_id
             self.equipment360.set_equipment(target)
