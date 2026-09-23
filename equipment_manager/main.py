@@ -1465,6 +1465,20 @@ class DocumentPage(QWidget):
         QMessageBox.information(self,"Integrity","PASS — SHA-256 matches." if ok else f"FAIL — {detail}")
 
 
+class IntegrationEndpointDialog(QDialog):
+    def __init__(self,row=None,parent=None):
+        super().__init__(parent);self.row=row;self.setWindowTitle("Integration Endpoint");f=QFormLayout(self)
+        self.endpoint=QLineEdit();self.name=QLineEdit();self.adapter=QComboBox();self.adapter.addItems(["FILE","HTTP"]);self.target=QLineEdit();self.topics=QLineEdit("*");self.auth=QLineEdit();self.enabled=QCheckBox("Enabled");self.enabled.setChecked(True)
+        self.topics.setPlaceholderText("*, equipment.state.changed, incident.state.changed")
+        for label,w in [("Endpoint ID",self.endpoint),("Name",self.name),("Adapter",self.adapter),("Target path / URL",self.target),("Topics",self.topics),("Auth environment variable",self.auth)]:f.addRow(label,w)
+        f.addRow("",self.enabled)
+        b=QDialogButtonBox(QDialogButtonBox.StandardButton.Save|QDialogButtonBox.StandardButton.Cancel);b.accepted.connect(self.accept);b.rejected.connect(self.reject);f.addRow(b)
+        if row:
+            self.endpoint.setText(row.endpoint_id);self.endpoint.setReadOnly(True);self.name.setText(row.name);self.adapter.setCurrentText(row.adapter_type);self.target.setText(row.target);self.topics.setText(row.topics);self.auth.setText(row.auth_env);self.enabled.setChecked(row.enabled)
+    def data(self):
+        return {"endpoint_id":self.endpoint.text().strip(),"name":self.name.text().strip(),"adapter_type":self.adapter.currentText(),"target":self.target.text().strip(),"topics":self.topics.text().strip() or "*","auth_env":self.auth.text().strip(),"enabled":self.enabled.isChecked()}
+
+
 class UserDialog(QDialog):
     def __init__(self,parent=None):
         super().__init__(parent);self.setWindowTitle("New User");f=QFormLayout(self);self.username=QLineEdit();self.name=QLineEdit();self.password=QLineEdit();self.password.setEchoMode(QLineEdit.EchoMode.Password);self.role=QComboBox();self.role.addItems(list(ROLE_PERMISSIONS));f.addRow("Username",self.username);f.addRow("Display Name",self.name);f.addRow("Password",self.password);f.addRow("Role",self.role);b=QDialogButtonBox(QDialogButtonBox.StandardButton.Save|QDialogButtonBox.StandardButton.Cancel);b.accepted.connect(self.accept);b.rejected.connect(self.reject);f.addRow(b)
@@ -1472,14 +1486,15 @@ class UserDialog(QDialog):
 
 class AdminPage(QWidget):
     def __init__(self,db,user):
-        super().__init__();self.db=db;self.user=user;self.rows=[];self.attempts=[];self.scope_rows=[];self.cert_rows=[];v=QVBoxLayout(self)
-        h=QHBoxLayout();add=QPushButton("Add User");role=QPushButton("Change Role");toggle=QPushButton("Enable / Disable");reset=QPushButton("Reset Password");unlock=QPushButton("Unlock Login");override=QPushButton("Permission Override");scope=QPushButton("Access Scope");clearscope=QPushButton("Clear Scopes");cert=QPushButton("Certification");backupb=QPushButton("Create DB Backup");verifyb=QPushButton("Verify Backup")
-        add.clicked.connect(self.add);role.clicked.connect(self.role);toggle.clicked.connect(self.toggle);reset.clicked.connect(self.reset);unlock.clicked.connect(self.unlock);override.clicked.connect(self.override);scope.clicked.connect(self.manage_scope);clearscope.clicked.connect(self.clear_scopes);cert.clicked.connect(self.manage_certification);backupb.clicked.connect(self.create_backup);verifyb.clicked.connect(self.verify_backup)
-        allowed=db.has_permission(user,"user.admin") or user.get("role")=="Administrator";[x.setEnabled(allowed) for x in [add,role,toggle,reset,unlock,override,scope,clearscope,cert,backupb,verifyb]];[h.addWidget(x) for x in [add,role,toggle,reset,unlock,override,scope,clearscope,cert,backupb,verifyb]];h.addStretch(1);v.addLayout(h)
+        super().__init__();self.db=db;self.user=user;self.rows=[];self.attempts=[];self.scope_rows=[];self.cert_rows=[];self.integration_endpoints=[];self.integration_deliveries=[];v=QVBoxLayout(self)
+        h=QHBoxLayout();add=QPushButton("Add User");role=QPushButton("Change Role");toggle=QPushButton("Enable / Disable");reset=QPushButton("Reset Password");unlock=QPushButton("Unlock Login");override=QPushButton("Permission Override");scope=QPushButton("Access Scope");clearscope=QPushButton("Clear Scopes");cert=QPushButton("Certification");integration=QPushButton("Integration Endpoint");backupb=QPushButton("Create DB Backup");verifyb=QPushButton("Verify Backup")
+        add.clicked.connect(self.add);role.clicked.connect(self.role);toggle.clicked.connect(self.toggle);reset.clicked.connect(self.reset);unlock.clicked.connect(self.unlock);override.clicked.connect(self.override);scope.clicked.connect(self.manage_scope);clearscope.clicked.connect(self.clear_scopes);cert.clicked.connect(self.manage_certification);integration.clicked.connect(self.manage_integration);backupb.clicked.connect(self.create_backup);verifyb.clicked.connect(self.verify_backup)
+        allowed=db.has_permission(user,"user.admin") or user.get("role")=="Administrator";[x.setEnabled(allowed) for x in [add,role,toggle,reset,unlock,override,scope,clearscope,cert,integration,backupb,verifyb]];[h.addWidget(x) for x in [add,role,toggle,reset,unlock,override,scope,clearscope,cert,integration,backupb,verifyb]];h.addStretch(1);v.addLayout(h)
         tabs=QTabWidget()
         wu=QWidget();vu=QVBoxLayout(wu);self.table=make_table(["Username","Display Name","Role","Active","Last Login","Created"]);vu.addWidget(self.table);tabs.addTab(wu,"Users")
         ws=QWidget();vs=QVBoxLayout(ws);self.scope_table=make_table(["Username","Mode","Scope Type","Scope Key","Permission"]);vs.addWidget(self.scope_table);tabs.addTab(ws,"Access Scopes")
         wc=QWidget();vc=QVBoxLayout(wc);self.cert_table=make_table(["Username","Certification","Issuer","Issued","Expires","Active","Note","Ver"]);vc.addWidget(self.cert_table);tabs.addTab(wc,"Certifications")
+        wi=QWidget();vi=QVBoxLayout(wi);self.integration_table=make_table(["Endpoint","Name","Adapter","Target","Topics","Auth Env","Enabled","Ver"]);self.delivery_table=make_table(["ID","Event","Endpoint","Status","Attempts","Next Attempt","Last Error","Sent"]);vi.addWidget(self.integration_table,1);vi.addWidget(self.delivery_table,1);tabs.addTab(wi,"Integrations / Outbox")
         wa=QWidget();va=QVBoxLayout(wa);self.attempt_table=make_table(["Username","Success","Reason","Workstation","Attempted"]);va.addWidget(self.attempt_table);tabs.addTab(wa,"Login Attempts")
         v.addWidget(tabs);self.refresh()
 
@@ -1498,6 +1513,10 @@ class AdminPage(QWidget):
             for col,key in enumerate(["username","mode","scope_type","scope_key","permission"]):self.scope_table.setItem(r,col,ti(row.get(key,"")))
         self.cert_rows=self.db.list_technician_certifications()
         fill_table(self.cert_table,self.cert_rows,["username","cert_code","issuer","issued_at","expires_at","active","note","version"])
+        self.integration_endpoints=self.db.list_integration_endpoints()
+        fill_table(self.integration_table,self.integration_endpoints,["endpoint_id","name","adapter_type","target","topics","auth_env","enabled","version"])
+        self.integration_deliveries=self.db.integration_delivery_status()
+        fill_table(self.delivery_table,self.integration_deliveries,["id","event_id","endpoint_id","status","attempts","next_attempt_at","last_error","sent_at"])
 
     def current(self):return selected_row(self.table,self.rows)
 
@@ -1541,6 +1560,13 @@ class AdminPage(QWidget):
         if not ok:return
         choice,ok=QInputDialog.getItem(self,"Permission Override",f"{row.username}: {perm}",["Allow","Deny","Use Role Default"],0,False)
         if ok:self.db.set_permission_override(row.username,perm,{"Allow":True,"Deny":False,"Use Role Default":None}[choice]);self.refresh()
+
+    def manage_integration(self):
+        row=selected_row(self.integration_table,self.integration_endpoints)
+        d=IntegrationEndpointDialog(row,self)
+        if d.exec()==QDialog.DialogCode.Accepted:
+            try:self.db.save_integration_endpoint(d.data(),row.version if row else None);self.refresh()
+            except Exception as exc:QMessageBox.critical(self,"Integration Endpoint",str(exc))
 
     def manage_certification(self):
         row=self.current()
