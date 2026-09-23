@@ -227,6 +227,16 @@ class EquipmentMeter(Base):
     __table_args__ = (UniqueConstraint("equipment_id","meter_code",name="uq_equipment_meter"),)
 
 
+class EquipmentMeterBehavior(Base):
+    __tablename__ = "equipment_meter_behaviors"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    equipment_id: Mapped[str] = mapped_column(String(100), index=True)
+    meter_code: Mapped[str] = mapped_column(String(80), index=True)
+    meter_mode: Mapped[str] = mapped_column(String(20), default="COUNTER")
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    __table_args__ = (UniqueConstraint("equipment_id","meter_code",name="uq_equipment_meter_behavior"),)
+
+
 class MeterReading(Base):
     __tablename__ = "meter_readings"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -1775,6 +1785,8 @@ class Database:
 
     def save_meter(self, data: dict[str, Any], expected_version: int | None = None):
         payload=dict(data)
+        mode=str(payload.pop("meter_mode","COUNTER")).upper()
+        if mode not in {"COUNTER","GAUGE"}:raise ValueError("Meter mode must be COUNTER or GAUGE.")
         with self.session() as s:
             if not s.scalar(select(Equipment).where(Equipment.equipment_id==payload.get("equipment_id",""))):
                 raise ValueError("Equipment not found")
@@ -1788,9 +1800,24 @@ class Database:
                 self._update_versioned(item,payload,expected_version,"Equipment meter")
             else:
                 item=EquipmentMeter(**payload)
-                s.add(item)
+                s.add(item);s.flush()
+            behavior=s.scalar(select(EquipmentMeterBehavior).where(
+                EquipmentMeterBehavior.equipment_id==item.equipment_id,
+                EquipmentMeterBehavior.meter_code==item.meter_code,
+            ))
+            if behavior:
+                if behavior.meter_mode!=mode:behavior.meter_mode=mode;behavior.version+=1
+            else:s.add(EquipmentMeterBehavior(equipment_id=item.equipment_id,meter_code=item.meter_code,meter_mode=mode))
             s.flush()
             return item
+
+    def meter_mode(self, equipment_id: str, meter_code: str) -> str:
+        with self.session() as s:
+            row=s.scalar(select(EquipmentMeterBehavior).where(
+                EquipmentMeterBehavior.equipment_id==equipment_id,
+                EquipmentMeterBehavior.meter_code==meter_code,
+            ))
+            return row.meter_mode if row else "COUNTER"
 
     def list_meter_readings(self, equipment_id: str, meter_code: str = "", limit: int = 500):
         with self.session() as s:
@@ -1894,8 +1921,15 @@ class Database:
             value=float(value)
             if value<0:
                 raise ValueError("Meter reading cannot be negative")
-            if value<meter.current_value and not reset:
-                raise ValueError("Meter reading cannot decrease unless an explicit reset is recorded.")
+            behavior=s.scalar(select(EquipmentMeterBehavior).where(
+                EquipmentMeterBehavior.equipment_id==equipment_id,
+                EquipmentMeterBehavior.meter_code==meter_code,
+            ))
+            mode=behavior.meter_mode if behavior else "COUNTER"
+            if mode=="COUNTER" and value<meter.current_value and not reset:
+                raise ValueError("Counter reading cannot decrease unless an explicit reset is recorded.")
+            if mode=="GAUGE" and reset:
+                raise ValueError("Gauge meters do not use counter reset operations.")
             now=datetime.utcnow()
             reading=MeterReading(
                 equipment_id=equipment_id,
@@ -2573,6 +2607,7 @@ class Database:
             s.flush()
             self._snapshot_pm_specs(s, ex, task)
             self._snapshot_pm_requirements(s, ex, task)
+            s.flush()
             self._validate_pm_certifications(s,ex.id,user)
             task.status = "In Progress"
             task.version += 1
