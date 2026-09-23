@@ -4,7 +4,7 @@ import json
 import os
 import socket
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -1404,13 +1404,14 @@ class UserDialog(QDialog):
 
 class AdminPage(QWidget):
     def __init__(self,db,user):
-        super().__init__();self.db=db;self.user=user;self.rows=[];self.attempts=[];self.scope_rows=[];v=QVBoxLayout(self)
-        h=QHBoxLayout();add=QPushButton("Add User");role=QPushButton("Change Role");toggle=QPushButton("Enable / Disable");reset=QPushButton("Reset Password");unlock=QPushButton("Unlock Login");override=QPushButton("Permission Override");scope=QPushButton("Access Scope");clearscope=QPushButton("Clear Scopes");backupb=QPushButton("Create DB Backup");verifyb=QPushButton("Verify Backup")
-        add.clicked.connect(self.add);role.clicked.connect(self.role);toggle.clicked.connect(self.toggle);reset.clicked.connect(self.reset);unlock.clicked.connect(self.unlock);override.clicked.connect(self.override);scope.clicked.connect(self.manage_scope);clearscope.clicked.connect(self.clear_scopes);backupb.clicked.connect(self.create_backup);verifyb.clicked.connect(self.verify_backup)
-        allowed=db.has_permission(user,"user.admin") or user.get("role")=="Administrator";[x.setEnabled(allowed) for x in [add,role,toggle,reset,unlock,override,scope,clearscope,backupb,verifyb]];[h.addWidget(x) for x in [add,role,toggle,reset,unlock,override,scope,clearscope,backupb,verifyb]];h.addStretch(1);v.addLayout(h)
+        super().__init__();self.db=db;self.user=user;self.rows=[];self.attempts=[];self.scope_rows=[];self.cert_rows=[];v=QVBoxLayout(self)
+        h=QHBoxLayout();add=QPushButton("Add User");role=QPushButton("Change Role");toggle=QPushButton("Enable / Disable");reset=QPushButton("Reset Password");unlock=QPushButton("Unlock Login");override=QPushButton("Permission Override");scope=QPushButton("Access Scope");clearscope=QPushButton("Clear Scopes");cert=QPushButton("Certification");backupb=QPushButton("Create DB Backup");verifyb=QPushButton("Verify Backup")
+        add.clicked.connect(self.add);role.clicked.connect(self.role);toggle.clicked.connect(self.toggle);reset.clicked.connect(self.reset);unlock.clicked.connect(self.unlock);override.clicked.connect(self.override);scope.clicked.connect(self.manage_scope);clearscope.clicked.connect(self.clear_scopes);cert.clicked.connect(self.manage_certification);backupb.clicked.connect(self.create_backup);verifyb.clicked.connect(self.verify_backup)
+        allowed=db.has_permission(user,"user.admin") or user.get("role")=="Administrator";[x.setEnabled(allowed) for x in [add,role,toggle,reset,unlock,override,scope,clearscope,cert,backupb,verifyb]];[h.addWidget(x) for x in [add,role,toggle,reset,unlock,override,scope,clearscope,cert,backupb,verifyb]];h.addStretch(1);v.addLayout(h)
         tabs=QTabWidget()
         wu=QWidget();vu=QVBoxLayout(wu);self.table=make_table(["Username","Display Name","Role","Active","Last Login","Created"]);vu.addWidget(self.table);tabs.addTab(wu,"Users")
         ws=QWidget();vs=QVBoxLayout(ws);self.scope_table=make_table(["Username","Mode","Scope Type","Scope Key","Permission"]);vs.addWidget(self.scope_table);tabs.addTab(ws,"Access Scopes")
+        wc=QWidget();vc=QVBoxLayout(wc);self.cert_table=make_table(["Username","Certification","Issuer","Issued","Expires","Active","Note","Ver"]);vc.addWidget(self.cert_table);tabs.addTab(wc,"Certifications")
         wa=QWidget();va=QVBoxLayout(wa);self.attempt_table=make_table(["Username","Success","Reason","Workstation","Attempted"]);va.addWidget(self.attempt_table);tabs.addTab(wa,"Login Attempts")
         v.addWidget(tabs);self.refresh()
 
@@ -1427,6 +1428,8 @@ class AdminPage(QWidget):
         self.scope_table.setRowCount(len(self.scope_rows))
         for r,row in enumerate(self.scope_rows):
             for col,key in enumerate(["username","mode","scope_type","scope_key","permission"]):self.scope_table.setItem(r,col,ti(row.get(key,"")))
+        self.cert_rows=self.db.list_technician_certifications()
+        fill_table(self.cert_table,self.cert_rows,["username","cert_code","issuer","issued_at","expires_at","active","note","version"])
 
     def current(self):return selected_row(self.table,self.rows)
 
@@ -1470,6 +1473,28 @@ class AdminPage(QWidget):
         if not ok:return
         choice,ok=QInputDialog.getItem(self,"Permission Override",f"{row.username}: {perm}",["Allow","Deny","Use Role Default"],0,False)
         if ok:self.db.set_permission_override(row.username,perm,{"Allow":True,"Deny":False,"Use Role Default":None}[choice]);self.refresh()
+
+    def manage_certification(self):
+        row=self.current()
+        if not row:return
+        code,ok=QInputDialog.getText(self,"Certification","Certification code")
+        if not ok or not code.strip():return
+        existing=next((x for x in self.db.list_technician_certifications(row.username) if x.cert_code==code.strip()),None)
+        issuer,ok=QInputDialog.getText(self,"Certification","Issuer",text=existing.issuer if existing else "")
+        if not ok:return
+        days,ok=QInputDialog.getInt(self,"Certification","Validity days from today (0 = no expiry)",365,0,3650)
+        if not ok:return
+        note,ok=QInputDialog.getText(self,"Certification","Note",text=existing.note if existing else "")
+        if not ok:return
+        try:
+            now=datetime.now()
+            self.db.save_technician_certification({
+                "username":row.username,"cert_code":code.strip(),"issuer":issuer.strip(),
+                "issued_at":now,"expires_at":(now+timedelta(days=days)) if days else None,
+                "active":True,"note":note.strip(),
+            },existing.version if existing else None)
+            self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"Certification",str(exc))
 
     def manage_scope(self):
         row=self.current()
