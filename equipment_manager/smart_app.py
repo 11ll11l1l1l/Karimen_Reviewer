@@ -292,6 +292,11 @@ class SmartMainWindow(QMainWindow):
         entity_type=(entity_type or "").upper()
         if entity_type and entity_key:
             self.db.record_recent_item(self.user["username"],entity_type,str(entity_key),f"{entity_type}: {entity_key}",equipment_id)
+        if entity_type=="REGISTRY":
+            target=equipment_id or entity_key
+            if hasattr(self.equipment_page,"select_equipment"):self.equipment_page.select_equipment(target)
+            self.open_page("Equipment Registry")
+            return
         if entity_type=="MAP":
             target=equipment_id or entity_key
             self.layout_page.highlight_equipment(target)
