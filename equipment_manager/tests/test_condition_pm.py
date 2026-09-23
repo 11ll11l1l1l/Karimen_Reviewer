@@ -17,7 +17,7 @@ class ConditionPMTriggerTests(unittest.TestCase):
         })
         self.meter=self.db.save_meter({
             "equipment_id":"ETCH-01","meter_code":"BASE_PRESSURE","name":"Base Pressure",
-            "unit":"Pa","current_value":0.0,"active":True,
+            "unit":"Pa","meter_mode":"GAUGE","current_value":0.0,"active":True,
         })
         self.trigger=self.db.save_pm_condition_trigger({
             "trigger_id":"VAC-HIGH","equipment_id":"ETCH-01","pm_id":"PM-VAC",
