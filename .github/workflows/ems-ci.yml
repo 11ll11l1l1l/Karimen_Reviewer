@@ -16,6 +16,20 @@ on:
 jobs:
   ems-core:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: ems_test
+          POSTGRES_USER: ems_test
+          POSTGRES_PASSWORD: ems_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ems_test -d ems_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -24,10 +38,11 @@ jobs:
       - name: Install EMS test dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install "SQLAlchemy>=2.0,<3"
+          pip install "SQLAlchemy>=2.0,<3" "psycopg[binary]>=3.2,<4"
       - name: Compile EMS source
         run: python -m compileall -q equipment_manager
-      - name: Run EMS production-core tests
+      - name: Run EMS SQLite and PostgreSQL production-core tests
         env:
           PYTHONPATH: equipment_manager
+          EMS_TEST_POSTGRES_URL: postgresql+psycopg://ems_test:ems_test@127.0.0.1:5432/ems_test
         run: python -m unittest discover -s equipment_manager/tests -v
