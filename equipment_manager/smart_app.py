@@ -236,6 +236,7 @@ class SmartMainWindow(QMainWindow):
         self.maintenance_planner.open_entity.connect(self.open_entity)
         self.pm_execution.open_entity.connect(self.open_entity)
         self.incident_workspace.open_entity.connect(self.open_entity)
+        self.alarm_page.open_incident.connect(lambda ticket,equipment:self.open_entity("TICKET",ticket,equipment))
         self.inventory.show_map_part.connect(self.show_part_map)
         self.nav.currentRowChanged.connect(self.stack.setCurrentIndex)
         self.nav.currentRowChanged.connect(self._on_nav_changed)
