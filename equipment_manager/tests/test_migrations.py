@@ -15,7 +15,7 @@ class MigrationLifecycleTests(unittest.TestCase):
             rows=db.list_schema_migrations()
             self.assertEqual([x.revision for x in rows],["20260923_001","20260923_002","20260923_003","20260923_004"])
             reopened=Database(url)
-            self.assertEqual(len(reopened.list_schema_migrations()),2)
+            self.assertEqual([x.revision for x in reopened.list_schema_migrations()],["20260923_001","20260923_002","20260923_003","20260923_004"])
 
     def test_migration_checksum_tampering_stops_startup(self):
         with tempfile.TemporaryDirectory() as root:
