@@ -1909,13 +1909,18 @@ class AdminPage(QWidget):
 
 
 class AlarmPage(QWidget):
+    open_incident=Signal(str,str)
     def __init__(self,db,user):
         super().__init__();self.db=db;self.user=user;self.rows=[];self.pareto=[]
         v=QVBoxLayout(self);h=QHBoxLayout();title=QLabel("Equipment Alarms / Events");title.setStyleSheet("font-size:18pt;font-weight:700")
         self.eq=QLineEdit();self.eq.setPlaceholderText("Equipment filter");active=QCheckBox("Active only");active.setChecked(True);self.active_only=active
         refresh=QPushButton("Refresh");refresh.clicked.connect(self.refresh);ack=QPushButton("Acknowledge");ack.clicked.connect(self.acknowledge)
-        manual=QPushButton("Record Manual Alarm");manual.clicked.connect(self.manual_alarm);manual.setEnabled(db.has_permission(user,"ticket.edit"))
-        h.addWidget(title);h.addStretch(1);h.addWidget(self.eq);h.addWidget(active);h.addWidget(refresh);h.addWidget(ack);h.addWidget(manual);v.addLayout(h)
+        create_inc=QPushButton("Create Incident");create_inc.clicked.connect(self.create_incident)
+        link_inc=QPushButton("Link Existing");link_inc.clicked.connect(self.link_incident)
+        open_inc=QPushButton("Open Incident");open_inc.clicked.connect(self.open_related_incident)
+        manual=QPushButton("Record Manual Alarm");manual.clicked.connect(self.manual_alarm)
+        can_ticket=db.has_permission(user,"ticket.edit");manual.setEnabled(can_ticket);create_inc.setEnabled(can_ticket);link_inc.setEnabled(can_ticket)
+        h.addWidget(title);h.addStretch(1);h.addWidget(self.eq);h.addWidget(active);h.addWidget(refresh);h.addWidget(ack);h.addWidget(create_inc);h.addWidget(link_inc);h.addWidget(open_inc);h.addWidget(manual);v.addLayout(h)
         tabs=QTabWidget()
         wa=QWidget();va=QVBoxLayout(wa);self.table=make_table(["Event","Equipment","Alarm Code","Severity","Message","Source","State","Occurred","Ack By","Ack At","Cleared","Ticket"]);self.table.itemSelectionChanged.connect(self.load_attachment);va.addWidget(self.table);tabs.addTab(wa,"Alarm History")
         wp=QWidget();vp=QVBoxLayout(wp);self.pareto_table=make_table(["Alarm Code","Message","Count"]);vp.addWidget(self.pareto_table);tabs.addTab(wp,"30-Day Pareto")
@@ -1941,6 +1946,37 @@ class AlarmPage(QWidget):
         if not row:return
         try:self.db.acknowledge_alarm(row.event_key,self.user["username"]);self.refresh()
         except Exception as exc:QMessageBox.critical(self,"Alarm",str(exc))
+
+    def create_incident(self):
+        row=selected_row(self.table,self.rows)
+        if not row:return
+        if row.related_ticket:
+            self.open_incident.emit(row.related_ticket,row.equipment_id);return
+        if QMessageBox.question(self,"Create Incident",f"Create a governed incident from alarm {row.alarm_code} on {row.equipment_id}?")!=QMessageBox.StandardButton.Yes:return
+        try:
+            ticket=self.db.create_incident_from_alarm(row.event_key,self.user["username"],owner=self.user["username"],workstation=WORKSTATION)
+            self.refresh();self.open_incident.emit(ticket.ticket_no,ticket.equipment_id)
+        except Exception as exc:QMessageBox.critical(self,"Create Incident",str(exc))
+
+    def link_incident(self):
+        row=selected_row(self.table,self.rows)
+        if not row:return
+        candidates=[t for t in self.db.list_tickets() if t.equipment_id==row.equipment_id and t.status not in {"Closed","Cancelled"}]
+        if not candidates:
+            QMessageBox.information(self,"Link Incident","No open incidents exist for this equipment.");return
+        labels=[f"{t.ticket_no} — {t.priority} — {t.title}" for t in candidates]
+        choice,ok=QInputDialog.getItem(self,"Link Incident",f"Open incident for {row.equipment_id}",labels,0,False)
+        if not ok:return
+        ticket=candidates[labels.index(choice)]
+        try:self.db.link_alarm_to_ticket(row.event_key,ticket.ticket_no,self.user["username"],WORKSTATION);self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"Link Incident",str(exc))
+
+    def open_related_incident(self):
+        row=selected_row(self.table,self.rows)
+        if not row:return
+        if not row.related_ticket:
+            QMessageBox.information(self,"Open Incident","This alarm is not linked to an incident.");return
+        self.open_incident.emit(row.related_ticket,row.equipment_id)
 
     def manual_alarm(self):
         equipment,ok=QInputDialog.getText(self,"Manual Alarm","Equipment ID")
