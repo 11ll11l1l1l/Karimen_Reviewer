@@ -32,6 +32,7 @@ from maintenance_planner import MaintenancePlanningWorkspace
 from pm_execution_workspace import PMExecutionWorkspace
 from work_order_workspace import WorkOrderWorkspace
 from shift_handover_workspace import ShiftHandoverWorkspace
+from analytics_workspace import EngineeringAnalyticsWorkspace
 from version import __version__
 from demo_data import active_tickets, seed_demo_data
 from main import (
@@ -225,7 +226,8 @@ class SmartMainWindow(QMainWindow):
         self.ticket_page=add("Ticket Lifecycle / Troubleshooting",TicketPage(db,user))
         self.alarm_page=add("Alarms / Events",AlarmPage(db,user))
         self.qualification_page=add("Qualification",QualificationPage(db,user))
-        self.reliability_page=add("Reliability / MTBF",ReliabilityPage(db))
+        self.analytics_workspace=add("Engineering Analytics",EngineeringAnalyticsWorkspace(db,user))
+        self.reliability_page=add("Reliability / MTBF (Legacy)",ReliabilityPage(db))
         self.control_page=add("Disposition / Release",ControlPage(db,user))
         self.work_page=add("Work / Labor",WorkLogPage(db,user))
         self.shift_workspace=add("Shift Operations / Handover",ShiftHandoverWorkspace(db,user))
@@ -241,6 +243,7 @@ class SmartMainWindow(QMainWindow):
         self.pm_execution.open_entity.connect(self.open_entity)
         self.work_order_workspace.open_entity.connect(self.open_entity)
         self.shift_workspace.open_entity.connect(self.open_entity)
+        self.analytics_workspace.open_entity.connect(self.open_entity)
         self.incident_workspace.open_entity.connect(self.open_entity)
         self.alarm_page.open_incident.connect(lambda ticket,equipment:self.open_entity("TICKET",ticket,equipment))
         self.inventory.show_map_part.connect(self.show_part_map)
