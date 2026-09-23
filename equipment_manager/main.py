@@ -23,6 +23,7 @@ from backup import create_backup, verify_backup
 from logging_config import configure_logging, install_exception_hook
 from version import __version__
 from domain import REASON_CODES, TICKET_REASON_CODES, allowed_targets, allowed_ticket_targets
+from workspaces import AttachmentPanel
 from services import (
     auto_mapping, calculate_next_due, copy_clipboard_image, dataframe_to_pm_backlog,
     dataframe_to_pm_specs, evaluate_measurement, pm_parts_readiness, read_clipboard_table,
@@ -660,6 +661,15 @@ class PMPage(QWidget):
         self.load_usage_occurrences()
         self.condition_triggers=self.db.list_pm_condition_triggers();fill_table(self.condition_trigger_table,self.condition_triggers,["trigger_id","equipment_id","pm_id","meter_code","comparator","threshold","reset_threshold","latched","active","version"])
         self.load_condition_occurrences()
+    def select_task(self,task_id: int):
+        self.refresh();self.tabs.setCurrentIndex(1)
+        for i,row in enumerate(self.tasks):
+            if row.id==task_id:
+                self.task_table.selectRow(i)
+                item=self.task_table.item(i,0)
+                if item:self.task_table.scrollToItem(item)
+                break
+
     def add_def(self):
         d=PMDefinitionDialog(parent=self)
         if d.exec()==QDialog.DialogCode.Accepted:
@@ -936,11 +946,12 @@ class TicketPage(QWidget):
         h.addWidget(add);h.addWidget(edit);h.addWidget(state);h.addWidget(invest);h.addWidget(control);h.addStretch(1);v.addLayout(h)
         self.table=make_table(["Ticket","Equipment","Title","Severity","Priority","Status","Owner","Updated","Ver"]);self.table.itemSelectionChanged.connect(self.load_details);v.addWidget(self.table,2)
 
-        tabs=QTabWidget()
+        tabs=QTabWidget();self.tabs=tabs
         wi=QWidget();vi=QVBoxLayout(wi);self.invtable=make_table(["#","Observation","Check","Result","Conclusion","Action","By","Time"]);vi.addWidget(self.invtable);tabs.addTab(wi,"Troubleshooting History")
         wl=QWidget();vl=QVBoxLayout(wl);self.lifetable=make_table(["From","To","Reason","Note","Owner","Changed By","Time"]);vl.addWidget(self.lifetable);tabs.addTab(wl,"Lifecycle History")
         wo=QWidget();vo=QVBoxLayout(wo);self.control_table=make_table(["Containment","Production Impact","Affected Lots","Safety/Quality Risk","Response Due","Containment Due","Resolution Due","Esc Level","Esc Reason"]);vo.addWidget(self.control_table,1)
         self.escalation_table=make_table(["From Level","To Level","Reason","User","Time"]);vo.addWidget(self.escalation_table,1);tabs.addTab(wo,"Operational Control / SLA")
+        self.attachments=AttachmentPanel(db,user);tabs.addTab(self.attachments,"Evidence / Attachments")
         v.addWidget(tabs,1);self.refresh()
 
     def refresh(self):
@@ -950,6 +961,15 @@ class TicketPage(QWidget):
             for i,row in enumerate(self.rows):
                 if row.ticket_no==current_no:self.table.selectRow(i);break
         self.load_details()
+
+    def select_ticket(self,ticket_no: str):
+        self.refresh()
+        for i,row in enumerate(self.rows):
+            if row.ticket_no==ticket_no:
+                self.table.selectRow(i)
+                item=self.table.item(i,0)
+                if item:self.table.scrollToItem(item)
+                break
 
     def add(self):
         d=TicketDialog(parent=self)
@@ -1002,6 +1022,7 @@ class TicketPage(QWidget):
         controls=[self.control] if self.control else []
         fill_table(self.control_table,controls,["containment","production_impact","affected_lots","safety_quality_risk","response_due_at","containment_due_at","resolution_due_at","escalation_level","escalation_reason"])
         fill_table(self.escalation_table,self.escalations,["from_level","to_level","reason","user","occurred_at"])
+        self.attachments.set_entity("TICKET",row.ticket_no,row.equipment_id) if row else self.attachments.set_entity("","")
 
     def edit_operational_control(self):
         row=selected_row(self.table,self.rows)
@@ -1051,7 +1072,7 @@ class QualificationProtocolDialog(QDialog):
 class QualificationPage(QWidget):
     def __init__(self,db,user):
         super().__init__();self.db=db;self.user=user;self.protocols=[];self.runs=[];self.check_rows=[];self.check_results={}
-        v=QVBoxLayout(self);tabs=QTabWidget();v.addWidget(tabs)
+        v=QVBoxLayout(self);tabs=QTabWidget();self.tabs=tabs;v.addWidget(tabs)
 
         wp=QWidget();vp=QVBoxLayout(wp);hp=QHBoxLayout();newp=QPushButton("New Protocol");revp=QPushButton("New Revision")
         newp.clicked.connect(self.new_protocol);revp.clicked.connect(self.revise_protocol)
@@ -1068,7 +1089,9 @@ class QualificationPage(QWidget):
         hr.addStretch(1);vr.addLayout(hr)
         self.rtable=make_table(["Run","Equipment","Protocol","Rev","Status","Started By","Submitted By","Verified By","Approved By","Expires","Ver"]);self.rtable.itemSelectionChanged.connect(self.load_checks);vr.addWidget(self.rtable,2)
         self.ctable=make_table(["Check ID","Check","Acceptance","Result","Comment","Evidence","Entered By"]);vr.addWidget(self.ctable,1)
-        tabs.addTab(wr,"Qualification Runs");self.refresh()
+        tabs.addTab(wr,"Qualification Runs")
+        self.attachments=AttachmentPanel(db,user);tabs.addTab(self.attachments,"Evidence / Attachments")
+        self.refresh()
 
     def refresh(self):
         self.protocols=self.db.list_qualification_protocols(active_only=False)
@@ -1083,6 +1106,12 @@ class QualificationPage(QWidget):
 
     def selected_protocol(self):return selected_row(self.ptable,self.protocols)
     def selected_run(self):return selected_row(self.rtable,self.runs)
+
+    def select_run(self,run_no: str):
+        self.refresh();self.tabs.setCurrentIndex(1)
+        for i,row in enumerate(self.runs):
+            if row.run_no==run_no:
+                self.rtable.selectRow(i);break
 
     def new_protocol(self):
         d=QualificationProtocolDialog(parent=self)
@@ -1112,7 +1141,9 @@ class QualificationPage(QWidget):
 
     def load_checks(self):
         row=self.selected_run()
-        if not row:self.check_rows=[];self.check_results={};self.ctable.setRowCount(0);return
+        if not row:
+            self.check_rows=[];self.check_results={};self.ctable.setRowCount(0);self.attachments.set_entity("","");return
+        self.attachments.set_entity("QUALIFICATION",row.run_no,row.equipment_id)
         try:self.check_rows,self.check_results=self.db.qualification_run_checks(row.id)
         except Exception:self.check_rows=[];self.check_results={}
         self.ctable.setRowCount(len(self.check_rows))
@@ -1197,8 +1228,18 @@ class ControlPage(QWidget):
     def __init__(self,db,user):
         super().__init__();self.db=db;self.user=user;self.disp=[];self.rel=[];v=QVBoxLayout(self);tabs=QTabWidget();v.addWidget(tabs)
         wd=QWidget();vd=QVBoxLayout(wd);bd=QPushButton("New Disposition");bd.clicked.connect(self.new_disp);bd.setEnabled(db.has_permission(user,"disposition.edit"));vd.addWidget(bd);self.dtable=make_table(["Equipment","State","Reason","Restrictions","Criteria","Ticket","Created By","Approved By","Effective"]);vd.addWidget(self.dtable);tabs.addTab(wd,"Disposition")
-        wr=QWidget();vr=QVBoxLayout(wr);hr=QHBoxLayout();new=QPushButton("New Release Request");verify=QPushButton("Verify Selected");approve=QPushButton("Approve / Release");new.clicked.connect(self.new_release);verify.clicked.connect(self.verify_release);approve.clicked.connect(self.approve_release);new.setEnabled(db.has_permission(user,"release.verify") or db.has_permission(user,"disposition.edit"));verify.setEnabled(db.has_permission(user,"release.verify"));approve.setEnabled(db.has_permission(user,"release.approve"));hr.addWidget(new);hr.addWidget(verify);hr.addWidget(approve);hr.addStretch(1);vr.addLayout(hr);self.rtable=make_table(["ID","Equipment","Ticket","Status","Requested By","Verified By","Approved By","Requested","Ver"]);vr.addWidget(self.rtable);tabs.addTab(wr,"Release Verification");self.refresh()
-    def refresh(self):self.disp=self.db.list_dispositions();fill_table(self.dtable,self.disp,["equipment_id","state","reason","restrictions","release_criteria","related_ticket","created_by","approved_by","effective_at"]);self.rel=self.db.list_release_requests();fill_table(self.rtable,self.rel,["id","equipment_id","related_ticket","status","requested_by","verified_by","approved_by","requested_at","version"])
+        wr=QWidget();vr=QVBoxLayout(wr);hr=QHBoxLayout();new=QPushButton("New Release Request");verify=QPushButton("Verify Selected");approve=QPushButton("Approve / Release");new.clicked.connect(self.new_release);verify.clicked.connect(self.verify_release);approve.clicked.connect(self.approve_release);new.setEnabled(db.has_permission(user,"release.verify") or db.has_permission(user,"disposition.edit"));verify.setEnabled(db.has_permission(user,"release.verify"));approve.setEnabled(db.has_permission(user,"release.approve"));hr.addWidget(new);hr.addWidget(verify);hr.addWidget(approve);hr.addStretch(1);vr.addLayout(hr);self.rtable=make_table(["ID","Equipment","Ticket","Status","Requested By","Verified By","Approved By","Requested","Ver"]);self.rtable.itemSelectionChanged.connect(self.load_release_attachment);vr.addWidget(self.rtable,2);self.release_attachments=AttachmentPanel(db,user);vr.addWidget(self.release_attachments,1);tabs.addTab(wr,"Release Verification");self.refresh()
+    def refresh(self):
+        self.disp=self.db.list_dispositions();fill_table(self.dtable,self.disp,["equipment_id","state","reason","restrictions","release_criteria","related_ticket","created_by","approved_by","effective_at"])
+        current=selected_row(self.rtable,self.rel);rid=current.id if current else None
+        self.rel=self.db.list_release_requests();fill_table(self.rtable,self.rel,["id","equipment_id","related_ticket","status","requested_by","verified_by","approved_by","requested_at","version"])
+        if rid is not None:
+            for i,row in enumerate(self.rel):
+                if row.id==rid:self.rtable.selectRow(i);break
+        self.load_release_attachment()
+    def load_release_attachment(self):
+        row=selected_row(self.rtable,self.rel)
+        self.release_attachments.set_entity("RELEASE",str(row.id),row.equipment_id) if row else self.release_attachments.set_entity("","")
     def new_disp(self):
         d=DispositionDialog(self)
         if d.exec()==QDialog.DialogCode.Accepted:
@@ -1271,8 +1312,21 @@ class EndorsementDialog(QDialog):
 
 class EndorsementPage(QWidget):
     def __init__(self,db,user):
-        super().__init__();self.db=db;self.user=user;self.rows=[];v=QVBoxLayout(self);h=QHBoxLayout();add=QPushButton("New Endorsement");ack=QPushButton("Acknowledge Selected");add.clicked.connect(self.add);ack.clicked.connect(self.ack);allowed=db.has_permission(user,"endorsement.edit");add.setEnabled(allowed);ack.setEnabled(allowed);h.addWidget(add);h.addWidget(ack);h.addStretch(1);v.addLayout(h);self.table=make_table(["No","Equipment","Condition","Pending","Restrictions","Next Owner","Status","Created By","Ack By","Time"]);v.addWidget(self.table);self.refresh()
-    def refresh(self):self.rows=self.db.list_endorsements();fill_table(self.table,self.rows,["endorsement_no","equipment_id","current_condition","pending_work","restrictions","next_owner","status","created_by","acknowledged_by","created_at"])
+        super().__init__();self.db=db;self.user=user;self.rows=[];v=QVBoxLayout(self);h=QHBoxLayout();add=QPushButton("New Endorsement");ack=QPushButton("Acknowledge Selected");add.clicked.connect(self.add);ack.clicked.connect(self.ack);allowed=db.has_permission(user,"endorsement.edit");add.setEnabled(allowed);ack.setEnabled(allowed);h.addWidget(add);h.addWidget(ack);h.addStretch(1);v.addLayout(h);self.table=make_table(["No","Equipment","Condition","Pending","Restrictions","Next Owner","Status","Created By","Ack By","Time"]);self.table.itemSelectionChanged.connect(self.load_attachments);v.addWidget(self.table,2);self.attachments=AttachmentPanel(db,user);v.addWidget(self.attachments,1);self.refresh()
+    def refresh(self):
+        current=selected_row(self.table,self.rows);key=current.endorsement_no if current else ""
+        self.rows=self.db.list_endorsements();fill_table(self.table,self.rows,["endorsement_no","equipment_id","current_condition","pending_work","restrictions","next_owner","status","created_by","acknowledged_by","created_at"])
+        if key:
+            for i,row in enumerate(self.rows):
+                if row.endorsement_no==key:self.table.selectRow(i);break
+        self.load_attachments()
+    def load_attachments(self):
+        row=selected_row(self.table,self.rows)
+        self.attachments.set_entity("ENDORSEMENT",row.endorsement_no,row.equipment_id) if row else self.attachments.set_entity("","")
+    def select_endorsement(self,key: str):
+        self.refresh()
+        for i,row in enumerate(self.rows):
+            if row.endorsement_no==key:self.table.selectRow(i);break
     def add(self):
         d=EndorsementDialog(self)
         if d.exec()==QDialog.DialogCode.Accepted:
@@ -1657,8 +1711,9 @@ class AlarmPage(QWidget):
         manual=QPushButton("Record Manual Alarm");manual.clicked.connect(self.manual_alarm);manual.setEnabled(db.has_permission(user,"ticket.edit"))
         h.addWidget(title);h.addStretch(1);h.addWidget(self.eq);h.addWidget(active);h.addWidget(refresh);h.addWidget(ack);h.addWidget(manual);v.addLayout(h)
         tabs=QTabWidget()
-        wa=QWidget();va=QVBoxLayout(wa);self.table=make_table(["Event","Equipment","Alarm Code","Severity","Message","Source","State","Occurred","Ack By","Ack At","Cleared","Ticket"]);va.addWidget(self.table);tabs.addTab(wa,"Alarm History")
+        wa=QWidget();va=QVBoxLayout(wa);self.table=make_table(["Event","Equipment","Alarm Code","Severity","Message","Source","State","Occurred","Ack By","Ack At","Cleared","Ticket"]);self.table.itemSelectionChanged.connect(self.load_attachment);va.addWidget(self.table);tabs.addTab(wa,"Alarm History")
         wp=QWidget();vp=QVBoxLayout(wp);self.pareto_table=make_table(["Alarm Code","Message","Count"]);vp.addWidget(self.pareto_table);tabs.addTab(wp,"30-Day Pareto")
+        self.attachments=AttachmentPanel(db,user);tabs.addTab(self.attachments,"Evidence / Attachments")
         v.addWidget(tabs);self.eq.textChanged.connect(self.refresh);self.active_only.stateChanged.connect(self.refresh);self.refresh()
 
     def refresh(self):
@@ -1669,6 +1724,11 @@ class AlarmPage(QWidget):
         self.pareto_table.setRowCount(len(self.pareto))
         for r,row in enumerate(self.pareto):
             for col,key in enumerate(["alarm_code","message","count"]):self.pareto_table.setItem(r,col,ti(row.get(key,"")))
+        self.load_attachment()
+
+    def load_attachment(self):
+        row=selected_row(self.table,self.rows)
+        self.attachments.set_entity("ALARM",row.event_key,row.equipment_id) if row else self.attachments.set_entity("","")
 
     def acknowledge(self):
         row=selected_row(self.table,self.rows)
