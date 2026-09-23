@@ -52,6 +52,7 @@ ALLOWED_TRANSITIONS = {
 }
 
 REASON_CODES = {
+    "INITIAL_STATE": "Initial equipment state",
     "FAILURE": "Equipment failure / alarm",
     "PROCESS_CONCERN": "Process concern",
     "QUALITY_CONCERN": "Quality concern",
