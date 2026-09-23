@@ -31,6 +31,7 @@ from incident_workspace import IncidentWorkspace
 from maintenance_planner import MaintenancePlanningWorkspace
 from pm_execution_workspace import PMExecutionWorkspace
 from work_order_workspace import WorkOrderWorkspace
+from shift_handover_workspace import ShiftHandoverWorkspace
 from version import __version__
 from demo_data import active_tickets, seed_demo_data
 from main import (
@@ -227,7 +228,8 @@ class SmartMainWindow(QMainWindow):
         self.reliability_page=add("Reliability / MTBF",ReliabilityPage(db))
         self.control_page=add("Disposition / Release",ControlPage(db,user))
         self.work_page=add("Work / Labor",WorkLogPage(db,user))
-        self.endorsement_page=add("Shift Endorsements",EndorsementPage(db,user))
+        self.shift_workspace=add("Shift Operations / Handover",ShiftHandoverWorkspace(db,user))
+        self.endorsement_page=add("Handover Records",EndorsementPage(db,user))
         self.inventory=add("Parts / Inventory",InventoryPage(db,user))
         self.document_page=add("SOPs / Documents",DocumentPage(db,user))
         self.admin_page=add("Users / Administration",AdminPage(db,user))
@@ -238,6 +240,7 @@ class SmartMainWindow(QMainWindow):
         self.maintenance_planner.open_entity.connect(self.open_entity)
         self.pm_execution.open_entity.connect(self.open_entity)
         self.work_order_workspace.open_entity.connect(self.open_entity)
+        self.shift_workspace.open_entity.connect(self.open_entity)
         self.incident_workspace.open_entity.connect(self.open_entity)
         self.alarm_page.open_incident.connect(lambda ticket,equipment:self.open_entity("TICKET",ticket,equipment))
         self.inventory.show_map_part.connect(self.show_part_map)
@@ -354,8 +357,8 @@ class SmartMainWindow(QMainWindow):
             self.open_page("SOPs / Documents")
             return
         if entity_type=="ENDORSEMENT":
-            if hasattr(self.endorsement_page,"select_endorsement"):self.endorsement_page.select_endorsement(entity_key)
-            self.open_page("Shift Endorsements")
+            self.shift_workspace.set_endorsement(entity_key)
+            self.open_page("Shift Operations / Handover")
             return
         if equipment_id:
             self.equipment360.set_equipment(equipment_id);self.open_page("Equipment Workspaces")
