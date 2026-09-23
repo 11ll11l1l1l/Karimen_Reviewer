@@ -19,7 +19,7 @@ from PySide6.QtWidgets import (
 )
 
 from database import Database, PERMISSIONS, ROLE_PERMISSIONS
-from domain import REASON_CODES, allowed_targets
+from domain import REASON_CODES, TICKET_REASON_CODES, allowed_targets, allowed_ticket_targets
 from services import (
     auto_mapping, calculate_next_due, copy_clipboard_image, dataframe_to_pm_backlog,
     dataframe_to_pm_specs, evaluate_measurement, pm_parts_readiness, read_clipboard_table,
@@ -416,47 +416,164 @@ class PMPage(QWidget):
 
 
 class TicketDialog(QDialog):
+    """Issue content editor. Lifecycle state is controlled separately."""
     def __init__(self,row=None,parent=None):
-        super().__init__(parent);self.row=row;self.setWindowTitle("Issue Ticket");f=QFormLayout(self);self.no=QLineEdit();self.eq=QLineEdit();self.title=QLineEdit();self.desc=QTextEdit();self.sev=QComboBox();self.sev.addItems(["S1","S2","S3","S4"]);self.prio=QComboBox();self.prio.addItems(["P1","P2","P3","P4"]);self.status=QComboBox();self.status.addItems(["Open","Assigned","Investigation","Waiting Parts","Waiting Vendor","Waiting Production","Monitoring","Resolved","Verification","Closed","Cancelled"]);self.owner=QLineEdit();self.root=QTextEdit();self.action=QTextEdit();self.verify=QTextEdit()
-        for label,w in [("Ticket No",self.no),("Equipment ID",self.eq),("Title",self.title),("Description",self.desc),("Severity",self.sev),("Priority",self.prio),("Status",self.status),("Owner",self.owner),("Root Cause",self.root),("Corrective Action",self.action),("Verification",self.verify)]:f.addRow(label,w)
+        super().__init__(parent);self.row=row;self.setWindowTitle("Issue Ticket");f=QFormLayout(self)
+        self.no=QLineEdit();self.eq=QLineEdit();self.title=QLineEdit();self.desc=QTextEdit()
+        self.sev=QComboBox();self.sev.addItems(["S1","S2","S3","S4"])
+        self.prio=QComboBox();self.prio.addItems(["P1","P2","P3","P4"])
+        self.owner=QLineEdit();self.root=QTextEdit();self.action=QTextEdit();self.verify=QTextEdit()
+        for label,w in [("Ticket No",self.no),("Equipment ID",self.eq),("Title",self.title),("Description",self.desc),("Severity",self.sev),("Priority",self.prio),("Owner",self.owner),("Root Cause",self.root),("Corrective Action",self.action),("Verification",self.verify)]:f.addRow(label,w)
+        if row:
+            state=QLabel(row.status);state.setStyleSheet("font-weight:700");f.addRow("Lifecycle State",state)
+            note=QLabel("Ticket state is controlled by the lifecycle workflow, not this edit form.");note.setWordWrap(True);note.setStyleSheet("color:#7a4b00");f.addRow("",note)
         b=QDialogButtonBox(QDialogButtonBox.StandardButton.Save|QDialogButtonBox.StandardButton.Cancel);b.accepted.connect(self.accept);b.rejected.connect(self.reject);f.addRow(b)
-        if row:self.no.setText(row.ticket_no);self.no.setReadOnly(True);self.eq.setText(row.equipment_id);self.title.setText(row.title);self.desc.setPlainText(row.description);self.sev.setCurrentText(row.severity);self.prio.setCurrentText(row.priority);self.status.setCurrentText(row.status);self.owner.setText(row.owner);self.root.setPlainText(row.root_cause);self.action.setPlainText(row.corrective_action);self.verify.setPlainText(row.verification)
-    def data(self,user):return {"ticket_no":self.no.text().strip(),"equipment_id":self.eq.text().strip(),"title":self.title.text().strip(),"description":self.desc.toPlainText().strip(),"severity":self.sev.currentText(),"priority":self.prio.currentText(),"status":self.status.currentText(),"owner":self.owner.text().strip(),"root_cause":self.root.toPlainText().strip(),"corrective_action":self.action.toPlainText().strip(),"verification":self.verify.toPlainText().strip(),"created_by":getattr(self.row,"created_by","") or user}
+        if row:
+            self.no.setText(row.ticket_no);self.no.setReadOnly(True);self.eq.setText(row.equipment_id);self.eq.setReadOnly(True)
+            self.title.setText(row.title);self.desc.setPlainText(row.description);self.sev.setCurrentText(row.severity);self.prio.setCurrentText(row.priority);self.owner.setText(row.owner)
+            self.root.setPlainText(row.root_cause);self.action.setPlainText(row.corrective_action);self.verify.setPlainText(row.verification)
+
+    def data(self,user):
+        return {
+            "ticket_no":self.no.text().strip(),
+            "equipment_id":self.eq.text().strip(),
+            "title":self.title.text().strip(),
+            "description":self.desc.toPlainText().strip(),
+            "severity":self.sev.currentText(),
+            "priority":self.prio.currentText(),
+            "owner":self.owner.text().strip(),
+            "root_cause":self.root.toPlainText().strip(),
+            "corrective_action":self.action.toPlainText().strip(),
+            "verification":self.verify.toPlainText().strip(),
+            "created_by":getattr(self.row,"created_by","") or user,
+        }
+
+
+class TicketStateDialog(QDialog):
+    def __init__(self,row,parent=None):
+        super().__init__(parent);self.row=row;self.setWindowTitle(f"Change Ticket State — {row.ticket_no}");self.setMinimumWidth(560)
+        f=QFormLayout(self)
+        current=QLabel(row.status);current.setStyleSheet("font-weight:700")
+        self.target=QComboBox();self.target.addItems(allowed_ticket_targets(row.status))
+        self.reason=QComboBox();self.reason.addItems(list(TICKET_REASON_CODES.keys()))
+        self.help=QLabel();self.help.setWordWrap(True);self.help.setStyleSheet("color:#5a6670")
+        self.owner=QLineEdit(row.owner or "");self.note=QTextEdit();self.note.setPlaceholderText("Lifecycle note, verification outcome, cancellation basis, or reopen reason.")
+        f.addRow("Current State",current);f.addRow("Target State",self.target);f.addRow("Reason Code",self.reason);f.addRow("",self.help);f.addRow("Accountable Owner",self.owner);f.addRow("Lifecycle Note",self.note)
+        warning=QLabel("Resolution requires documented root cause and corrective action. Closure additionally requires verification.");warning.setWordWrap(True);warning.setStyleSheet("color:#7a4b00");f.addRow("",warning)
+        b=QDialogButtonBox(QDialogButtonBox.StandardButton.Save|QDialogButtonBox.StandardButton.Cancel);b.accepted.connect(self.accept);b.rejected.connect(self.reject);f.addRow(b)
+        self.reason.currentTextChanged.connect(lambda x:self.help.setText(TICKET_REASON_CODES.get(x,"")))
+        self.target.currentTextChanged.connect(self._suggest_reason)
+        self._suggest_reason(self.target.currentText())
+
+    def _suggest_reason(self,target):
+        preferred={
+            "Assigned":"ASSIGN","Waiting Parts":"WAIT_PARTS","Waiting Vendor":"WAIT_VENDOR","Waiting Production":"WAIT_PRODUCTION",
+            "Monitoring":"MONITOR","Resolved":"RESOLVE","Verification":"VERIFY_START","Closed":"VERIFY_PASS","Cancelled":"CANCEL",
+        }.get(target)
+        if target=="Investigation":
+            if self.row.status=="Verification":preferred="VERIFY_FAIL"
+            elif self.row.status in {"Resolved","Closed"}:preferred="REOPEN"
+            else:preferred="START_INVESTIGATION"
+        if preferred:self.reason.setCurrentText(preferred)
+        self.help.setText(TICKET_REASON_CODES.get(self.reason.currentText(),""))
+
+    def data(self):
+        return {
+            "target_state":self.target.currentText(),
+            "reason_code":self.reason.currentText(),
+            "note":self.note.toPlainText().strip(),
+            "owner":self.owner.text().strip(),
+        }
 
 
 class InvestigationDialog(QDialog):
     def __init__(self,parent=None):
-        super().__init__(parent);self.setWindowTitle("Investigation Step");f=QFormLayout(self);self.obs=QTextEdit();self.check=QTextEdit();self.result=QTextEdit();self.concl=QTextEdit();self.action=QTextEdit();self.evidence=QLineEdit();browse=QPushButton("Browse Evidence");browse.clicked.connect(self.browse);f.addRow("Observation",self.obs);f.addRow("Check Performed",self.check);f.addRow("Result",self.result);f.addRow("Conclusion",self.concl);f.addRow("Action",self.action);f.addRow("Evidence Path",self.evidence);f.addRow("",browse);b=QDialogButtonBox(QDialogButtonBox.StandardButton.Save|QDialogButtonBox.StandardButton.Cancel);b.accepted.connect(self.accept);b.rejected.connect(self.reject);f.addRow(b)
+        super().__init__(parent);self.setWindowTitle("Investigation Step");f=QFormLayout(self);self.obs=QTextEdit();self.check=QTextEdit();self.result=QTextEdit();self.concl=QTextEdit();self.action=QTextEdit();self.evidence=QLineEdit();browse=QPushButton("Browse");browse.clicked.connect(self.browse);hb=QHBoxLayout();hb.addWidget(self.evidence);hb.addWidget(browse)
+        for label,w in [("Observation",self.obs),("Check Performed",self.check),("Result",self.result),("Conclusion",self.concl),("Action",self.action)]:f.addRow(label,w)
+        f.addRow("Evidence",hb);b=QDialogButtonBox(QDialogButtonBox.StandardButton.Save|QDialogButtonBox.StandardButton.Cancel);b.accepted.connect(self.accept);b.rejected.connect(self.reject);f.addRow(b)
+
     def browse(self):
-        p,_=QFileDialog.getOpenFileName(self,"Evidence");
-        if p:self.evidence.setText(p)
-    def data(self,user):return {"observation":self.obs.toPlainText().strip(),"check_performed":self.check.toPlainText().strip(),"result":self.result.toPlainText().strip(),"conclusion":self.concl.toPlainText().strip(),"action":self.action.toPlainText().strip(),"evidence_path":self.evidence.text().strip(),"entered_by":user}
+        path,_=QFileDialog.getOpenFileName(self,"Evidence");self.evidence.setText(path)
+
+    def data(self,user):
+        return {"observation":self.obs.toPlainText().strip(),"check_performed":self.check.toPlainText().strip(),"result":self.result.toPlainText().strip(),"conclusion":self.concl.toPlainText().strip(),"action":self.action.toPlainText().strip(),"evidence_path":self.evidence.text().strip(),"entered_by":user}
 
 
 class TicketPage(QWidget):
     def __init__(self,db,user):
-        super().__init__();self.db=db;self.user=user;self.rows=[];self.inv=[];v=QVBoxLayout(self);h=QHBoxLayout();add=QPushButton("New Ticket");edit=QPushButton("Edit Ticket");invest=QPushButton("Add Investigation Step");add.clicked.connect(self.add);edit.clicked.connect(self.edit);invest.clicked.connect(self.add_investigation);allowed=db.has_permission(user,"ticket.edit");add.setEnabled(allowed);edit.setEnabled(allowed);invest.setEnabled(allowed);h.addWidget(add);h.addWidget(edit);h.addWidget(invest);h.addStretch(1);v.addLayout(h);self.table=make_table(["Ticket","Equipment","Title","Severity","Priority","Status","Owner","Updated","Ver"]);self.table.itemSelectionChanged.connect(self.load_inv);v.addWidget(self.table,2);v.addWidget(QLabel("Investigation / troubleshooting history"));self.invtable=make_table(["#","Observation","Check","Result","Conclusion","Action","By","Time"]);v.addWidget(self.invtable,1);self.refresh()
-    def refresh(self):self.rows=self.db.list_tickets();fill_table(self.table,self.rows,["ticket_no","equipment_id","title","severity","priority","status","owner","updated_at","version"]);self.load_inv()
+        super().__init__();self.db=db;self.user=user;self.rows=[];self.inv=[];self.lifecycle=[]
+        v=QVBoxLayout(self);h=QHBoxLayout()
+        add=QPushButton("New Ticket");edit=QPushButton("Edit Details");state=QPushButton("Change Status");invest=QPushButton("Add Investigation Step")
+        add.clicked.connect(self.add);edit.clicked.connect(self.edit);state.clicked.connect(self.change_state);invest.clicked.connect(self.add_investigation)
+        allowed=db.has_permission(user,"ticket.edit");add.setEnabled(allowed);edit.setEnabled(allowed);state.setEnabled(allowed);invest.setEnabled(allowed)
+        h.addWidget(add);h.addWidget(edit);h.addWidget(state);h.addWidget(invest);h.addStretch(1);v.addLayout(h)
+        self.table=make_table(["Ticket","Equipment","Title","Severity","Priority","Status","Owner","Updated","Ver"]);self.table.itemSelectionChanged.connect(self.load_details);v.addWidget(self.table,2)
+
+        tabs=QTabWidget()
+        wi=QWidget();vi=QVBoxLayout(wi);self.invtable=make_table(["#","Observation","Check","Result","Conclusion","Action","By","Time"]);vi.addWidget(self.invtable);tabs.addTab(wi,"Troubleshooting History")
+        wl=QWidget();vl=QVBoxLayout(wl);self.lifetable=make_table(["From","To","Reason","Note","Owner","Changed By","Time"]);vl.addWidget(self.lifetable);tabs.addTab(wl,"Lifecycle History")
+        v.addWidget(tabs,1);self.refresh()
+
+    def refresh(self):
+        current=selected_row(self.table,self.rows);current_no=current.ticket_no if current else ""
+        self.rows=self.db.list_tickets();fill_table(self.table,self.rows,["ticket_no","equipment_id","title","severity","priority","status","owner","updated_at","version"])
+        if current_no:
+            for i,row in enumerate(self.rows):
+                if row.ticket_no==current_no:self.table.selectRow(i);break
+        self.load_details()
+
     def add(self):
         d=TicketDialog(parent=self)
         if d.exec()==QDialog.DialogCode.Accepted:
-            try:self.db.save_ticket(d.data(self.user["username"]));self.refresh()
+            try:
+                row=self.db.save_ticket(d.data(self.user["username"]),workstation=WORKSTATION)
+                self.db.audit(self.user["username"],"CREATE","TICKET",row.ticket_no,workstation=WORKSTATION)
+                self.refresh()
             except Exception as exc:QMessageBox.critical(self,"Ticket",str(exc))
+
     def edit(self):
         row=selected_row(self.table,self.rows)
         if not row:return
         d=TicketDialog(row,self)
         if d.exec()==QDialog.DialogCode.Accepted:
-            try:self.db.save_ticket(d.data(self.user["username"]),row.version);self.refresh()
+            try:
+                self.db.save_ticket(d.data(self.user["username"]),row.version,workstation=WORKSTATION)
+                self.db.audit(self.user["username"],"UPDATE_DETAILS","TICKET",row.ticket_no,workstation=WORKSTATION)
+                self.refresh()
             except Exception as exc:QMessageBox.critical(self,"Ticket",str(exc))
-    def load_inv(self):
-        row=selected_row(self.table,self.rows);self.inv=self.db.list_ticket_investigations(row.ticket_no) if row else [];fill_table(self.invtable,self.inv,["sequence","observation","check_performed","result","conclusion","action","entered_by","entered_at"])
+
+    def change_state(self):
+        row=selected_row(self.table,self.rows)
+        if not row:return
+        d=TicketStateDialog(row,self)
+        if d.exec()==QDialog.DialogCode.Accepted:
+            try:
+                self.db.transition_ticket_state(
+                    row.ticket_no,
+                    user=self.user["username"],
+                    workstation=WORKSTATION,
+                    expected_version=row.version,
+                    **d.data(),
+                )
+                self.refresh()
+            except Exception as exc:QMessageBox.critical(self,"Ticket Lifecycle",str(exc))
+
+    def load_details(self):
+        row=selected_row(self.table,self.rows)
+        self.inv=self.db.list_ticket_investigations(row.ticket_no) if row else []
+        self.lifecycle=self.db.list_ticket_state_events(row.ticket_no) if row else []
+        fill_table(self.invtable,self.inv,["sequence","observation","check_performed","result","conclusion","action","entered_by","entered_at"])
+        fill_table(self.lifetable,self.lifecycle,["from_state","to_state","reason_code","note","owner","changed_by","changed_at"])
+
     def add_investigation(self):
         row=selected_row(self.table,self.rows)
         if not row:return
         d=InvestigationDialog(self)
         if d.exec()==QDialog.DialogCode.Accepted:
-            try:self.db.add_ticket_investigation(row.ticket_no,d.data(self.user["username"]));self.load_inv()
+            try:
+                self.db.add_ticket_investigation(row.ticket_no,d.data(self.user["username"]))
+                self.db.audit(self.user["username"],"ADD_INVESTIGATION","TICKET",row.ticket_no,workstation=WORKSTATION)
+                self.load_details()
             except Exception as exc:QMessageBox.critical(self,"Investigation",str(exc))
 
 
