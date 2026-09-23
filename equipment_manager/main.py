@@ -251,13 +251,13 @@ class ComponentRemoveDialog(QDialog):
 class MeterDialog(QDialog):
     def __init__(self,equipment_id,row=None,parent=None):
         super().__init__(parent);self.row=row;self.equipment_id=equipment_id;self.setWindowTitle("Equipment Usage Meter")
-        f=QFormLayout(self);self.code=QLineEdit();self.name=QLineEdit();self.unit=QLineEdit();self.initial=QDoubleSpinBox();self.initial.setRange(0,1e15);self.active=QCheckBox("Active");self.active.setChecked(True)
-        f.addRow("Equipment",QLabel(equipment_id));f.addRow("Meter Code",self.code);f.addRow("Name",self.name);f.addRow("Unit",self.unit);f.addRow("Initial Value",self.initial);f.addRow("",self.active)
+        f=QFormLayout(self);self.code=QLineEdit();self.name=QLineEdit();self.unit=QLineEdit();self.mode=QComboBox();self.mode.addItems(["COUNTER","GAUGE"]);self.initial=QDoubleSpinBox();self.initial.setRange(-1e15,1e15);self.active=QCheckBox("Active");self.active.setChecked(True)
+        f.addRow("Equipment",QLabel(equipment_id));f.addRow("Meter Code",self.code);f.addRow("Name",self.name);f.addRow("Unit",self.unit);f.addRow("Mode",self.mode);f.addRow("Initial Value",self.initial);f.addRow("",self.active)
         b=QDialogButtonBox(QDialogButtonBox.StandardButton.Save|QDialogButtonBox.StandardButton.Cancel);b.accepted.connect(self.accept);b.rejected.connect(self.reject);f.addRow(b)
         if row:
-            self.code.setText(row.meter_code);self.code.setReadOnly(True);self.name.setText(row.name);self.unit.setText(row.unit);self.initial.setValue(row.current_value);self.initial.setEnabled(False);self.active.setChecked(row.active)
+            self.code.setText(row.meter_code);self.code.setReadOnly(True);self.name.setText(row.name);self.unit.setText(row.unit);self.mode.setCurrentText("COUNTER");self.initial.setValue(row.current_value);self.initial.setEnabled(False);self.active.setChecked(row.active)
     def data(self):
-        return {"equipment_id":self.equipment_id,"meter_code":self.code.text().strip(),"name":self.name.text().strip(),"unit":self.unit.text().strip(),"current_value":self.initial.value(),"active":self.active.isChecked()}
+        return {"equipment_id":self.equipment_id,"meter_code":self.code.text().strip(),"name":self.name.text().strip(),"unit":self.unit.text().strip(),"meter_mode":self.mode.currentText(),"current_value":self.initial.value(),"active":self.active.isChecked()}
 
 
 class MeterReadingDialog(QDialog):
