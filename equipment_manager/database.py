@@ -11,6 +11,11 @@ from typing import Any
 from sqlalchemy import Boolean, DateTime, Float, Integer, String, Text, UniqueConstraint, create_engine, func, select
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 
+from domain import (
+    DOWNTIME_STATES, EQUIPMENT_STATES, STATE_CLASS, TICKET_STATES,
+    validate_ticket_transition, validate_transition,
+)
+
 
 class Base(DeclarativeBase):
     pass
@@ -60,6 +65,25 @@ class Equipment(Base):
     map_y: Mapped[float] = mapped_column(Float, default=0.0)
     version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class EquipmentStateEvent(Base):
+    __tablename__ = "equipment_state_events"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    event_key: Mapped[str] = mapped_column(String(40), unique=True, index=True, default=lambda: secrets.token_hex(16))
+    equipment_id: Mapped[str] = mapped_column(String(100), index=True)
+    from_state: Mapped[str] = mapped_column(String(40), default="")
+    to_state: Mapped[str] = mapped_column(String(40), index=True)
+    state_class: Mapped[str] = mapped_column(String(40), default="")
+    downtime: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    reason_code: Mapped[str] = mapped_column(String(60), index=True)
+    reason_text: Mapped[str] = mapped_column(Text, default="")
+    related_ticket: Mapped[str] = mapped_column(String(100), default="", index=True)
+    related_pm_task_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    owner: Mapped[str] = mapped_column(String(120), default="")
+    changed_by: Mapped[str] = mapped_column(String(120), default="", index=True)
+    workstation: Mapped[str] = mapped_column(String(120), default="")
+    changed_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
 
 
 class PMDefinition(Base):
@@ -144,6 +168,33 @@ class PMExecution(Base):
     version: Mapped[int] = mapped_column(Integer, default=1)
 
 
+class PMExecutionStepSnapshot(Base):
+    __tablename__ = "pm_execution_step_snapshots"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    execution_id: Mapped[int] = mapped_column(Integer, index=True)
+    pm_id: Mapped[str] = mapped_column(String(100), index=True)
+    source_spec_id: Mapped[int] = mapped_column(Integer)
+    source_revision: Mapped[int] = mapped_column(Integer)
+    step_no: Mapped[int] = mapped_column(Integer)
+    activity: Mapped[str] = mapped_column(Text, default="")
+    method: Mapped[str] = mapped_column(String(250), default="")
+    input_type: Mapped[str] = mapped_column(String(40), default="Text")
+    unit: Mapped[str] = mapped_column(String(40), default="")
+    target: Mapped[float | None] = mapped_column(Float, nullable=True)
+    warning_low: Mapped[float | None] = mapped_column(Float, nullable=True)
+    warning_high: Mapped[float | None] = mapped_column(Float, nullable=True)
+    control_low: Mapped[float | None] = mapped_column(Float, nullable=True)
+    control_high: Mapped[float | None] = mapped_column(Float, nullable=True)
+    spec_low: Mapped[float | None] = mapped_column(Float, nullable=True)
+    spec_high: Mapped[float | None] = mapped_column(Float, nullable=True)
+    acceptance_text: Mapped[str] = mapped_column(Text, default="")
+    reaction_plan: Mapped[str] = mapped_column(Text, default="")
+    sop_path: Mapped[str] = mapped_column(Text, default="")
+    sop_page: Mapped[str] = mapped_column(String(40), default="")
+    sop_section: Mapped[str] = mapped_column(String(80), default="")
+    __table_args__ = (UniqueConstraint("execution_id", "step_no", name="uq_pm_execution_snapshot_step"),)
+
+
 class PMResult(Base):
     __tablename__ = "pm_results"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -178,6 +229,21 @@ class Ticket(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     version: Mapped[int] = mapped_column(Integer, default=1)
+
+
+class TicketStateEvent(Base):
+    __tablename__ = "ticket_state_events"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    event_key: Mapped[str] = mapped_column(String(40), unique=True, index=True, default=lambda: secrets.token_hex(16))
+    ticket_no: Mapped[str] = mapped_column(String(100), index=True)
+    from_state: Mapped[str] = mapped_column(String(50), default="")
+    to_state: Mapped[str] = mapped_column(String(50), index=True)
+    reason_code: Mapped[str] = mapped_column(String(60), index=True)
+    note: Mapped[str] = mapped_column(Text, default="")
+    owner: Mapped[str] = mapped_column(String(120), default="")
+    changed_by: Mapped[str] = mapped_column(String(120), default="", index=True)
+    workstation: Mapped[str] = mapped_column(String(120), default="")
+    changed_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
 
 
 class TicketInvestigation(Base):
@@ -356,9 +422,9 @@ PBKDF2_ROUNDS = 310_000
 
 ROLE_PERMISSIONS = {
     "Administrator": {"*"},
-    "Manager": {"view", "equipment.edit", "pm.edit", "pm.execute", "pm.approve", "ticket.edit", "disposition.edit", "release.approve", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
-    "Supervisor": {"view", "equipment.edit", "pm.edit", "pm.execute", "ticket.edit", "disposition.edit", "release.verify", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
-    "Equipment Engineer": {"view", "equipment.edit", "pm.edit", "pm.execute", "ticket.edit", "disposition.edit", "release.verify", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
+    "Manager": {"view", "equipment.edit", "equipment.transition", "pm.edit", "pm.execute", "pm.approve", "ticket.edit", "disposition.edit", "release.approve", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
+    "Supervisor": {"view", "equipment.edit", "equipment.transition", "pm.edit", "pm.execute", "ticket.edit", "disposition.edit", "release.verify", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
+    "Equipment Engineer": {"view", "equipment.edit", "equipment.transition", "pm.edit", "pm.execute", "ticket.edit", "disposition.edit", "release.verify", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
     "Maintenance": {"view", "pm.execute", "ticket.edit", "endorsement.edit", "inventory.consume", "inventory.reserve", "document.link"},
     "Technician": {"view", "pm.execute", "ticket.edit", "inventory.consume", "document.link"},
     "Process Engineer": {"view", "ticket.edit", "release.verify", "document.link", "report.view"},
@@ -368,7 +434,7 @@ ROLE_PERMISSIONS = {
 }
 
 PERMISSIONS = [
-    "view", "equipment.edit", "layout.edit", "pm.edit", "pm.execute", "pm.approve",
+    "view", "equipment.edit", "equipment.transition", "layout.edit", "pm.edit", "pm.execute", "pm.approve",
     "ticket.edit", "disposition.edit", "release.verify", "release.approve", "endorsement.edit",
     "inventory.edit", "inventory.consume", "inventory.reserve", "document.link", "document.control",
     "user.admin", "audit.view", "report.view",
@@ -496,12 +562,130 @@ class Database:
     def get_equipment(self, equipment_id: str):
         with self.session() as s: return s.scalar(select(Equipment).where(Equipment.equipment_id == equipment_id))
 
-    def save_equipment(self, data: dict[str, Any], expected_version: int | None = None):
+    def save_equipment(
+        self,
+        data: dict[str, Any],
+        expected_version: int | None = None,
+        user: str = "",
+        workstation: str = "",
+    ):
+        payload = dict(data)
         with self.session() as s:
-            item = s.scalar(select(Equipment).where(Equipment.equipment_id == data["equipment_id"]))
-            if item: self._update_versioned(item, data, expected_version, "Equipment")
-            else: item = Equipment(**data); s.add(item)
-            s.flush(); return item
+            item = s.scalar(select(Equipment).where(Equipment.equipment_id == payload["equipment_id"]))
+            if item:
+                # Operational state and disposition are governed workflows, not editable master-data fields.
+                payload.pop("status", None)
+                payload.pop("disposition", None)
+                self._update_versioned(item, payload, expected_version, "Equipment")
+            else:
+                payload["status"] = payload.get("status") or "Available"
+                payload["disposition"] = payload.get("disposition") or "Released"
+                if payload["status"] not in EQUIPMENT_STATES:
+                    raise ValueError(f"Unknown equipment state: {payload['status']}")
+                item = Equipment(**payload)
+                s.add(item)
+                s.add(EquipmentStateEvent(
+                    equipment_id=payload["equipment_id"],
+                    from_state="",
+                    to_state=payload["status"],
+                    state_class=STATE_CLASS[payload["status"]],
+                    downtime=payload["status"] in DOWNTIME_STATES,
+                    reason_code="INITIAL_STATE",
+                    reason_text="Equipment record created",
+                    owner=payload.get("owner", ""),
+                    changed_by=user,
+                    workstation=workstation,
+                ))
+            s.flush()
+            return item
+
+    def list_equipment_state_events(self, equipment_id: str, limit: int = 250):
+        with self.session() as s:
+            stmt = (
+                select(EquipmentStateEvent)
+                .where(EquipmentStateEvent.equipment_id == equipment_id)
+                .order_by(EquipmentStateEvent.changed_at.desc(), EquipmentStateEvent.id.desc())
+                .limit(max(1, min(int(limit), 2000)))
+            )
+            return list(s.scalars(stmt))
+
+    def transition_equipment_state(
+        self,
+        equipment_id: str,
+        target_state: str,
+        *,
+        reason_code: str,
+        reason_text: str = "",
+        related_ticket: str = "",
+        related_pm_task_id: int | None = None,
+        owner: str = "",
+        user: str,
+        workstation: str = "",
+        expected_version: int | None = None,
+        override: bool = False,
+    ):
+        with self.session() as s:
+            stmt = select(Equipment).where(Equipment.equipment_id == equipment_id)
+            if self.url.startswith("postgresql"):
+                stmt = stmt.with_for_update()
+            eq = s.scalar(stmt)
+            if not eq:
+                raise ValueError("Equipment not found")
+            if expected_version is not None and eq.version != expected_version:
+                raise RuntimeError("CONFLICT: Equipment changed by another user. Refresh and retry.")
+
+            decision = validate_transition(
+                eq.status,
+                target_state,
+                reason_code=reason_code,
+                reason_text=reason_text,
+                related_ticket=related_ticket,
+                related_pm_task_id=related_pm_task_id,
+                owner=owner,
+                disposition=eq.disposition,
+                override=override,
+            )
+            now = datetime.utcnow()
+            event = EquipmentStateEvent(
+                equipment_id=equipment_id,
+                from_state=eq.status,
+                to_state=target_state,
+                state_class=decision.state_class,
+                downtime=decision.downtime,
+                reason_code=reason_code,
+                reason_text=reason_text.strip(),
+                related_ticket=related_ticket.strip(),
+                related_pm_task_id=related_pm_task_id,
+                owner=owner.strip(),
+                changed_by=user,
+                workstation=workstation,
+                changed_at=now,
+            )
+            s.add(event)
+            previous = eq.status
+            eq.status = target_state
+            eq.version += 1
+            eq.updated_at = now
+            s.add(AuditLog(
+                user=user,
+                action="STATE_TRANSITION",
+                entity_type="EQUIPMENT",
+                entity_key=equipment_id,
+                detail=json.dumps({
+                    "from": previous,
+                    "to": target_state,
+                    "state_class": STATE_CLASS[target_state],
+                    "reason_code": reason_code,
+                    "reason_text": reason_text.strip(),
+                    "related_ticket": related_ticket.strip(),
+                    "related_pm_task_id": related_pm_task_id,
+                    "owner": owner.strip(),
+                }, sort_keys=True),
+                workstation=workstation,
+                created_at=now,
+            ))
+            s.flush()
+            return eq, event
 
     def update_map_position(self, entity_type: str, key: str, x: float, y: float, expected_version: int | None = None):
         with self.session() as s:
@@ -565,51 +749,320 @@ class Database:
             if pm_id: stmt = stmt.where(PMSpec.pm_id == pm_id)
             return list(s.scalars(stmt))
 
+    @staticmethod
+    def _classify_pm_snapshot_value(spec, value_text: str, value_numeric: float | None) -> str:
+        if spec.input_type == "Numeric":
+            if value_numeric is None:
+                return "INVALID"
+            v = float(value_numeric)
+            if (spec.spec_low is not None and v < spec.spec_low) or (spec.spec_high is not None and v > spec.spec_high):
+                return "SPECIFICATION FAILURE"
+            if (spec.control_low is not None and v < spec.control_low) or (spec.control_high is not None and v > spec.control_high):
+                return "CONTROL FAILURE"
+            if (spec.warning_low is not None and v < spec.warning_low) or (spec.warning_high is not None and v > spec.warning_high):
+                return "WARNING"
+            return "PASS"
+        if spec.input_type == "Pass / Fail":
+            normalized = (value_text or "").strip().lower()
+            return "PASS" if normalized in {"pass", "ok", "yes", "good", "acceptable"} else "FAIL"
+        return "RECORDED" if (value_text or "").strip() else "INVALID"
+
+    @staticmethod
+    def _snapshot_pm_specs(s, ex: PMExecution, task: PMTask):
+        existing = int(s.scalar(
+            select(func.count()).select_from(PMExecutionStepSnapshot)
+            .where(PMExecutionStepSnapshot.execution_id == ex.id)
+        ) or 0)
+        if existing:
+            return
+        specs = list(s.scalars(
+            select(PMSpec)
+            .where(PMSpec.pm_id == task.pm_id, PMSpec.active.is_(True))
+            .order_by(PMSpec.step_no)
+        ))
+        if not specs:
+            raise ValueError("PM cannot start because no active controlled checklist/specification steps exist.")
+        for spec in specs:
+            s.add(PMExecutionStepSnapshot(
+                execution_id=ex.id,
+                pm_id=spec.pm_id,
+                source_spec_id=spec.id,
+                source_revision=spec.revision,
+                step_no=spec.step_no,
+                activity=spec.activity,
+                method=spec.method,
+                input_type=spec.input_type,
+                unit=spec.unit,
+                target=spec.target,
+                warning_low=spec.warning_low,
+                warning_high=spec.warning_high,
+                control_low=spec.control_low,
+                control_high=spec.control_high,
+                spec_low=spec.spec_low,
+                spec_high=spec.spec_high,
+                acceptance_text=spec.acceptance_text,
+                reaction_plan=spec.reaction_plan,
+                sop_path=spec.sop_path,
+                sop_page=spec.sop_page,
+                sop_section=spec.sop_section,
+            ))
+
     def start_pm_execution(self, task_id: int, user: str):
         with self.session() as s:
+            task_stmt = select(PMTask).where(PMTask.id == task_id)
+            if self.url.startswith("postgresql"):
+                task_stmt = task_stmt.with_for_update()
+            task = s.scalar(task_stmt)
+            if not task:
+                raise ValueError("PM task not found")
             ex = s.scalar(select(PMExecution).where(PMExecution.task_id == task_id))
-            if ex: return ex
-            task = s.get(PMTask, task_id)
-            if not task: raise ValueError("PM task not found")
-            ex = PMExecution(task_id=task_id, started_by=user); s.add(ex)
-            task.status = "In Progress"; task.version += 1; s.flush(); return ex
+            if ex:
+                self._snapshot_pm_specs(s, ex, task)
+                s.flush()
+                return ex
+            ex = PMExecution(task_id=task_id, started_by=user)
+            s.add(ex)
+            s.flush()
+            self._snapshot_pm_specs(s, ex, task)
+            task.status = "In Progress"
+            task.version += 1
+            s.flush()
+            return ex
+
+    def list_pm_execution_specs(self, execution_id: int):
+        with self.session() as s:
+            return list(s.scalars(
+                select(PMExecutionStepSnapshot)
+                .where(PMExecutionStepSnapshot.execution_id == execution_id)
+                .order_by(PMExecutionStepSnapshot.step_no)
+            ))
 
     def save_pm_result(self, execution_id: int, step_no: int, data: dict[str, Any], expected_version: int | None = None):
         with self.session() as s:
+            ex = s.get(PMExecution, execution_id)
+            if not ex:
+                raise ValueError("PM execution not found")
+            if ex.status == "Completed":
+                raise ValueError("Completed PM execution is read-only.")
+            spec = s.scalar(select(PMExecutionStepSnapshot).where(
+                PMExecutionStepSnapshot.execution_id == execution_id,
+                PMExecutionStepSnapshot.step_no == step_no,
+            ))
+            if not spec:
+                raise ValueError("PM step is not part of the frozen execution checklist.")
             item = s.scalar(select(PMResult).where(PMResult.execution_id == execution_id, PMResult.step_no == step_no))
-            payload = dict(data); payload.update(execution_id=execution_id, step_no=step_no)
-            if item: self._update_versioned(item, payload, expected_version, "PM result")
-            else: item = PMResult(**payload); s.add(item)
-            s.flush(); return item
+            payload = dict(data)
+            payload.update(execution_id=execution_id, step_no=step_no)
+            payload["result"] = self._classify_pm_snapshot_value(
+                spec,
+                payload.get("value_text", ""),
+                payload.get("value_numeric"),
+            )
+            if item:
+                self._update_versioned(item, payload, expected_version, "PM result")
+            else:
+                item = PMResult(**payload)
+                s.add(item)
+            s.flush()
+            return item
 
     def list_pm_results(self, execution_id: int):
-        with self.session() as s: return list(s.scalars(select(PMResult).where(PMResult.execution_id == execution_id).order_by(PMResult.step_no)))
+        with self.session() as s:
+            return list(s.scalars(
+                select(PMResult)
+                .where(PMResult.execution_id == execution_id)
+                .order_by(PMResult.step_no)
+            ))
 
     def complete_pm_execution(self, execution_id: int, user: str):
         with self.session() as s:
-            ex = s.get(PMExecution, execution_id)
-            if not ex: raise ValueError("Execution not found")
-            if ex.status == "Completed": return ex
+            ex_stmt = select(PMExecution).where(PMExecution.id == execution_id)
+            if self.url.startswith("postgresql"):
+                ex_stmt = ex_stmt.with_for_update()
+            ex = s.scalar(ex_stmt)
+            if not ex:
+                raise ValueError("Execution not found")
+            if ex.status == "Completed":
+                return ex
             task = s.get(PMTask, ex.task_id)
-            specs = list(s.scalars(select(PMSpec).where(PMSpec.pm_id == task.pm_id, PMSpec.active.is_(True))))
+            specs = list(s.scalars(
+                select(PMExecutionStepSnapshot)
+                .where(PMExecutionStepSnapshot.execution_id == execution_id)
+                .order_by(PMExecutionStepSnapshot.step_no)
+            ))
+            if not specs:
+                raise ValueError("PM execution has no frozen controlled checklist.")
             results = list(s.scalars(select(PMResult).where(PMResult.execution_id == execution_id)))
-            have = {r.step_no for r in results}
-            missing = [p.step_no for p in specs if p.step_no not in have]
-            if missing: raise ValueError(f"Missing required PM steps: {missing}")
-            hard_fail = [r.step_no for r in results if r.result in {"SPECIFICATION FAILURE", "CONTROL FAILURE", "FAIL", "INVALID"}]
-            if hard_fail: raise ValueError(f"Failed/invalid PM steps require correction, disposition, or engineering review: {hard_fail}")
-            now = datetime.utcnow(); ex.status="Completed"; ex.completed_by=user; ex.completed_at=now; ex.version += 1
-            task.status="Completed"; task.last_completion_date=now; task.version += 1; s.flush(); return ex
+            by_step = {r.step_no: r for r in results}
+            missing = [p.step_no for p in specs if p.step_no not in by_step]
+            if missing:
+                raise ValueError(f"Missing required PM steps: {missing}")
+            hard_fail = [
+                step_no for step_no, result in by_step.items()
+                if result.result in {"SPECIFICATION FAILURE", "CONTROL FAILURE", "FAIL", "INVALID"}
+            ]
+            if hard_fail:
+                raise ValueError(
+                    f"Failed/invalid PM steps require correction, disposition, or engineering review: {hard_fail}"
+                )
+            now = datetime.utcnow()
+            ex.status = "Completed"
+            ex.completed_by = user
+            ex.completed_at = now
+            ex.version += 1
+            task.status = "Completed"
+            task.last_completion_date = now
+            task.version += 1
+            s.flush()
+            return ex
 
     def list_tickets(self):
         with self.session() as s: return list(s.scalars(select(Ticket).order_by(Ticket.created_at.desc())))
 
-    def save_ticket(self, data: dict[str, Any], expected_version: int | None = None):
+    def save_ticket(
+        self,
+        data: dict[str, Any],
+        expected_version: int | None = None,
+        workstation: str = "",
+    ):
+        payload = dict(data)
         with self.session() as s:
-            item = s.scalar(select(Ticket).where(Ticket.ticket_no == data["ticket_no"]))
-            if item: self._update_versioned(item, data, expected_version, "Ticket")
-            else: item=Ticket(**data); s.add(item)
-            s.flush(); return item
+            item = s.scalar(select(Ticket).where(Ticket.ticket_no == payload["ticket_no"]))
+            if item:
+                # Lifecycle state is controlled by transition_ticket_state(), not generic editing.
+                payload.pop("status", None)
+                payload.pop("created_by", None)
+                payload.pop("created_at", None)
+                self._update_versioned(item, payload, expected_version, "Ticket")
+            else:
+                payload["status"] = "Open"
+                if payload["status"] not in TICKET_STATES:
+                    raise ValueError(f"Unknown ticket state: {payload['status']}")
+                item = Ticket(**payload)
+                s.add(item)
+                s.add(TicketStateEvent(
+                    ticket_no=payload["ticket_no"],
+                    from_state="",
+                    to_state="Open",
+                    reason_code="INITIAL_STATE",
+                    note="Issue ticket created",
+                    owner=payload.get("owner", ""),
+                    changed_by=payload.get("created_by", ""),
+                    workstation=workstation,
+                ))
+            s.flush()
+            return item
+
+    def list_ticket_state_events(self, ticket_no: str, limit: int = 250):
+        with self.session() as s:
+            stmt = (
+                select(TicketStateEvent)
+                .where(TicketStateEvent.ticket_no == ticket_no)
+                .order_by(TicketStateEvent.changed_at.desc(), TicketStateEvent.id.desc())
+                .limit(max(1, min(int(limit), 2000)))
+            )
+            return list(s.scalars(stmt))
+
+    def transition_ticket_state(
+        self,
+        ticket_no: str,
+        target_state: str,
+        *,
+        reason_code: str,
+        note: str = "",
+        owner: str = "",
+        user: str,
+        workstation: str = "",
+        expected_version: int | None = None,
+        override: bool = False,
+    ):
+        with self.session() as s:
+            stmt = select(Ticket).where(Ticket.ticket_no == ticket_no)
+            if self.url.startswith("postgresql"):
+                stmt = stmt.with_for_update()
+            item = s.scalar(stmt)
+            if not item:
+                raise ValueError("Ticket not found")
+            if expected_version is not None and item.version != expected_version:
+                raise RuntimeError("CONFLICT: Ticket changed by another user. Refresh and retry.")
+
+            effective_owner = (owner or item.owner or "").strip()
+            validate_ticket_transition(
+                item.status,
+                target_state,
+                reason_code=reason_code,
+                owner=effective_owner,
+                note=note,
+                override=override,
+            )
+            if target_state in {"Resolved", "Verification", "Closed"}:
+                if not (item.root_cause or "").strip():
+                    raise ValueError("Root cause must be documented before resolution/verification.")
+                if not (item.corrective_action or "").strip():
+                    raise ValueError("Corrective action must be documented before resolution/verification.")
+
+            if target_state == "Verification":
+                resolver = s.scalar(
+                    select(TicketStateEvent)
+                    .where(TicketStateEvent.ticket_no == ticket_no, TicketStateEvent.to_state == "Resolved")
+                    .order_by(TicketStateEvent.changed_at.desc(), TicketStateEvent.id.desc())
+                )
+                if resolver and resolver.changed_by == user:
+                    raise ValueError(
+                        "Independent verification required: the resolver cannot verify their own corrective action."
+                    )
+
+            if target_state == "Closed":
+                if not (item.verification or "").strip():
+                    raise ValueError("Verification evidence/result must be documented before closure.")
+                verifier = s.scalar(
+                    select(TicketStateEvent)
+                    .where(TicketStateEvent.ticket_no == ticket_no, TicketStateEvent.to_state == "Verification")
+                    .order_by(TicketStateEvent.changed_at.desc(), TicketStateEvent.id.desc())
+                )
+                if not verifier:
+                    raise ValueError("A verification lifecycle event is required before closure.")
+                if verifier.changed_by != user:
+                    raise ValueError(
+                        "The engineer who performed independent verification must perform the closure transition."
+                    )
+
+            now = datetime.utcnow()
+            previous = item.status
+            item.status = target_state
+            if effective_owner:
+                item.owner = effective_owner
+            item.updated_at = now
+            item.version += 1
+            event = TicketStateEvent(
+                ticket_no=ticket_no,
+                from_state=previous,
+                to_state=target_state,
+                reason_code=reason_code,
+                note=note.strip(),
+                owner=item.owner,
+                changed_by=user,
+                workstation=workstation,
+                changed_at=now,
+            )
+            s.add(event)
+            s.add(AuditLog(
+                user=user,
+                action="TICKET_STATE_TRANSITION",
+                entity_type="TICKET",
+                entity_key=ticket_no,
+                detail=json.dumps({
+                    "from": previous,
+                    "to": target_state,
+                    "reason_code": reason_code,
+                    "note": note.strip(),
+                    "owner": item.owner,
+                }, sort_keys=True),
+                workstation=workstation,
+                created_at=now,
+            ))
+            s.flush()
+            return item, event
 
     def add_ticket_investigation(self, ticket_no: str, data: dict[str, Any]):
         with self.session() as s:
@@ -641,39 +1094,140 @@ class Database:
             overdue = int(s.scalar(select(func.count()).select_from(PMTask).where(PMTask.equipment_id==equipment_id,PMTask.status=="Overdue")) or 0)
             return {"critical_tickets_open": critical, "overdue_pm": overdue}
 
-    def create_release_request(self, equipment_id: str, related_ticket: str, checks: dict[str, bool], notes: str, user: str):
+    def create_release_request(
+        self,
+        equipment_id: str,
+        related_ticket: str,
+        checks: dict[str, bool],
+        notes: str,
+        user: str,
+        workstation: str = "",
+    ):
         with self.session() as s:
-            if not s.scalar(select(Equipment).where(Equipment.equipment_id==equipment_id)): raise ValueError("Equipment not found")
-            r=EquipmentRelease(equipment_id=equipment_id,related_ticket=related_ticket,checks_json=json.dumps(checks),notes=notes,requested_by=user)
-            s.add(r); s.flush(); return r
+            if not s.scalar(select(Equipment).where(Equipment.equipment_id==equipment_id)):
+                raise ValueError("Equipment not found")
+            r=EquipmentRelease(
+                equipment_id=equipment_id,
+                related_ticket=related_ticket,
+                checks_json=json.dumps(checks, sort_keys=True),
+                notes=notes,
+                requested_by=user,
+            )
+            s.add(r)
+            s.flush()
+            s.add(AuditLog(
+                user=user,
+                action="RELEASE_REQUEST",
+                entity_type="EQUIPMENT_RELEASE",
+                entity_key=str(r.id),
+                detail=json.dumps({"equipment_id":equipment_id,"related_ticket":related_ticket}, sort_keys=True),
+                workstation=workstation,
+            ))
+            return r
 
     def list_release_requests(self):
         with self.session() as s: return list(s.scalars(select(EquipmentRelease).order_by(EquipmentRelease.requested_at.desc())))
 
-    def verify_release(self, release_id: int, checks: dict[str, bool], user: str, expected_version: int | None=None):
+    def verify_release(
+        self,
+        release_id: int,
+        checks: dict[str, bool],
+        user: str,
+        expected_version: int | None=None,
+        workstation: str = "",
+    ):
         with self.session() as s:
-            r=s.get(EquipmentRelease,release_id)
+            stmt=select(EquipmentRelease).where(EquipmentRelease.id==release_id)
+            if self.url.startswith("postgresql"):
+                stmt=stmt.with_for_update()
+            r=s.scalar(stmt)
             if not r: raise ValueError("Release request not found")
-            if expected_version is not None and r.version!=expected_version: raise RuntimeError("CONFLICT: Release request changed by another user.")
-            r.checks_json=json.dumps(checks); r.verified_by=user; r.verified_at=datetime.utcnow(); r.status="Verified" if all(checks.values()) else "Verification Failed"; r.version+=1
-            s.flush(); return r
+            if expected_version is not None and r.version!=expected_version:
+                raise RuntimeError("CONFLICT: Release request changed by another user.")
+            if r.status=="Approved / Released":
+                raise ValueError("Release request is already approved and cannot be re-verified.")
+            r.checks_json=json.dumps(checks, sort_keys=True)
+            r.verified_by=user
+            r.verified_at=datetime.utcnow()
+            r.status="Verified" if checks and all(checks.values()) else "Verification Failed"
+            r.version+=1
+            s.add(AuditLog(
+                user=user,
+                action="RELEASE_VERIFY",
+                entity_type="EQUIPMENT_RELEASE",
+                entity_key=str(r.id),
+                detail=json.dumps({"equipment_id":r.equipment_id,"status":r.status,"checks":checks}, sort_keys=True),
+                workstation=workstation,
+            ))
+            s.flush()
+            return r
 
-    def approve_release(self, release_id: int, user: str, expected_version: int | None=None):
+    def approve_release(
+        self,
+        release_id: int,
+        user: str,
+        expected_version: int | None=None,
+        workstation: str = "",
+    ):
         with self.session() as s:
-            r=s.get(EquipmentRelease,release_id)
+            stmt=select(EquipmentRelease).where(EquipmentRelease.id==release_id)
+            if self.url.startswith("postgresql"):
+                stmt=stmt.with_for_update()
+            r=s.scalar(stmt)
             if not r: raise ValueError("Release request not found")
-            if expected_version is not None and r.version!=expected_version: raise RuntimeError("CONFLICT: Release request changed by another user.")
+            if expected_version is not None and r.version!=expected_version:
+                raise RuntimeError("CONFLICT: Release request changed by another user.")
             checks=json.loads(r.checks_json or "{}")
-            if r.status!="Verified" or not checks or not all(checks.values()): raise ValueError("Release must be fully verified before approval")
-            critical = int(s.scalar(select(func.count()).select_from(Ticket).where(Ticket.equipment_id==r.equipment_id, Ticket.priority.in_(["P1","P2"]), Ticket.status.notin_(["Closed","Cancelled"]))) or 0)
-            if critical: raise ValueError(f"Cannot release equipment while {critical} P1/P2 ticket(s) remain open")
-            stmt=select(Equipment).where(Equipment.equipment_id==r.equipment_id)
-            if not self.url.startswith("sqlite"): stmt=stmt.with_for_update()
-            eq=s.scalar(stmt)
-            for d in s.scalars(select(Disposition).where(Disposition.equipment_id==r.equipment_id,Disposition.active.is_(True))): d.active=False
-            s.add(Disposition(equipment_id=r.equipment_id,state="Released",reason="Verified equipment release",related_ticket=r.related_ticket,created_by=r.requested_by,approved_by=user))
-            eq.disposition="Released"; eq.version+=1
-            r.status="Approved / Released"; r.approved_by=user; r.approved_at=datetime.utcnow(); r.version+=1; s.flush(); return r
+            if r.status!="Verified" or not checks or not all(checks.values()):
+                raise ValueError("Release must be fully verified before approval")
+            if user in {r.requested_by, r.verified_by}:
+                raise ValueError(
+                    "Independent approval required: the release approver must differ from both requester and verifier."
+                )
+            critical = int(s.scalar(select(func.count()).select_from(Ticket).where(
+                Ticket.equipment_id==r.equipment_id,
+                Ticket.priority.in_(["P1","P2"]),
+                Ticket.status.notin_(["Closed","Cancelled"]),
+            )) or 0)
+            if critical:
+                raise ValueError(f"Cannot release equipment while {critical} P1/P2 ticket(s) remain open")
+            eq_stmt=select(Equipment).where(Equipment.equipment_id==r.equipment_id)
+            if self.url.startswith("postgresql"):
+                eq_stmt=eq_stmt.with_for_update()
+            eq=s.scalar(eq_stmt)
+            if not eq:
+                raise ValueError("Equipment not found")
+            for d in s.scalars(select(Disposition).where(Disposition.equipment_id==r.equipment_id,Disposition.active.is_(True))):
+                d.active=False
+            s.add(Disposition(
+                equipment_id=r.equipment_id,
+                state="Released",
+                reason="Verified equipment release",
+                related_ticket=r.related_ticket,
+                created_by=r.requested_by,
+                approved_by=user,
+            ))
+            eq.disposition="Released"
+            eq.version+=1
+            r.status="Approved / Released"
+            r.approved_by=user
+            r.approved_at=datetime.utcnow()
+            r.version+=1
+            s.add(AuditLog(
+                user=user,
+                action="RELEASE_APPROVE",
+                entity_type="EQUIPMENT_RELEASE",
+                entity_key=str(r.id),
+                detail=json.dumps({
+                    "equipment_id":r.equipment_id,
+                    "requested_by":r.requested_by,
+                    "verified_by":r.verified_by,
+                    "approved_by":user,
+                }, sort_keys=True),
+                workstation=workstation,
+            ))
+            s.flush()
+            return r
 
     def save_endorsement(self, data: dict[str, Any], expected_version: int | None = None):
         with self.session() as s:

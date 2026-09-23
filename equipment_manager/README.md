@@ -1,8 +1,46 @@
 # Equipment Management System
 
-Local Windows desktop equipment-management system isolated under `equipment_manager/` from the Karimen Reviewer application. The codebase intentionally remains at three Python source files: `main.py`, `database.py`, and `services.py`.
+Local Windows desktop equipment-management system isolated under `equipment_manager/` from the Karimen Reviewer application. The production-core refactor now separates governed domain rules into `domain.py` instead of keeping all behavior inside GUI/database CRUD code.
 
 ## Current build
+
+### Production-core state governance
+
+- Equipment operational state is no longer editable as ordinary master data.
+- State changes follow an explicit transition graph with reason-code and evidence requirements.
+- Downtime/waiting states require accountable ownership; failure/waiting states require linked issue tickets.
+- Scheduled PM transitions require a related PM task; qualification and decommissioning use dedicated reasons.
+- Production entry is blocked while the equipment disposition does not permit operation.
+- Every state change is version-checked and written to the append-only `equipment_state_events` timeline plus the audit log in the same transaction.
+- PostgreSQL state transitions acquire a row lock so two users cannot independently transition the same tool at the same time.
+- Equipment creation now creates the initial state event; ordinary master-data edits cannot bypass status/disposition workflows.
+- Dedicated EMS CI compiles the equipment module and runs state-machine unit + database integration tests.
+
+### Governed incident lifecycle
+
+- Ticket status is no longer editable as a free-form field in the issue editor.
+- Tickets follow a controlled lifecycle: Open → assignment/investigation → waiting/monitoring → resolution → verification → closure.
+- Resolution requires documented root cause and corrective action; closure additionally requires documented verification.
+- Reopen, cancellation, and failed-verification transitions require explicit lifecycle notes.
+- Ticket transitions are version-checked, PostgreSQL row-locked, evented in `ticket_state_events`, and audited in the same transaction.
+- Troubleshooting history and lifecycle history are shown separately so engineering evidence is not confused with administrative state changes.
+
+### Controlled return-to-service
+
+- Release request, verification and approval actions are individually audited with workstation attribution.
+- Final release approval requires an independent approver who is neither the requester nor the verifier.
+- Release approval remains blocked while P1/P2 equipment tickets are open.
+- Release records and active equipment disposition are updated atomically.
+
+### Frozen PM execution specifications
+
+- Starting a PM creates an immutable execution snapshot of the active controlled checklist/spec revision.
+- A PM already in progress continues against the specification revision it started with even if engineering publishes a newer revision.
+- PM results are classified again in the database from the frozen limits; a client cannot force a PASS by submitting a forged result string.
+- Results for steps that are not part of the frozen execution checklist are rejected.
+- Completed PM executions are read-only and cannot accept later result edits.
+- PM completion verifies that every frozen step has a result and blocks completion on specification/control failures or invalid steps.
+
 
 - Login page and first-run administrator creation; no default password is committed.
 - PostgreSQL-ready multi-user architecture. SQLite remains a local/demo fallback only and must not be placed on the shared drive.
