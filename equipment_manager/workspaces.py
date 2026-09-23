@@ -377,3 +377,60 @@ class Equipment360Workspace(QWidget):
         rows=[x for x in self.db.list_pm_tasks() if x.equipment_id==self.equipment_id]
         row=_selected(self.pm_table,rows)
         if row:self.open_entity.emit("PM_TASK",str(row.id),self.equipment_id)
+
+
+class EquipmentWorkspaceTabs(QWidget):
+    open_entity=Signal(str,str,str)
+
+    def __init__(self,db,user,parent=None):
+        super().__init__(parent);self.db=db;self.user=user;self.by_equipment={}
+        root=QVBoxLayout(self);head=QHBoxLayout()
+        title=QLabel("Equipment Workspaces");title.setStyleSheet("font-size:18pt;font-weight:700")
+        hint=QLabel("Keep multiple tools open side-by-side as persistent tabs.")
+        hint.setStyleSheet("color:#647581;")
+        head.addWidget(title);head.addWidget(hint);head.addStretch(1);root.addLayout(head)
+        self.tabs=QTabWidget();self.tabs.setTabsClosable(True);self.tabs.setMovable(True);self.tabs.tabCloseRequested.connect(self.close_tab);root.addWidget(self.tabs,1)
+        saved=self.db.get_user_preference(self.user["username"],"workspace.open_equipment_tabs",[])
+        if isinstance(saved,list):
+            for equipment_id in saved[:12]:
+                if self.db.get_equipment(str(equipment_id)):self.open_equipment(str(equipment_id),persist=False)
+
+    def _persist(self):
+        ids=[]
+        for i in range(self.tabs.count()):
+            page=self.tabs.widget(i)
+            equipment_id=getattr(page,"equipment_id","")
+            if equipment_id:ids.append(equipment_id)
+        self.db.set_user_preference(self.user["username"],"workspace.open_equipment_tabs",ids)
+
+    def open_equipment(self,equipment_id: str,persist: bool=True):
+        equipment_id=(equipment_id or "").strip()
+        if not equipment_id:return
+        page=self.by_equipment.get(equipment_id)
+        if page is not None:
+            self.tabs.setCurrentWidget(page);page.refresh();return
+        eq=self.db.get_equipment(equipment_id)
+        if not eq:return
+        page=Equipment360Workspace(self.db,self.user)
+        page.open_entity.connect(self.open_entity)
+        page.set_equipment(equipment_id)
+        self.by_equipment[equipment_id]=page
+        self.tabs.addTab(page,equipment_id)
+        self.tabs.setTabToolTip(self.tabs.indexOf(page),f"{equipment_id} — {eq.name}")
+        self.tabs.setCurrentWidget(page)
+        if persist:self._persist()
+
+    def set_equipment(self,equipment_id: str):
+        self.open_equipment(equipment_id)
+
+    def close_tab(self,index: int):
+        page=self.tabs.widget(index)
+        if page is None:return
+        equipment_id=getattr(page,"equipment_id","")
+        self.tabs.removeTab(index)
+        if equipment_id:self.by_equipment.pop(equipment_id,None)
+        page.deleteLater();self._persist()
+
+    def refresh(self):
+        page=self.tabs.currentWidget()
+        if page and hasattr(page,"refresh"):page.refresh()
