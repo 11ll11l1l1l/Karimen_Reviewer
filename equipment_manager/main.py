@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
 )
 
 from database import Database, PERMISSIONS, ROLE_PERMISSIONS
+from domain import REASON_CODES, allowed_targets
 from services import (
     auto_mapping, calculate_next_due, copy_clipboard_image, dataframe_to_pm_backlog,
     dataframe_to_pm_specs, evaluate_measurement, pm_parts_readiness, read_clipboard_table,
@@ -114,40 +115,129 @@ class DashboardPage(QWidget):
 
 
 class EquipmentDialog(QDialog):
+    """Equipment master-data editor. Operational state is intentionally read-only here."""
     def __init__(self, row=None, parent=None):
-        super().__init__(parent); self.row = row; self.setWindowTitle("Equipment"); f = QFormLayout(self); self.fields = {}
+        super().__init__(parent); self.row = row; self.setWindowTitle("Equipment Master Data"); f = QFormLayout(self); self.fields = {}
         for k, label in [("equipment_id","Equipment ID"),("name","Name"),("equipment_type","Type"),("manufacturer","Manufacturer"),("model","Model"),("serial_number","Serial"),("asset_number","Asset Number"),("site","Site"),("building","Building"),("floor","Floor"),("area","Area"),("line_cell","Line / Bay / Cell"),("owner","Owner")]:
             w = QLineEdit(); self.fields[k] = w; f.addRow(label, w)
-        self.status = QComboBox(); self.status.addItems(["Available","Production","Down","PM","Engineering","Standby","Waiting Parts","Waiting Vendor","Qualification","Hold","Restricted","Offline","Decommissioned"])
-        self.disposition = QComboBox(); self.disposition.addItems(["Released","Released With Conditions","Restricted Use","Engineering Use","Monitoring","Hold","PM Hold","Quality Hold","Safety Hold","Waiting Parts","Waiting Vendor","Qualification","Decommission","Scrap"])
-        self.criticality = QComboBox(); self.criticality.addItems(["Low","Normal","High","Critical"]); self.x = QDoubleSpinBox(); self.y = QDoubleSpinBox(); self.x.setRange(-100000,100000); self.y.setRange(-100000,100000)
-        f.addRow("Status", self.status); f.addRow("Disposition", self.disposition); f.addRow("Criticality", self.criticality); f.addRow("Map X", self.x); f.addRow("Map Y", self.y)
+        self.criticality = QComboBox(); self.criticality.addItems(["Low","Normal","High","Critical"])
+        self.x = QDoubleSpinBox(); self.y = QDoubleSpinBox(); self.x.setRange(-100000,100000); self.y.setRange(-100000,100000)
+        f.addRow("Criticality", self.criticality); f.addRow("Map X", self.x); f.addRow("Map Y", self.y)
+        if row:
+            state = QLabel(row.status); disposition = QLabel(row.disposition)
+            state.setStyleSheet("font-weight:700"); disposition.setStyleSheet("font-weight:700")
+            f.addRow("Operational State", state); f.addRow("Disposition", disposition)
+            note = QLabel("State and disposition are controlled workflows and cannot be edited as master data.")
+            note.setWordWrap(True); note.setStyleSheet("color:#7a4b00")
+            f.addRow("", note)
         b = QDialogButtonBox(QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel); b.accepted.connect(self.accept); b.rejected.connect(self.reject); f.addRow(b)
         if row:
             for k, w in self.fields.items(): w.setText(str(getattr(row,k,"") or ""))
-            self.fields["equipment_id"].setReadOnly(True); self.status.setCurrentText(row.status); self.disposition.setCurrentText(row.disposition); self.criticality.setCurrentText(row.criticality); self.x.setValue(row.map_x); self.y.setValue(row.map_y)
+            self.fields["equipment_id"].setReadOnly(True); self.criticality.setCurrentText(row.criticality); self.x.setValue(row.map_x); self.y.setValue(row.map_y)
+
     def data(self):
-        d = {k:w.text().strip() for k,w in self.fields.items()}; d.update(status=self.status.currentText(), disposition=self.disposition.currentText(), criticality=self.criticality.currentText(), map_x=self.x.value(), map_y=self.y.value()); return d
+        d = {k:w.text().strip() for k,w in self.fields.items()}
+        d.update(criticality=self.criticality.currentText(), map_x=self.x.value(), map_y=self.y.value())
+        return d
+
+
+class EquipmentStateDialog(QDialog):
+    def __init__(self, row, parent=None):
+        super().__init__(parent); self.row=row; self.setWindowTitle(f"Change Equipment State — {row.equipment_id}"); self.setMinimumWidth(560)
+        f=QFormLayout(self)
+        current=QLabel(row.status); current.setStyleSheet("font-weight:700")
+        self.target=QComboBox(); self.target.addItems(allowed_targets(row.status))
+        self.reason=QComboBox(); self.reason.addItems(list(REASON_CODES.keys()))
+        self.reason_help=QLabel(); self.reason_help.setWordWrap(True); self.reason_help.setStyleSheet("color:#5a6670")
+        self.reason.currentTextChanged.connect(lambda x:self.reason_help.setText(REASON_CODES.get(x,"")))
+        self.owner=QLineEdit(row.owner or ""); self.ticket=QLineEdit(); self.pm_task=QSpinBox(); self.pm_task.setRange(0,2_000_000_000); self.pm_task.setSpecialValueText("None")
+        self.detail=QTextEdit(); self.detail.setPlaceholderText("Describe the actual condition, trigger, containment, or release basis.")
+        f.addRow("Current State",current); f.addRow("Target State",self.target); f.addRow("Reason Code",self.reason); f.addRow("",self.reason_help)
+        f.addRow("Accountable Owner",self.owner); f.addRow("Related Ticket",self.ticket); f.addRow("Related PM Task ID",self.pm_task); f.addRow("Detailed Reason",self.detail)
+        warning=QLabel("This action creates an equipment state event and audit record. It is not a simple field edit.")
+        warning.setWordWrap(True); warning.setStyleSheet("color:#7a4b00")
+        f.addRow("",warning)
+        b=QDialogButtonBox(QDialogButtonBox.StandardButton.Save|QDialogButtonBox.StandardButton.Cancel); b.accepted.connect(self.accept); b.rejected.connect(self.reject); f.addRow(b)
+        self.reason_help.setText(REASON_CODES.get(self.reason.currentText(),""))
+
+    def data(self):
+        pm_id=self.pm_task.value() or None
+        return {
+            "target_state":self.target.currentText(),
+            "reason_code":self.reason.currentText(),
+            "reason_text":self.detail.toPlainText().strip(),
+            "related_ticket":self.ticket.text().strip(),
+            "related_pm_task_id":pm_id,
+            "owner":self.owner.text().strip(),
+        }
 
 
 class EquipmentPage(QWidget):
     def __init__(self, db, user):
-        super().__init__(); self.db=db; self.user=user; self.rows=[]; v=QVBoxLayout(self); h=QHBoxLayout(); self.search=QLineEdit(); self.search.setPlaceholderText("Search equipment..."); self.search.textChanged.connect(self.refresh); add=QPushButton("Add"); edit=QPushButton("Edit"); add.clicked.connect(self.add); edit.clicked.connect(self.edit); add.setEnabled(db.has_permission(user,"equipment.edit")); edit.setEnabled(db.has_permission(user,"equipment.edit")); h.addWidget(self.search,1); h.addWidget(add); h.addWidget(edit); v.addLayout(h)
-        self.table=make_table(["ID","Name","Type","Area","Line/Cell","Status","Disposition","Owner","Criticality","Ver"]); self.table.doubleClicked.connect(self.edit); v.addWidget(self.table); self.refresh()
+        super().__init__(); self.db=db; self.user=user; self.rows=[]; self.history=[]
+        v=QVBoxLayout(self); h=QHBoxLayout(); self.search=QLineEdit(); self.search.setPlaceholderText("Search equipment..."); self.search.textChanged.connect(self.refresh)
+        add=QPushButton("Add"); edit=QPushButton("Edit Master Data"); transition=QPushButton("Change State")
+        add.clicked.connect(self.add); edit.clicked.connect(self.edit); transition.clicked.connect(self.change_state)
+        add.setEnabled(db.has_permission(user,"equipment.edit")); edit.setEnabled(db.has_permission(user,"equipment.edit")); transition.setEnabled(db.has_permission(user,"equipment.transition"))
+        h.addWidget(self.search,1); h.addWidget(add); h.addWidget(edit); h.addWidget(transition); v.addLayout(h)
+        self.table=make_table(["ID","Name","Type","Area","Line/Cell","Status","Disposition","Owner","Criticality","Ver"])
+        self.table.doubleClicked.connect(self.edit); self.table.itemSelectionChanged.connect(self.load_history); v.addWidget(self.table,2)
+        v.addWidget(QLabel("Equipment State Timeline"))
+        self.history_table=make_table(["From","To","Class","Reason","Detail","Ticket","PM Task","Owner","Changed By","Time"])
+        v.addWidget(self.history_table,1); self.refresh()
+
     def refresh(self):
-        self.rows=self.db.list_equipment(self.search.text().strip()); fill_table(self.table,self.rows,["equipment_id","name","equipment_type","area","line_cell","status","disposition","owner","criticality","version"])
+        current=selected_row(self.table,self.rows)
+        current_id=current.equipment_id if current else ""
+        self.rows=self.db.list_equipment(self.search.text().strip())
+        fill_table(self.table,self.rows,["equipment_id","name","equipment_type","area","line_cell","status","disposition","owner","criticality","version"])
+        if current_id:
+            for i,row in enumerate(self.rows):
+                if row.equipment_id==current_id:
+                    self.table.selectRow(i); break
+        self.load_history()
+
     def add(self):
         d=EquipmentDialog(parent=self)
         if d.exec()==QDialog.DialogCode.Accepted:
-            try: row=self.db.save_equipment(d.data()); self.db.audit(self.user["username"],"CREATE","EQUIPMENT",row.equipment_id,workstation=WORKSTATION); self.refresh()
+            try:
+                row=self.db.save_equipment(d.data())
+                self.db.audit(self.user["username"],"CREATE","EQUIPMENT",row.equipment_id,workstation=WORKSTATION)
+                self.refresh()
             except Exception as exc: QMessageBox.critical(self,"Equipment",str(exc))
+
     def edit(self):
         row=selected_row(self.table,self.rows)
         if not row:return
         d=EquipmentDialog(row,self)
         if d.exec()==QDialog.DialogCode.Accepted:
-            try:self.db.save_equipment(d.data(),row.version); self.db.audit(self.user["username"],"UPDATE","EQUIPMENT",row.equipment_id,workstation=WORKSTATION); self.refresh()
+            try:
+                self.db.save_equipment(d.data(),row.version)
+                self.db.audit(self.user["username"],"UPDATE_MASTER","EQUIPMENT",row.equipment_id,workstation=WORKSTATION)
+                self.refresh()
             except Exception as exc: QMessageBox.critical(self,"Equipment",str(exc))
+
+    def change_state(self):
+        row=selected_row(self.table,self.rows)
+        if not row:return
+        d=EquipmentStateDialog(row,self)
+        if d.exec()==QDialog.DialogCode.Accepted:
+            try:
+                self.db.transition_equipment_state(
+                    row.equipment_id,
+                    user=self.user["username"],
+                    workstation=WORKSTATION,
+                    expected_version=row.version,
+                    **d.data(),
+                )
+                self.refresh()
+            except Exception as exc:
+                QMessageBox.critical(self,"Equipment State",str(exc))
+
+    def load_history(self):
+        row=selected_row(self.table,self.rows)
+        self.history=self.db.list_equipment_state_events(row.equipment_id) if row else []
+        fill_table(self.history_table,self.history,["from_state","to_state","state_class","reason_code","reason_text","related_ticket","related_pm_task_id","owner","changed_by","changed_at"])
 
 
 class MapNode(QGraphicsRectItem):
