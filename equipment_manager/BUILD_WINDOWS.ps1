@@ -10,6 +10,7 @@ $packageRoot = Join-Path $PSScriptRoot ("dist\EMS-" + $version)
 if (Test-Path $packageRoot) { Remove-Item -Recurse -Force $packageRoot }
 New-Item -ItemType Directory -Path $packageRoot | Out-Null
 Copy-Item "dist\EMS.exe" $packageRoot
+Copy-Item "dist\EMSCLI.exe" $packageRoot
 Copy-Item "config.example.toml" $packageRoot
 Copy-Item "PRODUCTION_DEPLOYMENT.md" $packageRoot
 Copy-Item "README.md" $packageRoot
