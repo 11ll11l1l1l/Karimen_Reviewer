@@ -417,6 +417,26 @@ class SmartLayoutPage(QWidget):
             if node.has_issue:
                 node.apply_visual(self._pulse)
 
+    def highlight_equipment(self,equipment_id: str):
+        equipment=self.db.get_equipment(equipment_id)
+        if not equipment:return False
+        self.building.blockSignals(True);self.floor.blockSignals(True)
+        try:
+            if equipment.building and self.building.findText(equipment.building)>=0:self.building.setCurrentText(equipment.building)
+            if equipment.floor and self.floor.findText(equipment.floor)>=0:self.floor.setCurrentText(equipment.floor)
+        finally:
+            self.building.blockSignals(False);self.floor.blockSignals(False)
+        self.issue_only.setChecked(False)
+        self.refresh()
+        grouped=self.tickets_by_equipment()
+        for node in self.nodes:
+            if node.equipment.equipment_id==equipment_id:
+                node.setSelected(True)
+                self.view.centerOn(node)
+                self.select_tool(node.equipment,grouped.get(equipment_id,[]))
+                return True
+        return False
+
     def select_tool(self, equipment, tickets):
         color = STATUS_COLORS[state_key(equipment, tickets)].name()
         self.detail_title.setText(f"{equipment.equipment_id} · {equipment.name}")
