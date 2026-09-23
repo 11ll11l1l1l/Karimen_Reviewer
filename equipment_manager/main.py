@@ -1559,6 +1559,14 @@ class DocumentPage(QWidget):
         self.cdocs=self.db.list_controlled_documents(et,ek);fill_table(self.cdoc_table,self.cdocs,["document_id","entity_type","entity_key","document_type","title","owner","status","current_revision","created_by","version"])
         self.load_revisions()
 
+    def select_document(self,document_id: str):
+        target=next((x for x in self.db.list_controlled_documents() if x.document_id==document_id),None)
+        if not target:return
+        self.type.setText(target.entity_type);self.key.setText(target.entity_key);self.refresh()
+        for i,row in enumerate(self.cdocs):
+            if row.document_id==document_id:
+                self.cdoc_table.selectRow(i);self.load_revisions();break
+
     def add(self):
         p,_=QFileDialog.getOpenFileName(self,"Link Existing File")
         if not p:return
