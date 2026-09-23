@@ -631,6 +631,52 @@ class TicketEscalationEvent(Base):
     occurred_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
 
 
+class IncidentWhy(Base):
+    __tablename__ = "incident_whys"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    ticket_no: Mapped[str] = mapped_column(String(100), index=True)
+    sequence: Mapped[int] = mapped_column(Integer)
+    question: Mapped[str] = mapped_column(Text, default="")
+    answer: Mapped[str] = mapped_column(Text, default="")
+    updated_by: Mapped[str] = mapped_column(String(120), default="")
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    __table_args__ = (UniqueConstraint("ticket_no","sequence",name="uq_incident_why_sequence"),)
+
+
+class IncidentCausalFactor(Base):
+    __tablename__ = "incident_causal_factors"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    ticket_no: Mapped[str] = mapped_column(String(100), index=True)
+    category: Mapped[str] = mapped_column(String(60), default="Other", index=True)
+    factor_type: Mapped[str] = mapped_column(String(30), default="Suspected", index=True)
+    description: Mapped[str] = mapped_column(Text)
+    evidence: Mapped[str] = mapped_column(Text, default="")
+    status: Mapped[str] = mapped_column(String(30), default="Open", index=True)
+    created_by: Mapped[str] = mapped_column(String(120), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
+class IncidentAction(Base):
+    __tablename__ = "incident_actions"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    ticket_no: Mapped[str] = mapped_column(String(100), index=True)
+    action_type: Mapped[str] = mapped_column(String(30), default="Corrective", index=True)
+    description: Mapped[str] = mapped_column(Text)
+    owner: Mapped[str] = mapped_column(String(120), default="", index=True)
+    due_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    status: Mapped[str] = mapped_column(String(30), default="Open", index=True)
+    effectiveness_criteria: Mapped[str] = mapped_column(Text, default="")
+    completion_note: Mapped[str] = mapped_column(Text, default="")
+    completed_by: Mapped[str] = mapped_column(String(120), default="")
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    verification_note: Mapped[str] = mapped_column(Text, default="")
+    verified_by: Mapped[str] = mapped_column(String(120), default="")
+    verified_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
 class TicketStateEvent(Base):
     __tablename__ = "ticket_state_events"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -1043,6 +1089,9 @@ class Database:
                 table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
             ]),
             ("20260923_004","Create account-level productivity preferences",lambda: [
+                table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
+            ]),
+            ("20260923_005","Create structured incident RCA and CAPA tables",lambda: [
                 table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
             ]),
         ]
@@ -3303,6 +3352,142 @@ class Database:
                 ))
             s.flush()
             return item
+
+    def list_incident_whys(self, ticket_no: str):
+        with self.session() as s:
+            return list(s.scalars(select(IncidentWhy).where(IncidentWhy.ticket_no==ticket_no).order_by(IncidentWhy.sequence)))
+
+    def save_incident_why(
+        self,
+        ticket_no: str,
+        sequence: int,
+        question: str,
+        answer: str,
+        user: str,
+        expected_version: int | None = None,
+        workstation: str = "",
+    ):
+        if sequence<1 or sequence>10:raise ValueError("Why sequence must be between 1 and 10.")
+        if not answer.strip():raise ValueError("Why analysis answer is required.")
+        with self.session() as s:
+            ticket=s.scalar(select(Ticket).where(Ticket.ticket_no==ticket_no))
+            if not ticket:raise ValueError("Ticket not found")
+            self.assert_authorized(user,"ticket.edit",ticket.equipment_id)
+            row=s.scalar(select(IncidentWhy).where(IncidentWhy.ticket_no==ticket_no,IncidentWhy.sequence==sequence))
+            if row:
+                if expected_version is not None and row.version!=expected_version:raise RuntimeError("CONFLICT: Why analysis changed by another user.")
+                row.question=question.strip();row.answer=answer.strip();row.updated_by=user;row.updated_at=datetime.utcnow();row.version+=1
+            else:
+                row=IncidentWhy(ticket_no=ticket_no,sequence=sequence,question=question.strip(),answer=answer.strip(),updated_by=user);s.add(row)
+            s.add(AuditLog(user=user,action="INCIDENT_WHY_UPDATE",entity_type="TICKET",entity_key=ticket_no,detail=json.dumps({"sequence":sequence,"answer":answer.strip()},sort_keys=True),workstation=workstation))
+            s.flush();return row
+
+    def list_incident_causal_factors(self, ticket_no: str):
+        with self.session() as s:
+            return list(s.scalars(select(IncidentCausalFactor).where(IncidentCausalFactor.ticket_no==ticket_no).order_by(IncidentCausalFactor.id)))
+
+    def save_incident_causal_factor(
+        self,
+        ticket_no: str,
+        data: dict[str, Any],
+        user: str,
+        factor_id: int | None = None,
+        expected_version: int | None = None,
+        workstation: str = "",
+    ):
+        categories={"Man","Machine","Method","Material","Measurement","Environment","Software","Process","Other"}
+        factor_types={"Suspected","Contributing","Verified Root Cause","Ruled Out"}
+        category=str(data.get("category","Other")).strip() or "Other"
+        factor_type=str(data.get("factor_type","Suspected")).strip() or "Suspected"
+        description=str(data.get("description","")).strip()
+        if category not in categories:raise ValueError("Unsupported causal-factor category.")
+        if factor_type not in factor_types:raise ValueError("Unsupported causal-factor type.")
+        if not description:raise ValueError("Causal-factor description is required.")
+        with self.session() as s:
+            ticket=s.scalar(select(Ticket).where(Ticket.ticket_no==ticket_no))
+            if not ticket:raise ValueError("Ticket not found")
+            self.assert_authorized(user,"ticket.edit",ticket.equipment_id)
+            row=s.get(IncidentCausalFactor,factor_id) if factor_id else None
+            if row:
+                if row.ticket_no!=ticket_no:raise ValueError("Causal factor does not belong to this incident.")
+                if expected_version is not None and row.version!=expected_version:raise RuntimeError("CONFLICT: Causal factor changed by another user.")
+                row.category=category;row.factor_type=factor_type;row.description=description
+                row.evidence=str(data.get("evidence","")).strip();row.status=str(data.get("status","Open")).strip() or "Open";row.version+=1
+            else:
+                row=IncidentCausalFactor(ticket_no=ticket_no,category=category,factor_type=factor_type,description=description,evidence=str(data.get("evidence","")).strip(),status=str(data.get("status","Open")).strip() or "Open",created_by=user);s.add(row)
+            s.add(AuditLog(user=user,action="INCIDENT_CAUSAL_FACTOR",entity_type="TICKET",entity_key=ticket_no,detail=json.dumps({"category":category,"factor_type":factor_type,"description":description},sort_keys=True),workstation=workstation))
+            s.flush();return row
+
+    def list_incident_actions(self, ticket_no: str):
+        with self.session() as s:
+            return list(s.scalars(select(IncidentAction).where(IncidentAction.ticket_no==ticket_no).order_by(IncidentAction.status,IncidentAction.due_at,IncidentAction.id)))
+
+    def save_incident_action(
+        self,
+        ticket_no: str,
+        data: dict[str, Any],
+        user: str,
+        action_id: int | None = None,
+        expected_version: int | None = None,
+        workstation: str = "",
+    ):
+        action_type=str(data.get("action_type","Corrective")).strip()
+        if action_type not in {"Containment","Corrective","Preventive","Follow-up"}:raise ValueError("Unsupported incident action type.")
+        description=str(data.get("description","")).strip()
+        if not description:raise ValueError("Action description is required.")
+        with self.session() as s:
+            ticket=s.scalar(select(Ticket).where(Ticket.ticket_no==ticket_no))
+            if not ticket:raise ValueError("Ticket not found")
+            self.assert_authorized(user,"ticket.edit",ticket.equipment_id)
+            row=s.get(IncidentAction,action_id) if action_id else None
+            if row:
+                if row.ticket_no!=ticket_no:raise ValueError("Action does not belong to this incident.")
+                if expected_version is not None and row.version!=expected_version:raise RuntimeError("CONFLICT: Incident action changed by another user.")
+                if row.status in {"Completed","Verified"}:raise ValueError("Completed/verified actions cannot be edited.")
+                row.action_type=action_type;row.description=description;row.owner=str(data.get("owner","")).strip()
+                row.due_at=data.get("due_at");row.effectiveness_criteria=str(data.get("effectiveness_criteria","")).strip();row.version+=1
+            else:
+                row=IncidentAction(ticket_no=ticket_no,action_type=action_type,description=description,owner=str(data.get("owner","")).strip(),due_at=data.get("due_at"),effectiveness_criteria=str(data.get("effectiveness_criteria","")).strip());s.add(row)
+            s.add(AuditLog(user=user,action="INCIDENT_ACTION_SAVE",entity_type="TICKET",entity_key=ticket_no,detail=description,workstation=workstation))
+            s.flush();return row
+
+    def complete_incident_action(self, action_id: int, user: str, note: str, expected_version: int | None = None, workstation: str = ""):
+        if not note.strip():raise ValueError("Completion note is required.")
+        with self.session() as s:
+            stmt=select(IncidentAction).where(IncidentAction.id==action_id)
+            if self.url.startswith("postgresql"):stmt=stmt.with_for_update()
+            row=s.scalar(stmt)
+            if not row:raise ValueError("Incident action not found")
+            ticket=s.scalar(select(Ticket).where(Ticket.ticket_no==row.ticket_no))
+            self.assert_authorized(user,"ticket.edit",ticket.equipment_id if ticket else "")
+            if expected_version is not None and row.version!=expected_version:raise RuntimeError("CONFLICT: Incident action changed by another user.")
+            if row.status=="Verified":return row
+            row.status="Completed";row.completion_note=note.strip();row.completed_by=user;row.completed_at=datetime.utcnow();row.version+=1
+            s.add(AuditLog(user=user,action="INCIDENT_ACTION_COMPLETE",entity_type="TICKET",entity_key=row.ticket_no,detail=json.dumps({"action_id":row.id,"note":note.strip()}),workstation=workstation))
+            s.flush();return row
+
+    def verify_incident_action(self, action_id: int, user: str, note: str, expected_version: int | None = None, workstation: str = ""):
+        if not note.strip():raise ValueError("Effectiveness verification note is required.")
+        with self.session() as s:
+            stmt=select(IncidentAction).where(IncidentAction.id==action_id)
+            if self.url.startswith("postgresql"):stmt=stmt.with_for_update()
+            row=s.scalar(stmt)
+            if not row:raise ValueError("Incident action not found")
+            ticket=s.scalar(select(Ticket).where(Ticket.ticket_no==row.ticket_no))
+            self.assert_authorized(user,"ticket.edit",ticket.equipment_id if ticket else "")
+            if expected_version is not None and row.version!=expected_version:raise RuntimeError("CONFLICT: Incident action changed by another user.")
+            if row.status!="Completed":raise ValueError("Action must be completed before effectiveness verification.")
+            if row.completed_by==user:raise ValueError("Independent verification required: action completer cannot verify effectiveness.")
+            row.status="Verified";row.verification_note=note.strip();row.verified_by=user;row.verified_at=datetime.utcnow();row.version+=1
+            s.add(AuditLog(user=user,action="INCIDENT_ACTION_VERIFY",entity_type="TICKET",entity_key=row.ticket_no,detail=json.dumps({"action_id":row.id,"note":note.strip()}),workstation=workstation))
+            s.flush();return row
+
+    def incident_similar_history(self, ticket_no: str, limit: int = 50):
+        with self.session() as s:
+            current=s.scalar(select(Ticket).where(Ticket.ticket_no==ticket_no))
+            if not current:return []
+            stmt=select(Ticket).where(Ticket.equipment_id==current.equipment_id,Ticket.ticket_no!=ticket_no).order_by(Ticket.created_at.desc()).limit(max(1,min(int(limit),200)))
+            return list(s.scalars(stmt))
 
     def ticket_operational_control(self, ticket_no: str):
         with self.session() as s:
