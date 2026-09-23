@@ -792,6 +792,56 @@ class EquipmentRelease(Base):
     version: Mapped[int] = mapped_column(Integer, default=1)
 
 
+class WorkOrder(Base):
+    __tablename__ = "work_orders"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    work_order_no: Mapped[str] = mapped_column(String(120), unique=True, index=True)
+    equipment_id: Mapped[str] = mapped_column(String(100), index=True)
+    source_type: Mapped[str] = mapped_column(String(40), default="ENGINEERING", index=True)
+    source_key: Mapped[str] = mapped_column(String(120), default="", index=True)
+    title: Mapped[str] = mapped_column(String(250))
+    description: Mapped[str] = mapped_column(Text, default="")
+    priority: Mapped[str] = mapped_column(String(30), default="Normal", index=True)
+    status: Mapped[str] = mapped_column(String(40), default="Open", index=True)
+    owner: Mapped[str] = mapped_column(String(120), default="", index=True)
+    team: Mapped[str] = mapped_column(String(160), default="")
+    planned_start: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    planned_end: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    qualification_required: Mapped[bool] = mapped_column(Boolean, default=False)
+    release_required: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_by: Mapped[str] = mapped_column(String(120), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
+class WorkOrderEvent(Base):
+    __tablename__ = "work_order_events"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    work_order_no: Mapped[str] = mapped_column(String(120), index=True)
+    from_state: Mapped[str] = mapped_column(String(40), default="")
+    to_state: Mapped[str] = mapped_column(String(40), index=True)
+    reason: Mapped[str] = mapped_column(Text, default="")
+    owner: Mapped[str] = mapped_column(String(120), default="")
+    changed_by: Mapped[str] = mapped_column(String(120), default="")
+    workstation: Mapped[str] = mapped_column(String(120), default="")
+    occurred_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
+class WorkOrderLink(Base):
+    __tablename__ = "work_order_links"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    work_order_no: Mapped[str] = mapped_column(String(120), index=True)
+    entity_type: Mapped[str] = mapped_column(String(50), index=True)
+    entity_key: Mapped[str] = mapped_column(String(160), index=True)
+    relation: Mapped[str] = mapped_column(String(60), default="RELATED")
+    created_by: Mapped[str] = mapped_column(String(120), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    __table_args__ = (UniqueConstraint("work_order_no","entity_type","entity_key","relation",name="uq_work_order_link"),)
+
+
 class WorkLog(Base):
     __tablename__ = "work_logs"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -1092,6 +1142,9 @@ class Database:
                 table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
             ]),
             ("20260923_005","Create structured incident RCA and CAPA tables",lambda: [
+                table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
+            ]),
+            ("20260923_006","Create governed work-order and relationship tables",lambda: [
                 table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
             ]),
         ]
@@ -4449,6 +4502,179 @@ class Database:
             ))
             s.flush()
             return r
+
+    WORK_ORDER_TRANSITIONS={
+        "Open":{"Assigned","In Progress","Cancelled"},
+        "Assigned":{"In Progress","Waiting Parts","Waiting Production","Cancelled"},
+        "In Progress":{"Waiting Parts","Waiting Production","Ready for Qualification","Completed","Cancelled"},
+        "Waiting Parts":{"In Progress","Cancelled"},
+        "Waiting Production":{"In Progress","Cancelled"},
+        "Ready for Qualification":{"Completed","In Progress","Cancelled"},
+        "Completed":set(),
+        "Cancelled":set(),
+    }
+
+    def create_work_order(self, data: dict[str, Any], user: str, workstation: str = ""):
+        payload=dict(data)
+        equipment_id=str(payload.get("equipment_id","")).strip()
+        if not equipment_id:raise ValueError("Equipment ID is required.")
+        self.assert_authorized(user,"worklog.edit",equipment_id)
+        with self.session() as s:
+            if not s.scalar(select(Equipment).where(Equipment.equipment_id==equipment_id)):
+                raise ValueError("Equipment not found")
+            no=str(payload.get("work_order_no","")).strip()
+            if not no:
+                prefix="".join(ch if ch.isalnum() else "-" for ch in equipment_id.upper()).strip("-")[:28]
+                base=f"WO-{prefix}-{datetime.utcnow():%y%m%d%H%M%S}"
+                no=base;suffix=1
+                while s.scalar(select(WorkOrder).where(WorkOrder.work_order_no==no)):
+                    tail=f"-{suffix}";no=base[:120-len(tail)]+tail;suffix+=1
+            if s.scalar(select(WorkOrder).where(WorkOrder.work_order_no==no)):
+                raise ValueError("Work order number already exists.")
+            row=WorkOrder(
+                work_order_no=no,equipment_id=equipment_id,
+                source_type=str(payload.get("source_type","ENGINEERING")).upper(),
+                source_key=str(payload.get("source_key","")).strip(),
+                title=str(payload.get("title","")).strip() or f"Engineering work on {equipment_id}",
+                description=str(payload.get("description","")).strip(),
+                priority=str(payload.get("priority","Normal")).strip() or "Normal",
+                status="Open",owner=str(payload.get("owner","")).strip(),
+                team=str(payload.get("team","")).strip(),
+                planned_start=payload.get("planned_start"),planned_end=payload.get("planned_end"),
+                qualification_required=bool(payload.get("qualification_required",False)),
+                release_required=bool(payload.get("release_required",False)),
+                created_by=user,
+            )
+            s.add(row);s.flush()
+            s.add(WorkOrderEvent(
+                work_order_no=no,from_state="",to_state="Open",reason="Work order created",
+                owner=row.owner,changed_by=user,workstation=workstation,
+            ))
+            if row.source_key:
+                s.add(WorkOrderLink(
+                    work_order_no=no,entity_type=row.source_type,entity_key=row.source_key,
+                    relation="SOURCE",created_by=user,
+                ))
+            s.add(AuditLog(
+                user=user,action="WORK_ORDER_CREATE",entity_type="WORK_ORDER",entity_key=no,
+                detail=json.dumps({"equipment_id":equipment_id,"source_type":row.source_type,"source_key":row.source_key},sort_keys=True),
+                workstation=workstation,
+            ))
+            self._queue_integration_event(s,"work_order.created","WORK_ORDER",no,{
+                "work_order_no":no,"equipment_id":equipment_id,"source_type":row.source_type,
+                "source_key":row.source_key,"owner":row.owner,"created_by":user,
+            })
+            s.flush();return row
+
+    def create_work_order_from_ticket(self, ticket_no: str, user: str, workstation: str = ""):
+        with self.session() as s:
+            ticket=s.scalar(select(Ticket).where(Ticket.ticket_no==ticket_no))
+            if not ticket:raise ValueError("Ticket not found")
+            existing=s.scalar(
+                select(WorkOrder)
+                .join(WorkOrderLink,WorkOrderLink.work_order_no==WorkOrder.work_order_no)
+                .where(WorkOrderLink.entity_type=="TICKET",WorkOrderLink.entity_key==ticket_no,WorkOrderLink.relation=="SOURCE",
+                       WorkOrder.status.notin_(["Completed","Cancelled"]))
+                .order_by(WorkOrder.created_at.desc())
+            )
+            if existing:return existing
+        return self.create_work_order({
+            "equipment_id":ticket.equipment_id,"source_type":"TICKET","source_key":ticket.ticket_no,
+            "title":f"Repair / investigation — {ticket.title}","description":ticket.description,
+            "priority":ticket.priority,"owner":ticket.owner,
+            "qualification_required":ticket.priority in {"P1","P2"},"release_required":ticket.priority in {"P1","P2"},
+        },user,workstation)
+
+    def create_work_order_from_pm(self, task_id: int, user: str, workstation: str = ""):
+        with self.session() as s:
+            task=s.get(PMTask,task_id)
+            if not task:raise ValueError("PM task not found")
+            existing=s.scalar(
+                select(WorkOrder)
+                .join(WorkOrderLink,WorkOrderLink.work_order_no==WorkOrder.work_order_no)
+                .where(WorkOrderLink.entity_type=="PM_TASK",WorkOrderLink.entity_key==str(task_id),WorkOrderLink.relation=="SOURCE",
+                       WorkOrder.status.notin_(["Completed","Cancelled"]))
+                .order_by(WorkOrder.created_at.desc())
+            )
+            if existing:return existing
+        return self.create_work_order({
+            "equipment_id":task.equipment_id,"source_type":"PM_TASK","source_key":str(task.id),
+            "title":f"{task.pm_id} — {task.pm_name}","description":"Controlled preventive-maintenance work order",
+            "priority":task.priority,"owner":task.assigned_to,
+        },user,workstation)
+
+    def list_work_orders(self, equipment_id: str = "", open_only: bool = False):
+        with self.session() as s:
+            stmt=select(WorkOrder)
+            if equipment_id:stmt=stmt.where(WorkOrder.equipment_id==equipment_id)
+            if open_only:stmt=stmt.where(WorkOrder.status.notin_(["Completed","Cancelled"]))
+            return list(s.scalars(stmt.order_by(WorkOrder.updated_at.desc(),WorkOrder.created_at.desc())))
+
+    def get_work_order(self, work_order_no: str):
+        with self.session() as s:return s.scalar(select(WorkOrder).where(WorkOrder.work_order_no==work_order_no))
+
+    def list_work_order_events(self, work_order_no: str):
+        with self.session() as s:return list(s.scalars(
+            select(WorkOrderEvent).where(WorkOrderEvent.work_order_no==work_order_no)
+            .order_by(WorkOrderEvent.occurred_at,WorkOrderEvent.id)
+        ))
+
+    def add_work_order_link(self, work_order_no: str, entity_type: str, entity_key: str, relation: str, user: str):
+        with self.session() as s:
+            wo=s.scalar(select(WorkOrder).where(WorkOrder.work_order_no==work_order_no))
+            if not wo:raise ValueError("Work order not found")
+            self.assert_authorized(user,"worklog.edit",wo.equipment_id)
+            et=entity_type.strip().upper();ek=str(entity_key).strip();rel=relation.strip().upper() or "RELATED"
+            existing=s.scalar(select(WorkOrderLink).where(
+                WorkOrderLink.work_order_no==work_order_no,WorkOrderLink.entity_type==et,
+                WorkOrderLink.entity_key==ek,WorkOrderLink.relation==rel,
+            ))
+            if existing:return existing
+            row=WorkOrderLink(work_order_no=work_order_no,entity_type=et,entity_key=ek,relation=rel,created_by=user)
+            s.add(row);s.flush();return row
+
+    def list_work_order_links(self, work_order_no: str):
+        with self.session() as s:return list(s.scalars(
+            select(WorkOrderLink).where(WorkOrderLink.work_order_no==work_order_no)
+            .order_by(WorkOrderLink.created_at,WorkOrderLink.id)
+        ))
+
+    def transition_work_order(
+        self,work_order_no: str,target_state: str,user: str,reason: str="",
+        owner: str="",expected_version: int | None=None,workstation: str="",
+    ):
+        with self.session() as s:
+            stmt=select(WorkOrder).where(WorkOrder.work_order_no==work_order_no)
+            if self.url.startswith("postgresql"):stmt=stmt.with_for_update()
+            row=s.scalar(stmt)
+            if not row:raise ValueError("Work order not found")
+            self.assert_authorized(user,"worklog.edit",row.equipment_id)
+            if expected_version is not None and row.version!=expected_version:
+                raise RuntimeError("CONFLICT: Work order changed by another user.")
+            allowed=self.WORK_ORDER_TRANSITIONS.get(row.status,set())
+            if target_state not in allowed:
+                raise ValueError(f"Invalid work-order transition: {row.status} → {target_state}")
+            if target_state in {"Waiting Parts","Waiting Production","Cancelled"} and not reason.strip():
+                raise ValueError(f"{target_state} requires a reason.")
+            previous=row.status;now=datetime.utcnow();row.status=target_state
+            if owner.strip():row.owner=owner.strip()
+            if target_state=="In Progress" and not row.started_at:row.started_at=now
+            if target_state=="Completed":row.completed_at=now
+            row.updated_at=now;row.version+=1
+            s.add(WorkOrderEvent(
+                work_order_no=row.work_order_no,from_state=previous,to_state=target_state,
+                reason=reason.strip(),owner=row.owner,changed_by=user,workstation=workstation,occurred_at=now,
+            ))
+            s.add(AuditLog(
+                user=user,action="WORK_ORDER_TRANSITION",entity_type="WORK_ORDER",entity_key=row.work_order_no,
+                detail=json.dumps({"from":previous,"to":target_state,"reason":reason.strip(),"owner":row.owner},sort_keys=True),
+                workstation=workstation,created_at=now,
+            ))
+            self._queue_integration_event(s,"work_order.state.changed","WORK_ORDER",row.work_order_no,{
+                "work_order_no":row.work_order_no,"equipment_id":row.equipment_id,
+                "from_state":previous,"to_state":target_state,"owner":row.owner,"changed_by":user,
+            })
+            s.flush();return row
 
     def start_work_log(
         self,
