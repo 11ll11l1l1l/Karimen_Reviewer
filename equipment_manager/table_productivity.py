@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+import hashlib
 from pathlib import Path
 
 from openpyxl import Workbook
@@ -9,6 +10,47 @@ from openpyxl.utils import get_column_letter
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction, QKeySequence, QShortcut
 from PySide6.QtWidgets import QApplication, QFileDialog, QMenu, QMessageBox, QTableWidget
+
+
+
+_PREF_DB=None
+_PREF_USER=""
+
+
+def configure_productivity_context(db,username: str):
+    global _PREF_DB,_PREF_USER
+    _PREF_DB=db;_PREF_USER=username or ""
+
+
+def _view_key(table: QTableWidget) -> str:
+    raw="|".join(_headers(table))
+    return "table_view."+hashlib.sha1(raw.encode("utf-8")).hexdigest()[:16]
+
+
+def _save_view(table: QTableWidget):
+    if not _PREF_DB or not _PREF_USER:return
+    header=table.horizontalHeader()
+    value={
+        "hidden":[col for col in range(table.columnCount()) if table.isColumnHidden(col)],
+        "visual_order":[header.logicalIndex(v) for v in range(header.count())],
+    }
+    _PREF_DB.set_user_preference(_PREF_USER,_view_key(table),value)
+
+
+def _restore_view(table: QTableWidget):
+    if not _PREF_DB or not _PREF_USER:return
+    value=_PREF_DB.get_user_preference(_PREF_USER,_view_key(table),{})
+    if not isinstance(value,dict):return
+    hidden={int(x) for x in value.get("hidden",[]) if isinstance(x,int) or str(x).isdigit()}
+    for col in range(table.columnCount()):table.setColumnHidden(col,col in hidden)
+    order=value.get("visual_order",[])
+    header=table.horizontalHeader()
+    if isinstance(order,list) and len(order)==header.count():
+        try:
+            for target,logical in enumerate(order):
+                logical=int(logical);current=header.visualIndex(logical)
+                if current>=0 and current!=target:header.moveSection(current,target)
+        except Exception:pass
 
 
 def _headers(table: QTableWidget) -> list[str]:
@@ -82,17 +124,32 @@ def install_table_productivity(table: QTableWidget,export_name: str="EMS Export"
     table.setProperty("ems_export_name",export_name)
     table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
 
+    header=table.horizontalHeader();header.setSectionsMovable(True)
     def menu_at(pos):
         menu=QMenu(table)
         copy_action=menu.addAction("Copy selected cells")
         export_selected=menu.addAction("Export selected rows to Excel")
         export_all=menu.addAction("Export current table to Excel")
+        menu.addSeparator()
+        columns=menu.addMenu("Columns")
+        column_actions={}
+        for col,label in enumerate(_headers(table)):
+            action=columns.addAction(label);action.setCheckable(True);action.setChecked(not table.isColumnHidden(col));column_actions[action]=col
+        save_view=menu.addAction("Save table view")
+        reset_view=menu.addAction("Reset table view")
         action=menu.exec(table.viewport().mapToGlobal(pos))
         if action==copy_action:copy_selection_tsv(table)
         elif action==export_selected:export_table_xlsx(table,True,table)
         elif action==export_all:export_table_xlsx(table,False,table)
+        elif action==save_view:_save_view(table)
+        elif action==reset_view:
+            for col in range(table.columnCount()):table.setColumnHidden(col,False)
+            if _PREF_DB and _PREF_USER:_PREF_DB.set_user_preference(_PREF_USER,_view_key(table),{})
+        elif action in column_actions:
+            col=column_actions[action];table.setColumnHidden(col,not action.isChecked());_save_view(table)
 
     table.customContextMenuRequested.connect(menu_at)
+    _restore_view(table)
     shortcut=QShortcut(QKeySequence.Copy,table)
     shortcut.activated.connect(lambda:copy_selection_tsv(table))
     table._ems_copy_shortcut=shortcut
