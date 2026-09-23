@@ -4916,7 +4916,8 @@ class Database:
             for d in disp[:3]:
                 text="; ".join(x for x in [d.state,d.restrictions,d.release_criteria] if x)
                 if text:restriction_parts.append(text)
-            severity="CRITICAL" if eq.status=="Down" or any(x.priority=="P1" for x in t) else ("HIGH" if eq.status in risk_states or critical or a else "MEDIUM")
+            critical_alarm=any((x.severity or "").strip().lower() in {"critical","fatal","emergency"} for x in a)
+            severity="CRITICAL" if eq.status=="Down" or any(x.priority=="P1" for x in t) or critical_alarm else ("HIGH" if eq.status in risk_states or critical or a else "MEDIUM")
             owner=next((x.owner for x in wo if x.owner),None) or next((x.owner for x in t if x.owner),None) or eq.owner
             next_action=(
                 "Resolve active critical incident and restore controlled state." if critical else
