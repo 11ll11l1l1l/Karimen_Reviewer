@@ -977,6 +977,19 @@ class Database:
         if username and not self.equipment_in_scope(username,equipment_id,permission):
             raise PermissionError(f"User '{username}' is not authorized for equipment {equipment_id}.")
 
+    def assert_authorized(self, username: str, permission: str, equipment_id: str = ""):
+        strict=os.getenv("EMS_STRICT_AUTHZ","0").strip().lower() in {"1","true","yes","on"}
+        with self.session() as s:
+            user=s.scalar(select(User).where(User.username==username)) if username else None
+            if strict and (not user or not user.active):
+                raise PermissionError("Authenticated active EMS user is required for this operation.")
+            if user:
+                user_ctx={"username":user.username,"role":user.role}
+                if not self.has_permission(user_ctx,permission):
+                    raise PermissionError(f"User '{username}' lacks permission '{permission}'.")
+        if equipment_id:
+            self.assert_equipment_scope(username,equipment_id,permission)
+
     @contextmanager
     def session(self):
         s = self.Session()
@@ -1204,6 +1217,7 @@ class Database:
         user: str = "",
         workstation: str = "",
     ):
+        self.assert_authorized(user,"equipment.component.edit",str(data.get("equipment_id","")))
         payload=dict(data)
         if not payload.get("component_id","").strip():
             raise ValueError("Component ID is required.")
@@ -1274,6 +1288,7 @@ class Database:
             item=s.scalar(stmt)
             if not item:
                 raise ValueError("Component not found")
+            self.assert_authorized(user,"equipment.component.edit",item.equipment_id)
             if expected_version is not None and item.version!=expected_version:
                 raise RuntimeError("CONFLICT: Component changed by another user. Refresh and retry.")
             if item.status=="Removed":
@@ -1440,6 +1455,7 @@ class Database:
         workstation: str = "",
         expected_version: int | None = None,
     ):
+        self.assert_authorized(user,"equipment.meter.record",equipment_id)
         with self.session() as s:
             stmt=select(EquipmentMeter).where(
                 EquipmentMeter.equipment_id==equipment_id,
@@ -1576,6 +1592,7 @@ class Database:
         expected_version: int | None = None,
         override: bool = False,
     ):
+        self.assert_authorized(user,"equipment.transition",equipment_id)
         with self.session() as s:
             stmt = select(Equipment).where(Equipment.equipment_id == equipment_id)
             if self.url.startswith("postgresql"):
@@ -1704,6 +1721,7 @@ class Database:
             task=s.scalar(stmt)
             if not task:
                 raise ValueError("PM task not found")
+            self.assert_authorized(user,"pm.defer",task.equipment_id)
             if expected_task_version is not None and task.version!=expected_task_version:
                 raise RuntimeError("CONFLICT: PM task changed by another user. Refresh and retry.")
             if task.status in {"Completed","Cancelled","In Progress"}:
@@ -1890,6 +1908,7 @@ class Database:
             task = s.scalar(task_stmt)
             if not task:
                 raise ValueError("PM task not found")
+            self.assert_authorized(user,"pm.execute",task.equipment_id)
             ex = s.scalar(select(PMExecution).where(PMExecution.task_id == task_id))
             if ex:
                 self._snapshot_pm_specs(s, ex, task)
@@ -2058,6 +2077,7 @@ class Database:
             item = s.scalar(stmt)
             if not item:
                 raise ValueError("Ticket not found")
+            self.assert_authorized(user,"ticket.edit",item.equipment_id)
             if expected_version is not None and item.version != expected_version:
                 raise RuntimeError("CONFLICT: Ticket changed by another user. Refresh and retry.")
 
@@ -2149,6 +2169,7 @@ class Database:
             return list(s.scalars(select(TicketInvestigation).where(TicketInvestigation.ticket_no==ticket_no).order_by(TicketInvestigation.sequence)))
 
     def set_disposition(self, data: dict[str, Any]):
+        self.assert_authorized(str(data.get("created_by","")),"disposition.edit",str(data.get("equipment_id","")))
         with self.session() as s:
             stmt = select(Equipment).where(Equipment.equipment_id == data["equipment_id"])
             if not self.url.startswith("sqlite"): stmt = stmt.with_for_update()
@@ -2249,6 +2270,7 @@ class Database:
         run_no: str = "",
         workstation: str = "",
     ):
+        self.assert_authorized(user,"qualification.execute",equipment_id)
         with self.session() as s:
             eq=s.scalar(select(Equipment).where(Equipment.equipment_id==equipment_id))
             if not eq:
@@ -2468,6 +2490,7 @@ class Database:
         user: str,
         workstation: str = "",
     ):
+        self.assert_authorized(user,"release.verify",equipment_id)
         with self.session() as s:
             if not s.scalar(select(Equipment).where(Equipment.equipment_id==equipment_id)):
                 raise ValueError("Equipment not found")
@@ -2507,6 +2530,7 @@ class Database:
                 stmt=stmt.with_for_update()
             r=s.scalar(stmt)
             if not r: raise ValueError("Release request not found")
+            self.assert_authorized(user,"release.verify",r.equipment_id)
             if expected_version is not None and r.version!=expected_version:
                 raise RuntimeError("CONFLICT: Release request changed by another user.")
             if r.status=="Approved / Released":
@@ -2540,6 +2564,7 @@ class Database:
                 stmt=stmt.with_for_update()
             r=s.scalar(stmt)
             if not r: raise ValueError("Release request not found")
+            self.assert_authorized(user,"release.approve",r.equipment_id)
             if expected_version is not None and r.version!=expected_version:
                 raise RuntimeError("CONFLICT: Release request changed by another user.")
             checks=json.loads(r.checks_json or "{}")
