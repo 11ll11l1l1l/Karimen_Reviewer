@@ -29,6 +29,7 @@ from database import Database
 from logging_config import configure_logging, install_exception_hook
 from incident_workspace import IncidentWorkspace
 from maintenance_planner import MaintenancePlanningWorkspace
+from pm_execution_workspace import PMExecutionWorkspace
 from version import __version__
 from demo_data import active_tickets, seed_demo_data
 from main import (
@@ -215,7 +216,8 @@ class SmartMainWindow(QMainWindow):
         self.equipment_page=add("Equipment Registry",EquipmentPage(db,user))
         self.layout_page=add("Live FAB Map",SmartLayoutPage(db,user))
         self.maintenance_planner=add("Maintenance Planner",MaintenancePlanningWorkspace(db,user))
-        self.pm_page=add("PM Configuration / Execution",PMPage(db,user))
+        self.pm_execution=add("Technician PM Runner",PMExecutionWorkspace(db,user))
+        self.pm_page=add("PM Configuration",PMPage(db,user))
         self.incident_workspace=add("Incident / RCA Workspace",IncidentWorkspace(db,user))
         self.ticket_page=add("Ticket Lifecycle / Troubleshooting",TicketPage(db,user))
         self.alarm_page=add("Alarms / Events",AlarmPage(db,user))
@@ -232,6 +234,7 @@ class SmartMainWindow(QMainWindow):
         self.my_work.open_entity.connect(self.open_entity)
         self.equipment360.open_entity.connect(self.open_entity)
         self.maintenance_planner.open_entity.connect(self.open_entity)
+        self.pm_execution.open_entity.connect(self.open_entity)
         self.incident_workspace.open_entity.connect(self.open_entity)
         self.inventory.show_map_part.connect(self.show_part_map)
         self.nav.currentRowChanged.connect(self.stack.setCurrentIndex)
@@ -321,11 +324,17 @@ class SmartMainWindow(QMainWindow):
             if hasattr(self.ticket_page,"select_ticket"):self.ticket_page.select_ticket(entity_key)
             self.open_page("Ticket Lifecycle / Troubleshooting")
             return
-        if entity_type=="PM_TASK":
+        if entity_type in {"PM_TASK","PM_EXECUTION"}:
+            try:key=int(entity_key)
+            except Exception:key=0
+            self.pm_execution.set_task(key)
+            self.open_page("Technician PM Runner")
+            return
+        if entity_type=="PM_LEGACY":
             try:key=int(entity_key)
             except Exception:key=0
             if hasattr(self.pm_page,"select_task"):self.pm_page.select_task(key)
-            self.open_page("PM Configuration / Execution")
+            self.open_page("PM Configuration")
             return
         if entity_type=="PART":
             part=entity_key.split("@",1)[0]
