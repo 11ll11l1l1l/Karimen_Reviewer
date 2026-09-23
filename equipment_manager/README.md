@@ -4,6 +4,17 @@ Local Windows desktop equipment-management system isolated under `equipment_mana
 
 ## Current build
 
+### Production completion Wave 2
+
+- PM deferrals now use a controlled request → independent approve/reject workflow. The schedule is not changed until approval, and every request includes reason, risk assessment and mitigation.
+- Equipment reliability is calculated from governed state history: availability, total/planned/unplanned downtime, failure count, MTTR and MTBF.
+- Serialized equipment components/modules have parent-child hierarchy, part/serial identity, life-limit/usage fields and permanent install/remove history.
+- Equipment usage meters support monotonic readings plus explicit counter resets with audit history.
+- Usage/cycle PM triggers automatically create maintenance tasks at meter thresholds while preventing duplicate open work.
+- Meter resets atomically rebase future usage-PM thresholds.
+- Database startup now fails fast on schema drift instead of silently running against an incompatible existing schema.
+- EMS CI now runs the complete regression suite against SQLite plus a real PostgreSQL 16 service.
+
 ### Production-core state governance
 
 - Equipment operational state is no longer editable as ordinary master data.

@@ -172,19 +172,103 @@ class EquipmentStateDialog(QDialog):
         }
 
 
+class ComponentDialog(QDialog):
+    def __init__(self,equipment_id,row=None,parent=None):
+        super().__init__(parent); self.row=row; self.equipment_id=equipment_id; self.setWindowTitle("Equipment Component")
+        f=QFormLayout(self)
+        self.component_id=QLineEdit(); self.parent_id=QLineEdit(); self.name=QLineEdit(); self.type=QLineEdit(); self.mfg=QLineEdit(); self.model=QLineEdit(); self.serial=QLineEdit(); self.part=QLineEdit()
+        self.life=QDoubleSpinBox(); self.life.setRange(0,1e15); self.life.setSpecialValueText("Not set")
+        self.life_unit=QLineEdit(); self.usage=QDoubleSpinBox(); self.usage.setRange(0,1e15); self.notes=QTextEdit()
+        f.addRow("Equipment",QLabel(equipment_id))
+        for label,w in [("Component ID",self.component_id),("Parent Component",self.parent_id),("Name",self.name),("Type",self.type),("Manufacturer",self.mfg),("Model",self.model),("Serial",self.serial),("Part Number",self.part),("Life Limit",self.life),("Life Limit Unit",self.life_unit),("Usage",self.usage),("Notes",self.notes)]:f.addRow(label,w)
+        b=QDialogButtonBox(QDialogButtonBox.StandardButton.Save|QDialogButtonBox.StandardButton.Cancel);b.accepted.connect(self.accept);b.rejected.connect(self.reject);f.addRow(b)
+        if row:
+            self.component_id.setText(row.component_id);self.component_id.setReadOnly(True)
+            self.parent_id.setText(row.parent_component_id);self.parent_id.setReadOnly(True)
+            self.name.setText(row.name);self.type.setText(row.component_type);self.mfg.setText(row.manufacturer);self.model.setText(row.model);self.serial.setText(row.serial_number);self.part.setText(row.part_number)
+            self.life.setValue(row.life_limit_value or 0);self.life_unit.setText(row.life_limit_unit);self.usage.setValue(row.usage_value or 0);self.notes.setPlainText(row.notes)
+
+    def data(self):
+        return {
+            "component_id":self.component_id.text().strip(),
+            "equipment_id":self.equipment_id,
+            "parent_component_id":self.parent_id.text().strip(),
+            "name":self.name.text().strip(),
+            "component_type":self.type.text().strip(),
+            "manufacturer":self.mfg.text().strip(),
+            "model":self.model.text().strip(),
+            "serial_number":self.serial.text().strip(),
+            "part_number":self.part.text().strip(),
+            "life_limit_value":self.life.value() or None,
+            "life_limit_unit":self.life_unit.text().strip(),
+            "usage_value":self.usage.value(),
+            "notes":self.notes.toPlainText().strip(),
+        }
+
+
+class ComponentRemoveDialog(QDialog):
+    def __init__(self,row,parent=None):
+        super().__init__(parent);self.row=row;self.setWindowTitle(f"Remove Component — {row.component_id}")
+        f=QFormLayout(self);self.reason=QTextEdit();self.ticket=QLineEdit();self.pm=QSpinBox();self.pm.setRange(0,2_000_000_000);self.pm.setSpecialValueText("None")
+        f.addRow("Reason",self.reason);f.addRow("Related Ticket",self.ticket);f.addRow("Related PM Task ID",self.pm)
+        note=QLabel("Removal is permanent history. The component remains traceable but is no longer active on the equipment.");note.setWordWrap(True);note.setStyleSheet("color:#7a4b00");f.addRow("",note)
+        b=QDialogButtonBox(QDialogButtonBox.StandardButton.Save|QDialogButtonBox.StandardButton.Cancel);b.accepted.connect(self.accept);b.rejected.connect(self.reject);f.addRow(b)
+
+
+class MeterDialog(QDialog):
+    def __init__(self,equipment_id,row=None,parent=None):
+        super().__init__(parent);self.row=row;self.equipment_id=equipment_id;self.setWindowTitle("Equipment Usage Meter")
+        f=QFormLayout(self);self.code=QLineEdit();self.name=QLineEdit();self.unit=QLineEdit();self.initial=QDoubleSpinBox();self.initial.setRange(0,1e15);self.active=QCheckBox("Active");self.active.setChecked(True)
+        f.addRow("Equipment",QLabel(equipment_id));f.addRow("Meter Code",self.code);f.addRow("Name",self.name);f.addRow("Unit",self.unit);f.addRow("Initial Value",self.initial);f.addRow("",self.active)
+        b=QDialogButtonBox(QDialogButtonBox.StandardButton.Save|QDialogButtonBox.StandardButton.Cancel);b.accepted.connect(self.accept);b.rejected.connect(self.reject);f.addRow(b)
+        if row:
+            self.code.setText(row.meter_code);self.code.setReadOnly(True);self.name.setText(row.name);self.unit.setText(row.unit);self.initial.setValue(row.current_value);self.initial.setEnabled(False);self.active.setChecked(row.active)
+    def data(self):
+        return {"equipment_id":self.equipment_id,"meter_code":self.code.text().strip(),"name":self.name.text().strip(),"unit":self.unit.text().strip(),"current_value":self.initial.value(),"active":self.active.isChecked()}
+
+
+class MeterReadingDialog(QDialog):
+    def __init__(self,row,reset=False,parent=None):
+        super().__init__(parent);self.row=row;self.reset=reset;self.setWindowTitle(("Reset" if reset else "Record")+" Meter — "+row.meter_code)
+        f=QFormLayout(self);self.value=QDoubleSpinBox();self.value.setRange(0,1e15);self.value.setDecimals(3);self.value.setValue(0 if reset else row.current_value);self.note=QTextEdit()
+        f.addRow("Current",QLabel(f"{row.current_value:g} {row.unit}"));f.addRow("New Value",self.value);f.addRow("Note",self.note)
+        if reset:
+            note=QLabel("Reset rebases all active PM usage thresholds for this meter.");note.setWordWrap(True);note.setStyleSheet("color:#7a4b00");f.addRow("",note)
+        b=QDialogButtonBox(QDialogButtonBox.StandardButton.Save|QDialogButtonBox.StandardButton.Cancel);b.accepted.connect(self.accept);b.rejected.connect(self.reject);f.addRow(b)
+
+
 class EquipmentPage(QWidget):
     def __init__(self, db, user):
-        super().__init__(); self.db=db; self.user=user; self.rows=[]; self.history=[]
+        super().__init__(); self.db=db; self.user=user; self.rows=[]; self.history=[]; self.components=[]; self.component_events=[]; self.meters=[]; self.meter_readings=[]
         v=QVBoxLayout(self); h=QHBoxLayout(); self.search=QLineEdit(); self.search.setPlaceholderText("Search equipment..."); self.search.textChanged.connect(self.refresh)
         add=QPushButton("Add"); edit=QPushButton("Edit Master Data"); transition=QPushButton("Change State")
         add.clicked.connect(self.add); edit.clicked.connect(self.edit); transition.clicked.connect(self.change_state)
         add.setEnabled(db.has_permission(user,"equipment.edit")); edit.setEnabled(db.has_permission(user,"equipment.edit")); transition.setEnabled(db.has_permission(user,"equipment.transition"))
         h.addWidget(self.search,1); h.addWidget(add); h.addWidget(edit); h.addWidget(transition); v.addLayout(h)
         self.table=make_table(["ID","Name","Type","Area","Line/Cell","Status","Disposition","Owner","Criticality","Ver"])
-        self.table.doubleClicked.connect(self.edit); self.table.itemSelectionChanged.connect(self.load_history); v.addWidget(self.table,2)
-        v.addWidget(QLabel("Equipment State Timeline"))
-        self.history_table=make_table(["From","To","Class","Reason","Detail","Ticket","PM Task","Owner","Changed By","Time"])
-        v.addWidget(self.history_table,1); self.refresh()
+        self.table.doubleClicked.connect(self.edit); self.table.itemSelectionChanged.connect(self.load_details); v.addWidget(self.table,2)
+
+        tabs=QTabWidget()
+        ws=QWidget();vs=QVBoxLayout(ws);self.history_table=make_table(["From","To","Class","Reason","Detail","Ticket","PM Task","Owner","Changed By","Time"]);vs.addWidget(self.history_table);tabs.addTab(ws,"State Timeline")
+
+        wc=QWidget();vc=QVBoxLayout(wc);hc=QHBoxLayout();addc=QPushButton("Add Component");editc=QPushButton("Edit Component");removec=QPushButton("Remove Component")
+        addc.clicked.connect(self.add_component);editc.clicked.connect(self.edit_component);removec.clicked.connect(self.remove_component)
+        cancomp=db.has_permission(user,"equipment.component.edit");addc.setEnabled(cancomp);editc.setEnabled(cancomp);removec.setEnabled(cancomp)
+        hc.addWidget(addc);hc.addWidget(editc);hc.addWidget(removec);hc.addStretch(1);vc.addLayout(hc)
+        self.component_table=make_table(["Component ID","Parent","Name","Type","Part","Serial","Status","Life Limit","Unit","Usage","Installed","Removed","Ver"])
+        self.component_table.itemSelectionChanged.connect(self.load_component_events);vc.addWidget(self.component_table,2)
+        vc.addWidget(QLabel("Component History"))
+        self.component_event_table=make_table(["Component","Event","Parent","Reason","Ticket","PM Task","User","Time"]);vc.addWidget(self.component_event_table,1)
+        tabs.addTab(wc,"Components / Modules")
+
+        wm=QWidget();vm=QVBoxLayout(wm);hm=QHBoxLayout();addm=QPushButton("Add Meter");readm=QPushButton("Record Reading");resetm=QPushButton("Reset Counter")
+        addm.clicked.connect(self.add_meter);readm.clicked.connect(lambda:self.record_meter(False));resetm.clicked.connect(lambda:self.record_meter(True))
+        addm.setEnabled(db.has_permission(user,"equipment.edit"));canmeter=db.has_permission(user,"equipment.meter.record");readm.setEnabled(canmeter);resetm.setEnabled(canmeter)
+        hm.addWidget(addm);hm.addWidget(readm);hm.addWidget(resetm);hm.addStretch(1);vm.addLayout(hm)
+        self.meter_table=make_table(["Code","Name","Unit","Current","Last Reading","Active","Ver"]);self.meter_table.itemSelectionChanged.connect(self.load_meter_readings);vm.addWidget(self.meter_table,1)
+        self.meter_reading_table=make_table(["Meter","Value","Type","Note","Recorded By","Time"]);vm.addWidget(self.meter_reading_table,1)
+        tabs.addTab(wm,"Usage / Counters")
+        v.addWidget(tabs,1); self.refresh()
 
     def refresh(self):
         current=selected_row(self.table,self.rows)
@@ -195,7 +279,7 @@ class EquipmentPage(QWidget):
             for i,row in enumerate(self.rows):
                 if row.equipment_id==current_id:
                     self.table.selectRow(i); break
-        self.load_history()
+        self.load_details()
 
     def add(self):
         d=EquipmentDialog(parent=self)
@@ -212,7 +296,7 @@ class EquipmentPage(QWidget):
         d=EquipmentDialog(row,self)
         if d.exec()==QDialog.DialogCode.Accepted:
             try:
-                self.db.save_equipment(d.data(),row.version)
+                self.db.save_equipment(d.data(),row.version,user=self.user["username"],workstation=WORKSTATION)
                 self.db.audit(self.user["username"],"UPDATE_MASTER","EQUIPMENT",row.equipment_id,workstation=WORKSTATION)
                 self.refresh()
             except Exception as exc: QMessageBox.critical(self,"Equipment",str(exc))
@@ -234,10 +318,87 @@ class EquipmentPage(QWidget):
             except Exception as exc:
                 QMessageBox.critical(self,"Equipment State",str(exc))
 
-    def load_history(self):
+    def load_details(self):
         row=selected_row(self.table,self.rows)
         self.history=self.db.list_equipment_state_events(row.equipment_id) if row else []
+        self.components=self.db.list_components(row.equipment_id) if row else []
+        self.meters=self.db.list_meters(row.equipment_id) if row else []
         fill_table(self.history_table,self.history,["from_state","to_state","state_class","reason_code","reason_text","related_ticket","related_pm_task_id","owner","changed_by","changed_at"])
+        fill_table(self.component_table,self.components,["component_id","parent_component_id","name","component_type","part_number","serial_number","status","life_limit_value","life_limit_unit","usage_value","installed_at","removed_at","version"])
+        fill_table(self.meter_table,self.meters,["meter_code","name","unit","current_value","last_reading_at","active","version"])
+        self.load_component_events();self.load_meter_readings()
+
+    def load_component_events(self):
+        component=selected_row(self.component_table,self.components)
+        equipment=selected_row(self.table,self.rows)
+        self.component_events=self.db.list_component_events(component_id=component.component_id) if component else (self.db.list_component_events(equipment_id=equipment.equipment_id) if equipment else [])
+        fill_table(self.component_event_table,self.component_events,["component_id","event_type","parent_component_id","reason","related_ticket","related_pm_task_id","user","occurred_at"])
+
+    def add_component(self):
+        equipment=selected_row(self.table,self.rows)
+        if not equipment:return
+        d=ComponentDialog(equipment.equipment_id,parent=self)
+        if d.exec()==QDialog.DialogCode.Accepted:
+            try:
+                self.db.save_component(d.data(),user=self.user["username"],workstation=WORKSTATION)
+                self.load_details()
+            except Exception as exc:QMessageBox.critical(self,"Component",str(exc))
+
+    def edit_component(self):
+        row=selected_row(self.component_table,self.components)
+        if not row:return
+        d=ComponentDialog(row.equipment_id,row,self)
+        if d.exec()==QDialog.DialogCode.Accepted:
+            try:
+                self.db.save_component(d.data(),row.version,user=self.user["username"],workstation=WORKSTATION)
+                self.load_details()
+            except Exception as exc:QMessageBox.critical(self,"Component",str(exc))
+
+    def remove_component(self):
+        row=selected_row(self.component_table,self.components)
+        if not row:return
+        d=ComponentRemoveDialog(row,self)
+        if d.exec()==QDialog.DialogCode.Accepted:
+            try:
+                self.db.remove_component(
+                    row.component_id,
+                    d.reason.toPlainText().strip(),
+                    self.user["username"],
+                    related_ticket=d.ticket.text().strip(),
+                    related_pm_task_id=d.pm.value() or None,
+                    workstation=WORKSTATION,
+                    expected_version=row.version,
+                )
+                self.load_details()
+            except Exception as exc:QMessageBox.critical(self,"Component",str(exc))
+
+    def load_meter_readings(self):
+        meter=selected_row(self.meter_table,self.meters)
+        equipment=selected_row(self.table,self.rows)
+        self.meter_readings=self.db.list_meter_readings(equipment.equipment_id,meter.meter_code) if meter and equipment else []
+        fill_table(self.meter_reading_table,self.meter_readings,["meter_code","value","reading_type","note","recorded_by","recorded_at"])
+
+    def add_meter(self):
+        equipment=selected_row(self.table,self.rows)
+        if not equipment:return
+        d=MeterDialog(equipment.equipment_id,parent=self)
+        if d.exec()==QDialog.DialogCode.Accepted:
+            try:self.db.save_meter(d.data());self.load_details()
+            except Exception as exc:QMessageBox.critical(self,"Meter",str(exc))
+
+    def record_meter(self,reset=False):
+        meter=selected_row(self.meter_table,self.meters)
+        if not meter:return
+        d=MeterReadingDialog(meter,reset,self)
+        if d.exec()==QDialog.DialogCode.Accepted:
+            try:
+                reading,tasks=self.db.record_meter_reading(
+                    meter.equipment_id,meter.meter_code,d.value.value(),self.user["username"],
+                    note=d.note.toPlainText().strip(),reset=reset,workstation=WORKSTATION,expected_version=meter.version,
+                )
+                self.load_details()
+                if tasks:QMessageBox.information(self,"Usage PM",f"Created {len(tasks)} PM task(s) from usage threshold.")
+            except Exception as exc:QMessageBox.critical(self,"Meter Reading",str(exc))
 
 
 class MapNode(QGraphicsRectItem):
@@ -325,17 +486,75 @@ class PMExecutionDialog(QDialog):
         except Exception as exc: QMessageBox.critical(self,"Complete PM",str(exc))
 
 
+class PMDeferralRequestDialog(QDialog):
+    def __init__(self, task, parent=None):
+        super().__init__(parent); self.task=task; self.setWindowTitle(f"Request PM Deferral — {task.equipment_id} / {task.pm_id}"); self.setMinimumWidth(620)
+        f=QFormLayout(self)
+        due=task.original_due_date.date() if task.original_due_date else datetime.now().date()
+        self.new_due=QDateEdit(); self.new_due.setCalendarPopup(True); self.new_due.setDate(due); self.new_due.setMinimumDate(due)
+        self.reason=QTextEdit(); self.risk=QTextEdit(); self.mitigation=QTextEdit()
+        self.reason.setPlaceholderText("Why the PM cannot be completed by its controlled due date.")
+        self.risk.setPlaceholderText("What equipment/process/quality/safety risk exists during the extension.")
+        self.mitigation.setPlaceholderText("Temporary controls, inspections, restrictions, monitoring, or contingency actions.")
+        f.addRow("Original Due",QLabel(str(task.original_due_date.date()) if task.original_due_date else ""))
+        f.addRow("Requested Due",self.new_due); f.addRow("Reason",self.reason); f.addRow("Risk Assessment",self.risk); f.addRow("Mitigation",self.mitigation)
+        note=QLabel("Submitting does not change the PM due date. A different authorized reviewer must approve it."); note.setWordWrap(True); note.setStyleSheet("color:#7a4b00"); f.addRow("",note)
+        b=QDialogButtonBox(QDialogButtonBox.StandardButton.Save|QDialogButtonBox.StandardButton.Cancel); b.accepted.connect(self.accept); b.rejected.connect(self.reject); f.addRow(b)
+
+    def data(self):
+        d=self.new_due.date()
+        return {
+            "requested_due_date":datetime(d.year(),d.month(),d.day()),
+            "reason":self.reason.toPlainText().strip(),
+            "risk_assessment":self.risk.toPlainText().strip(),
+            "mitigation":self.mitigation.toPlainText().strip(),
+        }
+
+
+class PMDeferralReviewDialog(QDialog):
+    def __init__(self,row,approve,parent=None):
+        super().__init__(parent); self.row=row; self.approve=approve; self.setWindowTitle(("Approve" if approve else "Reject")+f" PM Deferral #{row.id}")
+        f=QFormLayout(self)
+        for label,value in [
+            ("Equipment",row.equipment_id),("PM",row.pm_id),("Original Due",row.original_due_date),
+            ("Requested Due",row.requested_due_date),("Requested By",row.requested_by),
+            ("Reason",row.reason),("Risk",row.risk_assessment),("Mitigation",row.mitigation),
+        ]:
+            w=QLabel(str(value or "")); w.setWordWrap(True); f.addRow(label,w)
+        self.note=QTextEdit(); self.note.setPlaceholderText("Reviewer decision basis / conditions")
+        f.addRow("Review Note",self.note)
+        b=QDialogButtonBox(QDialogButtonBox.StandardButton.Save|QDialogButtonBox.StandardButton.Cancel); b.accepted.connect(self.accept); b.rejected.connect(self.reject); f.addRow(b)
+
+
+class PMUsageTriggerDialog(QDialog):
+    def __init__(self,parent=None):
+        super().__init__(parent);self.setWindowTitle("Usage / Cycle PM Trigger");f=QFormLayout(self)
+        self.trigger=QLineEdit();self.eq=QLineEdit();self.pm=QLineEdit();self.meter=QLineEdit();self.interval=QDoubleSpinBox();self.interval.setRange(0.001,1e15);self.interval.setDecimals(3)
+        for label,w in [("Trigger ID",self.trigger),("Equipment",self.eq),("PM ID",self.pm),("Meter Code",self.meter),("Interval",self.interval)]:f.addRow(label,w)
+        note=QLabel("The first threshold starts from the meter's current value. Each threshold creates at most one open PM task.");note.setWordWrap(True);note.setStyleSheet("color:#5a6670");f.addRow("",note)
+        b=QDialogButtonBox(QDialogButtonBox.StandardButton.Save|QDialogButtonBox.StandardButton.Cancel);b.accepted.connect(self.accept);b.rejected.connect(self.reject);f.addRow(b)
+    def data(self):
+        return {"trigger_id":self.trigger.text().strip(),"equipment_id":self.eq.text().strip(),"pm_id":self.pm.text().strip(),"meter_code":self.meter.text().strip(),"interval_value":self.interval.value(),"active":True}
+
+
 class PMPage(QWidget):
     def __init__(self,db,user):
-        super().__init__(); self.db=db; self.user=user; self.defs=[]; self.tasks=[]; self.specrows=[]; v=QVBoxLayout(self); self.tabs=QTabWidget(); v.addWidget(self.tabs)
+        super().__init__(); self.db=db; self.user=user; self.defs=[]; self.tasks=[]; self.specrows=[]; self.deferrals=[]; self.usage_triggers=[]; self.usage_occurrences=[]; v=QVBoxLayout(self); self.tabs=QTabWidget(); v.addWidget(self.tabs)
         wd=QWidget(); vd=QVBoxLayout(wd); hd=QHBoxLayout(); add=QPushButton("Add Definition"); edit=QPushButton("Edit Definition"); gen=QPushButton("Generate Next PM"); ready=QPushButton("Parts Readiness"); add.clicked.connect(self.add_def); edit.clicked.connect(self.edit_def); gen.clicked.connect(self.generate_next); ready.clicked.connect(self.parts_ready); canedit=db.has_permission(user,"pm.edit"); add.setEnabled(canedit); edit.setEnabled(canedit); gen.setEnabled(canedit); hd.addWidget(add);hd.addWidget(edit);hd.addWidget(gen);hd.addWidget(ready);hd.addStretch(1);vd.addLayout(hd);self.def_table=make_table(["PM ID","Name","Equipment","Type","Frequency","Unit","Anchor","Early","Grace","Hours","Parts","Ver"]);vd.addWidget(self.def_table);self.tabs.addTab(wd,"Definitions")
-        wb=QWidget(); vb=QVBoxLayout(wb); hb=QHBoxLayout(); imp=QPushButton("Import Excel/CSV"); paste=QPushButton("Paste from Excel"); execute=QPushButton("Execute Selected"); forecast=QPushButton("Workload Forecast"); imp.clicked.connect(self.import_backlog); paste.clicked.connect(self.paste_backlog); execute.clicked.connect(self.execute); forecast.clicked.connect(self.forecast); imp.setEnabled(canedit); paste.setEnabled(canedit); execute.setEnabled(db.has_permission(user,"pm.execute")); [hb.addWidget(x) for x in [imp,paste,execute,forecast]];hb.addStretch(1);vb.addLayout(hb);self.task_table=make_table(["Equipment","PM ID","PM Name","Original Due","Scheduled","Status","Assigned","Hours","Priority","Ver"]);vb.addWidget(self.task_table);self.tabs.addTab(wb,"Backlog / Schedule")
+        wb=QWidget(); vb=QVBoxLayout(wb); hb=QHBoxLayout(); imp=QPushButton("Import Excel/CSV"); paste=QPushButton("Paste from Excel"); execute=QPushButton("Execute Selected"); defer=QPushButton("Request Deferral"); forecast=QPushButton("Workload Forecast"); imp.clicked.connect(self.import_backlog); paste.clicked.connect(self.paste_backlog); execute.clicked.connect(self.execute); defer.clicked.connect(self.request_deferral); forecast.clicked.connect(self.forecast); imp.setEnabled(canedit); paste.setEnabled(canedit); execute.setEnabled(db.has_permission(user,"pm.execute")); defer.setEnabled(db.has_permission(user,"pm.defer")); [hb.addWidget(x) for x in [imp,paste,execute,defer,forecast]];hb.addStretch(1);vb.addLayout(hb);self.task_table=make_table(["Equipment","PM ID","PM Name","Original Due","Scheduled","Status","Assigned","Hours","Priority","Ver"]);vb.addWidget(self.task_table);self.tabs.addTab(wb,"Backlog / Schedule")
         ws=QWidget(); vs=QVBoxLayout(ws); hs=QHBoxLayout(); ispec=QPushButton("Import Steps / Specs"); pspec=QPushButton("Paste Steps / Specs"); ispec.clicked.connect(self.import_specs); pspec.clicked.connect(self.paste_specs); ispec.setEnabled(canedit); pspec.setEnabled(canedit); hs.addWidget(ispec);hs.addWidget(pspec);hs.addStretch(1);vs.addLayout(hs);self.spec_table=make_table(["PM ID","Step","Activity","Method","Type","Unit","Target","CL","CH","LSL","USL","Rev"]);vs.addWidget(self.spec_table);self.tabs.addTab(ws,"Checklist / Specs")
+        wf=QWidget(); vf=QVBoxLayout(wf); hf=QHBoxLayout(); approve=QPushButton("Approve Selected"); reject=QPushButton("Reject Selected"); approve.clicked.connect(lambda:self.review_deferral(True)); reject.clicked.connect(lambda:self.review_deferral(False)); canreview=db.has_permission(user,"pm.defer.approve"); approve.setEnabled(canreview); reject.setEnabled(canreview); hf.addWidget(approve);hf.addWidget(reject);hf.addStretch(1);vf.addLayout(hf);self.deferral_table=make_table(["ID","Equipment","PM","Original Due","Requested Due","Status","Requested By","Reviewed By","Review Note","Ver"]);vf.addWidget(self.deferral_table);self.tabs.addTab(wf,"PM Deferrals")
+        wu=QWidget();vu=QVBoxLayout(wu);hu=QHBoxLayout();addu=QPushButton("Add Usage Trigger");addu.clicked.connect(self.add_usage_trigger);addu.setEnabled(canedit);hu.addWidget(addu);hu.addStretch(1);vu.addLayout(hu)
+        self.usage_trigger_table=make_table(["Trigger","Equipment","PM","Meter","Interval","Last Trigger","Next Trigger","Active","Ver"]);self.usage_trigger_table.itemSelectionChanged.connect(self.load_usage_occurrences);vu.addWidget(self.usage_trigger_table,2)
+        self.usage_occurrence_table=make_table(["Trigger","Task ID","Equipment","PM","Meter","Threshold","Reading","Created"]);vu.addWidget(self.usage_occurrence_table,1);self.tabs.addTab(wu,"Usage Triggers")
         self.refresh()
     def refresh(self):
         self.defs=self.db.list_pm_definitions(); fill_table(self.def_table,self.defs,["pm_id","name","equipment_id","schedule_type","frequency_value","frequency_unit","anchor_mode","early_window_days","grace_days","estimated_hours","required_parts","version"])
         self.tasks=self.db.list_pm_tasks(); fill_table(self.task_table,self.tasks,["equipment_id","pm_id","pm_name","original_due_date","scheduled_date","status","assigned_to","estimated_hours","priority","version"])
         self.specrows=self.db.list_pm_specs(); fill_table(self.spec_table,self.specrows,["pm_id","step_no","activity","method","input_type","unit","target","control_low","control_high","spec_low","spec_high","revision"])
+        self.deferrals=self.db.list_pm_deferrals(); fill_table(self.deferral_table,self.deferrals,["id","equipment_id","pm_id","original_due_date","requested_due_date","status","requested_by","reviewed_by","review_note","version"])
+        self.usage_triggers=self.db.list_pm_usage_triggers(); fill_table(self.usage_trigger_table,self.usage_triggers,["trigger_id","equipment_id","pm_id","meter_code","interval_value","last_trigger_value","next_trigger_value","active","version"])
+        self.load_usage_occurrences()
     def add_def(self):
         d=PMDefinitionDialog(parent=self)
         if d.exec()==QDialog.DialogCode.Accepted:
@@ -406,6 +625,52 @@ class PMPage(QWidget):
     def paste_specs(self):
         try:self._import_specs_df(read_clipboard_table(QApplication.clipboard().text()))
         except Exception as exc:QMessageBox.critical(self,"Paste",str(exc))
+    def add_usage_trigger(self):
+        d=PMUsageTriggerDialog(self)
+        if d.exec()==QDialog.DialogCode.Accepted:
+            try:self.db.save_pm_usage_trigger(d.data());self.refresh()
+            except Exception as exc:QMessageBox.critical(self,"Usage Trigger",str(exc))
+
+    def load_usage_occurrences(self):
+        row=selected_row(self.usage_trigger_table,self.usage_triggers)
+        self.usage_occurrences=self.db.list_pm_usage_occurrences(row.trigger_id) if row else []
+        fill_table(self.usage_occurrence_table,self.usage_occurrences,["trigger_id","task_id","equipment_id","pm_id","meter_code","trigger_value","reading_value","created_at"])
+
+    def request_deferral(self):
+        row=selected_row(self.task_table,self.tasks)
+        if not row:return
+        d=PMDeferralRequestDialog(row,self)
+        if d.exec()==QDialog.DialogCode.Accepted:
+            try:
+                self.db.request_pm_deferral(
+                    row.id,
+                    user=self.user["username"],
+                    workstation=WORKSTATION,
+                    expected_task_version=row.version,
+                    **d.data(),
+                )
+                self.refresh()
+            except Exception as exc:QMessageBox.critical(self,"PM Deferral",str(exc))
+
+    def review_deferral(self,approve):
+        row=selected_row(self.deferral_table,self.deferrals)
+        if not row:return
+        if row.status!="Pending":
+            QMessageBox.information(self,"PM Deferral","Selected request is already reviewed.");return
+        d=PMDeferralReviewDialog(row,approve,self)
+        if d.exec()==QDialog.DialogCode.Accepted:
+            try:
+                self.db.review_pm_deferral(
+                    row.id,
+                    approve,
+                    self.user["username"],
+                    d.note.toPlainText().strip(),
+                    workstation=WORKSTATION,
+                    expected_version=row.version,
+                )
+                self.refresh()
+            except Exception as exc:QMessageBox.critical(self,"PM Deferral",str(exc))
+
     def execute(self):
         row=selected_row(self.task_table,self.tasks)
         if not row:return
@@ -785,12 +1050,37 @@ class AdminPage(QWidget):
         if ok:self.db.set_permission_override(row.username,perm,{"Allow":True,"Deny":False,"Use Role Default":None}[choice])
 
 
+class ReliabilityPage(QWidget):
+    def __init__(self,db):
+        super().__init__(); self.db=db; self.rows=[]
+        v=QVBoxLayout(self); h=QHBoxLayout()
+        title=QLabel("Equipment Reliability"); title.setStyleSheet("font-size:18pt;font-weight:700")
+        self.days=QSpinBox(); self.days.setRange(1,3650); self.days.setValue(30); self.days.setSuffix(" days")
+        refresh=QPushButton("Refresh"); refresh.clicked.connect(self.refresh)
+        h.addWidget(title); h.addStretch(1); h.addWidget(QLabel("Period")); h.addWidget(self.days); h.addWidget(refresh); v.addLayout(h)
+        note=QLabel("Metrics are derived from governed equipment state events. Unplanned downtime is counted when the state class is UNPLANNED_DOWNTIME.")
+        note.setWordWrap(True); note.setStyleSheet("color:#5a6670"); v.addWidget(note)
+        self.table=make_table(["Equipment","Availability %","Failures","Unplanned h","Planned h","Total Down h","MTTR h","MTBF h","Current State"])
+        v.addWidget(self.table); self.refresh()
+
+    def refresh(self):
+        try:self.rows=self.db.reliability_report(self.days.value())
+        except Exception as exc:QMessageBox.critical(self,"Reliability",str(exc));return
+        self.table.setRowCount(len(self.rows))
+        fields=["equipment_id","availability_pct","failure_count","unplanned_downtime_hours","planned_downtime_hours","downtime_hours","mttr_hours","mtbf_hours","current_state"]
+        for r,row in enumerate(self.rows):
+            for col,field in enumerate(fields):
+                value=row.get(field,"")
+                if isinstance(value,float): value=f"{value:.2f}"
+                self.table.setItem(r,col,ti(value))
+
+
 class MainWindow(QMainWindow):
     def __init__(self,db,user):
         super().__init__();self.db=db;self.user=user;self.setWindowTitle(APP_TITLE);self.resize(1450,850);root=QWidget();self.setCentralWidget(root);h=QHBoxLayout(root);self.nav=QListWidget();self.nav.setFixedWidth(210);self.stack=QStackedWidget();h.addWidget(self.nav);h.addWidget(self.stack,1)
         self.pages=[]
         def add(name,page):self.nav.addItem(name);self.stack.addWidget(page);self.pages.append(page)
-        self.dashboard=DashboardPage(db);add("Dashboard",self.dashboard);add("Equipment",EquipmentPage(db,user));self.layout=LayoutPage(db,user);add("Layout / Map",self.layout);add("PM",PMPage(db,user));add("Issue Tickets",TicketPage(db,user));add("Disposition / Release",ControlPage(db,user));add("Endorsements",EndorsementPage(db,user));self.inventory=InventoryPage(db,user);add("Inventory",self.inventory);add("Documents",DocumentPage(db,user));add("Administration",AdminPage(db,user))
+        self.dashboard=DashboardPage(db);add("Dashboard",self.dashboard);add("Equipment",EquipmentPage(db,user));self.layout=LayoutPage(db,user);add("Layout / Map",self.layout);add("PM",PMPage(db,user));add("Issue Tickets",TicketPage(db,user));add("Reliability",ReliabilityPage(db));add("Disposition / Release",ControlPage(db,user));add("Endorsements",EndorsementPage(db,user));self.inventory=InventoryPage(db,user);add("Inventory",self.inventory);add("Documents",DocumentPage(db,user));add("Administration",AdminPage(db,user))
         self.inventory.show_map_part.connect(self.show_part_map);self.nav.currentRowChanged.connect(self.stack.setCurrentIndex);self.nav.setCurrentRow(0)
         self.statusBar().showMessage(f"{user['display_name']} — {user['role']} — {WORKSTATION}")
         refresh=QAction("Refresh",self);refresh.setShortcut(QKeySequence("F5"));refresh.triggered.connect(self.refresh_current);self.addAction(refresh);self.timer=QTimer(self);self.timer.timeout.connect(self.dashboard.refresh);self.timer.start(30000)
