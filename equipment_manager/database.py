@@ -8,7 +8,7 @@ from contextlib import contextmanager
 from datetime import datetime, timedelta
 from typing import Any
 
-from sqlalchemy import Boolean, DateTime, Float, Integer, String, Text, UniqueConstraint, create_engine, func, inspect, select
+from sqlalchemy import Boolean, DateTime, Float, Integer, String, Text, UniqueConstraint, create_engine, func, inspect, or_, select
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 
 from domain import (
@@ -49,6 +49,51 @@ class UserPermission(Base):
     permission: Mapped[str] = mapped_column(String(100), index=True)
     allowed: Mapped[bool] = mapped_column(Boolean)
     __table_args__ = (UniqueConstraint("username", "permission", name="uq_user_permission"),)
+
+
+class UserRecentItem(Base):
+    __tablename__ = "user_recent_items"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    username: Mapped[str] = mapped_column(String(80), index=True)
+    entity_type: Mapped[str] = mapped_column(String(60), index=True)
+    entity_key: Mapped[str] = mapped_column(String(180), index=True)
+    title: Mapped[str] = mapped_column(String(250), default="")
+    equipment_id: Mapped[str] = mapped_column(String(100), default="", index=True)
+    opened_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    __table_args__ = (UniqueConstraint("username","entity_type","entity_key",name="uq_user_recent_item"),)
+
+
+class UserFavorite(Base):
+    __tablename__ = "user_favorites"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    username: Mapped[str] = mapped_column(String(80), index=True)
+    entity_type: Mapped[str] = mapped_column(String(60), index=True)
+    entity_key: Mapped[str] = mapped_column(String(180), index=True)
+    title: Mapped[str] = mapped_column(String(250), default="")
+    equipment_id: Mapped[str] = mapped_column(String(100), default="", index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    __table_args__ = (UniqueConstraint("username","entity_type","entity_key",name="uq_user_favorite"),)
+
+
+class EntityAttachment(Base):
+    __tablename__ = "entity_attachments"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    attachment_key: Mapped[str] = mapped_column(String(48), unique=True, index=True, default=lambda: secrets.token_hex(20))
+    entity_type: Mapped[str] = mapped_column(String(60), index=True)
+    entity_key: Mapped[str] = mapped_column(String(180), index=True)
+    equipment_id: Mapped[str] = mapped_column(String(100), default="", index=True)
+    category: Mapped[str] = mapped_column(String(60), default="Evidence", index=True)
+    original_name: Mapped[str] = mapped_column(String(260), default="")
+    stored_path: Mapped[str] = mapped_column(Text)
+    media_type: Mapped[str] = mapped_column(String(120), default="")
+    file_size: Mapped[int] = mapped_column(Integer, default=0)
+    file_sha256: Mapped[str] = mapped_column(String(64), default="")
+    caption: Mapped[str] = mapped_column(Text, default="")
+    tags: Mapped[str] = mapped_column(Text, default="")
+    copied_from_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    created_by: Mapped[str] = mapped_column(String(120), default="", index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
 
 
 class AuthSecurityState(Base):
@@ -984,6 +1029,9 @@ class Database:
                 table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
             ]),
             ("20260923_002","Create operational event and lookup indexes",self._migration_indexes),
+            ("20260923_003","Create productivity workspace and universal evidence tables",lambda: [
+                table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
+            ]),
         ]
 
     def _migration_indexes(self):
@@ -1642,6 +1690,214 @@ class Database:
     def list_recovery_drills(self, limit: int = 100):
         with self.session() as s:
             return list(s.scalars(select(RecoveryDrill).order_by(RecoveryDrill.performed_at.desc()).limit(max(1,min(int(limit),1000)))))
+
+    def record_recent_item(
+        self,
+        username: str,
+        entity_type: str,
+        entity_key: str,
+        title: str = "",
+        equipment_id: str = "",
+    ):
+        if not username or not entity_type or not entity_key:return
+        now=datetime.utcnow()
+        with self.session() as s:
+            row=s.scalar(select(UserRecentItem).where(
+                UserRecentItem.username==username,
+                UserRecentItem.entity_type==entity_type,
+                UserRecentItem.entity_key==entity_key,
+            ))
+            if row:
+                row.title=title or row.title;row.equipment_id=equipment_id or row.equipment_id;row.opened_at=now
+            else:
+                row=UserRecentItem(
+                    username=username,entity_type=entity_type,entity_key=entity_key,
+                    title=title,equipment_id=equipment_id,opened_at=now,
+                );s.add(row)
+            s.flush();return row
+
+    def list_recent_items(self, username: str, limit: int = 20):
+        with self.session() as s:
+            return list(s.scalars(
+                select(UserRecentItem)
+                .where(UserRecentItem.username==username)
+                .order_by(UserRecentItem.opened_at.desc())
+                .limit(max(1,min(int(limit),100)))
+            ))
+
+    def set_favorite(
+        self,
+        username: str,
+        entity_type: str,
+        entity_key: str,
+        favorite: bool,
+        title: str = "",
+        equipment_id: str = "",
+    ):
+        with self.session() as s:
+            row=s.scalar(select(UserFavorite).where(
+                UserFavorite.username==username,
+                UserFavorite.entity_type==entity_type,
+                UserFavorite.entity_key==entity_key,
+            ))
+            if favorite:
+                if not row:
+                    row=UserFavorite(
+                        username=username,entity_type=entity_type,entity_key=entity_key,
+                        title=title,equipment_id=equipment_id,
+                    );s.add(row)
+                else:
+                    row.title=title or row.title;row.equipment_id=equipment_id or row.equipment_id
+            elif row:
+                s.delete(row);row=None
+            s.flush();return row
+
+    def is_favorite(self, username: str, entity_type: str, entity_key: str) -> bool:
+        with self.session() as s:
+            return bool(s.scalar(select(func.count()).select_from(UserFavorite).where(
+                UserFavorite.username==username,
+                UserFavorite.entity_type==entity_type,
+                UserFavorite.entity_key==entity_key,
+            )))
+
+    def list_favorites(self, username: str):
+        with self.session() as s:
+            return list(s.scalars(
+                select(UserFavorite).where(UserFavorite.username==username)
+                .order_by(UserFavorite.entity_type,UserFavorite.title,UserFavorite.entity_key)
+            ))
+
+    def global_search(self, query: str, limit: int = 80) -> list[dict[str, Any]]:
+        q=(query or "").strip()
+        if not q:return []
+        like=f"%{q}%";out=[]
+        max_each=max(5,min(25,int(limit)//5 or 5))
+        def add(entity_type,key,title,subtitle="",equipment_id=""):
+            if len(out)>=limit:return
+            out.append({
+                "entity_type":entity_type,"entity_key":str(key),"title":str(title or key),
+                "subtitle":str(subtitle or ""),"equipment_id":str(equipment_id or ""),
+            })
+        with self.session() as s:
+            for row in s.scalars(select(Equipment).where(or_(
+                Equipment.equipment_id.ilike(like),Equipment.name.ilike(like),Equipment.equipment_type.ilike(like),
+                Equipment.model.ilike(like),Equipment.serial_number.ilike(like),Equipment.area.ilike(like),
+            )).limit(max_each)):
+                add("EQUIPMENT",row.equipment_id,f"{row.equipment_id} — {row.name}",f"{row.status} · {row.area} · {row.model}",row.equipment_id)
+            for row in s.scalars(select(Ticket).where(or_(
+                Ticket.ticket_no.ilike(like),Ticket.title.ilike(like),Ticket.description.ilike(like),
+                Ticket.equipment_id.ilike(like),Ticket.owner.ilike(like),
+            )).limit(max_each)):
+                add("TICKET",row.ticket_no,f"{row.ticket_no} — {row.title}",f"{row.priority} · {row.status} · {row.equipment_id}",row.equipment_id)
+            for row in s.scalars(select(PMTask).where(or_(
+                PMTask.pm_id.ilike(like),PMTask.pm_name.ilike(like),PMTask.equipment_id.ilike(like),PMTask.assigned_to.ilike(like),
+            )).limit(max_each)):
+                add("PM_TASK",row.id,f"{row.pm_id} — {row.pm_name}",f"{row.status} · {row.equipment_id}",row.equipment_id)
+            for row in s.scalars(select(EquipmentAlarmEvent).where(or_(
+                EquipmentAlarmEvent.alarm_code.ilike(like),EquipmentAlarmEvent.message.ilike(like),EquipmentAlarmEvent.equipment_id.ilike(like),
+            )).order_by(EquipmentAlarmEvent.occurred_at.desc()).limit(max_each)):
+                add("ALARM",row.event_key,f"{row.alarm_code} — {row.message}",f"{row.state} · {row.equipment_id}",row.equipment_id)
+            for row in s.scalars(select(InventoryItem).where(or_(
+                InventoryItem.part_number.ilike(like),InventoryItem.description.ilike(like),InventoryItem.location_code.ilike(like),
+            )).limit(max_each)):
+                add("PART",f"{row.part_number}@{row.location_code}",row.part_number,f"{row.description} · {row.location_code}")
+            for row in s.scalars(select(ControlledDocument).where(or_(
+                ControlledDocument.document_id.ilike(like),ControlledDocument.title.ilike(like),ControlledDocument.entity_key.ilike(like),
+            )).limit(max_each)):
+                equipment_id=row.entity_key if row.entity_type.upper()=="EQUIPMENT" else ""
+                add("DOCUMENT",row.document_id,f"{row.document_id} — {row.title}",f"{row.status} · {row.entity_type}:{row.entity_key}",equipment_id)
+        return out[:limit]
+
+    def my_work(self, username: str, limit: int = 200) -> list[dict[str, Any]]:
+        username=(username or "").strip()
+        if not username:return []
+        rows=[]
+        attention=self.operations_attention_queue(max(limit*2,200))
+        for item in attention:
+            if (item.get("owner") or "").strip().lower()==username.lower():
+                rows.append(dict(item))
+        with self.session() as s:
+            user=s.scalar(select(User).where(User.username==username))
+            userctx={"username":username,"role":user.role} if user else {"username":username,"role":"Read Only"}
+            if self.has_permission(userctx,"release.approve"):
+                for rel in s.scalars(select(EquipmentRelease).where(EquipmentRelease.status=="Verified")):
+                    rows.append({"severity":"HIGH","kind":"APPROVAL","key":str(rel.id),"equipment_id":rel.equipment_id,"summary":"Release approval required","owner":username,"age_hours":0.0})
+            if self.has_permission(userctx,"qualification.verify"):
+                for run in s.scalars(select(QualificationRun).where(QualificationRun.status=="Submitted")):
+                    rows.append({"severity":"HIGH","kind":"VERIFY","key":run.run_no,"equipment_id":run.equipment_id,"summary":f"Qualification verification — {run.protocol_name}","owner":username,"age_hours":0.0})
+            if self.has_permission(userctx,"qualification.approve"):
+                for run in s.scalars(select(QualificationRun).where(QualificationRun.status=="Verified")):
+                    rows.append({"severity":"HIGH","kind":"APPROVAL","key":run.run_no,"equipment_id":run.equipment_id,"summary":f"Qualification approval — {run.protocol_name}","owner":username,"age_hours":0.0})
+        rank={"CRITICAL":0,"HIGH":1,"MEDIUM":2,"LOW":3}
+        dedup={}
+        for row in rows:
+            dedup[(row.get("kind"),row.get("key"),row.get("summary"))]=row
+        result=list(dedup.values())
+        result.sort(key=lambda x:(rank.get(x.get("severity"),9),-float(x.get("age_hours") or 0)))
+        return result[:max(1,min(int(limit),1000))]
+
+    def add_attachment(
+        self,
+        entity_type: str,
+        entity_key: str,
+        stored_path: str,
+        *,
+        original_name: str = "",
+        media_type: str = "",
+        category: str = "Evidence",
+        caption: str = "",
+        tags: str = "",
+        equipment_id: str = "",
+        created_by: str = "",
+        copied_from_id: int | None = None,
+    ):
+        path=os.path.abspath(stored_path)
+        if not os.path.isfile(path):raise FileNotFoundError(path)
+        file_size=os.path.getsize(path)
+        digest=self._file_sha256(path)
+        with self.session() as s:
+            row=EntityAttachment(
+                entity_type=entity_type.strip().upper(),entity_key=str(entity_key),
+                equipment_id=equipment_id.strip(),category=category.strip() or "Evidence",
+                original_name=original_name.strip() or os.path.basename(path),stored_path=path,
+                media_type=media_type.strip(),file_size=file_size,file_sha256=digest,
+                caption=caption.strip(),tags=tags.strip(),created_by=created_by.strip(),
+                copied_from_id=copied_from_id,
+            )
+            s.add(row);s.flush()
+            s.add(AuditLog(
+                user=created_by or "system",action="ATTACHMENT_ADD",entity_type=row.entity_type,
+                entity_key=row.entity_key,detail=json.dumps({"attachment_key":row.attachment_key,"name":row.original_name,"sha256":digest},sort_keys=True),
+            ))
+            return row
+
+    def list_attachments(self, entity_type: str, entity_key: str, active_only: bool = True):
+        with self.session() as s:
+            stmt=select(EntityAttachment).where(
+                EntityAttachment.entity_type==entity_type.strip().upper(),
+                EntityAttachment.entity_key==str(entity_key),
+            ).order_by(EntityAttachment.created_at.desc(),EntityAttachment.id.desc())
+            if active_only:stmt=stmt.where(EntityAttachment.active.is_(True))
+            return list(s.scalars(stmt))
+
+    def get_attachment(self, attachment_id: int):
+        with self.session() as s:return s.get(EntityAttachment,attachment_id)
+
+    def update_attachment_metadata(self, attachment_id: int, caption: str, tags: str, category: str, user: str = ""):
+        with self.session() as s:
+            row=s.get(EntityAttachment,attachment_id)
+            if not row or not row.active:raise ValueError("Attachment not found")
+            row.caption=caption.strip();row.tags=tags.strip();row.category=category.strip() or "Evidence"
+            s.add(AuditLog(user=user or "system",action="ATTACHMENT_METADATA",entity_type=row.entity_type,entity_key=row.entity_key,detail=str(row.id)))
+            s.flush();return row
+
+    def remove_attachment(self, attachment_id: int, user: str = ""):
+        with self.session() as s:
+            row=s.get(EntityAttachment,attachment_id)
+            if not row or not row.active:raise ValueError("Attachment not found")
+            row.active=False
+            s.add(AuditLog(user=user or "system",action="ATTACHMENT_REMOVE",entity_type=row.entity_type,entity_key=row.entity_key,detail=str(row.id)))
+            s.flush();return row
 
     def audit(self, user: str, action: str, entity_type: str, entity_key: str = "", detail: str = "", workstation: str = ""):
         with self.session() as s:
