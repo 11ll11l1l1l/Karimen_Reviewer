@@ -686,6 +686,7 @@ class Database:
         self.Session = sessionmaker(bind=self.engine, autoflush=False, expire_on_commit=False, future=True)
         Base.metadata.create_all(self.engine)
         self._assert_schema_compatible()
+        self._bootstrap_legacy_event_history()
 
     def _assert_schema_compatible(self):
         """Fail fast if an existing database is missing model columns.
@@ -718,6 +719,66 @@ class Database:
             return True,"Schema matches application model"
         except Exception as exc:
             return False,str(exc)
+
+    def _bootstrap_legacy_event_history(self):
+        """Backfill baseline event history for databases created before governed workflows.
+
+        New installations already create events at record creation. This only acts
+        on records that have no event history at all, so it is idempotent.
+        """
+        legacy_ticket_states={"In Progress":"Investigation","Completed":"Closed"}
+        with self.session() as s:
+            equipment=list(s.scalars(select(Equipment)))
+            for eq in equipment:
+                exists=s.scalar(select(func.count()).select_from(EquipmentStateEvent).where(
+                    EquipmentStateEvent.equipment_id==eq.equipment_id
+                ))
+                if exists:
+                    continue
+                state=eq.status if eq.status in EQUIPMENT_STATES else "Available"
+                if eq.status!=state:
+                    eq.status=state
+                    eq.version+=1
+                occurred=eq.updated_at or datetime.utcnow()
+                s.add(EquipmentStateEvent(
+                    equipment_id=eq.equipment_id,
+                    from_state="",
+                    to_state=state,
+                    state_class=STATE_CLASS.get(state,""),
+                    downtime=state in DOWNTIME_STATES,
+                    reason_code="INITIAL_STATE",
+                    reason_text="Baseline state captured during governed-workflow upgrade",
+                    owner=eq.owner or "",
+                    changed_by="system-migration",
+                    workstation="DATABASE-UPGRADE",
+                    changed_at=occurred,
+                ))
+
+            tickets=list(s.scalars(select(Ticket)))
+            for ticket in tickets:
+                exists=s.scalar(select(func.count()).select_from(TicketStateEvent).where(
+                    TicketStateEvent.ticket_no==ticket.ticket_no
+                ))
+                if exists:
+                    continue
+                state=legacy_ticket_states.get(ticket.status,ticket.status)
+                if state not in TICKET_STATES:
+                    state="Open"
+                if ticket.status!=state:
+                    ticket.status=state
+                    ticket.version+=1
+                occurred=ticket.updated_at or ticket.created_at or datetime.utcnow()
+                s.add(TicketStateEvent(
+                    ticket_no=ticket.ticket_no,
+                    from_state="",
+                    to_state=state,
+                    reason_code="INITIAL_STATE",
+                    note="Baseline lifecycle state captured during governed-workflow upgrade",
+                    owner=ticket.owner or "",
+                    changed_by="system-migration",
+                    workstation="DATABASE-UPGRADE",
+                    changed_at=occurred,
+                ))
 
     @contextmanager
     def session(self):
