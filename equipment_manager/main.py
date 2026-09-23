@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
 
 from database import Database, PERMISSIONS, ROLE_PERMISSIONS
 from backup import create_backup, verify_backup
+from attachment_store import store_attachment_file
 from logging_config import configure_logging, install_exception_hook
 from version import __version__
 from domain import REASON_CODES, TICKET_REASON_CODES, allowed_targets, allowed_ticket_targets
@@ -590,6 +591,7 @@ class PMExecutionDialog(QDialog):
         if img.isNull():QMessageBox.warning(self,"Clipboard","Clipboard does not contain an image.");return
         try:
             path=copy_clipboard_image(img,FILE_ROOT,"PM",f"{self.task.id}_step_{spec.step_no}");current=self.results.get(spec.step_no)
+            self.db.add_attachment("PM_EXECUTION",str(self.execrow.id),path,original_name=Path(path).name,media_type="image/png",category="Screenshot",caption=f"{self.task.pm_id} step {spec.step_no}: {spec.activity}",equipment_id=self.task.equipment_id,created_by=self.user["username"])
             data={"value_text":current.value_text if current else "Evidence attached","value_numeric":current.value_numeric if current else None,"result":current.result if current else "RECORDED","entered_by":self.user["username"],"evidence_path":path}
             self.db.save_pm_result(self.execrow.id,spec.step_no,data,current.version if current else None);self.refresh()
         except Exception as exc:QMessageBox.critical(self,"Evidence",str(exc))
@@ -602,7 +604,11 @@ class PMExecutionDialog(QDialog):
         note,ok=QInputDialog.getText(self,"Acknowledge Requirement",req.description)
         if not ok:return
         evidence=""
-        if QMessageBox.question(self,"Evidence","Attach evidence file?")==QMessageBox.StandardButton.Yes:evidence,_=QFileDialog.getOpenFileName(self,"Requirement Evidence")
+        if QMessageBox.question(self,"Evidence","Attach evidence file?")==QMessageBox.StandardButton.Yes:
+            source,_=QFileDialog.getOpenFileName(self,"Requirement Evidence")
+            if source:
+                stored=store_attachment_file(source,FILE_ROOT,"PM_EXECUTION",str(self.execrow.id));evidence=stored["stored_path"]
+                self.db.add_attachment("PM_EXECUTION",str(self.execrow.id),evidence,original_name=stored["original_name"],media_type=stored["media_type"],category="Requirement Evidence",caption=req.description,equipment_id=self.task.equipment_id,created_by=self.user["username"])
         try:self.db.acknowledge_pm_requirement(self.execrow.id,req.requirement_id,self.user["username"],note,evidence);self.refresh()
         except Exception as exc:QMessageBox.critical(self,"PM Requirement",str(exc))
 
@@ -1121,7 +1127,12 @@ class TicketPage(QWidget):
         d=InvestigationDialog(self)
         if d.exec()==QDialog.DialogCode.Accepted:
             try:
-                self.db.add_ticket_investigation(row.ticket_no,d.data(self.user["username"]))
+                payload=d.data(self.user["username"])
+                source=payload.get("evidence_path","")
+                if source:
+                    stored=store_attachment_file(source,FILE_ROOT,"TICKET",row.ticket_no);payload["evidence_path"]=stored["stored_path"]
+                    self.db.add_attachment("TICKET",row.ticket_no,stored["stored_path"],original_name=stored["original_name"],media_type=stored["media_type"],category="Investigation Evidence",caption=payload.get("observation",""),equipment_id=row.equipment_id,created_by=self.user["username"])
+                self.db.add_ticket_investigation(row.ticket_no,payload)
                 self.db.audit(self.user["username"],"ADD_INVESTIGATION","TICKET",row.ticket_no,workstation=WORKSTATION)
                 self.load_details()
             except Exception as exc:QMessageBox.critical(self,"Investigation",str(exc))
@@ -1238,7 +1249,10 @@ class QualificationPage(QWidget):
         if not ok:return
         evidence=""
         if QMessageBox.question(self,"Evidence","Attach evidence file?")==QMessageBox.StandardButton.Yes:
-            evidence,_=QFileDialog.getOpenFileName(self,"Evidence")
+            source,_=QFileDialog.getOpenFileName(self,"Evidence")
+            if source:
+                stored=store_attachment_file(source,FILE_ROOT,"QUALIFICATION",run.run_no);evidence=stored["stored_path"]
+                self.db.add_attachment("QUALIFICATION",run.run_no,evidence,original_name=stored["original_name"],media_type=stored["media_type"],category="Qualification Evidence",caption=f"{check['check_id']} — {check['label']}",equipment_id=run.equipment_id,created_by=self.user["username"])
         try:
             self.db.save_qualification_result(run.id,check["check_id"],value,comment,self.user["username"],evidence,WORKSTATION,run.version)
             self.refresh()
