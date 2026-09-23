@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QKeySequence, QPixmap, QShortcut
 from PySide6.QtWidgets import (
     QAbstractItemView, QApplication, QFileDialog, QFrame, QGridLayout, QHBoxLayout, QHeaderView,
     QInputDialog, QLabel, QLineEdit, QMessageBox, QPushButton, QSplitter,
@@ -52,6 +53,7 @@ class AttachmentPanel(QWidget):
 
     def __init__(self,db,user,entity_type: str="",entity_key: str="",equipment_id: str="",parent=None):
         super().__init__(parent)
+        self.setAcceptDrops(True)
         self.db=db;self.user=user;self.entity_type=entity_type;self.entity_key=str(entity_key);self.equipment_id=equipment_id
         self.rows=[]
         root=QVBoxLayout(self);buttons=QHBoxLayout()
@@ -68,11 +70,17 @@ class AttachmentPanel(QWidget):
         for b in [self.add_button,self.paste_button,self.open_button,self.edit_button,self.remove_button]:buttons.addWidget(b)
         buttons.addStretch(1);root.addLayout(buttons)
         self.table=_table(["Name","Category","Caption","Tags","Type","Size","Added by","Added"])
-        self.table.doubleClicked.connect(self.open_selected)
-        root.addWidget(self.table,1)
+        self.table.doubleClicked.connect(self.open_selected);self.table.itemSelectionChanged.connect(self.update_preview)
+        split=QSplitter(Qt.Orientation.Horizontal);split.addWidget(self.table)
+        self.preview=QLabel("Select an attachment to preview");self.preview.setAlignment(Qt.AlignmentFlag.AlignCenter);self.preview.setWordWrap(True);self.preview.setMinimumWidth(300);self.preview.setStyleSheet("background:#f8fafb;border:1px solid #d7dfe5;padding:10px;")
+        split.addWidget(self.preview);split.setStretchFactor(0,3);split.setStretchFactor(1,1)
+        root.addWidget(split,1)
         self.empty=QLabel("Select a record to view or attach evidence.")
         self.empty.setStyleSheet("color:#647581;")
         root.addWidget(self.empty)
+        self.paste_shortcut=QShortcut(QKeySequence.Paste,self)
+        self.paste_shortcut.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
+        self.paste_shortcut.activated.connect(self.paste_screenshot)
         self.refresh()
 
     def set_entity(self,entity_type: str,entity_key: str,equipment_id: str=""):
@@ -85,6 +93,7 @@ class AttachmentPanel(QWidget):
         self.rows=self.db.list_attachments(self.entity_type,self.entity_key) if enabled else []
         _fill_objects(self.table,self.rows,["original_name","category","caption","tags","media_type","file_size","created_by","created_at"])
         self.empty.setVisible(not enabled or not self.rows)
+        self.update_preview()
 
     def _register(self,stored: dict,caption: str="",category: str="Evidence"):
         row=self.db.add_attachment(
@@ -118,6 +127,33 @@ class AttachmentPanel(QWidget):
         if not ok:return
         try:self._register(store_clipboard_image(image,FILE_ROOT,self.entity_type,self.entity_key),caption=caption,category="Screenshot")
         except Exception as exc:QMessageBox.critical(self,"Screenshot",str(exc))
+
+    def update_preview(self):
+        row=_selected(self.table,self.rows)
+        if not row:
+            self.preview.setPixmap(QPixmap());self.preview.setText("Select an attachment to preview");return
+        path=Path(row.stored_path)
+        if (row.media_type or "").startswith("image/") and path.is_file():
+            pix=QPixmap(str(path))
+            if not pix.isNull():
+                self.preview.setText("");self.preview.setPixmap(pix.scaled(420,300,Qt.AspectRatioMode.KeepAspectRatio,Qt.TransformationMode.SmoothTransformation));return
+        self.preview.setPixmap(QPixmap())
+        self.preview.setText(f"{row.original_name}\n\n{row.caption or 'No caption'}\n\n{row.media_type or 'Unknown type'}\n{row.file_size:,} bytes")
+
+    def dragEnterEvent(self,event):
+        if self.entity_key and event.mimeData().hasUrls():event.acceptProposedAction()
+        else:event.ignore()
+
+    def dropEvent(self,event):
+        if not self.entity_key:return
+        paths=[url.toLocalFile() for url in event.mimeData().urls() if url.isLocalFile()]
+        if not paths:return
+        failures=[]
+        for path in paths:
+            try:self._register(store_attachment_file(path,FILE_ROOT,self.entity_type,self.entity_key),category="Evidence")
+            except Exception as exc:failures.append(f"{Path(path).name}: {exc}")
+        if failures:QMessageBox.warning(self,"Attachments","Some dropped files could not be attached:\n"+"\n".join(failures[:12]))
+        event.acceptProposedAction()
 
     def open_selected(self):
         row=_selected(self.table,self.rows)
