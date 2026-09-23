@@ -1012,6 +1012,10 @@ class Database:
             guard+=1
         return result
 
+    def user_access_policy(self, username: str):
+        with self.session() as s:
+            return s.scalar(select(UserAccessPolicy).where(UserAccessPolicy.username==username))
+
     def set_user_access_policy(self, username: str, scope_mode: str):
         mode=scope_mode.strip().upper()
         if mode not in {"UNRESTRICTED","RESTRICTED"}:
