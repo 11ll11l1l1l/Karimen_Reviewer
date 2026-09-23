@@ -329,13 +329,15 @@ class Equipment360Workspace(QWidget):
         docs=QWidget();dv=QVBoxLayout(docs);self.document_table=_table(["Document","Type","Title","Owner","Status","Revision"]);dv.addWidget(self.document_table);self.tabs.addTab(docs,"Documents")
 
         ops=QWidget();opv=QVBoxLayout(ops);self.handover_table=_table(["No","Condition","Pending","Restrictions","Next owner","Status","Created"]);self.disposition_table=_table(["State","Reason","Restrictions","Release criteria","Ticket","Created by","Approved by","Effective"]);opv.addWidget(QLabel("Shift handovers"));opv.addWidget(self.handover_table,1);opv.addWidget(QLabel("Disposition history"));opv.addWidget(self.disposition_table,1);self.tabs.addTab(ops,"Handover / Disposition")
+        related=QWidget();rv=QVBoxLayout(related);self.relationships=[];self.related_table=_table(["Type","Key","Title / Context","Status"]);self.related_table.doubleClicked.connect(self.open_related);rv.addWidget(self.related_table);self.tabs.addTab(related,"Related Records")
         self.attachments=AttachmentPanel(db,user);self.tabs.addTab(self.attachments,"Evidence / Attachments")
 
         self.active_tickets=[];self.current_pm=[]
         self._clear()
 
     def _clear(self):
-        for table in [self.timeline_table,self.ticket_table,self.alarm_table,self.pm_table,self.work_table,self.qual_table,self.release_table,self.component_table,self.meter_table,self.inventory_table,self.document_table,self.handover_table,self.disposition_table]:table.setRowCount(0)
+        for table in [self.timeline_table,self.ticket_table,self.alarm_table,self.pm_table,self.work_table,self.qual_table,self.release_table,self.component_table,self.meter_table,self.inventory_table,self.document_table,self.handover_table,self.disposition_table,self.related_table]:table.setRowCount(0)
+        self.relationships=[]
         for value in self.metric_labels.values():value.setText("—")
 
     def set_equipment(self,equipment_id: str):
@@ -407,6 +409,16 @@ class Equipment360Workspace(QWidget):
         _fill_objects(self.document_table,docs,["document_id","document_type","title","owner","status","current_revision"])
         _fill_objects(self.handover_table,handovers,["endorsement_no","current_condition","pending_work","restrictions","next_owner","status","created_at"])
         _fill_objects(self.disposition_table,dispositions,["state","reason","restrictions","release_criteria","related_ticket","created_by","approved_by","effective_at"])
+        self.relationships=[]
+        for x in tickets:self.relationships.append({"entity_type":"TICKET","entity_key":x.ticket_no,"title":x.title,"status":x.status})
+        for x in pm:self.relationships.append({"entity_type":"PM_TASK","entity_key":x.id,"title":f"{x.pm_id} — {x.pm_name}","status":x.status})
+        for x in alarms:self.relationships.append({"entity_type":"ALARM","entity_key":x.event_key,"title":f"{x.alarm_code} — {x.message}","status":x.state})
+        for x in qual:self.relationships.append({"entity_type":"QUALIFICATION","entity_key":x.run_no,"title":x.protocol_name,"status":x.status})
+        for x in releases:self.relationships.append({"entity_type":"RELEASE","entity_key":x.id,"title":"Equipment release","status":x.status})
+        for x in comps:self.relationships.append({"entity_type":"COMPONENT","entity_key":x.component_id,"title":f"{x.name} · {x.part_number}","status":x.status})
+        for x in docs:self.relationships.append({"entity_type":"DOCUMENT","entity_key":x.document_id,"title":x.title,"status":x.status})
+        for x in handovers:self.relationships.append({"entity_type":"ENDORSEMENT","entity_key":x.endorsement_no,"title":x.pending_work or x.current_condition,"status":x.status})
+        _fill_objects(self.related_table,self.relationships,["entity_type","entity_key","title","status"])
         self.attachments.set_entity("EQUIPMENT",eq.equipment_id,eq.equipment_id)
 
         self.active_tickets=sorted([x for x in tickets if x.status not in {"Closed","Cancelled"}],key=lambda x:(0 if x.priority=="P1" else 1 if x.priority=="P2" else 2,x.updated_at or x.created_at),reverse=False)
@@ -421,6 +433,11 @@ class Equipment360Workspace(QWidget):
         self.metric_labels["Availability 30d"].setText(f"{rel['availability_pct']:.1f}%")
         self.metric_labels["MTBF 30d"].setText(f"{rel['mtbf_hours']:.1f} h")
         self.metric_labels["MTTR 30d"].setText(f"{rel['mttr_hours']:.1f} h")
+
+    def open_related(self):
+        row=_selected(self.related_table,self.relationships)
+        if not row:return
+        self.open_entity.emit(row["entity_type"],str(row["entity_key"]),self.equipment_id)
 
     def open_ticket(self):
         row=_selected(self.ticket_table,[x for x in self.db.list_tickets() if x.equipment_id==self.equipment_id])
