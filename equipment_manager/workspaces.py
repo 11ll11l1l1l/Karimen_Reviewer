@@ -246,7 +246,7 @@ class Equipment360Workspace(QWidget):
             card=QFrame();card.setFrameShape(QFrame.Shape.StyledPanel);box=QVBoxLayout(card);value=QLabel("—");value.setStyleSheet("font-size:18pt;font-weight:700");box.addWidget(value);box.addWidget(QLabel(key));self.metric_labels[key]=value;self.metrics.addWidget(card,i//4,i%4)
         ov.addStretch(1);self.tabs.addTab(overview,"Overview")
 
-        timeline=QWidget();tl=QVBoxLayout(timeline);self.timeline_table=_table(["From","To","Class","Reason","Detail","Ticket","PM","Owner","By","Time"]);tl.addWidget(self.timeline_table);self.tabs.addTab(timeline,"Unified timeline")
+        timeline=QWidget();tl=QVBoxLayout(timeline);self.timeline_table=_table(["Time","Type","Key","Activity","Status","User","Source"]);tl.addWidget(self.timeline_table);self.tabs.addTab(timeline,"Unified timeline")
 
         issues=QWidget();iv=QVBoxLayout(issues)
         self.ticket_table=_table(["Ticket","Title","Priority","Status","Owner","Updated"]);self.ticket_table.doubleClicked.connect(self.open_ticket)
@@ -299,7 +299,7 @@ class Equipment360Workspace(QWidget):
         self.summary.setText(f"{eq.site} / {eq.building} / {eq.floor} / {eq.area} / {eq.line_cell}    Owner: {eq.owner or '—'}    Criticality: {eq.criticality}    Model: {eq.model or '—'}    Serial: {eq.serial_number or '—'}")
         self._update_favorite()
 
-        state_events=self.db.list_equipment_state_events(eq.equipment_id,500)
+        activity=self.db.equipment_activity_timeline(eq.equipment_id,700)
         tickets=[x for x in self.db.list_tickets() if x.equipment_id==eq.equipment_id]
         alarms=self.db.list_alarms(eq.equipment_id,False,500)
         pm=[x for x in self.db.list_pm_tasks() if x.equipment_id==eq.equipment_id]
@@ -311,15 +311,15 @@ class Equipment360Workspace(QWidget):
         docs=self.db.list_controlled_documents("Equipment",eq.equipment_id)
         rel=self.db.reliability_summary(eq.equipment_id)
 
-        _fill_objects(self.timeline_table,state_events,["from_state","to_state","state_class","reason_code","reason_text","related_ticket","related_pm_task_id","owner","changed_by","changed_at"])
+        _fill_objects(self.timeline_table,activity,["occurred_at","kind","key","summary","status","user","source"])
         _fill_objects(self.ticket_table,tickets,["ticket_no","title","priority","status","owner","updated_at"])
         _fill_objects(self.alarm_table,alarms,["alarm_code","severity","message","state","occurred_at","related_ticket"])
         _fill_objects(self.pm_table,pm,["id","pm_id","pm_name","scheduled_date","status","assigned_to","priority"])
-        _fill_objects(self.work_table,work,["id","work_type","reference_key","username","started_at","ended_at","minutes","note"])
+        _fill_objects(self.work_table,work,["id","work_type","entity_key","username","started_at","ended_at","duration_minutes","note"])
         _fill_objects(self.qual_table,qual,["run_no","protocol_id","protocol_revision","status","started_at","verified_at","approved_at","expires_at"])
         _fill_objects(self.release_table,releases,["id","status","requested_by","verified_by","approved_by","requested_at","approved_at"])
         _fill_objects(self.component_table,comps,["component_id","parent_component_id","name","component_type","part_number","serial_number","status","usage_value"])
-        _fill_objects(self.inventory_table,inv,["part_number","location_code","transaction_type","quantity","related_ticket","user","occurred_at"])
+        _fill_objects(self.inventory_table,inv,["part_number","location_code","transaction_type","quantity","related_ticket","user","created_at"])
         _fill_objects(self.document_table,docs,["document_id","document_type","title","owner","status","current_revision"])
         self.attachments.set_entity("EQUIPMENT",eq.equipment_id,eq.equipment_id)
 
