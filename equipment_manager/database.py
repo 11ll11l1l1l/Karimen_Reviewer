@@ -11,7 +11,7 @@ from typing import Any
 from sqlalchemy import Boolean, DateTime, Float, Integer, String, Text, UniqueConstraint, create_engine, func, select
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 
-from domain import EQUIPMENT_STATES, STATE_CLASS, validate_transition
+from domain import DOWNTIME_STATES, EQUIPMENT_STATES, STATE_CLASS, validate_transition
 
 
 class Base(DeclarativeBase):
@@ -517,7 +517,13 @@ class Database:
     def get_equipment(self, equipment_id: str):
         with self.session() as s: return s.scalar(select(Equipment).where(Equipment.equipment_id == equipment_id))
 
-    def save_equipment(self, data: dict[str, Any], expected_version: int | None = None):
+    def save_equipment(
+        self,
+        data: dict[str, Any],
+        expected_version: int | None = None,
+        user: str = "",
+        workstation: str = "",
+    ):
         payload = dict(data)
         with self.session() as s:
             item = s.scalar(select(Equipment).where(Equipment.equipment_id == payload["equipment_id"]))
@@ -533,6 +539,18 @@ class Database:
                     raise ValueError(f"Unknown equipment state: {payload['status']}")
                 item = Equipment(**payload)
                 s.add(item)
+                s.add(EquipmentStateEvent(
+                    equipment_id=payload["equipment_id"],
+                    from_state="",
+                    to_state=payload["status"],
+                    state_class=STATE_CLASS[payload["status"]],
+                    downtime=payload["status"] in DOWNTIME_STATES,
+                    reason_code="INITIAL_STATE",
+                    reason_text="Equipment record created",
+                    owner=payload.get("owner", ""),
+                    changed_by=user,
+                    workstation=workstation,
+                ))
             s.flush()
             return item
 
