@@ -138,6 +138,24 @@ class Equipment(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
+class EquipmentAlarmEvent(Base):
+    __tablename__ = "equipment_alarm_events"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    event_key: Mapped[str] = mapped_column(String(80), unique=True, index=True)
+    equipment_id: Mapped[str] = mapped_column(String(100), index=True)
+    alarm_code: Mapped[str] = mapped_column(String(120), index=True)
+    severity: Mapped[str] = mapped_column(String(30), default="Warning", index=True)
+    message: Mapped[str] = mapped_column(Text, default="")
+    source: Mapped[str] = mapped_column(String(80), default="Manual", index=True)
+    state: Mapped[str] = mapped_column(String(30), default="ACTIVE", index=True)
+    occurred_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    acknowledged_by: Mapped[str] = mapped_column(String(120), default="")
+    acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    cleared_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    related_ticket: Mapped[str] = mapped_column(String(100), default="", index=True)
+    raw_payload_json: Mapped[str] = mapped_column(Text, default="{}")
+
+
 class EquipmentStateEvent(Base):
     __tablename__ = "equipment_state_events"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -1518,6 +1536,84 @@ class Database:
             s.flush()
             return item
 
+    def ingest_alarm(
+        self,
+        equipment_id: str,
+        alarm_code: str,
+        *,
+        state: str = "ACTIVE",
+        severity: str = "Warning",
+        message: str = "",
+        source: str = "Manual",
+        event_key: str = "",
+        occurred_at: datetime | None = None,
+        related_ticket: str = "",
+        raw_payload: dict[str, Any] | None = None,
+    ):
+        state=state.strip().upper()
+        if state not in {"ACTIVE","CLEARED"}:raise ValueError("Alarm state must be ACTIVE or CLEARED.")
+        occurred_at=occurred_at or datetime.utcnow()
+        event_key=event_key.strip() or secrets.token_hex(20)
+        with self.session() as s:
+            existing=s.scalar(select(EquipmentAlarmEvent).where(EquipmentAlarmEvent.event_key==event_key))
+            if existing:return existing
+            if not s.scalar(select(Equipment).where(Equipment.equipment_id==equipment_id)):
+                raise ValueError("Equipment not found")
+            if state=="CLEARED":
+                active=s.scalar(select(EquipmentAlarmEvent).where(
+                    EquipmentAlarmEvent.equipment_id==equipment_id,
+                    EquipmentAlarmEvent.alarm_code==alarm_code,
+                    EquipmentAlarmEvent.state=="ACTIVE",
+                ).order_by(EquipmentAlarmEvent.occurred_at.desc(),EquipmentAlarmEvent.id.desc()))
+                if active:
+                    active.state="CLEARED";active.cleared_at=occurred_at
+                    self._queue_integration_event(s,"equipment.alarm.cleared","ALARM",active.event_key,{
+                        "equipment_id":equipment_id,"alarm_code":alarm_code,"severity":active.severity,
+                        "message":active.message,"source":source,"cleared_at":occurred_at.isoformat(),
+                    })
+                    s.flush();return active
+            row=EquipmentAlarmEvent(
+                event_key=event_key,equipment_id=equipment_id,alarm_code=alarm_code,
+                severity=severity,message=message,source=source,state=state,
+                occurred_at=occurred_at,cleared_at=occurred_at if state=="CLEARED" else None,
+                related_ticket=related_ticket,raw_payload_json=json.dumps(raw_payload or {},default=str,sort_keys=True),
+            )
+            s.add(row)
+            self._queue_integration_event(s,"equipment.alarm.active" if state=="ACTIVE" else "equipment.alarm.cleared","ALARM",event_key,{
+                "equipment_id":equipment_id,"alarm_code":alarm_code,"severity":severity,
+                "message":message,"source":source,"state":state,"occurred_at":occurred_at.isoformat(),
+                "related_ticket":related_ticket,
+            })
+            s.flush();return row
+
+    def acknowledge_alarm(self, event_key: str, user: str):
+        with self.session() as s:
+            row=s.scalar(select(EquipmentAlarmEvent).where(EquipmentAlarmEvent.event_key==event_key))
+            if not row:raise ValueError("Alarm event not found")
+            self.assert_equipment_scope(user,row.equipment_id,"ticket.edit")
+            if not row.acknowledged_at:
+                row.acknowledged_by=user;row.acknowledged_at=datetime.utcnow()
+            s.flush();return row
+
+    def list_alarms(self, equipment_id: str = "", active_only: bool = False, limit: int = 1000):
+        with self.session() as s:
+            stmt=select(EquipmentAlarmEvent).order_by(EquipmentAlarmEvent.occurred_at.desc(),EquipmentAlarmEvent.id.desc())
+            if equipment_id:stmt=stmt.where(EquipmentAlarmEvent.equipment_id==equipment_id)
+            if active_only:stmt=stmt.where(EquipmentAlarmEvent.state=="ACTIVE")
+            return list(s.scalars(stmt.limit(max(1,min(int(limit),5000)))))
+
+    def alarm_pareto(self, days: int = 30, equipment_id: str = ""):
+        cutoff=datetime.utcnow()-timedelta(days=max(1,int(days)))
+        with self.session() as s:
+            stmt=select(
+                EquipmentAlarmEvent.alarm_code,
+                EquipmentAlarmEvent.message,
+                func.count(EquipmentAlarmEvent.id).label("count"),
+            ).where(EquipmentAlarmEvent.occurred_at>=cutoff)
+            if equipment_id:stmt=stmt.where(EquipmentAlarmEvent.equipment_id==equipment_id)
+            stmt=stmt.group_by(EquipmentAlarmEvent.alarm_code,EquipmentAlarmEvent.message).order_by(func.count(EquipmentAlarmEvent.id).desc())
+            return [dict(alarm_code=r[0],message=r[1],count=int(r[2])) for r in s.execute(stmt).all()]
+
     def list_equipment_state_events(self, equipment_id: str, limit: int = 250):
         with self.session() as s:
             stmt = (
@@ -2694,6 +2790,9 @@ class Database:
         now=datetime.utcnow()
         rows=[]
         with self.session() as s:
+            for alarm in s.scalars(select(EquipmentAlarmEvent).where(EquipmentAlarmEvent.state=="ACTIVE")):
+                sev=(alarm.severity or "").upper()
+                rows.append({"severity":"CRITICAL" if sev in {"CRITICAL","FATAL","S1"} else "HIGH","kind":"ALARM","key":alarm.event_key,"equipment_id":alarm.equipment_id,"summary":f"{alarm.alarm_code} — {alarm.message}","owner":alarm.acknowledged_by,"age_hours":(now-alarm.occurred_at).total_seconds()/3600})
             for eq in s.scalars(select(Equipment).where(Equipment.status.in_(["Down","Engineering","Waiting Parts","Waiting Vendor","Qualification","Hold"]))):
                 rows.append({"severity":"CRITICAL" if eq.status=="Down" else "HIGH","kind":"EQUIPMENT","key":eq.equipment_id,"equipment_id":eq.equipment_id,"summary":f"{eq.status} — {eq.name}","owner":eq.owner,"age_hours":0.0})
             for task in s.scalars(select(PMTask).where(PMTask.status.in_(["Overdue","Deferred","Pending","Scheduled"]))):
@@ -3677,6 +3776,7 @@ class Database:
                 "pm_open":c(PMTask,PMTask.status.in_(["Pending","Scheduled","In Progress","Overdue"])),
                 "pm_overdue":c(PMTask,PMTask.status=="Overdue"),
                 "tickets_open":c(Ticket,Ticket.status.notin_(["Closed","Cancelled"])),
+                "alarms_active":c(EquipmentAlarmEvent,EquipmentAlarmEvent.state=="ACTIVE"),
                 "tickets_critical":c(Ticket,Ticket.priority.in_(["P1","P2"]),Ticket.status.notin_(["Closed","Cancelled"])),
                 "inventory_low":c(InventoryItem,InventoryItem.quantity<=InventoryItem.min_quantity),
                 "endorsements_open":c(Endorsement,Endorsement.status.in_(["Open","Acknowledged"])),
