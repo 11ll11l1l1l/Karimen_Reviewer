@@ -30,6 +30,7 @@ from logging_config import configure_logging, install_exception_hook
 from incident_workspace import IncidentWorkspace
 from maintenance_planner import MaintenancePlanningWorkspace
 from pm_execution_workspace import PMExecutionWorkspace
+from work_order_workspace import WorkOrderWorkspace
 from version import __version__
 from demo_data import active_tickets, seed_demo_data
 from main import (
@@ -217,6 +218,7 @@ class SmartMainWindow(QMainWindow):
         self.layout_page=add("Live FAB Map",SmartLayoutPage(db,user))
         self.maintenance_planner=add("Maintenance Planner",MaintenancePlanningWorkspace(db,user))
         self.pm_execution=add("Technician PM Runner",PMExecutionWorkspace(db,user))
+        self.work_order_workspace=add("Work Orders",WorkOrderWorkspace(db,user))
         self.pm_page=add("PM Configuration",PMPage(db,user))
         self.incident_workspace=add("Incident / RCA Workspace",IncidentWorkspace(db,user))
         self.ticket_page=add("Ticket Lifecycle / Troubleshooting",TicketPage(db,user))
@@ -235,6 +237,7 @@ class SmartMainWindow(QMainWindow):
         self.equipment360.open_entity.connect(self.open_entity)
         self.maintenance_planner.open_entity.connect(self.open_entity)
         self.pm_execution.open_entity.connect(self.open_entity)
+        self.work_order_workspace.open_entity.connect(self.open_entity)
         self.incident_workspace.open_entity.connect(self.open_entity)
         self.alarm_page.open_incident.connect(lambda ticket,equipment:self.open_entity("TICKET",ticket,equipment))
         self.inventory.show_map_part.connect(self.show_part_map)
@@ -320,6 +323,10 @@ class SmartMainWindow(QMainWindow):
         if entity_type=="TICKET":
             self.incident_workspace.set_ticket(entity_key)
             self.open_page("Incident / RCA Workspace")
+            return
+        if entity_type=="WORK_ORDER":
+            self.work_order_workspace.set_work_order(entity_key)
+            self.open_page("Work Orders")
             return
         if entity_type=="TICKET_LEGACY":
             if hasattr(self.ticket_page,"select_ticket"):self.ticket_page.select_ticket(entity_key)
