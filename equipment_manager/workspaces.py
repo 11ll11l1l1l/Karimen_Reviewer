@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
 
 from attachment_store import duplicate_attachment_file, store_attachment_file, store_clipboard_image
 from services import readonly_open_copy
+from reporting import export_equipment_pptx, export_equipment_xlsx
 from image_annotator import ImageAnnotationDialog
 from table_productivity import install_table_productivity
 
@@ -318,9 +319,11 @@ class Equipment360Workspace(QWidget):
         self.pm_button=QPushButton("Open current PM");self.pm_button.clicked.connect(self.open_current_pm)
         registry_button=QPushButton("Registry / state");registry_button.clicked.connect(self.open_registry)
         map_button=QPushButton("Show on FAB map");map_button.clicked.connect(self.open_map)
+        ppt=QPushButton("Review PPTX");ppt.clicked.connect(self.export_pptx)
+        xlsx=QPushButton("Review Excel");xlsx.clicked.connect(self.export_xlsx)
         refresh=QPushButton("Refresh");refresh.clicked.connect(self.refresh)
         head.addWidget(self.title);head.addWidget(self.state);head.addStretch(1)
-        for button in [self.incident_button,self.pm_button,registry_button,map_button,self.favorite,refresh]:head.addWidget(button)
+        for button in [self.incident_button,self.pm_button,registry_button,map_button,ppt,xlsx,self.favorite,refresh]:head.addWidget(button)
         root.addLayout(head)
         self.summary=QLabel("Select equipment from Global Search or another workspace.")
         self.summary.setWordWrap(True);self.summary.setStyleSheet("color:#647581;font-size:11pt;");root.addWidget(self.summary)
@@ -365,6 +368,24 @@ class Equipment360Workspace(QWidget):
     def set_equipment(self,equipment_id: str):
         self.equipment_id=(equipment_id or "").strip()
         self.refresh()
+
+    def export_pptx(self):
+        if not self.eq:return
+        default=f"{self.eq.equipment_id}_Equipment_Review.pptx"
+        path,_=QFileDialog.getSaveFileName(self,"Export Equipment Review PowerPoint",default,"PowerPoint (*.pptx)")
+        if not path:return
+        if not path.lower().endswith(".pptx"):path+=".pptx"
+        try:export_equipment_pptx(self.db,self.eq.equipment_id,path);QMessageBox.information(self,"PowerPoint",f"Editable equipment review deck created.\n{path}")
+        except Exception as exc:QMessageBox.critical(self,"PowerPoint",str(exc))
+
+    def export_xlsx(self):
+        if not self.eq:return
+        default=f"{self.eq.equipment_id}_Equipment_Review.xlsx"
+        path,_=QFileDialog.getSaveFileName(self,"Export Equipment Review Excel",default,"Excel Workbook (*.xlsx)")
+        if not path:return
+        if not path.lower().endswith(".xlsx"):path+=".xlsx"
+        try:export_equipment_xlsx(self.db,self.eq.equipment_id,path);QMessageBox.information(self,"Excel",f"Equipment review workbook created.\n{path}")
+        except Exception as exc:QMessageBox.critical(self,"Excel",str(exc))
 
     def open_registry(self):
         if self.eq:self.open_entity.emit("REGISTRY",self.eq.equipment_id,self.eq.equipment_id)
