@@ -81,6 +81,12 @@ class WorkOrderWorkspace(QWidget):
         labor=QWidget();labv=QVBoxLayout(labor);labh=QHBoxLayout();start_log=QPushButton("Start my work timer");start_log.clicked.connect(self.start_labor);stop_log=QPushButton("Stop selected active timer");stop_log.clicked.connect(self.stop_labor);labh.addWidget(start_log);labh.addWidget(stop_log);labh.addStretch(1);labv.addLayout(labh)
         self.labor_table=_table(["ID","User","Type","Started","Ended","Minutes","Status","Note"]);labv.addWidget(self.labor_table);tabs.addTab(labor,"Labor")
 
+        closeout=QWidget();cov=QVBoxLayout(closeout);coh=QHBoxLayout()
+        start_qual=QPushButton("Start / Open Qualification");start_qual.clicked.connect(self.start_qualification)
+        request_release=QPushButton("Create / Open Release Request");request_release.clicked.connect(self.request_release)
+        coh.addWidget(start_qual);coh.addWidget(request_release);coh.addStretch(1);cov.addLayout(coh)
+        self.closeout_summary=QLabel("Select a work order.");self.closeout_summary.setWordWrap(True);self.closeout_summary.setStyleSheet("background:#f8fafb;border:1px solid #d7dfe5;padding:10px;")
+        cov.addWidget(self.closeout_summary);cov.addStretch(1);tabs.addTab(closeout,"Qualification / Release Closeout")
         self.attachments=AttachmentPanel(db,user);tabs.addTab(self.attachments,"Evidence / Attachments")
         self.refresh()
 
@@ -104,7 +110,7 @@ class WorkOrderWorkspace(QWidget):
         if row:self.work_order_no=row.work_order_no
         self.work_order=self.db.get_work_order(self.work_order_no) if self.work_order_no else None
         if not self.work_order:
-            self.context.setText("Select or create a work order.");self.description.clear();self.owner.clear();self.attachments.set_entity("","");return
+            self.context.setText("Select or create a work order.");self.description.clear();self.owner.clear();self.closeout_summary.setText("Select a work order.");self.attachments.set_entity("","");return
         wo=self.work_order
         self.title.setText(f"{wo.work_order_no} · {wo.title}")
         self.context.setText(f"{wo.equipment_id}    {wo.priority}    {wo.status}    Source: {wo.source_type}:{wo.source_key or '—'}    Qualification required: {'Yes' if wo.qualification_required else 'No'}    Release required: {'Yes' if wo.release_required else 'No'}")
@@ -114,6 +120,52 @@ class WorkOrderWorkspace(QWidget):
         self.logs=[x for x in self.db.list_work_logs(wo.equipment_id,False,1000) if x.entity_type=="WORK_ORDER" and x.entity_key==wo.work_order_no]
         _fill(self.labor_table,self.logs,["id","username","work_type","started_at","ended_at","duration_minutes","status","note"])
         self.attachments.set_entity("WORK_ORDER",wo.work_order_no,wo.equipment_id)
+        try:
+            close=self.db.work_order_closeout_status(wo.work_order_no)
+            blockers="\n".join(f"• {x}" for x in close["blockers"]) or "• No current closeout blockers detected."
+            self.closeout_summary.setText(
+                f"Work order: {close['status']}\n"
+                f"Labor entries: {close['labor_entries']}  |  Active labor: {close['active_labor']}\n"
+                f"Evidence attachments: {close['attachment_count']}\n"
+                f"Part reservations: {close['part_reservations']}  |  Active reservations: {close['active_part_reservations']}\n"
+                f"Open P1/P2 incidents: {close['critical_tickets_open']}  |  Overdue PM: {close['overdue_pm']}\n"
+                f"Qualification required: {'Yes' if close['qualification_required'] else 'No'}  |  "
+                f"Valid qualification: {close['valid_qualification_run'] or 'None'}  |  "
+                f"Open qualification: {close['open_qualification_run'] or 'None'}\n"
+                f"Release required: {'Yes' if close['release_required'] else 'No'}  |  "
+                f"Active release: {close['active_release_status'] or 'None'}\n\n"
+                f"Blockers / next controls:\n{blockers}"
+            )
+        except Exception as exc:self.closeout_summary.setText(f"Closeout status unavailable: {exc}")
+
+    def start_qualification(self):
+        if not self.work_order:return
+        try:
+            close=self.db.work_order_closeout_status(self.work_order.work_order_no)
+            existing=close["open_qualification_run"] or close["valid_qualification_run"]
+            if existing:
+                self.open_entity.emit("QUALIFICATION",existing,self.work_order.equipment_id);return
+            protocols=self.db.applicable_qualification_protocols(self.work_order.equipment_id)
+            protocol_id=""
+            if len(protocols)>1:
+                labels=[f"{x.protocol_id} R{x.revision} — {x.name}" for x in protocols]
+                choice,ok=QInputDialog.getItem(self,"Work-order qualification","Applicable protocol",labels,0,False)
+                if not ok:return
+                protocol_id=protocols[labels.index(choice)].protocol_id
+            elif len(protocols)==1:protocol_id=protocols[0].protocol_id
+            run=self.db.start_work_order_qualification(self.work_order.work_order_no,self.user["username"],protocol_id,"WORK-ORDER-WORKSPACE")
+            self.load_selected();self.open_entity.emit("QUALIFICATION",run.run_no,self.work_order.equipment_id)
+        except Exception as exc:QMessageBox.critical(self,"Qualification closeout",str(exc))
+
+    def request_release(self):
+        if not self.work_order:return
+        try:
+            close=self.db.work_order_closeout_status(self.work_order.work_order_no)
+            if close["active_release_id"]:
+                self.open_entity.emit("RELEASE",str(close["active_release_id"]),self.work_order.equipment_id);return
+            release=self.db.create_work_order_release_request(self.work_order.work_order_no,self.user["username"],"WORK-ORDER-WORKSPACE")
+            self.load_selected();self.open_entity.emit("RELEASE",str(release.id),self.work_order.equipment_id)
+        except Exception as exc:QMessageBox.critical(self,"Release closeout",str(exc))
 
     def new_engineering(self):
         equipment,ok=QInputDialog.getText(self,"New work order","Equipment ID")
