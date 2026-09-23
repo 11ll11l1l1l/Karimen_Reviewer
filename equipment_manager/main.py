@@ -115,7 +115,7 @@ class DashboardPage(QWidget):
         g=QGridLayout(); v.addLayout(g)
         defs=[
             ("equipment_down","Tools Down"),("equipment_hold","Tools on Hold"),("pm_overdue","PM Overdue"),
-            ("tickets_critical","P1/P2 Incidents"),("release_pending","Release Pending"),("endorsements_open","Shift Handovers"),
+            ("tickets_critical","P1/P2 Incidents"),("alarms_active","Active Alarms"),("release_pending","Release Pending"),("endorsements_open","Shift Handovers"),
             ("inventory_low","Low Stock"),("reservations_active","Part Reservations"),
         ]
         self.cards={}
@@ -1585,6 +1585,47 @@ class AdminPage(QWidget):
         else:QMessageBox.critical(self,"Backup Verification","FAIL — "+detail)
 
 
+class AlarmPage(QWidget):
+    def __init__(self,db,user):
+        super().__init__();self.db=db;self.user=user;self.rows=[];self.pareto=[]
+        v=QVBoxLayout(self);h=QHBoxLayout();title=QLabel("Equipment Alarms / Events");title.setStyleSheet("font-size:18pt;font-weight:700")
+        self.eq=QLineEdit();self.eq.setPlaceholderText("Equipment filter");active=QCheckBox("Active only");active.setChecked(True);self.active_only=active
+        refresh=QPushButton("Refresh");refresh.clicked.connect(self.refresh);ack=QPushButton("Acknowledge");ack.clicked.connect(self.acknowledge)
+        manual=QPushButton("Record Manual Alarm");manual.clicked.connect(self.manual_alarm);manual.setEnabled(db.has_permission(user,"ticket.edit"))
+        h.addWidget(title);h.addStretch(1);h.addWidget(self.eq);h.addWidget(active);h.addWidget(refresh);h.addWidget(ack);h.addWidget(manual);v.addLayout(h)
+        tabs=QTabWidget()
+        wa=QWidget();va=QVBoxLayout(wa);self.table=make_table(["Event","Equipment","Alarm Code","Severity","Message","Source","State","Occurred","Ack By","Ack At","Cleared","Ticket"]);va.addWidget(self.table);tabs.addTab(wa,"Alarm History")
+        wp=QWidget();vp=QVBoxLayout(wp);self.pareto_table=make_table(["Alarm Code","Message","Count"]);vp.addWidget(self.pareto_table);tabs.addTab(wp,"30-Day Pareto")
+        v.addWidget(tabs);self.eq.textChanged.connect(self.refresh);self.active_only.stateChanged.connect(self.refresh);self.refresh()
+
+    def refresh(self):
+        equipment=self.eq.text().strip()
+        self.rows=self.db.list_alarms(equipment,active_only=self.active_only.isChecked())
+        fill_table(self.table,self.rows,["event_key","equipment_id","alarm_code","severity","message","source","state","occurred_at","acknowledged_by","acknowledged_at","cleared_at","related_ticket"])
+        self.pareto=self.db.alarm_pareto(30,equipment)
+        self.pareto_table.setRowCount(len(self.pareto))
+        for r,row in enumerate(self.pareto):
+            for col,key in enumerate(["alarm_code","message","count"]):self.pareto_table.setItem(r,col,ti(row.get(key,"")))
+
+    def acknowledge(self):
+        row=selected_row(self.table,self.rows)
+        if not row:return
+        try:self.db.acknowledge_alarm(row.event_key,self.user["username"]);self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"Alarm",str(exc))
+
+    def manual_alarm(self):
+        equipment,ok=QInputDialog.getText(self,"Manual Alarm","Equipment ID")
+        if not ok or not equipment.strip():return
+        code,ok=QInputDialog.getText(self,"Manual Alarm","Alarm code")
+        if not ok or not code.strip():return
+        message,ok=QInputDialog.getText(self,"Manual Alarm","Message")
+        if not ok:return
+        severity,ok=QInputDialog.getItem(self,"Manual Alarm","Severity",["Info","Warning","Critical"],1,False)
+        if not ok:return
+        try:self.db.ingest_alarm(equipment.strip(),code.strip(),severity=severity,message=message.strip(),source="Manual");self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"Alarm",str(exc))
+
+
 class ReliabilityPage(QWidget):
     def __init__(self,db):
         super().__init__(); self.db=db; self.rows=[]
@@ -1615,7 +1656,7 @@ class MainWindow(QMainWindow):
         super().__init__();self.db=db;self.user=user;self.setWindowTitle(APP_TITLE);self.resize(1450,850);root=QWidget();self.setCentralWidget(root);h=QHBoxLayout(root);self.nav=QListWidget();self.nav.setFixedWidth(210);self.stack=QStackedWidget();h.addWidget(self.nav);h.addWidget(self.stack,1)
         self.pages=[]
         def add(name,page):self.nav.addItem(name);self.stack.addWidget(page);self.pages.append(page)
-        self.dashboard=DashboardPage(db);add("Dashboard",self.dashboard);add("Equipment",EquipmentPage(db,user));self.layout=LayoutPage(db,user);add("Layout / Map",self.layout);add("PM",PMPage(db,user));add("Issue Tickets",TicketPage(db,user));add("Qualification",QualificationPage(db,user));add("Reliability",ReliabilityPage(db));add("Disposition / Release",ControlPage(db,user));add("Endorsements",EndorsementPage(db,user));self.inventory=InventoryPage(db,user);add("Inventory",self.inventory);add("Documents",DocumentPage(db,user));add("Administration",AdminPage(db,user))
+        self.dashboard=DashboardPage(db);add("Dashboard",self.dashboard);add("Equipment",EquipmentPage(db,user));self.layout=LayoutPage(db,user);add("Layout / Map",self.layout);add("PM",PMPage(db,user));add("Issue Tickets",TicketPage(db,user));add("Alarms / Events",AlarmPage(db,user));add("Qualification",QualificationPage(db,user));add("Reliability",ReliabilityPage(db));add("Disposition / Release",ControlPage(db,user));add("Endorsements",EndorsementPage(db,user));self.inventory=InventoryPage(db,user);add("Inventory",self.inventory);add("Documents",DocumentPage(db,user));add("Administration",AdminPage(db,user))
         self.inventory.show_map_part.connect(self.show_part_map);self.nav.currentRowChanged.connect(self.stack.setCurrentIndex);self.nav.setCurrentRow(0)
         self.statusBar().showMessage(f"{user['display_name']} — {user['role']} — {WORKSTATION}")
         refresh=QAction("Refresh",self);refresh.setShortcut(QKeySequence("F5"));refresh.triggered.connect(self.refresh_current);self.addAction(refresh);self.timer=QTimer(self);self.timer.timeout.connect(self.dashboard.refresh);self.timer.start(30000)
