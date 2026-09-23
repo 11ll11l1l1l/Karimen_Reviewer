@@ -24,6 +24,7 @@ from logging_config import configure_logging, install_exception_hook
 from version import __version__
 from domain import REASON_CODES, TICKET_REASON_CODES, allowed_targets, allowed_ticket_targets
 from workspaces import AttachmentPanel
+from table_productivity import install_table_productivity
 from services import (
     auto_mapping, calculate_next_due, copy_clipboard_image, dataframe_to_pm_backlog,
     dataframe_to_pm_specs, evaluate_measurement, pm_parts_readiness, read_clipboard_table,
@@ -71,6 +72,7 @@ def make_table(headers: list[str]) -> QTableWidget:
     t.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
     t.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
     t.setAlternatingRowColors(True)
+    install_table_productivity(t,headers[0] if headers else "EMS Export")
     return t
 
 
