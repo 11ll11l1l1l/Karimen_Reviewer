@@ -1,0 +1,2 @@
+__version__ = "1.0.0-rc2"
+SCHEMA_COMPATIBILITY = "20260923_002"
