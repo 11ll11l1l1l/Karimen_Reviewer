@@ -324,7 +324,17 @@ class SmartMainWindow(QMainWindow):
             self.layout_page.highlight_equipment(target)
             self.open_page("Live FAB Map")
             return
-        if entity_type=="EQUIPMENT" or (equipment_id and entity_type in {"ALARM","QUALIFICATION","DOCUMENT","RELEASE"}):
+        if entity_type=="QUALIFICATION":
+            if hasattr(self.qualification_page,"select_run"):self.qualification_page.select_run(entity_key)
+            self.open_page("Qualification")
+            return
+        if entity_type=="RELEASE":
+            try:release_id=int(entity_key)
+            except Exception:release_id=0
+            if hasattr(self.control_page,"select_release"):self.control_page.select_release(release_id)
+            self.open_page("Disposition / Release")
+            return
+        if entity_type=="EQUIPMENT" or (equipment_id and entity_type in {"ALARM","DOCUMENT"}):
             target=entity_key if entity_type=="EQUIPMENT" else equipment_id
             self.equipment360.set_equipment(target)
             self.open_page("Equipment Workspaces")
