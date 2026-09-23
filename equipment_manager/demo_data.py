@@ -170,8 +170,54 @@ def seed_demo_data(db: Database) -> bool:
     ]
     existing_tickets = {t.ticket_no for t in db.list_tickets()}
     for ticket in tickets:
-        if ticket["ticket_no"] not in existing_tickets:
-            db.save_ticket(ticket)
+        if ticket["ticket_no"] in existing_tickets:
+            continue
+
+        payload = dict(ticket)
+        requested_state = payload.pop("status", "Open")
+        # All tickets are created Open. Demo scenarios reach other states through
+        # the same lifecycle API used by real operators.
+        db.save_ticket(payload, workstation="DEMO-SEED")
+
+        def current_ticket():
+            return next(t for t in db.list_tickets() if t.ticket_no == payload["ticket_no"])
+
+        owner = payload.get("owner", "")
+        if requested_state == "Waiting Parts":
+            row = current_ticket()
+            db.transition_ticket_state(
+                row.ticket_no,
+                "Assigned",
+                reason_code="ASSIGN",
+                owner=owner,
+                note="Demo issue assigned to responsible equipment engineer.",
+                user="demo",
+                workstation="DEMO-SEED",
+                expected_version=row.version,
+            )
+            row = current_ticket()
+            db.transition_ticket_state(
+                row.ticket_no,
+                "Waiting Parts",
+                reason_code="WAIT_PARTS",
+                owner=owner,
+                note="Replacement component is required before repair can continue.",
+                user="demo",
+                workstation="DEMO-SEED",
+                expected_version=row.version,
+            )
+        elif requested_state in {"In Progress", "Investigation"}:
+            row = current_ticket()
+            db.transition_ticket_state(
+                row.ticket_no,
+                "Investigation",
+                reason_code="START_INVESTIGATION",
+                owner=owner,
+                note="Demo work is actively being investigated/executed.",
+                user="demo",
+                workstation="DEMO-SEED",
+                expected_version=row.version,
+            )
     return True
 
 
