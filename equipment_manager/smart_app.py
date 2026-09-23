@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import sys
 from datetime import datetime
 from typing import Callable
@@ -24,6 +25,8 @@ from PySide6.QtWidgets import (
 )
 
 from database import Database
+from logging_config import configure_logging, install_exception_hook
+from version import __version__
 from demo_data import active_tickets, seed_demo_data
 from main import (
     APP_TITLE,
@@ -42,6 +45,8 @@ from main import (
     TicketPage,
 )
 from smart_map import SmartLayoutPage
+
+DEMO_MODE=os.getenv("EMS_DEMO_MODE","0").strip().lower() in {"1","true","yes","on"}
 
 SMART_STYLE = """
 QWidget { font-family: "Segoe UI"; font-size: 10.5pt; color: #1b2733; }
@@ -174,9 +179,9 @@ class SmartMainWindow(QMainWindow):
         top_layout = QHBoxLayout(top)
         top_layout.setContentsMargins(18, 10, 18, 10)
         brand = QVBoxLayout()
-        app_title = QLabel("EQUIPMENT OPERATIONS CONTROL")
+        app_title = QLabel(f"EQUIPMENT OPERATIONS CONTROL  {__version__}")
         app_title.setObjectName("AppTitle")
-        app_subtitle = QLabel("Demo semiconductor FAB · shared database · read-only document workflow")
+        app_subtitle = QLabel("DEMO semiconductor FAB" if DEMO_MODE else "Production equipment engineering operations")
         app_subtitle.setObjectName("AppSubTitle")
         brand.addWidget(app_title)
         brand.addWidget(app_subtitle)
@@ -242,6 +247,7 @@ class SmartMainWindow(QMainWindow):
 
 
 def main():
+    configure_logging("ems-smart");install_exception_hook("ems-smart")
     app = QApplication(sys.argv)
     app.setStyleSheet(SMART_STYLE)
     db = Database()
@@ -252,7 +258,7 @@ def main():
     login = LoginDialog(db)
     if login.exec() != QDialog.DialogCode.Accepted:
         return 0
-    seeded = seed_demo_data(db)
+    seeded = seed_demo_data(db) if DEMO_MODE else False
     window = SmartMainWindow(db, login.user)
     if seeded:
         window.statusBar().showMessage("Demo FAB data created: 28 tools + 5 active issue scenarios")
