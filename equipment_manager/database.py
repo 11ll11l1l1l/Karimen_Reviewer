@@ -3186,6 +3186,10 @@ class Database:
                 sop_section=spec.sop_section,
             ))
 
+    def get_pm_execution_for_task(self, task_id: int):
+        with self.session() as s:
+            return s.scalar(select(PMExecution).where(PMExecution.task_id==task_id))
+
     def start_pm_execution(self, task_id: int, user: str):
         with self.session() as s:
             task_stmt = select(PMTask).where(PMTask.id == task_id)
