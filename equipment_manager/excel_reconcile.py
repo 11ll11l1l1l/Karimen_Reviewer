@@ -2,12 +2,6 @@ from __future__ import annotations
 
 from typing import Any
 
-from PySide6.QtWidgets import (
-    QAbstractItemView,QDialog,QDialogButtonBox,QHeaderView,QLabel,
-    QTableWidget,QTableWidgetItem,QVBoxLayout
-)
-
-
 EQUIPMENT_FIELDS=[
     "name","equipment_type","manufacturer","model","serial_number","asset_number",
     "site","building","floor","area","line_cell","owner","criticality",
@@ -75,32 +69,40 @@ def reconcile_inventory(db,imported_rows: list[dict[str,Any]],mapping: dict[str,
     return actions
 
 
-class ReconciliationDialog(QDialog):
-    def __init__(self,title: str,actions,parent=None):
-        super().__init__(parent);self.actions=actions;self.setWindowTitle(title);self.resize(1100,700)
-        root=QVBoxLayout(self)
-        creates=sum(1 for x in actions if x["status"]=="CREATE");updates=sum(1 for x in actions if x["status"]=="UPDATE");unchanged=sum(1 for x in actions if x["status"]=="UNCHANGED")
-        label=QLabel(f"Preview: {creates} create · {updates} update · {unchanged} unchanged. Only mapped columns will change existing records.")
-        label.setWordWrap(True);root.addWidget(label)
-        self.table=QTableWidget(0,5);self.table.setHorizontalHeaderLabels(["Record","Status","Field","Current","Incoming"])
-        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
-        self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
-        rows=[]
-        for action in actions:
-            if action["changes"]:
-                for change in action["changes"]:rows.append((action["key"],action["status"],change["field"],change["current"],change["incoming"]))
-            else:rows.append((action["key"],action["status"],"","",""))
-        self.table.setRowCount(len(rows))
-        for r,row in enumerate(rows):
-            for c,value in enumerate(row):self.table.setItem(r,c,QTableWidgetItem("" if value is None else str(value)))
-        root.addWidget(self.table,1)
-        buttons=QDialogButtonBox(QDialogButtonBox.StandardButton.Apply|QDialogButtonBox.StandardButton.Cancel)
-        buttons.accepted.connect(self.accept);buttons.rejected.connect(self.reject);root.addWidget(buttons)
+def _reconciliation_dialog_class():
+    from PySide6.QtWidgets import (
+        QAbstractItemView,QDialog,QDialogButtonBox,QHeaderView,QLabel,
+        QTableWidget,QTableWidgetItem,QVBoxLayout,
+    )
+
+    class ReconciliationDialog(QDialog):
+        def __init__(self,title: str,actions,parent=None):
+            super().__init__(parent);self.actions=actions;self.setWindowTitle(title);self.resize(1100,700)
+            root=QVBoxLayout(self)
+            creates=sum(1 for x in actions if x["status"]=="CREATE");updates=sum(1 for x in actions if x["status"]=="UPDATE");unchanged=sum(1 for x in actions if x["status"]=="UNCHANGED")
+            label=QLabel(f"Preview: {creates} create · {updates} update · {unchanged} unchanged. Only mapped columns will change existing records.")
+            label.setWordWrap(True);root.addWidget(label)
+            self.table=QTableWidget(0,5);self.table.setHorizontalHeaderLabels(["Record","Status","Field","Current","Incoming"])
+            self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+            self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+            self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+            rows=[]
+            for action in actions:
+                if action["changes"]:
+                    for change in action["changes"]:rows.append((action["key"],action["status"],change["field"],change["current"],change["incoming"]))
+                else:rows.append((action["key"],action["status"],"","",""))
+            self.table.setRowCount(len(rows))
+            for r,row in enumerate(rows):
+                for col,value in enumerate(row):self.table.setItem(r,col,QTableWidgetItem("" if value is None else str(value)))
+            root.addWidget(self.table,1)
+            buttons=QDialogButtonBox(QDialogButtonBox.StandardButton.Apply|QDialogButtonBox.StandardButton.Cancel)
+            buttons.accepted.connect(self.accept);buttons.rejected.connect(self.reject);root.addWidget(buttons)
+    return ReconciliationDialog
 
 
 def confirm_reconciliation(parent,title: str,actions) -> bool:
     actionable=[x for x in actions if x["status"] in {"CREATE","UPDATE"}]
     if not actionable:return False
-    dialog=ReconciliationDialog(title,actions,parent)
-    return dialog.exec()==QDialog.DialogCode.Accepted
+    dialog_class=_reconciliation_dialog_class()
+    dialog=dialog_class(title,actions,parent)
+    return dialog.exec()==dialog_class.DialogCode.Accepted
