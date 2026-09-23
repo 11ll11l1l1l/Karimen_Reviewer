@@ -17,6 +17,7 @@ from services import readonly_open_copy
 from reporting import export_equipment_pptx, export_equipment_xlsx
 from image_annotator import ImageAnnotationDialog
 from table_productivity import install_table_productivity
+from collaboration_panel import CollaborationPanel
 
 FILE_ROOT=os.getenv("EMS_FILE_ROOT",str(Path.cwd()/"equipment_files"))
 
@@ -301,6 +302,11 @@ class MyWorkWorkspace(QWidget):
     def open_selected(self):
         row=_selected(self.table,self.rows)
         if not row:return
+        if row.get("kind")=="MENTION":
+            try:self.db.mark_mention_read(int(row.get("key",0)),self.user["username"])
+            except Exception:pass
+            entity=row.get("entity_type","");key=str(row.get("entity_key",""));equipment=row.get("equipment_id","")
+            self.open_entity.emit(entity,key,equipment);self.refresh();return
         entity=self._entity_for(row);key=str(row.get("key",""));equipment=row.get("equipment_id","")
         self.open_entity.emit(entity,key,equipment)
 
@@ -356,6 +362,7 @@ class Equipment360Workspace(QWidget):
         ops=QWidget();opv=QVBoxLayout(ops);self.handover_table=_table(["No","Condition","Pending","Restrictions","Next owner","Status","Created"]);self.disposition_table=_table(["State","Reason","Restrictions","Release criteria","Ticket","Created by","Approved by","Effective"]);opv.addWidget(QLabel("Shift handovers"));opv.addWidget(self.handover_table,1);opv.addWidget(QLabel("Disposition history"));opv.addWidget(self.disposition_table,1);self.tabs.addTab(ops,"Handover / Disposition")
         related=QWidget();rv=QVBoxLayout(related);self.relationships=[];self.related_table=_table(["Type","Key","Title / Context","Status"]);self.related_table.doubleClicked.connect(self.open_related);rv.addWidget(self.related_table);self.tabs.addTab(related,"Related Records")
         self.attachments=AttachmentPanel(db,user);self.tabs.addTab(self.attachments,"Evidence / Attachments")
+        self.collaboration=CollaborationPanel(db,user);self.tabs.addTab(self.collaboration,"Discussion / Updates")
 
         self.active_tickets=[];self.current_pm=[]
         self._clear()
@@ -413,7 +420,7 @@ class Equipment360Workspace(QWidget):
 
     def refresh(self):
         if not self.equipment_id:
-            self.eq=None;self._clear();self.attachments.set_entity("","");return
+            self.eq=None;self._clear();self.attachments.set_entity("","");self.collaboration.set_entity("","");return
         self.eq=self.db.get_equipment(self.equipment_id)
         if not self.eq:
             self.title.setText("Equipment not found");self._clear();return
@@ -465,6 +472,7 @@ class Equipment360Workspace(QWidget):
         for x in handovers:self.relationships.append({"entity_type":"ENDORSEMENT","entity_key":x.endorsement_no,"title":x.pending_work or x.current_condition,"status":x.status})
         _fill_objects(self.related_table,self.relationships,["entity_type","entity_key","title","status"])
         self.attachments.set_entity("EQUIPMENT",eq.equipment_id,eq.equipment_id)
+        self.collaboration.set_entity("EQUIPMENT",eq.equipment_id,eq.equipment_id)
 
         self.active_tickets=sorted([x for x in tickets if x.status not in {"Closed","Cancelled"}],key=lambda x:(0 if x.priority=="P1" else 1 if x.priority=="P2" else 2,x.updated_at or x.created_at),reverse=False)
         self.current_pm=sorted([x for x in pm if x.status not in {"Completed","Cancelled"}],key=lambda x:(0 if x.status=="Overdue" else 1,x.scheduled_date or x.original_due_date))
