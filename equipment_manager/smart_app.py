@@ -247,6 +247,15 @@ class SmartMainWindow(QMainWindow):
 
 
 def main():
+    if "--version" in sys.argv:
+        print(__version__)
+        return 0
+    if "--preflight" in sys.argv:
+        from preflight import run_preflight
+        result=run_preflight()
+        for check in result["checks"]:
+            print(f"{check['status']:<4} {check['name']}: {check['detail']}")
+        return 0 if result["ok"] else 2
     configure_logging("ems-smart");install_exception_hook("ems-smart")
     app = QApplication(sys.argv)
     app.setStyleSheet(SMART_STYLE)
