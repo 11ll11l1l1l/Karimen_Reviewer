@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+import os
 from pathlib import Path
 
 from PySide6.QtCore import Signal
@@ -16,7 +17,7 @@ from table_productivity import install_table_productivity
 from workspaces import AttachmentPanel
 from PySide6.QtWidgets import QApplication
 
-FILE_ROOT=str(Path.cwd()/"equipment_files")
+FILE_ROOT=os.getenv("EMS_FILE_ROOT",str(Path.cwd()/"equipment_files"))
 
 
 def _item(value):
@@ -92,8 +93,8 @@ class PMExecutionWorkspace(QWidget):
             self.title.setText("Technician PM Runner");self.state.setText("");self.context.setText("Select a PM task from Maintenance Planner, My Work, Search, or Equipment 360.");self._enable_execution(False);return
         t=self.task;self.title.setText(f"{t.pm_id} · {t.pm_name}");self.state.setText(t.status)
         self.context.setText(f"{t.equipment_id}    Scheduled: {t.scheduled_date or t.original_due_date or '—'}    Assigned: {t.assigned_to or 'UNASSIGNED'}    Priority: {t.priority}")
-        executions=[x for x in self.db.list_pm_tasks() if x.id==t.id]
-        # start_pm_execution is intentionally not called during refresh: viewing a task must not mutate its lifecycle.
+        # Viewing a task must not mutate its lifecycle. Existing execution is discovered read-only.
+        if self.execution is None:self.execution=self.db.get_pm_execution_for_task(t.id)
         if self.execution:
             self.specs=self.db.list_pm_execution_specs(self.execution.id);self.results={x.step_no:x for x in self.db.list_pm_results(self.execution.id)}
             self.requirements=self.db.list_pm_execution_requirements(self.execution.id);self.acks={x.requirement_id:x for x in self.db.list_pm_requirement_acks(self.execution.id)}
