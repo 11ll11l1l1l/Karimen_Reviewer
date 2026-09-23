@@ -1224,6 +1224,43 @@ class ControlPage(QWidget):
         except Exception as exc:QMessageBox.critical(self,"Release",str(exc))
 
 
+class WorkLogPage(QWidget):
+    def __init__(self,db,user):
+        super().__init__();self.db=db;self.user=user;self.rows=[]
+        v=QVBoxLayout(self);h=QHBoxLayout();title=QLabel("Engineering Work / Labor");title.setStyleSheet("font-size:18pt;font-weight:700")
+        start=QPushButton("Start Work");stop=QPushButton("Stop Selected");refresh=QPushButton("Refresh");self.active=QCheckBox("Active only")
+        start.clicked.connect(self.start);stop.clicked.connect(self.stop);refresh.clicked.connect(self.refresh);self.active.stateChanged.connect(self.refresh)
+        allowed=db.has_permission(user,"worklog.edit");start.setEnabled(allowed);stop.setEnabled(allowed)
+        h.addWidget(title);h.addStretch(1);h.addWidget(self.active);h.addWidget(refresh);h.addWidget(start);h.addWidget(stop);v.addLayout(h)
+        self.table=make_table(["ID","Equipment","Entity Type","Entity Key","Worker","Work Type","Started","Ended","Minutes","Status","Note"]);v.addWidget(self.table);self.refresh()
+
+    def refresh(self):
+        self.rows=self.db.list_work_logs(active_only=self.active.isChecked())
+        fill_table(self.table,self.rows,["id","equipment_id","entity_type","entity_key","username","work_type","started_at","ended_at","duration_minutes","status","note"])
+
+    def start(self):
+        entity_type,ok=QInputDialog.getItem(self,"Start Work","Linked work type",["PM_TASK","TICKET","QUALIFICATION","EQUIPMENT","OTHER"],0,False)
+        if not ok:return
+        key,ok=QInputDialog.getText(self,"Start Work","Linked entity key / ID")
+        if not ok:return
+        eq,ok=QInputDialog.getText(self,"Start Work","Equipment ID")
+        if not ok:return
+        work_type,ok=QInputDialog.getItem(self,"Start Work","Labor type",["Troubleshooting","Maintenance","Repair","Qualification","Engineering","Vendor Support","Other"],0,False)
+        if not ok:return
+        note,ok=QInputDialog.getText(self,"Start Work","Initial note")
+        if not ok:return
+        try:self.db.start_work_log(entity_type,key.strip(),eq.strip(),self.user["username"],work_type,note);self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"Work Log",str(exc))
+
+    def stop(self):
+        row=selected_row(self.table,self.rows)
+        if not row:return
+        note,ok=QInputDialog.getText(self,"Stop Work","Completion note")
+        if not ok:return
+        try:self.db.stop_work_log(row.id,self.user["username"],note);self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"Work Log",str(exc))
+
+
 class EndorsementDialog(QDialog):
     def __init__(self,parent=None):
         super().__init__(parent);self.setWindowTitle("Endorsement / Handover");f=QFormLayout(self);self.no=QLineEdit("END-"+datetime.now().strftime("%Y%m%d-%H%M%S"));self.eq=QLineEdit();self.condition=QTextEdit();self.done=QTextEdit();self.pending=QTextEdit();self.rest=QTextEdit();self.next=QTextEdit();self.owner=QLineEdit();
@@ -1656,7 +1693,7 @@ class MainWindow(QMainWindow):
         super().__init__();self.db=db;self.user=user;self.setWindowTitle(APP_TITLE);self.resize(1450,850);root=QWidget();self.setCentralWidget(root);h=QHBoxLayout(root);self.nav=QListWidget();self.nav.setFixedWidth(210);self.stack=QStackedWidget();h.addWidget(self.nav);h.addWidget(self.stack,1)
         self.pages=[]
         def add(name,page):self.nav.addItem(name);self.stack.addWidget(page);self.pages.append(page)
-        self.dashboard=DashboardPage(db);add("Dashboard",self.dashboard);add("Equipment",EquipmentPage(db,user));self.layout=LayoutPage(db,user);add("Layout / Map",self.layout);add("PM",PMPage(db,user));add("Issue Tickets",TicketPage(db,user));add("Alarms / Events",AlarmPage(db,user));add("Qualification",QualificationPage(db,user));add("Reliability",ReliabilityPage(db));add("Disposition / Release",ControlPage(db,user));add("Endorsements",EndorsementPage(db,user));self.inventory=InventoryPage(db,user);add("Inventory",self.inventory);add("Documents",DocumentPage(db,user));add("Administration",AdminPage(db,user))
+        self.dashboard=DashboardPage(db);add("Dashboard",self.dashboard);add("Equipment",EquipmentPage(db,user));self.layout=LayoutPage(db,user);add("Layout / Map",self.layout);add("PM",PMPage(db,user));add("Issue Tickets",TicketPage(db,user));add("Alarms / Events",AlarmPage(db,user));add("Qualification",QualificationPage(db,user));add("Reliability",ReliabilityPage(db));add("Disposition / Release",ControlPage(db,user));add("Work / Labor",WorkLogPage(db,user));add("Endorsements",EndorsementPage(db,user));self.inventory=InventoryPage(db,user);add("Inventory",self.inventory);add("Documents",DocumentPage(db,user));add("Administration",AdminPage(db,user))
         self.inventory.show_map_part.connect(self.show_part_map);self.nav.currentRowChanged.connect(self.stack.setCurrentIndex);self.nav.setCurrentRow(0)
         self.statusBar().showMessage(f"{user['display_name']} — {user['role']} — {WORKSTATION}")
         refresh=QAction("Refresh",self);refresh.setShortcut(QKeySequence("F5"));refresh.triggered.connect(self.refresh_current);self.addAction(refresh);self.timer=QTimer(self);self.timer.timeout.connect(self.dashboard.refresh);self.timer.start(30000)
