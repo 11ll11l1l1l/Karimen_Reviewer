@@ -912,39 +912,140 @@ class Database:
             overdue = int(s.scalar(select(func.count()).select_from(PMTask).where(PMTask.equipment_id==equipment_id,PMTask.status=="Overdue")) or 0)
             return {"critical_tickets_open": critical, "overdue_pm": overdue}
 
-    def create_release_request(self, equipment_id: str, related_ticket: str, checks: dict[str, bool], notes: str, user: str):
+    def create_release_request(
+        self,
+        equipment_id: str,
+        related_ticket: str,
+        checks: dict[str, bool],
+        notes: str,
+        user: str,
+        workstation: str = "",
+    ):
         with self.session() as s:
-            if not s.scalar(select(Equipment).where(Equipment.equipment_id==equipment_id)): raise ValueError("Equipment not found")
-            r=EquipmentRelease(equipment_id=equipment_id,related_ticket=related_ticket,checks_json=json.dumps(checks),notes=notes,requested_by=user)
-            s.add(r); s.flush(); return r
+            if not s.scalar(select(Equipment).where(Equipment.equipment_id==equipment_id)):
+                raise ValueError("Equipment not found")
+            r=EquipmentRelease(
+                equipment_id=equipment_id,
+                related_ticket=related_ticket,
+                checks_json=json.dumps(checks, sort_keys=True),
+                notes=notes,
+                requested_by=user,
+            )
+            s.add(r)
+            s.flush()
+            s.add(AuditLog(
+                user=user,
+                action="RELEASE_REQUEST",
+                entity_type="EQUIPMENT_RELEASE",
+                entity_key=str(r.id),
+                detail=json.dumps({"equipment_id":equipment_id,"related_ticket":related_ticket}, sort_keys=True),
+                workstation=workstation,
+            ))
+            return r
 
     def list_release_requests(self):
         with self.session() as s: return list(s.scalars(select(EquipmentRelease).order_by(EquipmentRelease.requested_at.desc())))
 
-    def verify_release(self, release_id: int, checks: dict[str, bool], user: str, expected_version: int | None=None):
+    def verify_release(
+        self,
+        release_id: int,
+        checks: dict[str, bool],
+        user: str,
+        expected_version: int | None=None,
+        workstation: str = "",
+    ):
         with self.session() as s:
-            r=s.get(EquipmentRelease,release_id)
+            stmt=select(EquipmentRelease).where(EquipmentRelease.id==release_id)
+            if self.url.startswith("postgresql"):
+                stmt=stmt.with_for_update()
+            r=s.scalar(stmt)
             if not r: raise ValueError("Release request not found")
-            if expected_version is not None and r.version!=expected_version: raise RuntimeError("CONFLICT: Release request changed by another user.")
-            r.checks_json=json.dumps(checks); r.verified_by=user; r.verified_at=datetime.utcnow(); r.status="Verified" if all(checks.values()) else "Verification Failed"; r.version+=1
-            s.flush(); return r
+            if expected_version is not None and r.version!=expected_version:
+                raise RuntimeError("CONFLICT: Release request changed by another user.")
+            if r.status=="Approved / Released":
+                raise ValueError("Release request is already approved and cannot be re-verified.")
+            r.checks_json=json.dumps(checks, sort_keys=True)
+            r.verified_by=user
+            r.verified_at=datetime.utcnow()
+            r.status="Verified" if checks and all(checks.values()) else "Verification Failed"
+            r.version+=1
+            s.add(AuditLog(
+                user=user,
+                action="RELEASE_VERIFY",
+                entity_type="EQUIPMENT_RELEASE",
+                entity_key=str(r.id),
+                detail=json.dumps({"equipment_id":r.equipment_id,"status":r.status,"checks":checks}, sort_keys=True),
+                workstation=workstation,
+            ))
+            s.flush()
+            return r
 
-    def approve_release(self, release_id: int, user: str, expected_version: int | None=None):
+    def approve_release(
+        self,
+        release_id: int,
+        user: str,
+        expected_version: int | None=None,
+        workstation: str = "",
+    ):
         with self.session() as s:
-            r=s.get(EquipmentRelease,release_id)
+            stmt=select(EquipmentRelease).where(EquipmentRelease.id==release_id)
+            if self.url.startswith("postgresql"):
+                stmt=stmt.with_for_update()
+            r=s.scalar(stmt)
             if not r: raise ValueError("Release request not found")
-            if expected_version is not None and r.version!=expected_version: raise RuntimeError("CONFLICT: Release request changed by another user.")
+            if expected_version is not None and r.version!=expected_version:
+                raise RuntimeError("CONFLICT: Release request changed by another user.")
             checks=json.loads(r.checks_json or "{}")
-            if r.status!="Verified" or not checks or not all(checks.values()): raise ValueError("Release must be fully verified before approval")
-            critical = int(s.scalar(select(func.count()).select_from(Ticket).where(Ticket.equipment_id==r.equipment_id, Ticket.priority.in_(["P1","P2"]), Ticket.status.notin_(["Closed","Cancelled"]))) or 0)
-            if critical: raise ValueError(f"Cannot release equipment while {critical} P1/P2 ticket(s) remain open")
-            stmt=select(Equipment).where(Equipment.equipment_id==r.equipment_id)
-            if not self.url.startswith("sqlite"): stmt=stmt.with_for_update()
-            eq=s.scalar(stmt)
-            for d in s.scalars(select(Disposition).where(Disposition.equipment_id==r.equipment_id,Disposition.active.is_(True))): d.active=False
-            s.add(Disposition(equipment_id=r.equipment_id,state="Released",reason="Verified equipment release",related_ticket=r.related_ticket,created_by=r.requested_by,approved_by=user))
-            eq.disposition="Released"; eq.version+=1
-            r.status="Approved / Released"; r.approved_by=user; r.approved_at=datetime.utcnow(); r.version+=1; s.flush(); return r
+            if r.status!="Verified" or not checks or not all(checks.values()):
+                raise ValueError("Release must be fully verified before approval")
+            if user in {r.requested_by, r.verified_by}:
+                raise ValueError(
+                    "Independent approval required: the release approver must differ from both requester and verifier."
+                )
+            critical = int(s.scalar(select(func.count()).select_from(Ticket).where(
+                Ticket.equipment_id==r.equipment_id,
+                Ticket.priority.in_(["P1","P2"]),
+                Ticket.status.notin_(["Closed","Cancelled"]),
+            )) or 0)
+            if critical:
+                raise ValueError(f"Cannot release equipment while {critical} P1/P2 ticket(s) remain open")
+            eq_stmt=select(Equipment).where(Equipment.equipment_id==r.equipment_id)
+            if self.url.startswith("postgresql"):
+                eq_stmt=eq_stmt.with_for_update()
+            eq=s.scalar(eq_stmt)
+            if not eq:
+                raise ValueError("Equipment not found")
+            for d in s.scalars(select(Disposition).where(Disposition.equipment_id==r.equipment_id,Disposition.active.is_(True))):
+                d.active=False
+            s.add(Disposition(
+                equipment_id=r.equipment_id,
+                state="Released",
+                reason="Verified equipment release",
+                related_ticket=r.related_ticket,
+                created_by=r.requested_by,
+                approved_by=user,
+            ))
+            eq.disposition="Released"
+            eq.version+=1
+            r.status="Approved / Released"
+            r.approved_by=user
+            r.approved_at=datetime.utcnow()
+            r.version+=1
+            s.add(AuditLog(
+                user=user,
+                action="RELEASE_APPROVE",
+                entity_type="EQUIPMENT_RELEASE",
+                entity_key=str(r.id),
+                detail=json.dumps({
+                    "equipment_id":r.equipment_id,
+                    "requested_by":r.requested_by,
+                    "verified_by":r.verified_by,
+                    "approved_by":user,
+                }, sort_keys=True),
+                workstation=workstation,
+            ))
+            s.flush()
+            return r
 
     def save_endorsement(self, data: dict[str, Any], expected_version: int | None = None):
         with self.session() as s:
