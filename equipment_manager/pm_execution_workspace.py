@@ -52,9 +52,10 @@ class PMExecutionWorkspace(QWidget):
         self.start_button=QPushButton("Start / Resume");self.start_button.clicked.connect(self.start_resume)
         self.complete_button=QPushButton("Complete PM");self.complete_button.clicked.connect(self.complete_pm)
         self.open_eq=QPushButton("Open Equipment");self.open_eq.clicked.connect(self.open_equipment)
+        self.work_order_button=QPushButton("Create / Open Work Order");self.work_order_button.clicked.connect(self.open_work_order)
         refresh=QPushButton("Refresh");refresh.clicked.connect(self.refresh)
         head.addWidget(self.title);head.addWidget(self.state);head.addStretch(1)
-        for b in [self.open_eq,self.start_button,self.complete_button,refresh]:head.addWidget(b)
+        for b in [self.open_eq,self.work_order_button,self.start_button,self.complete_button,refresh]:head.addWidget(b)
         root.addLayout(head)
         self.context=QLabel("Select a PM task from Maintenance Planner, My Work, Search, or Equipment 360.");self.context.setWordWrap(True);self.context.setStyleSheet("color:#647581;");root.addWidget(self.context)
         self.progress=QLabel();self.progress.setStyleSheet("font-weight:700;");root.addWidget(self.progress)
@@ -272,6 +273,13 @@ class PMExecutionWorkspace(QWidget):
                     except Exception:pass
             QMessageBox.information(self,"PM","PM completed successfully.");self.execution.status="Completed";self.refresh()
         except Exception as exc:QMessageBox.critical(self,"Complete PM",str(exc))
+
+    def open_work_order(self):
+        if not self.task:return
+        try:
+            row=self.db.create_work_order_from_pm(self.task.id,self.user["username"],"PM-RUNNER")
+            self.open_entity.emit("WORK_ORDER",row.work_order_no,row.equipment_id)
+        except Exception as exc:QMessageBox.critical(self,"Work order",str(exc))
 
     def open_equipment(self):
         if self.task:self.open_entity.emit("EQUIPMENT",self.task.equipment_id,self.task.equipment_id)
