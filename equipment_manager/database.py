@@ -5234,6 +5234,62 @@ class Database:
         start=end-timedelta(days=days)
         return [self.reliability_summary(eq.equipment_id,start,end) for eq in self.list_equipment()]
 
+    def engineering_analytics(self, days: int = 30) -> dict[str, Any]:
+        days=max(1,min(int(days),3650))
+        end=datetime.utcnow();start=end-timedelta(days=days)
+        reliability=self.reliability_report(days)
+        alarm_pareto=self.alarm_pareto(days)
+        with self.session() as s:
+            tickets=list(s.scalars(select(Ticket).where(Ticket.created_at>=start)))
+            open_tickets=list(s.scalars(select(Ticket).where(Ticket.status.notin_(["Closed","Cancelled"]))))
+            active_alarms=list(s.scalars(select(EquipmentAlarmEvent).where(EquipmentAlarmEvent.state=="ACTIVE")))
+            pm_tasks=list(s.scalars(select(PMTask).where(
+                PMTask.original_due_date.is_not(None),
+                PMTask.original_due_date>=start,
+                PMTask.original_due_date<=end,
+            )))
+        ticket_count={};open_count={};critical_open={}
+        for row in tickets:ticket_count[row.equipment_id]=ticket_count.get(row.equipment_id,0)+1
+        for row in open_tickets:
+            open_count[row.equipment_id]=open_count.get(row.equipment_id,0)+1
+            if row.priority in {"P1","P2"}:critical_open[row.equipment_id]=critical_open.get(row.equipment_id,0)+1
+        alarm_active={}
+        for row in active_alarms:alarm_active[row.equipment_id]=alarm_active.get(row.equipment_id,0)+1
+        tool_matrix=[]
+        for rel in reliability:
+            equipment_id=rel["equipment_id"]
+            tool_matrix.append({
+                "equipment_id":equipment_id,
+                "availability_pct":rel["availability_pct"],
+                "failure_count":rel["failure_count"],
+                "unplanned_downtime_hours":rel["unplanned_downtime_hours"],
+                "planned_downtime_hours":rel["planned_downtime_hours"],
+                "mttr_hours":rel["mttr_hours"],
+                "mtbf_hours":rel["mtbf_hours"],
+                "incidents_period":ticket_count.get(equipment_id,0),
+                "open_incidents":open_count.get(equipment_id,0),
+                "critical_open":critical_open.get(equipment_id,0),
+                "active_alarms":alarm_active.get(equipment_id,0),
+                "current_state":rel["current_state"],
+            })
+        tool_matrix.sort(key=lambda x:(-x["unplanned_downtime_hours"],-x["failure_count"],x["availability_pct"],x["equipment_id"]))
+        due=len(pm_tasks);completed=sum(1 for x in pm_tasks if x.status=="Completed")
+        overdue=sum(1 for x in pm_tasks if x.status=="Overdue" or (x.status not in {"Completed","Cancelled"} and x.original_due_date and x.original_due_date<end))
+        deferred=sum(1 for x in pm_tasks if x.status=="Deferred")
+        compliance_pct=(completed/due*100.0) if due else 100.0
+        incident_by_equipment={}
+        for row in tickets:incident_by_equipment[row.equipment_id]=incident_by_equipment.get(row.equipment_id,0)+1
+        incident_pareto=[
+            {"equipment_id":key,"count":value}
+            for key,value in sorted(incident_by_equipment.items(),key=lambda kv:(-kv[1],kv[0]))
+        ]
+        return {
+            "days":days,"start":start,"end":end,
+            "reliability":reliability,"tool_matrix":tool_matrix,
+            "alarm_pareto":alarm_pareto,"incident_pareto":incident_pareto,
+            "pm":{"due":due,"completed":completed,"overdue":overdue,"deferred":deferred,"compliance_pct":compliance_pct},
+        }
+
     def dashboard_counts(self):
         with self.session() as s:
             c=lambda model,*w: int(s.scalar(select(func.count()).select_from(model).where(*w)) or 0)
