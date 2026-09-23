@@ -42,6 +42,26 @@ class UserPermission(Base):
     __table_args__ = (UniqueConstraint("username", "permission", name="uq_user_permission"),)
 
 
+class AuthSecurityState(Base):
+    __tablename__ = "auth_security_state"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    username: Mapped[str] = mapped_column(String(80), unique=True, index=True)
+    failed_attempts: Mapped[int] = mapped_column(Integer, default=0)
+    locked_until: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_failed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
+class LoginAttempt(Base):
+    __tablename__ = "login_attempts"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    username: Mapped[str] = mapped_column(String(80), index=True)
+    success: Mapped[bool] = mapped_column(Boolean, default=False)
+    reason: Mapped[str] = mapped_column(String(80), default="")
+    workstation: Mapped[str] = mapped_column(String(120), default="")
+    attempted_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
 class Equipment(Base):
     __tablename__ = "equipment"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -531,6 +551,8 @@ class AuditLog(Base):
 
 
 PBKDF2_ROUNDS = 310_000
+AUTH_MAX_FAILURES = 5
+AUTH_LOCKOUT_MINUTES = 15
 
 ROLE_PERMISSIONS = {
     "Administrator": {"*"},
@@ -642,13 +664,75 @@ class Database:
             u = User(username=username.strip(), display_name=display_name.strip() or username.strip(), password_hash=hash_password(password), role=role)
             s.add(u); s.flush(); return u.id
 
-    def authenticate(self, username: str, password: str) -> dict[str, Any] | None:
+    def authenticate(self, username: str, password: str, workstation: str = "") -> dict[str, Any] | None:
+        username=username.strip()
+        now=datetime.utcnow()
         with self.session() as s:
-            u = s.scalar(select(User).where(User.username == username.strip()))
-            if not u or not u.active or not verify_password(password, u.password_hash):
+            u=s.scalar(select(User).where(User.username==username))
+            if not u:
+                if username:
+                    s.add(LoginAttempt(username=username[:80],success=False,reason="Unknown user",workstation=workstation,attempted_at=now))
                 return None
-            u.last_login = datetime.utcnow(); s.flush()
-            return {"id": u.id, "username": u.username, "display_name": u.display_name, "role": u.role}
+            state=s.scalar(select(AuthSecurityState).where(AuthSecurityState.username==username))
+            if not state:
+                state=AuthSecurityState(username=username)
+                s.add(state)
+                s.flush()
+            if state.locked_until and state.locked_until>now:
+                s.add(LoginAttempt(username=username,success=False,reason="Locked",workstation=workstation,attempted_at=now))
+                return None
+            if state.locked_until and state.locked_until<=now:
+                state.locked_until=None
+                state.failed_attempts=0
+                state.version+=1
+            if not u.active:
+                s.add(LoginAttempt(username=username,success=False,reason="Inactive",workstation=workstation,attempted_at=now))
+                return None
+            if not verify_password(password,u.password_hash):
+                state.failed_attempts+=1
+                state.last_failed_at=now
+                state.version+=1
+                reason="Invalid password"
+                if state.failed_attempts>=AUTH_MAX_FAILURES:
+                    state.locked_until=now+timedelta(minutes=AUTH_LOCKOUT_MINUTES)
+                    reason="Locked after repeated failures"
+                s.add(LoginAttempt(username=username,success=False,reason=reason,workstation=workstation,attempted_at=now))
+                return None
+            state.failed_attempts=0
+            state.locked_until=None
+            state.last_failed_at=None
+            state.version+=1
+            u.last_login=now
+            s.add(LoginAttempt(username=username,success=True,reason="Authenticated",workstation=workstation,attempted_at=now))
+            s.flush()
+            return {"id":u.id,"username":u.username,"display_name":u.display_name,"role":u.role}
+
+    def auth_security_status(self, username: str):
+        with self.session() as s:
+            return s.scalar(select(AuthSecurityState).where(AuthSecurityState.username==username))
+
+    def unlock_user(self, username: str, actor: str = "", workstation: str = ""):
+        with self.session() as s:
+            if not s.scalar(select(User).where(User.username==username)):
+                raise ValueError("User not found")
+            state=s.scalar(select(AuthSecurityState).where(AuthSecurityState.username==username))
+            if not state:
+                state=AuthSecurityState(username=username)
+                s.add(state)
+            state.failed_attempts=0
+            state.locked_until=None
+            state.last_failed_at=None
+            state.version+=1
+            s.add(AuditLog(user=actor,action="AUTH_UNLOCK",entity_type="USER",entity_key=username,workstation=workstation))
+            s.flush()
+            return state
+
+    def list_login_attempts(self, username: str = "", limit: int = 500):
+        with self.session() as s:
+            stmt=select(LoginAttempt).order_by(LoginAttempt.attempted_at.desc()).limit(max(1,min(int(limit),5000)))
+            if username:
+                stmt=stmt.where(LoginAttempt.username==username)
+            return list(s.scalars(stmt))
 
     def list_users(self):
         with self.session() as s:
@@ -663,6 +747,12 @@ class Database:
             if password is not None:
                 if len(password) < 10: raise ValueError("Password must be at least 10 characters")
                 u.password_hash = hash_password(password)
+                state=s.scalar(select(AuthSecurityState).where(AuthSecurityState.username==username))
+                if state:
+                    state.failed_attempts=0
+                    state.locked_until=None
+                    state.last_failed_at=None
+                    state.version+=1
             s.flush(); return u
 
     def set_permission_override(self, username: str, permission: str, allowed: bool | None):
