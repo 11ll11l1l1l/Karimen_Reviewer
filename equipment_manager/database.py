@@ -168,6 +168,33 @@ class PMExecution(Base):
     version: Mapped[int] = mapped_column(Integer, default=1)
 
 
+class PMExecutionStepSnapshot(Base):
+    __tablename__ = "pm_execution_step_snapshots"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    execution_id: Mapped[int] = mapped_column(Integer, index=True)
+    pm_id: Mapped[str] = mapped_column(String(100), index=True)
+    source_spec_id: Mapped[int] = mapped_column(Integer)
+    source_revision: Mapped[int] = mapped_column(Integer)
+    step_no: Mapped[int] = mapped_column(Integer)
+    activity: Mapped[str] = mapped_column(Text, default="")
+    method: Mapped[str] = mapped_column(String(250), default="")
+    input_type: Mapped[str] = mapped_column(String(40), default="Text")
+    unit: Mapped[str] = mapped_column(String(40), default="")
+    target: Mapped[float | None] = mapped_column(Float, nullable=True)
+    warning_low: Mapped[float | None] = mapped_column(Float, nullable=True)
+    warning_high: Mapped[float | None] = mapped_column(Float, nullable=True)
+    control_low: Mapped[float | None] = mapped_column(Float, nullable=True)
+    control_high: Mapped[float | None] = mapped_column(Float, nullable=True)
+    spec_low: Mapped[float | None] = mapped_column(Float, nullable=True)
+    spec_high: Mapped[float | None] = mapped_column(Float, nullable=True)
+    acceptance_text: Mapped[str] = mapped_column(Text, default="")
+    reaction_plan: Mapped[str] = mapped_column(Text, default="")
+    sop_path: Mapped[str] = mapped_column(Text, default="")
+    sop_page: Mapped[str] = mapped_column(String(40), default="")
+    sop_section: Mapped[str] = mapped_column(String(80), default="")
+    __table_args__ = (UniqueConstraint("execution_id", "step_no", name="uq_pm_execution_snapshot_step"),)
+
+
 class PMResult(Base):
     __tablename__ = "pm_results"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -722,41 +749,172 @@ class Database:
             if pm_id: stmt = stmt.where(PMSpec.pm_id == pm_id)
             return list(s.scalars(stmt))
 
+    @staticmethod
+    def _classify_pm_snapshot_value(spec, value_text: str, value_numeric: float | None) -> str:
+        if spec.input_type == "Numeric":
+            if value_numeric is None:
+                return "INVALID"
+            v = float(value_numeric)
+            if (spec.spec_low is not None and v < spec.spec_low) or (spec.spec_high is not None and v > spec.spec_high):
+                return "SPECIFICATION FAILURE"
+            if (spec.control_low is not None and v < spec.control_low) or (spec.control_high is not None and v > spec.control_high):
+                return "CONTROL FAILURE"
+            if (spec.warning_low is not None and v < spec.warning_low) or (spec.warning_high is not None and v > spec.warning_high):
+                return "WARNING"
+            return "PASS"
+        if spec.input_type == "Pass / Fail":
+            normalized = (value_text or "").strip().lower()
+            return "PASS" if normalized in {"pass", "ok", "yes", "good", "acceptable"} else "FAIL"
+        return "RECORDED" if (value_text or "").strip() else "INVALID"
+
+    @staticmethod
+    def _snapshot_pm_specs(s, ex: PMExecution, task: PMTask):
+        existing = int(s.scalar(
+            select(func.count()).select_from(PMExecutionStepSnapshot)
+            .where(PMExecutionStepSnapshot.execution_id == ex.id)
+        ) or 0)
+        if existing:
+            return
+        specs = list(s.scalars(
+            select(PMSpec)
+            .where(PMSpec.pm_id == task.pm_id, PMSpec.active.is_(True))
+            .order_by(PMSpec.step_no)
+        ))
+        if not specs:
+            raise ValueError("PM cannot start because no active controlled checklist/specification steps exist.")
+        for spec in specs:
+            s.add(PMExecutionStepSnapshot(
+                execution_id=ex.id,
+                pm_id=spec.pm_id,
+                source_spec_id=spec.id,
+                source_revision=spec.revision,
+                step_no=spec.step_no,
+                activity=spec.activity,
+                method=spec.method,
+                input_type=spec.input_type,
+                unit=spec.unit,
+                target=spec.target,
+                warning_low=spec.warning_low,
+                warning_high=spec.warning_high,
+                control_low=spec.control_low,
+                control_high=spec.control_high,
+                spec_low=spec.spec_low,
+                spec_high=spec.spec_high,
+                acceptance_text=spec.acceptance_text,
+                reaction_plan=spec.reaction_plan,
+                sop_path=spec.sop_path,
+                sop_page=spec.sop_page,
+                sop_section=spec.sop_section,
+            ))
+
     def start_pm_execution(self, task_id: int, user: str):
         with self.session() as s:
+            task_stmt = select(PMTask).where(PMTask.id == task_id)
+            if self.url.startswith("postgresql"):
+                task_stmt = task_stmt.with_for_update()
+            task = s.scalar(task_stmt)
+            if not task:
+                raise ValueError("PM task not found")
             ex = s.scalar(select(PMExecution).where(PMExecution.task_id == task_id))
-            if ex: return ex
-            task = s.get(PMTask, task_id)
-            if not task: raise ValueError("PM task not found")
-            ex = PMExecution(task_id=task_id, started_by=user); s.add(ex)
-            task.status = "In Progress"; task.version += 1; s.flush(); return ex
+            if ex:
+                self._snapshot_pm_specs(s, ex, task)
+                s.flush()
+                return ex
+            ex = PMExecution(task_id=task_id, started_by=user)
+            s.add(ex)
+            s.flush()
+            self._snapshot_pm_specs(s, ex, task)
+            task.status = "In Progress"
+            task.version += 1
+            s.flush()
+            return ex
+
+    def list_pm_execution_specs(self, execution_id: int):
+        with self.session() as s:
+            return list(s.scalars(
+                select(PMExecutionStepSnapshot)
+                .where(PMExecutionStepSnapshot.execution_id == execution_id)
+                .order_by(PMExecutionStepSnapshot.step_no)
+            ))
 
     def save_pm_result(self, execution_id: int, step_no: int, data: dict[str, Any], expected_version: int | None = None):
         with self.session() as s:
+            ex = s.get(PMExecution, execution_id)
+            if not ex:
+                raise ValueError("PM execution not found")
+            if ex.status == "Completed":
+                raise ValueError("Completed PM execution is read-only.")
+            spec = s.scalar(select(PMExecutionStepSnapshot).where(
+                PMExecutionStepSnapshot.execution_id == execution_id,
+                PMExecutionStepSnapshot.step_no == step_no,
+            ))
+            if not spec:
+                raise ValueError("PM step is not part of the frozen execution checklist.")
             item = s.scalar(select(PMResult).where(PMResult.execution_id == execution_id, PMResult.step_no == step_no))
-            payload = dict(data); payload.update(execution_id=execution_id, step_no=step_no)
-            if item: self._update_versioned(item, payload, expected_version, "PM result")
-            else: item = PMResult(**payload); s.add(item)
-            s.flush(); return item
+            payload = dict(data)
+            payload.update(execution_id=execution_id, step_no=step_no)
+            payload["result"] = self._classify_pm_snapshot_value(
+                spec,
+                payload.get("value_text", ""),
+                payload.get("value_numeric"),
+            )
+            if item:
+                self._update_versioned(item, payload, expected_version, "PM result")
+            else:
+                item = PMResult(**payload)
+                s.add(item)
+            s.flush()
+            return item
 
     def list_pm_results(self, execution_id: int):
-        with self.session() as s: return list(s.scalars(select(PMResult).where(PMResult.execution_id == execution_id).order_by(PMResult.step_no)))
+        with self.session() as s:
+            return list(s.scalars(
+                select(PMResult)
+                .where(PMResult.execution_id == execution_id)
+                .order_by(PMResult.step_no)
+            ))
 
     def complete_pm_execution(self, execution_id: int, user: str):
         with self.session() as s:
-            ex = s.get(PMExecution, execution_id)
-            if not ex: raise ValueError("Execution not found")
-            if ex.status == "Completed": return ex
+            ex_stmt = select(PMExecution).where(PMExecution.id == execution_id)
+            if self.url.startswith("postgresql"):
+                ex_stmt = ex_stmt.with_for_update()
+            ex = s.scalar(ex_stmt)
+            if not ex:
+                raise ValueError("Execution not found")
+            if ex.status == "Completed":
+                return ex
             task = s.get(PMTask, ex.task_id)
-            specs = list(s.scalars(select(PMSpec).where(PMSpec.pm_id == task.pm_id, PMSpec.active.is_(True))))
+            specs = list(s.scalars(
+                select(PMExecutionStepSnapshot)
+                .where(PMExecutionStepSnapshot.execution_id == execution_id)
+                .order_by(PMExecutionStepSnapshot.step_no)
+            ))
+            if not specs:
+                raise ValueError("PM execution has no frozen controlled checklist.")
             results = list(s.scalars(select(PMResult).where(PMResult.execution_id == execution_id)))
-            have = {r.step_no for r in results}
-            missing = [p.step_no for p in specs if p.step_no not in have]
-            if missing: raise ValueError(f"Missing required PM steps: {missing}")
-            hard_fail = [r.step_no for r in results if r.result in {"SPECIFICATION FAILURE", "CONTROL FAILURE", "FAIL", "INVALID"}]
-            if hard_fail: raise ValueError(f"Failed/invalid PM steps require correction, disposition, or engineering review: {hard_fail}")
-            now = datetime.utcnow(); ex.status="Completed"; ex.completed_by=user; ex.completed_at=now; ex.version += 1
-            task.status="Completed"; task.last_completion_date=now; task.version += 1; s.flush(); return ex
+            by_step = {r.step_no: r for r in results}
+            missing = [p.step_no for p in specs if p.step_no not in by_step]
+            if missing:
+                raise ValueError(f"Missing required PM steps: {missing}")
+            hard_fail = [
+                step_no for step_no, result in by_step.items()
+                if result.result in {"SPECIFICATION FAILURE", "CONTROL FAILURE", "FAIL", "INVALID"}
+            ]
+            if hard_fail:
+                raise ValueError(
+                    f"Failed/invalid PM steps require correction, disposition, or engineering review: {hard_fail}"
+                )
+            now = datetime.utcnow()
+            ex.status = "Completed"
+            ex.completed_by = user
+            ex.completed_at = now
+            ex.version += 1
+            task.status = "Completed"
+            task.last_completion_date = now
+            task.version += 1
+            s.flush()
+            return ex
 
     def list_tickets(self):
         with self.session() as s: return list(s.scalars(select(Ticket).order_by(Ticket.created_at.desc())))
