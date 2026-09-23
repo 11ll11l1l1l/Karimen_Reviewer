@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
 
 from table_productivity import install_table_productivity
 from workspaces import AttachmentPanel
+from collaboration_panel import CollaborationPanel
 from reporting import export_incident_pptx, export_incident_xlsx
 
 
@@ -115,6 +116,7 @@ class IncidentWorkspace(QWidget):
         history=QWidget();hv=QVBoxLayout(history);self.similar_table=_table(["Ticket","Title","Priority","Status","Owner","Created","Updated"]);self.similar_table.doubleClicked.connect(self.open_similar);hv.addWidget(QLabel("Other incidents on the same equipment"));hv.addWidget(self.similar_table);self.tabs.addTab(history,"Recurrence History")
 
         self.attachments=AttachmentPanel(db,user);self.tabs.addTab(self.attachments,"Evidence / Attachments")
+        self.collaboration=CollaborationPanel(db,user);self.tabs.addTab(self.collaboration,"Discussion / Updates")
         self._set_enabled(False)
 
     def _set_enabled(self,enabled):
@@ -126,7 +128,7 @@ class IncidentWorkspace(QWidget):
 
     def refresh(self):
         if not self.ticket_no:
-            self.ticket=None;self._set_enabled(False);self.attachments.set_entity("","");return
+            self.ticket=None;self._set_enabled(False);self.attachments.set_entity("","");self.collaboration.set_entity("","");return
         self.ticket=next((x for x in self.db.list_tickets() if x.ticket_no==self.ticket_no),None)
         if not self.ticket:
             self.title.setText("Incident not found");self._set_enabled(False);return
@@ -144,6 +146,7 @@ class IncidentWorkspace(QWidget):
         self.actions=self.db.list_incident_actions(t.ticket_no);_fill(self.action_table,self.actions,["id","action_type","description","owner","due_at","status","effectiveness_criteria","completed_by","completed_at","verified_by","verified_at","version"])
         self.similar=self.db.incident_similar_history(t.ticket_no);_fill(self.similar_table,self.similar,["ticket_no","title","priority","status","owner","created_at","updated_at"])
         self.attachments.set_entity("TICKET",t.ticket_no,t.equipment_id)
+        self.collaboration.set_entity("TICKET",t.ticket_no,t.equipment_id)
 
     def save_summary(self):
         if not self.ticket:return
