@@ -4737,6 +4737,94 @@ class Database:
             if active_only:stmt=stmt.where(WorkLog.status=="Active")
             return list(s.scalars(stmt))
 
+    def shift_handover_candidates(self) -> list[dict[str, Any]]:
+        now=datetime.utcnow();rows=[]
+        with self.session() as s:
+            equipment=list(s.scalars(select(Equipment)))
+            tickets=list(s.scalars(select(Ticket).where(Ticket.status.notin_(["Closed","Cancelled"]))))
+            alarms=list(s.scalars(select(EquipmentAlarmEvent).where(EquipmentAlarmEvent.state=="ACTIVE")))
+            pm=list(s.scalars(select(PMTask).where(PMTask.status.notin_(["Completed","Cancelled"]))))
+            work_orders=list(s.scalars(select(WorkOrder).where(WorkOrder.status.notin_(["Completed","Cancelled"]))))
+            qualification=list(s.scalars(select(QualificationRun).where(QualificationRun.status.notin_(["Approved","Rejected"]))))
+            releases=list(s.scalars(select(EquipmentRelease).where(EquipmentRelease.status!="Approved / Released")))
+            dispositions=list(s.scalars(select(Disposition).where(Disposition.active.is_(True))))
+            existing=list(s.scalars(select(Endorsement).where(Endorsement.status.in_(["Open","Acknowledged"]))))
+        by_ticket={};by_alarm={};by_pm={};by_wo={};by_q={};by_rel={};by_disp={}
+        for x in tickets:by_ticket.setdefault(x.equipment_id,[]).append(x)
+        for x in alarms:by_alarm.setdefault(x.equipment_id,[]).append(x)
+        for x in pm:by_pm.setdefault(x.equipment_id,[]).append(x)
+        for x in work_orders:by_wo.setdefault(x.equipment_id,[]).append(x)
+        for x in qualification:by_q.setdefault(x.equipment_id,[]).append(x)
+        for x in releases:by_rel.setdefault(x.equipment_id,[]).append(x)
+        for x in dispositions:by_disp.setdefault(x.equipment_id,[]).append(x)
+        existing_eq={x.equipment_id for x in existing}
+        risk_states={"Down","Engineering","Waiting Parts","Waiting Vendor","Qualification","Hold","Restricted","Offline"}
+        for eq in equipment:
+            t=by_ticket.get(eq.equipment_id,[]);a=by_alarm.get(eq.equipment_id,[]);p=by_pm.get(eq.equipment_id,[]);wo=by_wo.get(eq.equipment_id,[]);q=by_q.get(eq.equipment_id,[]);rel=by_rel.get(eq.equipment_id,[]);disp=by_disp.get(eq.equipment_id,[])
+            due_soon=[x for x in p if x.status in {"Overdue","In Progress"} or (x.scheduled_date and x.scheduled_date<=now+timedelta(hours=24))]
+            critical=[x for x in t if x.priority in {"P1","P2"}]
+            needs=eq.status in risk_states or bool(critical or a or due_soon or wo or q or rel)
+            if not needs:continue
+            pending=[]
+            pending += [f"{x.ticket_no} {x.priority} {x.status}: {x.title}" for x in sorted(t,key=lambda x:(x.priority,x.created_at))[:5]]
+            pending += [f"Alarm {x.alarm_code} {x.severity}: {x.message}" for x in a[:5]]
+            pending += [f"PM {x.pm_id} {x.status} due {x.scheduled_date or x.original_due_date}" for x in due_soon[:5]]
+            pending += [f"WO {x.work_order_no} {x.status}: {x.title}" for x in wo[:5]]
+            pending += [f"Qualification {x.run_no} {x.status}" for x in q[:3]]
+            pending += [f"Release #{x.id} {x.status}" for x in rel[:3]]
+            restriction_parts=[]
+            for d in disp[:3]:
+                text="; ".join(x for x in [d.state,d.restrictions,d.release_criteria] if x)
+                if text:restriction_parts.append(text)
+            severity="CRITICAL" if eq.status=="Down" or any(x.priority=="P1" for x in t) else ("HIGH" if eq.status in risk_states or critical or a else "MEDIUM")
+            owner=next((x.owner for x in wo if x.owner),None) or next((x.owner for x in t if x.owner),None) or eq.owner
+            next_action=(
+                "Resolve active critical incident and restore controlled state." if critical else
+                "Complete qualification / release sequence." if q or rel or eq.status=="Qualification" else
+                "Continue active work order / maintenance." if wo or due_soon else
+                "Investigate active alarm / abnormal equipment state."
+            )
+            rows.append({
+                "severity":severity,"equipment_id":eq.equipment_id,"equipment_name":eq.name,
+                "current_condition":f"{eq.status} / {eq.disposition}",
+                "pending_work":"\n".join(pending),
+                "restrictions":"\n".join(restriction_parts),
+                "next_action":next_action,"next_owner":owner or "",
+                "active_incidents":len(t),"active_alarms":len(a),"open_pm":len(due_soon),"open_work_orders":len(wo),
+                "existing_open_handover":eq.equipment_id in existing_eq,
+            })
+        rank={"CRITICAL":0,"HIGH":1,"MEDIUM":2}
+        rows.sort(key=lambda x:(rank.get(x["severity"],9),x["equipment_id"]))
+        return rows
+
+    def publish_shift_handover(self, equipment_id: str, user: str, next_owner: str = "", workstation: str = ""):
+        candidate=next((x for x in self.shift_handover_candidates() if x["equipment_id"]==equipment_id),None)
+        if not candidate:raise ValueError("Equipment no longer has a live handover candidate.")
+        self.assert_authorized(user,"endorsement.edit",equipment_id)
+        with self.session() as s:
+            prefix="".join(ch if ch.isalnum() else "-" for ch in equipment_id.upper()).strip("-")[:30]
+            base=f"HO-{datetime.utcnow():%y%m%d%H%M%S}-{prefix}"
+            no=base[:100];suffix=1
+            while s.scalar(select(Endorsement).where(Endorsement.endorsement_no==no)):
+                tail=f"-{suffix}";no=base[:100-len(tail)]+tail;suffix+=1
+            row=Endorsement(
+                endorsement_no=no,equipment_id=equipment_id,
+                current_condition=candidate["current_condition"],work_completed="",
+                pending_work=candidate["pending_work"],restrictions=candidate["restrictions"],
+                next_action=candidate["next_action"],next_owner=(next_owner or candidate["next_owner"]).strip(),
+                status="Open",created_by=user,
+            )
+            s.add(row)
+            s.add(AuditLog(
+                user=user,action="SHIFT_HANDOVER_PUBLISH",entity_type="ENDORSEMENT",entity_key=no,
+                detail=json.dumps({"equipment_id":equipment_id,"severity":candidate["severity"]},sort_keys=True),
+                workstation=workstation,
+            ))
+            self._queue_integration_event(s,"shift.handover.published","ENDORSEMENT",no,{
+                "endorsement_no":no,"equipment_id":equipment_id,"next_owner":row.next_owner,"created_by":user,
+            })
+            s.flush();return row
+
     def save_endorsement(self, data: dict[str, Any], expected_version: int | None = None):
         with self.session() as s:
             item=s.scalar(select(Endorsement).where(Endorsement.endorsement_no==data["endorsement_no"]))
