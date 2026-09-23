@@ -92,74 +92,46 @@ class MetricCard(QFrame):
 class SmartDashboardPage(QWidget):
     def __init__(self, db: Database, open_map: Callable):
         super().__init__()
-        self.db = db
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(18, 18, 18, 18)
+        self.db=db;self.attention=[]
+        layout=QVBoxLayout(self);layout.setContentsMargins(18,18,18,18)
+        head=QHBoxLayout();title_box=QVBoxLayout()
+        title=QLabel("FAB Operations Command Center");title.setObjectName("SectionTitle")
+        subtitle=QLabel("Exceptions first: down tools, active alarms, overdue maintenance, escalated incidents, pending qualification/release and shift handovers")
+        subtitle.setObjectName("Muted");title_box.addWidget(title);title_box.addWidget(subtitle);head.addLayout(title_box);head.addStretch(1)
+        map_button=QPushButton("Open live FAB map");map_button.clicked.connect(open_map);head.addWidget(map_button);layout.addLayout(head)
 
-        head = QHBoxLayout()
-        title_box = QVBoxLayout()
-        title = QLabel("FAB Operations Overview")
-        title.setObjectName("SectionTitle")
-        subtitle = QLabel("Current equipment health, maintenance exposure and active issues")
-        subtitle.setObjectName("Muted")
-        title_box.addWidget(title)
-        title_box.addWidget(subtitle)
-        head.addLayout(title_box)
-        head.addStretch(1)
-        map_button = QPushButton("Open live FAB map")
-        map_button.clicked.connect(open_map)
-        head.addWidget(map_button)
-        layout.addLayout(head)
-
-        grid = QGridLayout()
-        self.cards = {
-            "equipment_total": MetricCard("Registered equipment", "#176b96"),
-            "equipment_down": MetricCard("Down", "#d74444"),
-            "equipment_hold": MetricCard("On hold", "#e1952c"),
-            "tickets_open": MetricCard("Open tickets", "#8b4fc6"),
-            "tickets_critical": MetricCard("P1 / P2 tickets", "#d74444"),
-            "pm_overdue": MetricCard("PM overdue", "#e1952c"),
-            "inventory_low": MetricCard("Low stock", "#a86229"),
-            "release_pending": MetricCard("Release pending", "#4e6f87"),
+        grid=QGridLayout()
+        self.cards={
+            "equipment_down":MetricCard("Tools down","#d74444"),
+            "equipment_hold":MetricCard("On hold","#e1952c"),
+            "alarms_active":MetricCard("Active alarms","#d74444"),
+            "pm_overdue":MetricCard("PM overdue","#e1952c"),
+            "tickets_critical":MetricCard("P1 / P2 incidents","#d74444"),
+            "release_pending":MetricCard("Release pending","#4e6f87"),
+            "endorsements_open":MetricCard("Shift handovers","#4e6f87"),
+            "inventory_low":MetricCard("Low stock","#a86229"),
         }
-        for index, card in enumerate(self.cards.values()):
-            grid.addWidget(card, index // 4, index % 4)
+        for index,card in enumerate(self.cards.values()):grid.addWidget(card,index//4,index%4)
         layout.addLayout(grid)
 
-        issue_frame = QFrame()
-        issue_frame.setObjectName("Card")
-        issue_layout = QVBoxLayout(issue_frame)
-        issue_title = QLabel("Highest-priority active equipment issues")
-        issue_title.setStyleSheet("font-weight:700;font-size:11pt;")
-        issue_layout.addWidget(issue_title)
-        self.table = QTableWidget(0, 6)
-        self.table.setHorizontalHeaderLabels(["Equipment", "Ticket", "Priority", "Severity", "Status", "Issue"])
-        self.table.horizontalHeader().setStretchLastSection(True)
-        issue_layout.addWidget(self.table)
-        layout.addWidget(issue_frame, 1)
-        self.updated = QLabel()
-        self.updated.setObjectName("Muted")
-        layout.addWidget(self.updated)
-        self.refresh()
+        frame=QFrame();frame.setObjectName("Card");box=QVBoxLayout(frame)
+        issue_title=QLabel("WHAT REQUIRES ATTENTION");issue_title.setStyleSheet("font-weight:700;font-size:12pt;");box.addWidget(issue_title)
+        self.table=QTableWidget(0,7);self.table.setHorizontalHeaderLabels(["Severity","Type","Equipment","Key","Action / Condition","Owner","Age (h)"])
+        self.table.horizontalHeader().setStretchLastSection(True);box.addWidget(self.table);layout.addWidget(frame,1)
+        self.updated=QLabel();self.updated.setObjectName("Muted");layout.addWidget(self.updated);self.refresh()
 
     def refresh(self):
-        counts = self.db.dashboard_counts()
-        for key, card in self.cards.items():
-            card.value.setText(str(counts.get(key, 0)))
-        rank = {"P1": 0, "P2": 1, "P3": 2, "P4": 3}
-        tickets = sorted(
-            active_tickets(self.db),
-            key=lambda ticket: (
-                rank.get((ticket.priority or "").upper(), 9),
-                ticket.created_at or datetime.min,
-            ),
-        )[:12]
-        self.table.setRowCount(len(tickets))
-        for row, ticket in enumerate(tickets):
-            values = [ticket.equipment_id, ticket.ticket_no, ticket.priority, ticket.severity, ticket.status, ticket.title]
-            for column, value in enumerate(values):
-                self.table.setItem(row, column, QTableWidgetItem(str(value or "")))
-        self.updated.setText("Updated " + datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        counts=self.db.dashboard_counts()
+        for key,card in self.cards.items():card.value.setText(str(counts.get(key,0)))
+        self.attention=self.db.operations_attention_queue(100)
+        self.table.setRowCount(len(self.attention))
+        fields=["severity","kind","equipment_id","key","summary","owner","age_hours"]
+        for row,item in enumerate(self.attention):
+            for column,field in enumerate(fields):
+                value=item.get(field,"")
+                if field=="age_hours":value=f"{float(value or 0):.1f}"
+                self.table.setItem(row,column,QTableWidgetItem(str(value or "")))
+        self.updated.setText("Updated "+datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
 
 class SmartMainWindow(QMainWindow):
@@ -167,7 +139,7 @@ class SmartMainWindow(QMainWindow):
         super().__init__()
         self.db = db
         self.user = user
-        self.setWindowTitle(APP_TITLE + " · Smart FAB Demo")
+        self.setWindowTitle(APP_TITLE + (" · Demo" if DEMO_MODE else " · Operations Control"))
         self.resize(1600, 930)
 
         container = QWidget()
