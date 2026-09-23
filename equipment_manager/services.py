@@ -50,6 +50,17 @@ ALIASES = {
     "control_low": ["control_low", "cl", "control_lsl"], "control_high": ["control_high", "ch", "control_usl"],
     "spec_low": ["spec_low", "lsl", "lower_spec"], "spec_high": ["spec_high", "usl", "upper_spec"], "target": ["target", "nominal", "setpoint"],
     "reaction_plan": ["reaction_plan", "reaction", "action_if_fail"], "sop_page": ["sop_page", "page"], "sop_section": ["sop_section", "section"],
+    "name": ["name", "equipment_name", "tool_name", "machine_name"],
+    "equipment_type": ["equipment_type", "type", "tool_type", "machine_type"],
+    "manufacturer": ["manufacturer", "maker", "mfg"], "model": ["model", "model_name"],
+    "serial_number": ["serial_number", "serial", "sn"], "asset_number": ["asset_number", "asset", "asset_no"],
+    "site": ["site", "factory", "fab"], "building": ["building", "bldg"], "floor": ["floor", "level"],
+    "area": ["area", "process_area", "department"], "line_cell": ["line_cell", "line", "cell", "bay"],
+    "criticality": ["criticality", "critical", "criticality_class"],
+    "part_number": ["part_number", "part", "pn", "part_no"], "description": ["description", "desc", "part_description"],
+    "quantity": ["quantity", "qty", "stock"], "min_quantity": ["min_quantity", "minimum", "min_qty", "reorder_point"],
+    "condition": ["condition", "stock_condition"], "location_code": ["location_code", "location", "bin", "storage_location"],
+    "image_path": ["image_path", "image", "photo"],
 }
 
 
@@ -86,6 +97,40 @@ def normalize_pm_status(v: str) -> str:
         "defer": "Deferred", "deferred": "Deferred", "done": "Completed", "complete": "Completed", "completed": "Completed",
         "cancel": "Cancelled", "cancelled": "Cancelled",
     }.get(s, v.strip().title() or "Pending")
+
+
+def dataframe_to_equipment(df: pd.DataFrame, mapping: dict[str,str]):
+    rows,errors=[],[]
+    fields=["equipment_id","name","equipment_type","manufacturer","model","serial_number","asset_number","site","building","floor","area","line_cell","owner","criticality"]
+    for idx,r in df.iterrows():
+        equipment_id=_text(r.get(mapping.get("equipment_id","")))
+        if not equipment_id:
+            errors.append(f"Row {idx+2}: equipment ID required");continue
+        row={field:_text(r.get(mapping.get(field,""))) for field in fields}
+        row["equipment_id"]=equipment_id
+        row["criticality"]=row.get("criticality") or "Normal"
+        rows.append(row)
+    return rows,errors
+
+
+def dataframe_to_inventory(df: pd.DataFrame, mapping: dict[str,str]):
+    rows,errors=[],[]
+    for idx,r in df.iterrows():
+        part=_text(r.get(mapping.get("part_number","")));location=_text(r.get(mapping.get("location_code","")))
+        if not part or not location:
+            errors.append(f"Row {idx+2}: part number and location code required");continue
+        qty=_num(r.get(mapping.get("quantity","")));minimum=_num(r.get(mapping.get("min_quantity","")))
+        if qty is None:qty=0.0
+        if minimum is None:minimum=0.0
+        if qty<0 or minimum<0:
+            errors.append(f"Row {idx+2}: quantity/minimum cannot be negative");continue
+        rows.append({
+            "part_number":part,"description":_text(r.get(mapping.get("description",""))),
+            "quantity":qty,"min_quantity":minimum,"unit":_text(r.get(mapping.get("unit",""))) or "ea",
+            "condition":_text(r.get(mapping.get("condition",""))) or "Available",
+            "location_code":location,"image_path":_text(r.get(mapping.get("image_path",""))),
+        })
+    return rows,errors
 
 
 def dataframe_to_pm_backlog(df: pd.DataFrame, mapping: dict[str, str]):
