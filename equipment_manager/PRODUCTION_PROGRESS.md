@@ -25,9 +25,9 @@ The production backend remains intact while the user-facing product is being reb
 | M6 Alarm / incident / RCA / CAPA | **IN PROGRESS** | Structured Incident Workspace includes summary, containment/SLA, lifecycle, troubleshooting, 5-Why, causal factors, CAPA/actions, recurrence and evidence. Alarm console can now create/link/open incidents directly. Remaining: alarm grouping/correlation/burst handling and richer incident-linked operational context. |
 | M7 Work order / qualification / release | **IN PROGRESS** | Governed Work Order model/lifecycle/links added with source conversion from ticket/PM, My Work/Search/Equipment 360 integration, labor/evidence workspace and direct incident/PM routing. Remaining: automatic qualification/release packet orchestration and richer parts/component linkage. |
 | M8 Inventory / components / logistics | **NOT STARTED AS REDESIGN** | Strong inventory/component backend plus PM inline parts workflow exists; barcode/receiving/transfer/kits/substitutes/logistics workspace remain. |
-| M9 Shift / My Work / collaboration | **PARTIAL FOUNDATION** | My Work exists; handover backend/evidence exists. Automatic handover assembly, comments/@mentions/watchers and collaboration queues remain. |
+| M9 Shift / My Work / collaboration | **IN PROGRESS / HANDOVER GATE MET** | My Work exists and the new Shift Operations workspace automatically assembles candidates from abnormal states, incidents, alarms, PM, work orders, qualification/release and restrictions; supervisors can bulk publish/acknowledge with evidence. Comments/@mentions/watchers remain. |
 | M10 Analytics / engineering intelligence | **NOT STARTED AS REDESIGN** | Reliability metrics exist; interactive charts/Pareto/trends/drill-down workbench remains. |
-| M11 Office reporting / PPT / Excel / PDF | **NOT STARTED** | XLSX table export exists, but production report packs and editable PowerPoint/PDF generation remain a major gap. |
+| M11 Office reporting / PPT / Excel / PDF | **IN PROGRESS** | One-click editable PPTX/XLSX incident review and Equipment 360 review packs are implemented, including evidence slides and structured data sheets. Site templates, PM/qualification/release packs and PDF output remain. |
 | M12 Integration Studio / orchestration | **PARTIAL FOUNDATION** | Transactional outbox/adapters exist; visual mapping, inbound connectors, replay/dead-letter tools and configurable orchestration rules remain. |
 | M13 Configurable forms / templates | **NOT STARTED** | Major gap. |
 | M14 Product polish / performance / accessibility | **INCREMENTAL** | Smart shell/workspaces substantially improve usability; full performance/accessibility/modal-reduction pass remains. |
@@ -40,8 +40,9 @@ The production backend remains intact while the user-facing product is being reb
 3. Continue M5 with technician result history/trends and planner timeline/Gantt interaction.
 4. Continue M6 with alarm grouping/correlation and direct incident operational-control editing.
 5. Continue M7 with automatic work-order → qualification → release packet orchestration.
-6. Start M8 logistics redesign only after M5/M7 part flows stabilize.
-7. Begin M11 reporting infrastructure early once evidence/chart APIs stabilize because PowerPoint/Excel review workflow is a core user requirement.
+6. Start M10 engineering analytics workbench with native interactive trends/Pareto/drill-down.
+7. Extend M11 report packs to PM, work order, qualification/release and site-defined PowerPoint templates.
+8. Start M8 logistics redesign only after M5/M7 part flows stabilize.
 
 ## Reporting rule
 
