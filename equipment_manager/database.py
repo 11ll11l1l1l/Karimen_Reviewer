@@ -538,6 +538,41 @@ class DocumentLink(Base):
     added_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
+class ControlledDocument(Base):
+    __tablename__ = "controlled_documents"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    document_id: Mapped[str] = mapped_column(String(120), unique=True, index=True)
+    entity_type: Mapped[str] = mapped_column(String(40), index=True)
+    entity_key: Mapped[str] = mapped_column(String(120), index=True)
+    document_type: Mapped[str] = mapped_column(String(80), default="SOP")
+    title: Mapped[str] = mapped_column(String(250))
+    owner: Mapped[str] = mapped_column(String(120), default="")
+    status: Mapped[str] = mapped_column(String(40), default="Draft", index=True)
+    current_revision: Mapped[str] = mapped_column(String(60), default="")
+    created_by: Mapped[str] = mapped_column(String(120))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
+class ControlledDocumentRevision(Base):
+    __tablename__ = "controlled_document_revisions"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    document_id: Mapped[str] = mapped_column(String(120), index=True)
+    revision: Mapped[str] = mapped_column(String(60))
+    path: Mapped[str] = mapped_column(Text)
+    file_sha256: Mapped[str] = mapped_column(String(64))
+    change_summary: Mapped[str] = mapped_column(Text, default="")
+    status: Mapped[str] = mapped_column(String(40), default="Draft", index=True)
+    created_by: Mapped[str] = mapped_column(String(120))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    approved_by: Mapped[str] = mapped_column(String(120), default="")
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    effective_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    __table_args__ = (UniqueConstraint("document_id","revision",name="uq_controlled_document_revision"),)
+
+
 class AuditLog(Base):
     __tablename__ = "audit_log"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -2052,6 +2087,153 @@ class Database:
 
     def list_inventory_transactions(self, limit: int=500):
         with self.session() as s: return list(s.scalars(select(InventoryTransaction).order_by(InventoryTransaction.created_at.desc()).limit(limit)))
+
+    @staticmethod
+    def _file_sha256(path: str) -> str:
+        h=hashlib.sha256()
+        with open(path,"rb") as fh:
+            for chunk in iter(lambda:fh.read(1024*1024),b""):
+                h.update(chunk)
+        return h.hexdigest()
+
+    def create_controlled_document(self, data: dict[str, Any], user: str, workstation: str = ""):
+        payload=dict(data)
+        payload["document_id"]=payload.get("document_id","").strip()
+        payload["title"]=payload.get("title","").strip()
+        if not payload["document_id"] or not payload["title"]:
+            raise ValueError("Document ID and title are required.")
+        with self.session() as s:
+            if s.scalar(select(ControlledDocument).where(ControlledDocument.document_id==payload["document_id"])):
+                raise ValueError("Controlled document ID already exists.")
+            payload["created_by"]=user
+            payload["status"]="Draft"
+            payload["current_revision"]=""
+            doc=ControlledDocument(**payload)
+            s.add(doc)
+            s.add(AuditLog(user=user,action="CONTROLLED_DOCUMENT_CREATE",entity_type="CONTROLLED_DOCUMENT",entity_key=payload["document_id"],workstation=workstation))
+            s.flush()
+            return doc
+
+    def list_controlled_documents(self, entity_type: str = "", entity_key: str = ""):
+        with self.session() as s:
+            stmt=select(ControlledDocument).order_by(ControlledDocument.document_id)
+            if entity_type:stmt=stmt.where(ControlledDocument.entity_type==entity_type)
+            if entity_key:stmt=stmt.where(ControlledDocument.entity_key==entity_key)
+            return list(s.scalars(stmt))
+
+    def add_controlled_revision(
+        self,
+        document_id: str,
+        revision: str,
+        path: str,
+        change_summary: str,
+        user: str,
+        workstation: str = "",
+    ):
+        revision=revision.strip()
+        if not revision:
+            raise ValueError("Revision is required.")
+        if not os.path.isfile(path):
+            raise FileNotFoundError(path)
+        digest=self._file_sha256(path)
+        with self.session() as s:
+            doc=s.scalar(select(ControlledDocument).where(ControlledDocument.document_id==document_id))
+            if not doc:raise ValueError("Controlled document not found")
+            if s.scalar(select(ControlledDocumentRevision).where(ControlledDocumentRevision.document_id==document_id,ControlledDocumentRevision.revision==revision)):
+                raise ValueError("That controlled document revision already exists.")
+            row=ControlledDocumentRevision(
+                document_id=document_id,revision=revision,path=path,file_sha256=digest,
+                change_summary=change_summary.strip(),created_by=user,status="Draft",
+            )
+            s.add(row);s.flush()
+            s.add(AuditLog(
+                user=user,action="CONTROLLED_REVISION_CREATE",entity_type="CONTROLLED_DOCUMENT",
+                entity_key=f"{document_id}:{revision}",
+                detail=json.dumps({"sha256":digest,"path":path},sort_keys=True),workstation=workstation,
+            ))
+            return row
+
+    def list_controlled_revisions(self, document_id: str):
+        with self.session() as s:
+            return list(s.scalars(
+                select(ControlledDocumentRevision)
+                .where(ControlledDocumentRevision.document_id==document_id)
+                .order_by(ControlledDocumentRevision.created_at.desc(),ControlledDocumentRevision.id.desc())
+            ))
+
+    def approve_controlled_revision(
+        self,
+        revision_id: int,
+        user: str,
+        effective_at: datetime | None = None,
+        expires_at: datetime | None = None,
+        workstation: str = "",
+        expected_version: int | None = None,
+    ):
+        now=datetime.utcnow()
+        effective_at=effective_at or now
+        if expires_at and expires_at<=effective_at:
+            raise ValueError("Document expiry must be after its effective date.")
+        with self.session() as s:
+            stmt=select(ControlledDocumentRevision).where(ControlledDocumentRevision.id==revision_id)
+            if self.url.startswith("postgresql"):stmt=stmt.with_for_update()
+            row=s.scalar(stmt)
+            if not row:raise ValueError("Controlled revision not found")
+            if expected_version is not None and row.version!=expected_version:
+                raise RuntimeError("CONFLICT: Controlled revision changed by another user.")
+            if row.status!="Draft":raise ValueError("Only Draft revisions can be approved.")
+            if row.created_by==user:raise ValueError("Independent approval required: revision author cannot approve their own revision.")
+            if not os.path.isfile(row.path):raise FileNotFoundError(row.path)
+            current_hash=self._file_sha256(row.path)
+            if current_hash!=row.file_sha256:
+                raise ValueError("Controlled file content changed after revision registration; create a new revision.")
+            doc=s.scalar(select(ControlledDocument).where(ControlledDocument.document_id==row.document_id))
+            if not doc:raise ValueError("Controlled document not found")
+            for old in s.scalars(select(ControlledDocumentRevision).where(ControlledDocumentRevision.document_id==row.document_id,ControlledDocumentRevision.status=="Effective")):
+                old.status="Superseded";old.version+=1
+            row.status="Effective";row.approved_by=user;row.approved_at=now;row.effective_at=effective_at;row.expires_at=expires_at;row.version+=1
+            doc.status="Effective";doc.current_revision=row.revision;doc.version+=1
+            s.add(AuditLog(
+                user=user,action="CONTROLLED_REVISION_APPROVE",entity_type="CONTROLLED_DOCUMENT",
+                entity_key=f"{row.document_id}:{row.revision}",
+                detail=json.dumps({"effective_at":effective_at.isoformat(),"expires_at":expires_at.isoformat() if expires_at else None,"sha256":row.file_sha256},sort_keys=True),
+                workstation=workstation,
+            ))
+            s.flush();return row
+
+    def reject_controlled_revision(self, revision_id: int, user: str, reason: str, workstation: str = "", expected_version: int | None = None):
+        if not reason.strip():raise ValueError("Rejection reason is required.")
+        with self.session() as s:
+            row=s.get(ControlledDocumentRevision,revision_id)
+            if not row:raise ValueError("Controlled revision not found")
+            if expected_version is not None and row.version!=expected_version:raise RuntimeError("CONFLICT: Controlled revision changed by another user.")
+            if row.status!="Draft":raise ValueError("Only Draft revisions can be rejected.")
+            if row.created_by==user:raise ValueError("Independent review required.")
+            row.status="Rejected";row.approved_by=user;row.approved_at=datetime.utcnow();row.change_summary=(row.change_summary+"\nREJECTED: "+reason.strip()).strip();row.version+=1
+            s.add(AuditLog(user=user,action="CONTROLLED_REVISION_REJECT",entity_type="CONTROLLED_DOCUMENT",entity_key=f"{row.document_id}:{row.revision}",detail=reason.strip(),workstation=workstation))
+            s.flush();return row
+
+    def effective_controlled_revision(self, document_id: str):
+        now=datetime.utcnow()
+        with self.session() as s:
+            return s.scalar(
+                select(ControlledDocumentRevision)
+                .where(
+                    ControlledDocumentRevision.document_id==document_id,
+                    ControlledDocumentRevision.status=="Effective",
+                    ControlledDocumentRevision.effective_at<=now,
+                    (ControlledDocumentRevision.expires_at.is_(None) | (ControlledDocumentRevision.expires_at>now)),
+                )
+                .order_by(ControlledDocumentRevision.effective_at.desc(),ControlledDocumentRevision.id.desc())
+            )
+
+    def verify_controlled_revision_file(self, revision_id: int) -> tuple[bool,str]:
+        with self.session() as s:
+            row=s.get(ControlledDocumentRevision,revision_id)
+            if not row:return False,"Revision not found"
+            if not os.path.isfile(row.path):return False,"File missing"
+            digest=self._file_sha256(row.path)
+            return digest==row.file_sha256,digest
 
     def add_document(self, data: dict[str, Any]):
         with self.session() as s: s.add(DocumentLink(**data))
