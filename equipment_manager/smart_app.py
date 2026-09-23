@@ -141,6 +141,9 @@ class SmartMainWindow(QMainWindow):
         super().__init__()
         self.db = db
         self.user = user
+        self.nav_history=[]
+        self.nav_history_index=-1
+        self._history_suspended=False
         self.setWindowTitle(APP_TITLE + (" · Demo" if DEMO_MODE else " · Operations Control"))
         self.resize(1600, 930)
 
@@ -163,6 +166,16 @@ class SmartMainWindow(QMainWindow):
         brand.addWidget(app_subtitle)
         top_layout.addLayout(brand)
         top_layout.addStretch(1)
+        self.back_button=QPushButton("←")
+        self.back_button.setToolTip("Back (Alt+Left)")
+        self.back_button.setFixedWidth(34)
+        self.back_button.clicked.connect(self.go_back)
+        self.forward_button=QPushButton("→")
+        self.forward_button.setToolTip("Forward (Alt+Right)")
+        self.forward_button.setFixedWidth(34)
+        self.forward_button.clicked.connect(self.go_forward)
+        top_layout.addWidget(self.back_button)
+        top_layout.addWidget(self.forward_button)
         self.global_search=QLineEdit()
         self.global_search.setPlaceholderText("Search equipment, tickets, PM, alarms, parts…")
         self.global_search.setMinimumWidth(360)
@@ -214,16 +227,55 @@ class SmartMainWindow(QMainWindow):
         self.equipment360.open_entity.connect(self.open_entity)
         self.inventory.show_map_part.connect(self.show_part_map)
         self.nav.currentRowChanged.connect(self.stack.setCurrentIndex)
-        self.nav.currentRowChanged.connect(lambda _index: self.refresh_current())
+        self.nav.currentRowChanged.connect(self._on_nav_changed)
         self.nav.setCurrentRow(self.page_index["Operations Overview"])
 
         refresh = QAction("Refresh", self)
         refresh.setShortcut(QKeySequence("F5"))
         refresh.triggered.connect(self.refresh_current)
         self.addAction(refresh)
+        find_action=QAction("Global Search",self);find_action.setShortcut(QKeySequence("Ctrl+K"));find_action.triggered.connect(self.focus_global_search);self.addAction(find_action)
+        back_action=QAction("Back",self);back_action.setShortcut(QKeySequence("Alt+Left"));back_action.triggered.connect(self.go_back);self.addAction(back_action)
+        forward_action=QAction("Forward",self);forward_action.setShortcut(QKeySequence("Alt+Right"));forward_action.triggered.connect(self.go_forward);self.addAction(forward_action)
+        self._update_history_buttons()
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.dashboard.refresh)
         self.timer.start(30000)
+
+    def _on_nav_changed(self,index: int):
+        self.refresh_current()
+        if index<0:return
+        if not self._history_suspended:
+            name=self.nav.item(index).text()
+            if self.nav_history_index<0 or self.nav_history[self.nav_history_index]!=name:
+                self.nav_history=self.nav_history[:self.nav_history_index+1]
+                self.nav_history.append(name)
+                self.nav_history_index=len(self.nav_history)-1
+        self._update_history_buttons()
+
+    def _update_history_buttons(self):
+        self.back_button.setEnabled(self.nav_history_index>0)
+        self.forward_button.setEnabled(0<=self.nav_history_index<len(self.nav_history)-1)
+
+    def go_back(self):
+        if self.nav_history_index<=0:return
+        self.nav_history_index-=1;name=self.nav_history[self.nav_history_index]
+        self._history_suspended=True
+        try:self.nav.setCurrentRow(self.page_index[name])
+        finally:self._history_suspended=False
+        self._update_history_buttons()
+
+    def go_forward(self):
+        if self.nav_history_index<0 or self.nav_history_index>=len(self.nav_history)-1:return
+        self.nav_history_index+=1;name=self.nav_history[self.nav_history_index]
+        self._history_suspended=True
+        try:self.nav.setCurrentRow(self.page_index[name])
+        finally:self._history_suspended=False
+        self._update_history_buttons()
+
+    def focus_global_search(self):
+        self.global_search.setFocus()
+        self.global_search.selectAll()
 
     def open_page(self,name: str):
         index=self.page_index.get(name)
@@ -236,6 +288,8 @@ class SmartMainWindow(QMainWindow):
 
     def open_entity(self,entity_type: str,entity_key: str,equipment_id: str=""):
         entity_type=(entity_type or "").upper()
+        if entity_type and entity_key:
+            self.db.record_recent_item(self.user["username"],entity_type,str(entity_key),f"{entity_type}: {entity_key}",equipment_id)
         if entity_type=="EQUIPMENT" or (equipment_id and entity_type in {"ALARM","QUALIFICATION","DOCUMENT","RELEASE"}):
             target=entity_key if entity_type=="EQUIPMENT" else equipment_id
             self.equipment360.set_equipment(target)
