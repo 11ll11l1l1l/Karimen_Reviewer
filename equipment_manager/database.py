@@ -2111,6 +2111,94 @@ class Database:
             })
             s.flush();return row
 
+    def link_alarm_to_ticket(self, event_key: str, ticket_no: str, user: str, workstation: str = ""):
+        with self.session() as s:
+            alarm=s.scalar(select(EquipmentAlarmEvent).where(EquipmentAlarmEvent.event_key==event_key))
+            if not alarm:raise ValueError("Alarm event not found")
+            self.assert_authorized(user,"ticket.edit",alarm.equipment_id)
+            ticket=s.scalar(select(Ticket).where(Ticket.ticket_no==ticket_no))
+            if not ticket:raise ValueError("Ticket not found")
+            if ticket.equipment_id!=alarm.equipment_id:
+                raise ValueError("Alarm and ticket must belong to the same equipment.")
+            alarm.related_ticket=ticket.ticket_no
+            s.add(AuditLog(
+                user=user,action="ALARM_LINK_TICKET",entity_type="ALARM",entity_key=alarm.event_key,
+                detail=json.dumps({"ticket_no":ticket.ticket_no,"equipment_id":alarm.equipment_id},sort_keys=True),
+                workstation=workstation,
+            ))
+            self._queue_integration_event(s,"equipment.alarm.linked_incident","ALARM",alarm.event_key,{
+                "equipment_id":alarm.equipment_id,"alarm_code":alarm.alarm_code,
+                "ticket_no":ticket.ticket_no,"linked_by":user,
+            })
+            s.flush();return alarm,ticket
+
+    def create_incident_from_alarm(
+        self,
+        event_key: str,
+        user: str,
+        *,
+        owner: str = "",
+        ticket_no: str = "",
+        workstation: str = "",
+    ):
+        with self.session() as s:
+            stmt=select(EquipmentAlarmEvent).where(EquipmentAlarmEvent.event_key==event_key)
+            if self.url.startswith("postgresql"):stmt=stmt.with_for_update()
+            alarm=s.scalar(stmt)
+            if not alarm:raise ValueError("Alarm event not found")
+            self.assert_authorized(user,"ticket.edit",alarm.equipment_id)
+            if alarm.related_ticket:
+                existing=s.scalar(select(Ticket).where(Ticket.ticket_no==alarm.related_ticket))
+                if existing:return existing
+            eq=s.scalar(select(Equipment).where(Equipment.equipment_id==alarm.equipment_id))
+            if not eq:raise ValueError("Equipment not found")
+            if not ticket_no.strip():
+                prefix="".join(ch if ch.isalnum() else "-" for ch in alarm.equipment_id.upper()).strip("-")[:28]
+                base=f"ALM-{prefix}-{alarm.occurred_at:%y%m%d%H%M%S}-{alarm.event_key[:6].upper()}"
+                ticket_no=base[:100]
+                suffix=1
+                while s.scalar(select(Ticket).where(Ticket.ticket_no==ticket_no)):
+                    tail=f"-{suffix}"
+                    ticket_no=(base[:100-len(tail)]+tail);suffix+=1
+            elif s.scalar(select(Ticket).where(Ticket.ticket_no==ticket_no.strip())):
+                raise ValueError("Ticket number already exists.")
+            sev=(alarm.severity or "").strip().lower()
+            priority="P1" if sev in {"critical","fatal","emergency"} else ("P2" if sev in {"warning","major","high"} else "P3")
+            severity="S1" if priority=="P1" else ("S2" if priority=="P2" else "S3")
+            assignee=(owner or user).strip()
+            description=(
+                f"Created from equipment alarm.\n\n"
+                f"Alarm: {alarm.alarm_code}\n"
+                f"Message: {alarm.message}\n"
+                f"Source: {alarm.source}\n"
+                f"Occurred: {alarm.occurred_at.isoformat()}\n"
+                f"Alarm event key: {alarm.event_key}"
+            )
+            ticket=Ticket(
+                ticket_no=ticket_no.strip(),equipment_id=alarm.equipment_id,
+                title=f"Alarm {alarm.alarm_code} — {alarm.message or 'Equipment alarm'}"[:250],
+                description=description,severity=severity,priority=priority,status="Open",
+                owner=assignee,root_cause="",corrective_action="",verification="",created_by=user,
+            )
+            s.add(ticket)
+            s.add(TicketStateEvent(
+                ticket_no=ticket.ticket_no,from_state="",to_state="Open",
+                reason_code="INITIAL_STATE",note=f"Created from alarm {alarm.alarm_code}",
+                owner=assignee,changed_by=user,workstation=workstation,
+            ))
+            alarm.related_ticket=ticket.ticket_no
+            s.add(AuditLog(
+                user=user,action="ALARM_CREATE_INCIDENT",entity_type="ALARM",entity_key=alarm.event_key,
+                detail=json.dumps({"ticket_no":ticket.ticket_no,"equipment_id":alarm.equipment_id},sort_keys=True),
+                workstation=workstation,
+            ))
+            self._queue_integration_event(s,"incident.created.from_alarm","TICKET",ticket.ticket_no,{
+                "ticket_no":ticket.ticket_no,"equipment_id":alarm.equipment_id,
+                "alarm_event_key":alarm.event_key,"alarm_code":alarm.alarm_code,
+                "priority":priority,"owner":assignee,"created_by":user,
+            })
+            s.flush();return ticket
+
     def acknowledge_alarm(self, event_key: str, user: str):
         with self.session() as s:
             row=s.scalar(select(EquipmentAlarmEvent).where(EquipmentAlarmEvent.event_key==event_key))
