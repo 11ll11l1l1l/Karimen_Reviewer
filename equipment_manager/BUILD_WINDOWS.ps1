@@ -17,7 +17,7 @@ Copy-Item "README.md" $packageRoot
 @"
 @echo off
 cd /d %~dp0
-EMS.exe --preflight
+EMSCLI.exe preflight
 if errorlevel 1 (
   echo EMS preflight failed.
   pause
@@ -29,7 +29,7 @@ EMS.exe
 @"
 @echo off
 cd /d %~dp0
-EMS.exe --preflight
+EMSCLI.exe preflight
 pause
 "@ | Set-Content -Encoding ASCII (Join-Path $packageRoot "PREFLIGHT_EMS.bat")
 
