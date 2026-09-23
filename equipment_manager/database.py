@@ -900,7 +900,7 @@ AUTH_LOCKOUT_MINUTES = 15
 
 ROLE_PERMISSIONS = {
     "Administrator": {"*"},
-    "Manager": {"view", "worklog.edit", "qualification.edit", "qualification.execute", "qualification.verify", "qualification.approve", "equipment.meter.record", "equipment.edit", "equipment.transition", "equipment.component.edit", "pm.edit", "pm.execute", "pm.approve", "pm.defer", "pm.defer.approve", "ticket.edit", "disposition.edit", "release.approve", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
+    "Manager": {"view", "workflow.override", "worklog.edit", "qualification.edit", "qualification.execute", "qualification.verify", "qualification.approve", "equipment.meter.record", "equipment.edit", "equipment.transition", "equipment.component.edit", "pm.edit", "pm.execute", "pm.approve", "pm.defer", "pm.defer.approve", "ticket.edit", "disposition.edit", "release.approve", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
     "Supervisor": {"view", "worklog.edit", "qualification.execute", "qualification.verify", "qualification.approve", "equipment.meter.record", "equipment.edit", "equipment.transition", "equipment.component.edit", "pm.edit", "pm.execute", "pm.defer", "pm.defer.approve", "ticket.edit", "disposition.edit", "release.verify", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
     "Equipment Engineer": {"view", "worklog.edit", "qualification.edit", "qualification.execute", "qualification.verify", "equipment.meter.record", "equipment.edit", "equipment.transition", "equipment.component.edit", "pm.edit", "pm.execute", "pm.defer", "ticket.edit", "disposition.edit", "release.verify", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
     "Maintenance": {"view", "worklog.edit", "qualification.execute", "equipment.meter.record", "equipment.component.edit", "pm.execute", "pm.defer", "ticket.edit", "endorsement.edit", "inventory.consume", "inventory.reserve", "document.link"},
@@ -912,7 +912,7 @@ ROLE_PERMISSIONS = {
 }
 
 PERMISSIONS = [
-    "view", "worklog.edit", "qualification.edit", "qualification.execute", "qualification.verify", "qualification.approve", "equipment.edit", "equipment.transition", "equipment.component.edit", "equipment.meter.record", "layout.edit", "pm.edit", "pm.execute", "pm.approve", "pm.defer", "pm.defer.approve",
+    "view", "workflow.override", "worklog.edit", "qualification.edit", "qualification.execute", "qualification.verify", "qualification.approve", "equipment.edit", "equipment.transition", "equipment.component.edit", "equipment.meter.record", "layout.edit", "pm.edit", "pm.execute", "pm.approve", "pm.defer", "pm.defer.approve",
     "ticket.edit", "disposition.edit", "release.verify", "release.approve", "endorsement.edit",
     "inventory.edit", "inventory.consume", "inventory.reserve", "document.link", "document.control",
     "user.admin", "audit.view", "report.view",
@@ -2163,8 +2163,13 @@ class Database:
         workstation: str = "",
         expected_version: int | None = None,
         override: bool = False,
+        override_reason: str = "",
     ):
         self.assert_authorized(user,"equipment.transition",equipment_id)
+        if override:
+            if not override_reason.strip():
+                raise ValueError("Workflow override requires explicit justification.")
+            self.assert_authorized(user,"workflow.override",equipment_id)
         with self.session() as s:
             stmt = select(Equipment).where(Equipment.equipment_id == equipment_id)
             if self.url.startswith("postgresql"):
@@ -2214,7 +2219,7 @@ class Database:
             })
             s.add(AuditLog(
                 user=user,
-                action="STATE_TRANSITION",
+                action="STATE_TRANSITION_OVERRIDE" if override else "STATE_TRANSITION",
                 entity_type="EQUIPMENT",
                 entity_key=equipment_id,
                 detail=json.dumps({
@@ -2226,6 +2231,8 @@ class Database:
                     "related_ticket": related_ticket.strip(),
                     "related_pm_task_id": related_pm_task_id,
                     "owner": owner.strip(),
+                    "override": override,
+                    "override_reason": override_reason.strip(),
                 }, sort_keys=True),
                 workstation=workstation,
                 created_at=now,
@@ -2889,7 +2896,10 @@ class Database:
         workstation: str = "",
         expected_version: int | None = None,
         override: bool = False,
+        override_reason: str = "",
     ):
+        if override and not override_reason.strip():
+            raise ValueError("Workflow override requires explicit justification.")
         with self.session() as s:
             stmt = select(Ticket).where(Ticket.ticket_no == ticket_no)
             if self.url.startswith("postgresql"):
@@ -2898,6 +2908,7 @@ class Database:
             if not item:
                 raise ValueError("Ticket not found")
             self.assert_authorized(user,"ticket.edit",item.equipment_id)
+            if override:self.assert_authorized(user,"workflow.override",item.equipment_id)
             if expected_version is not None and item.version != expected_version:
                 raise RuntimeError("CONFLICT: Ticket changed by another user. Refresh and retry.")
 
@@ -2968,7 +2979,7 @@ class Database:
             })
             s.add(AuditLog(
                 user=user,
-                action="TICKET_STATE_TRANSITION",
+                action="TICKET_STATE_OVERRIDE" if override else "TICKET_STATE_TRANSITION",
                 entity_type="TICKET",
                 entity_key=ticket_no,
                 detail=json.dumps({
@@ -2977,6 +2988,8 @@ class Database:
                     "reason_code": reason_code,
                     "note": note.strip(),
                     "owner": item.owner,
+                    "override": override,
+                    "override_reason": override_reason.strip(),
                 }, sort_keys=True),
                 workstation=workstation,
                 created_at=now,
