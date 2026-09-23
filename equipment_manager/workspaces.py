@@ -270,8 +270,9 @@ class Equipment360Workspace(QWidget):
         self.title=QLabel("Equipment 360");self.title.setStyleSheet("font-size:20pt;font-weight:800")
         self.state=QLabel();self.state.setStyleSheet("font-size:12pt;font-weight:700")
         self.favorite=QPushButton("☆ Favorite");self.favorite.clicked.connect(self.toggle_favorite)
+        map_button=QPushButton("Show on FAB map");map_button.clicked.connect(self.open_map)
         refresh=QPushButton("Refresh");refresh.clicked.connect(self.refresh)
-        head.addWidget(self.title);head.addWidget(self.state);head.addStretch(1);head.addWidget(self.favorite);head.addWidget(refresh);root.addLayout(head)
+        head.addWidget(self.title);head.addWidget(self.state);head.addStretch(1);head.addWidget(map_button);head.addWidget(self.favorite);head.addWidget(refresh);root.addLayout(head)
         self.summary=QLabel("Select equipment from Global Search or another workspace.")
         self.summary.setWordWrap(True);self.summary.setStyleSheet("color:#647581;font-size:11pt;");root.addWidget(self.summary)
         self.tabs=QTabWidget();root.addWidget(self.tabs,1)
@@ -311,6 +312,9 @@ class Equipment360Workspace(QWidget):
     def set_equipment(self,equipment_id: str):
         self.equipment_id=(equipment_id or "").strip()
         self.refresh()
+
+    def open_map(self):
+        if self.eq:self.open_entity.emit("MAP",self.eq.equipment_id,self.eq.equipment_id)
 
     def toggle_favorite(self):
         if not self.eq:return
