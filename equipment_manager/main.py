@@ -201,7 +201,7 @@ class EquipmentPage(QWidget):
         d=EquipmentDialog(parent=self)
         if d.exec()==QDialog.DialogCode.Accepted:
             try:
-                row=self.db.save_equipment(d.data())
+                row=self.db.save_equipment(d.data(), user=self.user["username"], workstation=WORKSTATION)
                 self.db.audit(self.user["username"],"CREATE","EQUIPMENT",row.equipment_id,workstation=WORKSTATION)
                 self.refresh()
             except Exception as exc: QMessageBox.critical(self,"Equipment",str(exc))
