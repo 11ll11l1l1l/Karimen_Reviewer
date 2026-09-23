@@ -86,6 +86,44 @@ class EquipmentStateEvent(Base):
     changed_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
 
 
+class EquipmentComponent(Base):
+    __tablename__ = "equipment_components"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    component_id: Mapped[str] = mapped_column(String(120), unique=True, index=True)
+    equipment_id: Mapped[str] = mapped_column(String(100), index=True)
+    parent_component_id: Mapped[str] = mapped_column(String(120), default="", index=True)
+    name: Mapped[str] = mapped_column(String(200), default="")
+    component_type: Mapped[str] = mapped_column(String(120), default="")
+    manufacturer: Mapped[str] = mapped_column(String(120), default="")
+    model: Mapped[str] = mapped_column(String(120), default="")
+    serial_number: Mapped[str] = mapped_column(String(120), default="")
+    part_number: Mapped[str] = mapped_column(String(120), default="", index=True)
+    status: Mapped[str] = mapped_column(String(40), default="Installed", index=True)
+    installed_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    removed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    life_limit_value: Mapped[float | None] = mapped_column(Float, nullable=True)
+    life_limit_unit: Mapped[str] = mapped_column(String(40), default="")
+    usage_value: Mapped[float] = mapped_column(Float, default=0.0)
+    notes: Mapped[str] = mapped_column(Text, default="")
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class ComponentEvent(Base):
+    __tablename__ = "component_events"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    component_id: Mapped[str] = mapped_column(String(120), index=True)
+    equipment_id: Mapped[str] = mapped_column(String(100), index=True)
+    event_type: Mapped[str] = mapped_column(String(40), index=True)
+    parent_component_id: Mapped[str] = mapped_column(String(120), default="")
+    reason: Mapped[str] = mapped_column(Text, default="")
+    related_ticket: Mapped[str] = mapped_column(String(100), default="")
+    related_pm_task_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    user: Mapped[str] = mapped_column(String(120), index=True)
+    workstation: Mapped[str] = mapped_column(String(120), default="")
+    occurred_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
 class PMDefinition(Base):
     __tablename__ = "pm_definitions"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -442,10 +480,10 @@ PBKDF2_ROUNDS = 310_000
 
 ROLE_PERMISSIONS = {
     "Administrator": {"*"},
-    "Manager": {"view", "equipment.edit", "equipment.transition", "pm.edit", "pm.execute", "pm.approve", "pm.defer", "pm.defer.approve", "ticket.edit", "disposition.edit", "release.approve", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
-    "Supervisor": {"view", "equipment.edit", "equipment.transition", "pm.edit", "pm.execute", "pm.defer", "pm.defer.approve", "ticket.edit", "disposition.edit", "release.verify", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
-    "Equipment Engineer": {"view", "equipment.edit", "equipment.transition", "pm.edit", "pm.execute", "pm.defer", "ticket.edit", "disposition.edit", "release.verify", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
-    "Maintenance": {"view", "pm.execute", "pm.defer", "ticket.edit", "endorsement.edit", "inventory.consume", "inventory.reserve", "document.link"},
+    "Manager": {"view", "equipment.edit", "equipment.transition", "equipment.component.edit", "pm.edit", "pm.execute", "pm.approve", "pm.defer", "pm.defer.approve", "ticket.edit", "disposition.edit", "release.approve", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
+    "Supervisor": {"view", "equipment.edit", "equipment.transition", "equipment.component.edit", "pm.edit", "pm.execute", "pm.defer", "pm.defer.approve", "ticket.edit", "disposition.edit", "release.verify", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
+    "Equipment Engineer": {"view", "equipment.edit", "equipment.transition", "equipment.component.edit", "pm.edit", "pm.execute", "pm.defer", "ticket.edit", "disposition.edit", "release.verify", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
+    "Maintenance": {"view", "equipment.component.edit", "pm.execute", "pm.defer", "ticket.edit", "endorsement.edit", "inventory.consume", "inventory.reserve", "document.link"},
     "Technician": {"view", "pm.execute", "ticket.edit", "inventory.consume", "document.link"},
     "Process Engineer": {"view", "ticket.edit", "release.verify", "document.link", "report.view"},
     "Inventory Controller": {"view", "inventory.edit", "inventory.consume", "inventory.reserve", "document.link"},
@@ -454,7 +492,7 @@ ROLE_PERMISSIONS = {
 }
 
 PERMISSIONS = [
-    "view", "equipment.edit", "equipment.transition", "layout.edit", "pm.edit", "pm.execute", "pm.approve", "pm.defer", "pm.defer.approve",
+    "view", "equipment.edit", "equipment.transition", "equipment.component.edit", "layout.edit", "pm.edit", "pm.execute", "pm.approve", "pm.defer", "pm.defer.approve",
     "ticket.edit", "disposition.edit", "release.verify", "release.approve", "endorsement.edit",
     "inventory.edit", "inventory.consume", "inventory.reserve", "document.link", "document.control",
     "user.admin", "audit.view", "report.view",
@@ -627,6 +665,146 @@ class Database:
                 .order_by(EquipmentStateEvent.changed_at.desc(), EquipmentStateEvent.id.desc())
                 .limit(max(1, min(int(limit), 2000)))
             )
+            return list(s.scalars(stmt))
+
+    def list_components(self, equipment_id: str = "", active_only: bool = False):
+        with self.session() as s:
+            stmt=select(EquipmentComponent).order_by(EquipmentComponent.equipment_id,EquipmentComponent.parent_component_id,EquipmentComponent.component_id)
+            if equipment_id:
+                stmt=stmt.where(EquipmentComponent.equipment_id==equipment_id)
+            if active_only:
+                stmt=stmt.where(EquipmentComponent.status!="Removed")
+            return list(s.scalars(stmt))
+
+    def save_component(
+        self,
+        data: dict[str, Any],
+        expected_version: int | None = None,
+        user: str = "",
+        workstation: str = "",
+    ):
+        payload=dict(data)
+        if not payload.get("component_id","").strip():
+            raise ValueError("Component ID is required.")
+        with self.session() as s:
+            eq=s.scalar(select(Equipment).where(Equipment.equipment_id==payload.get("equipment_id","")))
+            if not eq:
+                raise ValueError("Parent equipment not found.")
+            parent_id=(payload.get("parent_component_id") or "").strip()
+            if parent_id:
+                if parent_id==payload["component_id"]:
+                    raise ValueError("Component cannot be its own parent.")
+                parent=s.scalar(select(EquipmentComponent).where(EquipmentComponent.component_id==parent_id))
+                if not parent or parent.equipment_id!=payload["equipment_id"] or parent.status=="Removed":
+                    raise ValueError("Parent component must be an installed component on the same equipment.")
+
+            item=s.scalar(select(EquipmentComponent).where(EquipmentComponent.component_id==payload["component_id"]))
+            if item:
+                payload.pop("equipment_id",None)
+                payload.pop("parent_component_id",None)
+                payload.pop("status",None)
+                payload.pop("installed_at",None)
+                payload.pop("removed_at",None)
+                self._update_versioned(item,payload,expected_version,"Equipment component")
+                event_type="MASTER_UPDATE"
+            else:
+                payload["status"]="Installed"
+                payload["installed_at"]=datetime.utcnow()
+                payload["removed_at"]=None
+                item=EquipmentComponent(**payload)
+                s.add(item)
+                s.add(ComponentEvent(
+                    component_id=item.component_id,
+                    equipment_id=item.equipment_id,
+                    event_type="INSTALLED",
+                    parent_component_id=item.parent_component_id,
+                    reason="Component record installed/commissioned",
+                    user=user,
+                    workstation=workstation,
+                ))
+                event_type="INSTALLED"
+            s.add(AuditLog(
+                user=user,
+                action="COMPONENT_"+event_type,
+                entity_type="EQUIPMENT_COMPONENT",
+                entity_key=item.component_id,
+                detail=json.dumps({"equipment_id":item.equipment_id,"parent_component_id":item.parent_component_id},sort_keys=True),
+                workstation=workstation,
+            ))
+            s.flush()
+            return item
+
+    def remove_component(
+        self,
+        component_id: str,
+        reason: str,
+        user: str,
+        related_ticket: str = "",
+        related_pm_task_id: int | None = None,
+        workstation: str = "",
+        expected_version: int | None = None,
+    ):
+        if not reason.strip():
+            raise ValueError("Removal reason is required.")
+        with self.session() as s:
+            stmt=select(EquipmentComponent).where(EquipmentComponent.component_id==component_id)
+            if self.url.startswith("postgresql"):
+                stmt=stmt.with_for_update()
+            item=s.scalar(stmt)
+            if not item:
+                raise ValueError("Component not found")
+            if expected_version is not None and item.version!=expected_version:
+                raise RuntimeError("CONFLICT: Component changed by another user. Refresh and retry.")
+            if item.status=="Removed":
+                raise ValueError("Component is already removed.")
+            child_count=int(s.scalar(
+                select(func.count()).select_from(EquipmentComponent).where(
+                    EquipmentComponent.parent_component_id==component_id,
+                    EquipmentComponent.status!="Removed",
+                )
+            ) or 0)
+            if child_count:
+                raise ValueError(f"Cannot remove component while {child_count} installed child component(s) remain.")
+            now=datetime.utcnow()
+            item.status="Removed"
+            item.removed_at=now
+            item.version+=1
+            s.add(ComponentEvent(
+                component_id=item.component_id,
+                equipment_id=item.equipment_id,
+                event_type="REMOVED",
+                parent_component_id=item.parent_component_id,
+                reason=reason.strip(),
+                related_ticket=related_ticket.strip(),
+                related_pm_task_id=related_pm_task_id,
+                user=user,
+                workstation=workstation,
+                occurred_at=now,
+            ))
+            s.add(AuditLog(
+                user=user,
+                action="COMPONENT_REMOVED",
+                entity_type="EQUIPMENT_COMPONENT",
+                entity_key=item.component_id,
+                detail=json.dumps({
+                    "equipment_id":item.equipment_id,
+                    "reason":reason.strip(),
+                    "related_ticket":related_ticket.strip(),
+                    "related_pm_task_id":related_pm_task_id,
+                },sort_keys=True),
+                workstation=workstation,
+                created_at=now,
+            ))
+            s.flush()
+            return item
+
+    def list_component_events(self, component_id: str = "", equipment_id: str = ""):
+        with self.session() as s:
+            stmt=select(ComponentEvent).order_by(ComponentEvent.occurred_at.desc(),ComponentEvent.id.desc())
+            if component_id:
+                stmt=stmt.where(ComponentEvent.component_id==component_id)
+            if equipment_id:
+                stmt=stmt.where(ComponentEvent.equipment_id==equipment_id)
             return list(s.scalars(stmt))
 
     def transition_equipment_state(
