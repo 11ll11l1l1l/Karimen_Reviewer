@@ -792,6 +792,56 @@ class EquipmentRelease(Base):
     version: Mapped[int] = mapped_column(Integer, default=1)
 
 
+class WorkOrder(Base):
+    __tablename__ = "work_orders"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    work_order_no: Mapped[str] = mapped_column(String(120), unique=True, index=True)
+    equipment_id: Mapped[str] = mapped_column(String(100), index=True)
+    source_type: Mapped[str] = mapped_column(String(40), default="ENGINEERING", index=True)
+    source_key: Mapped[str] = mapped_column(String(120), default="", index=True)
+    title: Mapped[str] = mapped_column(String(250))
+    description: Mapped[str] = mapped_column(Text, default="")
+    priority: Mapped[str] = mapped_column(String(30), default="Normal", index=True)
+    status: Mapped[str] = mapped_column(String(40), default="Open", index=True)
+    owner: Mapped[str] = mapped_column(String(120), default="", index=True)
+    team: Mapped[str] = mapped_column(String(160), default="")
+    planned_start: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    planned_end: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    qualification_required: Mapped[bool] = mapped_column(Boolean, default=False)
+    release_required: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_by: Mapped[str] = mapped_column(String(120), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
+class WorkOrderEvent(Base):
+    __tablename__ = "work_order_events"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    work_order_no: Mapped[str] = mapped_column(String(120), index=True)
+    from_state: Mapped[str] = mapped_column(String(40), default="")
+    to_state: Mapped[str] = mapped_column(String(40), index=True)
+    reason: Mapped[str] = mapped_column(Text, default="")
+    owner: Mapped[str] = mapped_column(String(120), default="")
+    changed_by: Mapped[str] = mapped_column(String(120), default="")
+    workstation: Mapped[str] = mapped_column(String(120), default="")
+    occurred_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
+class WorkOrderLink(Base):
+    __tablename__ = "work_order_links"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    work_order_no: Mapped[str] = mapped_column(String(120), index=True)
+    entity_type: Mapped[str] = mapped_column(String(50), index=True)
+    entity_key: Mapped[str] = mapped_column(String(160), index=True)
+    relation: Mapped[str] = mapped_column(String(60), default="RELATED")
+    created_by: Mapped[str] = mapped_column(String(120), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    __table_args__ = (UniqueConstraint("work_order_no","entity_type","entity_key","relation",name="uq_work_order_link"),)
+
+
 class WorkLog(Base):
     __tablename__ = "work_logs"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -843,6 +893,35 @@ class StorageLocation(Base):
     map_y: Mapped[float] = mapped_column(Float, default=0.0)
     image_path: Mapped[str] = mapped_column(Text, default="")
     version: Mapped[int] = mapped_column(Integer, default=1)
+
+
+class PartCatalog(Base):
+    __tablename__ = "part_catalog"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    part_number: Mapped[str] = mapped_column(String(120), unique=True, index=True)
+    description: Mapped[str] = mapped_column(String(300), default="")
+    category: Mapped[str] = mapped_column(String(120), default="")
+    manufacturer: Mapped[str] = mapped_column(String(120), default="")
+    supplier: Mapped[str] = mapped_column(String(180), default="")
+    supplier_part_number: Mapped[str] = mapped_column(String(160), default="", index=True)
+    barcode: Mapped[str] = mapped_column(String(180), default="", index=True)
+    lead_time_days: Mapped[int] = mapped_column(Integer, default=0)
+    reorder_qty: Mapped[float] = mapped_column(Float, default=0.0)
+    notes: Mapped[str] = mapped_column(Text, default="")
+    active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
+class PartAlternate(Base):
+    __tablename__ = "part_alternates"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    part_number: Mapped[str] = mapped_column(String(120), index=True)
+    alternate_part_number: Mapped[str] = mapped_column(String(120), index=True)
+    approved: Mapped[bool] = mapped_column(Boolean, default=True)
+    note: Mapped[str] = mapped_column(Text, default="")
+    created_by: Mapped[str] = mapped_column(String(120), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    __table_args__ = (UniqueConstraint("part_number","alternate_part_number",name="uq_part_alternate"),)
 
 
 class InventoryItem(Base):
@@ -1021,9 +1100,9 @@ AUTH_LOCKOUT_MINUTES = 15
 
 ROLE_PERMISSIONS = {
     "Administrator": {"*"},
-    "Manager": {"view", "workflow.override", "worklog.edit", "qualification.edit", "qualification.execute", "qualification.verify", "qualification.approve", "equipment.meter.record", "equipment.edit", "equipment.transition", "equipment.component.edit", "pm.edit", "pm.execute", "pm.approve", "pm.defer", "pm.defer.approve", "ticket.edit", "disposition.edit", "release.approve", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
-    "Supervisor": {"view", "worklog.edit", "qualification.execute", "qualification.verify", "qualification.approve", "equipment.meter.record", "equipment.edit", "equipment.transition", "equipment.component.edit", "pm.edit", "pm.execute", "pm.defer", "pm.defer.approve", "ticket.edit", "disposition.edit", "release.verify", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
-    "Equipment Engineer": {"view", "worklog.edit", "qualification.edit", "qualification.execute", "qualification.verify", "equipment.meter.record", "equipment.edit", "equipment.transition", "equipment.component.edit", "pm.edit", "pm.execute", "pm.defer", "ticket.edit", "disposition.edit", "release.verify", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
+    "Manager": {"view", "workflow.override", "worklog.edit", "qualification.edit", "qualification.execute", "qualification.verify", "qualification.approve", "equipment.meter.record", "equipment.edit", "equipment.transition", "equipment.component.edit", "pm.edit", "pm.execute", "pm.approve", "pm.defer", "pm.defer.approve", "ticket.edit", "disposition.edit", "release.approve", "endorsement.edit", "inventory.edit", "inventory.consume", "inventory.reserve", "document.link", "report.view"},
+    "Supervisor": {"view", "worklog.edit", "qualification.execute", "qualification.verify", "qualification.approve", "equipment.meter.record", "equipment.edit", "equipment.transition", "equipment.component.edit", "pm.edit", "pm.execute", "pm.defer", "pm.defer.approve", "ticket.edit", "disposition.edit", "release.verify", "endorsement.edit", "inventory.edit", "inventory.consume", "inventory.reserve", "document.link", "report.view"},
+    "Equipment Engineer": {"view", "worklog.edit", "qualification.edit", "qualification.execute", "qualification.verify", "equipment.meter.record", "equipment.edit", "equipment.transition", "equipment.component.edit", "pm.edit", "pm.execute", "pm.defer", "ticket.edit", "disposition.edit", "release.verify", "endorsement.edit", "inventory.edit", "inventory.consume", "inventory.reserve", "document.link", "report.view"},
     "Maintenance": {"view", "worklog.edit", "qualification.execute", "equipment.meter.record", "equipment.component.edit", "pm.execute", "pm.defer", "ticket.edit", "endorsement.edit", "inventory.consume", "inventory.reserve", "document.link"},
     "Technician": {"view", "worklog.edit", "equipment.meter.record", "pm.execute", "ticket.edit", "inventory.consume", "document.link"},
     "Process Engineer": {"view", "worklog.edit", "qualification.verify", "qualification.approve", "ticket.edit", "release.verify", "document.link", "report.view"},
@@ -1092,6 +1171,12 @@ class Database:
                 table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
             ]),
             ("20260923_005","Create structured incident RCA and CAPA tables",lambda: [
+                table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
+            ]),
+            ("20260923_006","Create governed work-order and relationship tables",lambda: [
+                table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
+            ]),
+            ("20260923_007","Create part catalog and approved-alternate logistics tables",lambda: [
                 table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
             ]),
         ]
@@ -1884,6 +1969,11 @@ class Database:
                 EquipmentAlarmEvent.alarm_code.ilike(like),EquipmentAlarmEvent.message.ilike(like),EquipmentAlarmEvent.equipment_id.ilike(like),
             )).order_by(EquipmentAlarmEvent.occurred_at.desc()).limit(max_each)):
                 add("ALARM",row.event_key,f"{row.alarm_code} — {row.message}",f"{row.state} · {row.equipment_id}",row.equipment_id)
+            for row in s.scalars(select(WorkOrder).where(or_(
+                WorkOrder.work_order_no.ilike(like),WorkOrder.title.ilike(like),WorkOrder.description.ilike(like),
+                WorkOrder.equipment_id.ilike(like),WorkOrder.owner.ilike(like),
+            )).limit(max_each)):
+                add("WORK_ORDER",row.work_order_no,f"{row.work_order_no} — {row.title}",f"{row.status} · {row.equipment_id} · {row.owner}",row.equipment_id)
             for row in s.scalars(select(InventoryItem).where(or_(
                 InventoryItem.part_number.ilike(like),InventoryItem.description.ilike(like),InventoryItem.location_code.ilike(like),
             )).limit(max_each)):
@@ -1919,6 +2009,14 @@ class Database:
             if (item.get("owner") or "").strip().lower()==username.lower():
                 rows.append(dict(item))
         with self.session() as s:
+            for wo in s.scalars(select(WorkOrder).where(
+                WorkOrder.owner==username,WorkOrder.status.notin_(["Completed","Cancelled"])
+            ).order_by(WorkOrder.updated_at.desc())):
+                rows.append({
+                    "severity":"HIGH" if wo.priority in {"P1","Critical","High"} else "MEDIUM",
+                    "kind":"WORK_ORDER","key":wo.work_order_no,"equipment_id":wo.equipment_id,
+                    "summary":f"{wo.status} — {wo.title}","owner":wo.owner,"age_hours":0.0,
+                })
             user=s.scalar(select(User).where(User.username==username))
             userctx={"username":username,"role":user.role} if user else {"username":username,"role":"Read Only"}
             if self.has_permission(userctx,"release.approve"):
@@ -2110,6 +2208,94 @@ class Database:
                 "related_ticket":related_ticket,
             })
             s.flush();return row
+
+    def link_alarm_to_ticket(self, event_key: str, ticket_no: str, user: str, workstation: str = ""):
+        with self.session() as s:
+            alarm=s.scalar(select(EquipmentAlarmEvent).where(EquipmentAlarmEvent.event_key==event_key))
+            if not alarm:raise ValueError("Alarm event not found")
+            self.assert_authorized(user,"ticket.edit",alarm.equipment_id)
+            ticket=s.scalar(select(Ticket).where(Ticket.ticket_no==ticket_no))
+            if not ticket:raise ValueError("Ticket not found")
+            if ticket.equipment_id!=alarm.equipment_id:
+                raise ValueError("Alarm and ticket must belong to the same equipment.")
+            alarm.related_ticket=ticket.ticket_no
+            s.add(AuditLog(
+                user=user,action="ALARM_LINK_TICKET",entity_type="ALARM",entity_key=alarm.event_key,
+                detail=json.dumps({"ticket_no":ticket.ticket_no,"equipment_id":alarm.equipment_id},sort_keys=True),
+                workstation=workstation,
+            ))
+            self._queue_integration_event(s,"equipment.alarm.linked_incident","ALARM",alarm.event_key,{
+                "equipment_id":alarm.equipment_id,"alarm_code":alarm.alarm_code,
+                "ticket_no":ticket.ticket_no,"linked_by":user,
+            })
+            s.flush();return alarm,ticket
+
+    def create_incident_from_alarm(
+        self,
+        event_key: str,
+        user: str,
+        *,
+        owner: str = "",
+        ticket_no: str = "",
+        workstation: str = "",
+    ):
+        with self.session() as s:
+            stmt=select(EquipmentAlarmEvent).where(EquipmentAlarmEvent.event_key==event_key)
+            if self.url.startswith("postgresql"):stmt=stmt.with_for_update()
+            alarm=s.scalar(stmt)
+            if not alarm:raise ValueError("Alarm event not found")
+            self.assert_authorized(user,"ticket.edit",alarm.equipment_id)
+            if alarm.related_ticket:
+                existing=s.scalar(select(Ticket).where(Ticket.ticket_no==alarm.related_ticket))
+                if existing:return existing
+            eq=s.scalar(select(Equipment).where(Equipment.equipment_id==alarm.equipment_id))
+            if not eq:raise ValueError("Equipment not found")
+            if not ticket_no.strip():
+                prefix="".join(ch if ch.isalnum() else "-" for ch in alarm.equipment_id.upper()).strip("-")[:28]
+                base=f"ALM-{prefix}-{alarm.occurred_at:%y%m%d%H%M%S}-{alarm.event_key[:6].upper()}"
+                ticket_no=base[:100]
+                suffix=1
+                while s.scalar(select(Ticket).where(Ticket.ticket_no==ticket_no)):
+                    tail=f"-{suffix}"
+                    ticket_no=(base[:100-len(tail)]+tail);suffix+=1
+            elif s.scalar(select(Ticket).where(Ticket.ticket_no==ticket_no.strip())):
+                raise ValueError("Ticket number already exists.")
+            sev=(alarm.severity or "").strip().lower()
+            priority="P1" if sev in {"critical","fatal","emergency"} else ("P2" if sev in {"warning","major","high"} else "P3")
+            severity="S1" if priority=="P1" else ("S2" if priority=="P2" else "S3")
+            assignee=(owner or user).strip()
+            description=(
+                f"Created from equipment alarm.\n\n"
+                f"Alarm: {alarm.alarm_code}\n"
+                f"Message: {alarm.message}\n"
+                f"Source: {alarm.source}\n"
+                f"Occurred: {alarm.occurred_at.isoformat()}\n"
+                f"Alarm event key: {alarm.event_key}"
+            )
+            ticket=Ticket(
+                ticket_no=ticket_no.strip(),equipment_id=alarm.equipment_id,
+                title=f"Alarm {alarm.alarm_code} — {alarm.message or 'Equipment alarm'}"[:250],
+                description=description,severity=severity,priority=priority,status="Open",
+                owner=assignee,root_cause="",corrective_action="",verification="",created_by=user,
+            )
+            s.add(ticket)
+            s.add(TicketStateEvent(
+                ticket_no=ticket.ticket_no,from_state="",to_state="Open",
+                reason_code="INITIAL_STATE",note=f"Created from alarm {alarm.alarm_code}",
+                owner=assignee,changed_by=user,workstation=workstation,
+            ))
+            alarm.related_ticket=ticket.ticket_no
+            s.add(AuditLog(
+                user=user,action="ALARM_CREATE_INCIDENT",entity_type="ALARM",entity_key=alarm.event_key,
+                detail=json.dumps({"ticket_no":ticket.ticket_no,"equipment_id":alarm.equipment_id},sort_keys=True),
+                workstation=workstation,
+            ))
+            self._queue_integration_event(s,"incident.created.from_alarm","TICKET",ticket.ticket_no,{
+                "ticket_no":ticket.ticket_no,"equipment_id":alarm.equipment_id,
+                "alarm_event_key":alarm.event_key,"alarm_code":alarm.alarm_code,
+                "priority":priority,"owner":assignee,"created_by":user,
+            })
+            s.flush();return ticket
 
     def acknowledge_alarm(self, event_key: str, user: str):
         with self.session() as s:
@@ -2835,6 +3021,168 @@ class Database:
             })
             s.flush();return task
 
+    def pm_task_readiness(self, task_id: int) -> dict[str, Any]:
+        now=datetime.utcnow()
+        with self.session() as s:
+            task=s.get(PMTask,task_id)
+            if not task:raise ValueError("PM task not found")
+            reqs=list(s.scalars(select(PMRequirement).where(
+                PMRequirement.pm_id==task.pm_id,
+                PMRequirement.active.is_(True),
+                PMRequirement.mandatory.is_(True),
+            )))
+            definition=s.scalar(select(PMDefinition).where(PMDefinition.pm_id==task.pm_id))
+            reservations=list(s.scalars(select(InventoryReservation).where(
+                InventoryReservation.pm_task_id==task.id,
+                InventoryReservation.status=="Reserved",
+            )))
+            reserved_by_part={}
+            for r in reservations:reserved_by_part[r.part_number]=reserved_by_part.get(r.part_number,0.0)+float(r.quantity or 0)
+            part_requirements={}
+            cert_codes=[]
+            for req in reqs:
+                if req.requirement_type=="PART" and req.requirement_key:
+                    part_requirements[req.requirement_key]=part_requirements.get(req.requirement_key,0.0)+float(req.quantity or 0)
+                elif req.requirement_type=="CERTIFICATION" and req.requirement_key:
+                    cert_codes.append(req.requirement_key.strip())
+            if definition and (definition.required_skill or "").strip():
+                cert_codes.append(definition.required_skill.strip())
+            cert_codes=list(dict.fromkeys(x for x in cert_codes if x))
+            assigned=(task.assigned_to or "").strip()
+            cert_rows=list(s.scalars(select(TechnicianCertification).where(
+                TechnicianCertification.username==assigned,
+                TechnicianCertification.active.is_(True),
+            ))) if assigned else []
+            valid_certs={x.cert_code for x in cert_rows if x.expires_at is None or x.expires_at>now}
+        parts=[];shortages=[]
+        for part,qty in sorted(part_requirements.items()):
+            reserved=float(reserved_by_part.get(part,0.0))
+            unreserved_available=float(self.inventory_available(part))
+            total_covered=reserved+unreserved_available
+            short=max(0.0,qty-total_covered)
+            row={"part_number":part,"required":qty,"reserved":reserved,"available_unreserved":unreserved_available,"shortage":short,"ready":short<=0}
+            parts.append(row)
+            if short>0:shortages.append(row)
+        missing_certs=[code for code in cert_codes if code not in valid_certs]
+        return {
+            "task_id":task_id,
+            "equipment_id":task.equipment_id,
+            "assigned_to":assigned,
+            "parts":parts,
+            "parts_status":"NONE" if not parts else ("READY" if not shortages else "SHORT"),
+            "part_shortages":shortages,
+            "required_certifications":cert_codes,
+            "missing_certifications":missing_certs,
+            "certification_status":"NONE" if not cert_codes else ("UNASSIGNED" if not assigned else ("READY" if not missing_certs else "MISSING")),
+        }
+
+    def reserve_pm_required_parts(self, task_id: int, user: str, workstation: str = "") -> list[InventoryReservation]:
+        with self.session() as s:
+            task_stmt=select(PMTask).where(PMTask.id==task_id)
+            if self.url.startswith("postgresql"):task_stmt=task_stmt.with_for_update()
+            task=s.scalar(task_stmt)
+            if not task:raise ValueError("PM task not found")
+            self.assert_authorized(user,"inventory.reserve",task.equipment_id)
+            reqs=list(s.scalars(select(PMRequirement).where(
+                PMRequirement.pm_id==task.pm_id,
+                PMRequirement.active.is_(True),
+                PMRequirement.mandatory.is_(True),
+                PMRequirement.requirement_type=="PART",
+            )))
+            required={}
+            for req in reqs:
+                if req.requirement_key:required[req.requirement_key]=required.get(req.requirement_key,0.0)+float(req.quantity or 0)
+            current=list(s.scalars(select(InventoryReservation).where(
+                InventoryReservation.pm_task_id==task.id,
+                InventoryReservation.status=="Reserved",
+            )))
+            reserved={}
+            for row in current:reserved[row.part_number]=reserved.get(row.part_number,0.0)+float(row.quantity or 0)
+            planned=[]
+            shortages=[]
+            for part,qty in required.items():
+                need=max(0.0,qty-reserved.get(part,0.0))
+                if need<=0:continue
+                stock_stmt=select(InventoryItem).where(InventoryItem.part_number==part,InventoryItem.condition=="Available")
+                if self.url.startswith("postgresql"):stock_stmt=stock_stmt.with_for_update()
+                stock=list(s.scalars(stock_stmt))
+                total=sum(float(x.quantity or 0) for x in stock)
+                global_reserved=float(s.scalar(select(func.sum(InventoryReservation.quantity)).where(
+                    InventoryReservation.part_number==part,
+                    InventoryReservation.status=="Reserved",
+                )) or 0.0)
+                available=max(0.0,total-global_reserved)
+                if available<need:
+                    shortages.append(f"{part}: need {need:g}, available {available:g}")
+                    continue
+                location=stock[0].location_code if len(stock)==1 else ""
+                planned.append((part,location,need))
+            if shortages:raise ValueError("Required parts cannot be fully reserved: "+"; ".join(shortages))
+            created=[]
+            for part,location,qty in planned:
+                row=InventoryReservation(
+                    part_number=part,location_code=location,quantity=qty,pm_task_id=task.id,
+                    equipment_id=task.equipment_id,status="Reserved",reserved_by=user,
+                    note=f"PM {task.pm_id} required part",
+                )
+                s.add(row);created.append(row)
+            if planned:
+                s.add(AuditLog(
+                    user=user,action="PM_PARTS_RESERVE",entity_type="PM_TASK",entity_key=str(task.id),
+                    detail=json.dumps([{"part":p,"location":loc,"quantity":q} for p,loc,q in planned],sort_keys=True),
+                    workstation=workstation,
+                ))
+            s.flush();return created
+
+    def consume_pm_reserved_parts(self, execution_id: int, user: str, workstation: str = "") -> list[InventoryTransaction]:
+        with self.session() as s:
+            ex=s.get(PMExecution,execution_id)
+            if not ex:raise ValueError("PM execution not found")
+            task=s.get(PMTask,ex.task_id)
+            if not task:raise ValueError("PM task not found")
+            self.assert_authorized(user,"inventory.consume",task.equipment_id)
+            reservations=list(s.scalars(select(InventoryReservation).where(
+                InventoryReservation.pm_task_id==task.id,
+                InventoryReservation.status=="Reserved",
+            )))
+            if not reservations:return []
+            allocations=[]
+            for reservation in reservations:
+                remaining=float(reservation.quantity or 0)
+                stmt=select(InventoryItem).where(
+                    InventoryItem.part_number==reservation.part_number,
+                    InventoryItem.condition=="Available",
+                )
+                if reservation.location_code:stmt=stmt.where(InventoryItem.location_code==reservation.location_code)
+                if self.url.startswith("postgresql"):stmt=stmt.with_for_update()
+                items=list(s.scalars(stmt.order_by(InventoryItem.location_code)))
+                available=sum(float(x.quantity or 0) for x in items)
+                if available<remaining:
+                    raise ValueError(f"Cannot consume reserved {reservation.part_number}: reserved {remaining:g}, physical available {available:g}.")
+                for item in items:
+                    if remaining<=0:break
+                    take=min(float(item.quantity or 0),remaining)
+                    if take<=0:continue
+                    allocations.append((reservation,item,take))
+                    remaining-=take
+            created=[]
+            for reservation,item,qty in allocations:
+                item.quantity-=qty;item.version+=1
+                tx=InventoryTransaction(
+                    part_number=item.part_number,location_code=item.location_code,
+                    transaction_type="Consume",quantity=-qty,equipment_id=task.equipment_id,
+                    related_ticket="",user=user,note=f"PM task {task.id} / execution {execution_id}",
+                )
+                s.add(tx);created.append(tx)
+            for reservation in reservations:
+                reservation.status="Consumed";reservation.released_at=datetime.utcnow();reservation.version+=1
+            s.add(AuditLog(
+                user=user,action="PM_PARTS_CONSUME",entity_type="PM_EXECUTION",entity_key=str(execution_id),
+                detail=json.dumps([{"part":x.part_number,"location":x.location_code,"quantity":-x.quantity} for x in created],sort_keys=True),
+                workstation=workstation,
+            ))
+            s.flush();return created
+
     def pm_planning_rows(self, days: int = 60, include_overdue: bool = True) -> list[dict[str, Any]]:
         horizon=max(1,min(int(days),730))
         now=datetime.utcnow();end=now+timedelta(days=horizon)
@@ -2854,10 +3202,14 @@ class Database:
             elif planned and latest and planned>latest and task.status!="Deferred":window="OUTSIDE GRACE"
             elif task.status=="Deferred":window="DEFERRED"
             else:window="IN WINDOW"
+            readiness=self.pm_task_readiness(task.id)
             rows.append({
                 "id":task.id,"equipment_id":task.equipment_id,"pm_id":task.pm_id,"pm_name":task.pm_name,
                 "original_due_date":due,"scheduled_date":planned,"status":task.status,"assigned_to":task.assigned_to,
                 "estimated_hours":float(task.estimated_hours or 0),"priority":task.priority,"window":window,
+                "parts_status":readiness["parts_status"],"certification_status":readiness["certification_status"],
+                "part_shortages":", ".join(f"{x['part_number']}:{x['shortage']:g}" for x in readiness["part_shortages"]),
+                "missing_certifications":", ".join(readiness["missing_certifications"]),
                 "early_date":early,"latest_date":latest,"version":task.version,
             })
         return rows
@@ -4196,6 +4548,319 @@ class Database:
             s.flush()
             return r
 
+    WORK_ORDER_TRANSITIONS={
+        "Open":{"Assigned","In Progress","Cancelled"},
+        "Assigned":{"In Progress","Waiting Parts","Waiting Production","Cancelled"},
+        "In Progress":{"Waiting Parts","Waiting Production","Ready for Qualification","Completed","Cancelled"},
+        "Waiting Parts":{"In Progress","Cancelled"},
+        "Waiting Production":{"In Progress","Cancelled"},
+        "Ready for Qualification":{"Completed","In Progress","Cancelled"},
+        "Completed":set(),
+        "Cancelled":set(),
+    }
+
+    def create_work_order(self, data: dict[str, Any], user: str, workstation: str = ""):
+        payload=dict(data)
+        equipment_id=str(payload.get("equipment_id","")).strip()
+        if not equipment_id:raise ValueError("Equipment ID is required.")
+        self.assert_authorized(user,"worklog.edit",equipment_id)
+        with self.session() as s:
+            if not s.scalar(select(Equipment).where(Equipment.equipment_id==equipment_id)):
+                raise ValueError("Equipment not found")
+            no=str(payload.get("work_order_no","")).strip()
+            if not no:
+                prefix="".join(ch if ch.isalnum() else "-" for ch in equipment_id.upper()).strip("-")[:28]
+                base=f"WO-{prefix}-{datetime.utcnow():%y%m%d%H%M%S}"
+                no=base;suffix=1
+                while s.scalar(select(WorkOrder).where(WorkOrder.work_order_no==no)):
+                    tail=f"-{suffix}";no=base[:120-len(tail)]+tail;suffix+=1
+            if s.scalar(select(WorkOrder).where(WorkOrder.work_order_no==no)):
+                raise ValueError("Work order number already exists.")
+            row=WorkOrder(
+                work_order_no=no,equipment_id=equipment_id,
+                source_type=str(payload.get("source_type","ENGINEERING")).upper(),
+                source_key=str(payload.get("source_key","")).strip(),
+                title=str(payload.get("title","")).strip() or f"Engineering work on {equipment_id}",
+                description=str(payload.get("description","")).strip(),
+                priority=str(payload.get("priority","Normal")).strip() or "Normal",
+                status="Open",owner=str(payload.get("owner","")).strip(),
+                team=str(payload.get("team","")).strip(),
+                planned_start=payload.get("planned_start"),planned_end=payload.get("planned_end"),
+                qualification_required=bool(payload.get("qualification_required",False)),
+                release_required=bool(payload.get("release_required",False)),
+                created_by=user,
+            )
+            s.add(row);s.flush()
+            s.add(WorkOrderEvent(
+                work_order_no=no,from_state="",to_state="Open",reason="Work order created",
+                owner=row.owner,changed_by=user,workstation=workstation,
+            ))
+            if row.source_key:
+                s.add(WorkOrderLink(
+                    work_order_no=no,entity_type=row.source_type,entity_key=row.source_key,
+                    relation="SOURCE",created_by=user,
+                ))
+            s.add(AuditLog(
+                user=user,action="WORK_ORDER_CREATE",entity_type="WORK_ORDER",entity_key=no,
+                detail=json.dumps({"equipment_id":equipment_id,"source_type":row.source_type,"source_key":row.source_key},sort_keys=True),
+                workstation=workstation,
+            ))
+            self._queue_integration_event(s,"work_order.created","WORK_ORDER",no,{
+                "work_order_no":no,"equipment_id":equipment_id,"source_type":row.source_type,
+                "source_key":row.source_key,"owner":row.owner,"created_by":user,
+            })
+            s.flush();return row
+
+    def create_work_order_from_ticket(self, ticket_no: str, user: str, workstation: str = ""):
+        with self.session() as s:
+            ticket=s.scalar(select(Ticket).where(Ticket.ticket_no==ticket_no))
+            if not ticket:raise ValueError("Ticket not found")
+            existing=s.scalar(
+                select(WorkOrder)
+                .join(WorkOrderLink,WorkOrderLink.work_order_no==WorkOrder.work_order_no)
+                .where(WorkOrderLink.entity_type=="TICKET",WorkOrderLink.entity_key==ticket_no,WorkOrderLink.relation=="SOURCE",
+                       WorkOrder.status.notin_(["Completed","Cancelled"]))
+                .order_by(WorkOrder.created_at.desc())
+            )
+            if existing:return existing
+        return self.create_work_order({
+            "equipment_id":ticket.equipment_id,"source_type":"TICKET","source_key":ticket.ticket_no,
+            "title":f"Repair / investigation — {ticket.title}","description":ticket.description,
+            "priority":ticket.priority,"owner":ticket.owner,
+            "qualification_required":ticket.priority in {"P1","P2"},"release_required":ticket.priority in {"P1","P2"},
+        },user,workstation)
+
+    def create_work_order_from_pm(self, task_id: int, user: str, workstation: str = ""):
+        with self.session() as s:
+            task=s.get(PMTask,task_id)
+            if not task:raise ValueError("PM task not found")
+            existing=s.scalar(
+                select(WorkOrder)
+                .join(WorkOrderLink,WorkOrderLink.work_order_no==WorkOrder.work_order_no)
+                .where(WorkOrderLink.entity_type=="PM_TASK",WorkOrderLink.entity_key==str(task_id),WorkOrderLink.relation=="SOURCE",
+                       WorkOrder.status.notin_(["Completed","Cancelled"]))
+                .order_by(WorkOrder.created_at.desc())
+            )
+            if existing:return existing
+        return self.create_work_order({
+            "equipment_id":task.equipment_id,"source_type":"PM_TASK","source_key":str(task.id),
+            "title":f"{task.pm_id} — {task.pm_name}","description":"Controlled preventive-maintenance work order",
+            "priority":task.priority,"owner":task.assigned_to,
+        },user,workstation)
+
+    def list_work_orders(self, equipment_id: str = "", open_only: bool = False):
+        with self.session() as s:
+            stmt=select(WorkOrder)
+            if equipment_id:stmt=stmt.where(WorkOrder.equipment_id==equipment_id)
+            if open_only:stmt=stmt.where(WorkOrder.status.notin_(["Completed","Cancelled"]))
+            return list(s.scalars(stmt.order_by(WorkOrder.updated_at.desc(),WorkOrder.created_at.desc())))
+
+    def get_work_order(self, work_order_no: str):
+        with self.session() as s:return s.scalar(select(WorkOrder).where(WorkOrder.work_order_no==work_order_no))
+
+    def list_work_order_events(self, work_order_no: str):
+        with self.session() as s:return list(s.scalars(
+            select(WorkOrderEvent).where(WorkOrderEvent.work_order_no==work_order_no)
+            .order_by(WorkOrderEvent.occurred_at,WorkOrderEvent.id)
+        ))
+
+    def add_work_order_link(self, work_order_no: str, entity_type: str, entity_key: str, relation: str, user: str):
+        with self.session() as s:
+            wo=s.scalar(select(WorkOrder).where(WorkOrder.work_order_no==work_order_no))
+            if not wo:raise ValueError("Work order not found")
+            self.assert_authorized(user,"worklog.edit",wo.equipment_id)
+            et=entity_type.strip().upper();ek=str(entity_key).strip();rel=relation.strip().upper() or "RELATED"
+            existing=s.scalar(select(WorkOrderLink).where(
+                WorkOrderLink.work_order_no==work_order_no,WorkOrderLink.entity_type==et,
+                WorkOrderLink.entity_key==ek,WorkOrderLink.relation==rel,
+            ))
+            if existing:return existing
+            row=WorkOrderLink(work_order_no=work_order_no,entity_type=et,entity_key=ek,relation=rel,created_by=user)
+            s.add(row);s.flush();return row
+
+    def list_work_order_links(self, work_order_no: str):
+        with self.session() as s:return list(s.scalars(
+            select(WorkOrderLink).where(WorkOrderLink.work_order_no==work_order_no)
+            .order_by(WorkOrderLink.created_at,WorkOrderLink.id)
+        ))
+
+    def transition_work_order(
+        self,work_order_no: str,target_state: str,user: str,reason: str="",
+        owner: str="",expected_version: int | None=None,workstation: str="",
+    ):
+        with self.session() as s:
+            stmt=select(WorkOrder).where(WorkOrder.work_order_no==work_order_no)
+            if self.url.startswith("postgresql"):stmt=stmt.with_for_update()
+            row=s.scalar(stmt)
+            if not row:raise ValueError("Work order not found")
+            self.assert_authorized(user,"worklog.edit",row.equipment_id)
+            if expected_version is not None and row.version!=expected_version:
+                raise RuntimeError("CONFLICT: Work order changed by another user.")
+            allowed=self.WORK_ORDER_TRANSITIONS.get(row.status,set())
+            if target_state not in allowed:
+                raise ValueError(f"Invalid work-order transition: {row.status} → {target_state}")
+            if target_state in {"Waiting Parts","Waiting Production","Cancelled"} and not reason.strip():
+                raise ValueError(f"{target_state} requires a reason.")
+            previous=row.status;now=datetime.utcnow();row.status=target_state
+            if owner.strip():row.owner=owner.strip()
+            if target_state=="In Progress" and not row.started_at:row.started_at=now
+            if target_state=="Completed":row.completed_at=now
+            row.updated_at=now;row.version+=1
+            s.add(WorkOrderEvent(
+                work_order_no=row.work_order_no,from_state=previous,to_state=target_state,
+                reason=reason.strip(),owner=row.owner,changed_by=user,workstation=workstation,occurred_at=now,
+            ))
+            s.add(AuditLog(
+                user=user,action="WORK_ORDER_TRANSITION",entity_type="WORK_ORDER",entity_key=row.work_order_no,
+                detail=json.dumps({"from":previous,"to":target_state,"reason":reason.strip(),"owner":row.owner},sort_keys=True),
+                workstation=workstation,created_at=now,
+            ))
+            self._queue_integration_event(s,"work_order.state.changed","WORK_ORDER",row.work_order_no,{
+                "work_order_no":row.work_order_no,"equipment_id":row.equipment_id,
+                "from_state":previous,"to_state":target_state,"owner":row.owner,"changed_by":user,
+            })
+            s.flush();return row
+
+    def applicable_qualification_protocols(self, equipment_id: str):
+        with self.session() as s:
+            eq=s.scalar(select(Equipment).where(Equipment.equipment_id==equipment_id))
+            if not eq:raise ValueError("Equipment not found")
+            rows=list(s.scalars(
+                select(QualificationProtocol)
+                .where(QualificationProtocol.active.is_(True))
+                .order_by(QualificationProtocol.protocol_id,QualificationProtocol.revision.desc())
+            ))
+            latest={}
+            for row in rows:
+                if row.protocol_id in latest:continue
+                if row.equipment_id and row.equipment_id!=equipment_id:continue
+                if row.equipment_type and row.equipment_type!=eq.equipment_type:continue
+                latest[row.protocol_id]=row
+            return list(latest.values())
+
+    def work_order_closeout_status(self, work_order_no: str) -> dict[str, Any]:
+        with self.session() as s:
+            wo=s.scalar(select(WorkOrder).where(WorkOrder.work_order_no==work_order_no))
+            if not wo:raise ValueError("Work order not found")
+            links=list(s.scalars(select(WorkOrderLink).where(WorkOrderLink.work_order_no==work_order_no)))
+            logs=list(s.scalars(select(WorkLog).where(
+                WorkLog.entity_type=="WORK_ORDER",WorkLog.entity_key==work_order_no
+            ).order_by(WorkLog.started_at)))
+            attachments=list(s.scalars(select(EntityAttachment).where(
+                EntityAttachment.entity_type=="WORK_ORDER",EntityAttachment.entity_key==work_order_no,
+                EntityAttachment.active.is_(True),
+            )))
+            qualifications=list(s.scalars(select(QualificationRun).where(
+                QualificationRun.equipment_id==wo.equipment_id
+            ).order_by(QualificationRun.started_at.desc())))
+            releases=list(s.scalars(select(EquipmentRelease).where(
+                EquipmentRelease.equipment_id==wo.equipment_id
+            ).order_by(EquipmentRelease.requested_at.desc())))
+            related_ticket=""
+            if wo.source_type=="TICKET" and wo.source_key:related_ticket=wo.source_key
+            if not related_ticket:
+                ticket_link=next((x for x in links if x.entity_type=="TICKET"),None)
+                related_ticket=ticket_link.entity_key if ticket_link else ""
+            source_pm_id=None
+            if wo.source_type=="PM_TASK" and str(wo.source_key).isdigit():source_pm_id=int(wo.source_key)
+            if source_pm_id is None:
+                pm_link=next((x for x in links if x.entity_type=="PM_TASK" and str(x.entity_key).isdigit()),None)
+                source_pm_id=int(pm_link.entity_key) if pm_link else None
+            reservations=list(s.scalars(select(InventoryReservation).where(
+                InventoryReservation.pm_task_id==source_pm_id
+            ))) if source_pm_id else []
+        precheck=self.release_precheck(wo.equipment_id)
+        valid_qualification=self.latest_valid_qualification(wo.equipment_id)
+        open_qualification=next((x for x in qualifications if x.status in {"In Progress","Submitted","Verified"}),None)
+        active_release=next((x for x in releases if x.status!="Approved / Released"),None)
+        blockers=[]
+        if wo.status not in {"Ready for Qualification","Completed"} and (wo.qualification_required or wo.release_required):
+            blockers.append(f"Work order is still {wo.status}; finish repair/work before controlled closeout.")
+        if precheck["critical_tickets_open"]:
+            blockers.append(f"{precheck['critical_tickets_open']} open P1/P2 incident(s) remain.")
+        if wo.qualification_required and not valid_qualification:
+            blockers.append("Approved valid qualification is required.")
+        if any(x.status=="Reserved" for x in reservations):
+            blockers.append("PM part reservations remain active; consume or release them before closeout.")
+        return {
+            "work_order_no":wo.work_order_no,"equipment_id":wo.equipment_id,"status":wo.status,
+            "qualification_required":wo.qualification_required,"release_required":wo.release_required,
+            "related_ticket":related_ticket,"source_pm_task_id":source_pm_id,
+            "labor_entries":len(logs),"active_labor":sum(1 for x in logs if x.status=="Active"),
+            "attachment_count":len(attachments),"part_reservations":len(reservations),
+            "active_part_reservations":sum(1 for x in reservations if x.status=="Reserved"),
+            "critical_tickets_open":precheck["critical_tickets_open"],"overdue_pm":precheck["overdue_pm"],
+            "valid_qualification_run":valid_qualification.run_no if valid_qualification else "",
+            "open_qualification_run":open_qualification.run_no if open_qualification else "",
+            "active_release_id":active_release.id if active_release else None,
+            "active_release_status":active_release.status if active_release else "",
+            "blockers":blockers,
+            "can_start_qualification":bool(
+                wo.qualification_required and wo.status in {"Ready for Qualification","Completed"}
+                and not valid_qualification and not open_qualification
+            ),
+            "can_request_release":bool(
+                wo.release_required and wo.status in {"Ready for Qualification","Completed"}
+                and precheck["critical_tickets_open"]==0
+                and (not wo.qualification_required or bool(valid_qualification))
+                and not active_release
+            ),
+        }
+
+    def start_work_order_qualification(
+        self, work_order_no: str, user: str, protocol_id: str = "", workstation: str = ""
+    ):
+        wo=self.get_work_order(work_order_no)
+        if not wo:raise ValueError("Work order not found")
+        if not wo.qualification_required:raise ValueError("This work order does not require qualification.")
+        if wo.status not in {"Ready for Qualification","Completed"}:
+            raise ValueError("Work order must be Ready for Qualification before starting qualification.")
+        current=self.latest_valid_qualification(wo.equipment_id)
+        if current:return current
+        open_runs=[x for x in self.list_qualification_runs(wo.equipment_id) if x.status in {"In Progress","Submitted","Verified"}]
+        if open_runs:return open_runs[0]
+        protocols=self.applicable_qualification_protocols(wo.equipment_id)
+        if protocol_id:
+            protocol=next((x for x in protocols if x.protocol_id==protocol_id),None)
+            if not protocol:raise ValueError("Selected qualification protocol is not applicable to this equipment.")
+        elif len(protocols)==1:
+            protocol=protocols[0]
+        elif not protocols:
+            raise ValueError("No active qualification protocol is applicable to this equipment.")
+        else:
+            raise ValueError("Multiple qualification protocols are applicable; select one explicitly.")
+        run=self.start_qualification_run(wo.equipment_id,protocol.protocol_id,user,workstation=workstation)
+        self.add_work_order_link(work_order_no,"QUALIFICATION",run.run_no,"CLOSEOUT",user)
+        return run
+
+    def create_work_order_release_request(self, work_order_no: str, user: str, workstation: str = ""):
+        wo=self.get_work_order(work_order_no)
+        if not wo:raise ValueError("Work order not found")
+        if not wo.release_required:raise ValueError("This work order does not require release verification.")
+        status=self.work_order_closeout_status(work_order_no)
+        if status["critical_tickets_open"]:
+            raise ValueError("Cannot request release while P1/P2 incidents remain open.")
+        if wo.qualification_required and not status["valid_qualification_run"]:
+            raise ValueError("Approved valid qualification is required before release request.")
+        if wo.status not in {"Ready for Qualification","Completed"}:
+            raise ValueError("Work order must be ready for closeout before release request.")
+        if status["active_release_id"]:
+            return next(x for x in self.list_release_requests() if x.id==status["active_release_id"])
+        checks={
+            "maintenance_complete":False,
+            "measurements_pass":False,
+            "calibration_valid":False,
+            "safety_check":False,
+            "verification_run":False,
+            "critical_tickets_cleared":False,
+        }
+        notes=f"Generated from work order {work_order_no}. Independent release verification remains required."
+        release=self.create_release_request(
+            wo.equipment_id,status["related_ticket"],checks,notes,user,workstation
+        )
+        self.add_work_order_link(work_order_no,"RELEASE",str(release.id),"CLOSEOUT",user)
+        return release
+
     def start_work_log(
         self,
         entity_type: str,
@@ -4244,6 +4909,95 @@ class Database:
             if active_only:stmt=stmt.where(WorkLog.status=="Active")
             return list(s.scalars(stmt))
 
+    def shift_handover_candidates(self) -> list[dict[str, Any]]:
+        now=datetime.utcnow();rows=[]
+        with self.session() as s:
+            equipment=list(s.scalars(select(Equipment)))
+            tickets=list(s.scalars(select(Ticket).where(Ticket.status.notin_(["Closed","Cancelled"]))))
+            alarms=list(s.scalars(select(EquipmentAlarmEvent).where(EquipmentAlarmEvent.state=="ACTIVE")))
+            pm=list(s.scalars(select(PMTask).where(PMTask.status.notin_(["Completed","Cancelled"]))))
+            work_orders=list(s.scalars(select(WorkOrder).where(WorkOrder.status.notin_(["Completed","Cancelled"]))))
+            qualification=list(s.scalars(select(QualificationRun).where(QualificationRun.status.notin_(["Approved","Rejected"]))))
+            releases=list(s.scalars(select(EquipmentRelease).where(EquipmentRelease.status!="Approved / Released")))
+            dispositions=list(s.scalars(select(Disposition).where(Disposition.active.is_(True))))
+            existing=list(s.scalars(select(Endorsement).where(Endorsement.status.in_(["Open","Acknowledged"]))))
+        by_ticket={};by_alarm={};by_pm={};by_wo={};by_q={};by_rel={};by_disp={}
+        for x in tickets:by_ticket.setdefault(x.equipment_id,[]).append(x)
+        for x in alarms:by_alarm.setdefault(x.equipment_id,[]).append(x)
+        for x in pm:by_pm.setdefault(x.equipment_id,[]).append(x)
+        for x in work_orders:by_wo.setdefault(x.equipment_id,[]).append(x)
+        for x in qualification:by_q.setdefault(x.equipment_id,[]).append(x)
+        for x in releases:by_rel.setdefault(x.equipment_id,[]).append(x)
+        for x in dispositions:by_disp.setdefault(x.equipment_id,[]).append(x)
+        existing_eq={x.equipment_id for x in existing}
+        risk_states={"Down","Engineering","Waiting Parts","Waiting Vendor","Qualification","Hold","Restricted","Offline"}
+        for eq in equipment:
+            t=by_ticket.get(eq.equipment_id,[]);a=by_alarm.get(eq.equipment_id,[]);p=by_pm.get(eq.equipment_id,[]);wo=by_wo.get(eq.equipment_id,[]);q=by_q.get(eq.equipment_id,[]);rel=by_rel.get(eq.equipment_id,[]);disp=by_disp.get(eq.equipment_id,[])
+            due_soon=[x for x in p if x.status in {"Overdue","In Progress"} or (x.scheduled_date and x.scheduled_date<=now+timedelta(hours=24))]
+            critical=[x for x in t if x.priority in {"P1","P2"}]
+            needs=eq.status in risk_states or bool(critical or a or due_soon or wo or q or rel)
+            if not needs:continue
+            pending=[]
+            pending += [f"{x.ticket_no} {x.priority} {x.status}: {x.title}" for x in sorted(t,key=lambda x:(x.priority,x.created_at))[:5]]
+            pending += [f"Alarm {x.alarm_code} {x.severity}: {x.message}" for x in a[:5]]
+            pending += [f"PM {x.pm_id} {x.status} due {x.scheduled_date or x.original_due_date}" for x in due_soon[:5]]
+            pending += [f"WO {x.work_order_no} {x.status}: {x.title}" for x in wo[:5]]
+            pending += [f"Qualification {x.run_no} {x.status}" for x in q[:3]]
+            pending += [f"Release #{x.id} {x.status}" for x in rel[:3]]
+            restriction_parts=[]
+            for d in disp[:3]:
+                text="; ".join(x for x in [d.state,d.restrictions,d.release_criteria] if x)
+                if text:restriction_parts.append(text)
+            critical_alarm=any((x.severity or "").strip().lower() in {"critical","fatal","emergency"} for x in a)
+            severity="CRITICAL" if eq.status=="Down" or any(x.priority=="P1" for x in t) or critical_alarm else ("HIGH" if eq.status in risk_states or critical or a else "MEDIUM")
+            owner=next((x.owner for x in wo if x.owner),None) or next((x.owner for x in t if x.owner),None) or eq.owner
+            next_action=(
+                "Resolve active critical incident and restore controlled state." if critical else
+                "Complete qualification / release sequence." if q or rel or eq.status=="Qualification" else
+                "Continue active work order / maintenance." if wo or due_soon else
+                "Investigate active alarm / abnormal equipment state."
+            )
+            rows.append({
+                "severity":severity,"equipment_id":eq.equipment_id,"equipment_name":eq.name,
+                "current_condition":f"{eq.status} / {eq.disposition}",
+                "pending_work":"\n".join(pending),
+                "restrictions":"\n".join(restriction_parts),
+                "next_action":next_action,"next_owner":owner or "",
+                "active_incidents":len(t),"active_alarms":len(a),"open_pm":len(due_soon),"open_work_orders":len(wo),
+                "existing_open_handover":eq.equipment_id in existing_eq,
+            })
+        rank={"CRITICAL":0,"HIGH":1,"MEDIUM":2}
+        rows.sort(key=lambda x:(rank.get(x["severity"],9),x["equipment_id"]))
+        return rows
+
+    def publish_shift_handover(self, equipment_id: str, user: str, next_owner: str = "", workstation: str = ""):
+        candidate=next((x for x in self.shift_handover_candidates() if x["equipment_id"]==equipment_id),None)
+        if not candidate:raise ValueError("Equipment no longer has a live handover candidate.")
+        self.assert_authorized(user,"endorsement.edit",equipment_id)
+        with self.session() as s:
+            prefix="".join(ch if ch.isalnum() else "-" for ch in equipment_id.upper()).strip("-")[:30]
+            base=f"HO-{datetime.utcnow():%y%m%d%H%M%S}-{prefix}"
+            no=base[:100];suffix=1
+            while s.scalar(select(Endorsement).where(Endorsement.endorsement_no==no)):
+                tail=f"-{suffix}";no=base[:100-len(tail)]+tail;suffix+=1
+            row=Endorsement(
+                endorsement_no=no,equipment_id=equipment_id,
+                current_condition=candidate["current_condition"],work_completed="",
+                pending_work=candidate["pending_work"],restrictions=candidate["restrictions"],
+                next_action=candidate["next_action"],next_owner=(next_owner or candidate["next_owner"]).strip(),
+                status="Open",created_by=user,
+            )
+            s.add(row)
+            s.add(AuditLog(
+                user=user,action="SHIFT_HANDOVER_PUBLISH",entity_type="ENDORSEMENT",entity_key=no,
+                detail=json.dumps({"equipment_id":equipment_id,"severity":candidate["severity"]},sort_keys=True),
+                workstation=workstation,
+            ))
+            self._queue_integration_event(s,"shift.handover.published","ENDORSEMENT",no,{
+                "endorsement_no":no,"equipment_id":equipment_id,"next_owner":row.next_owner,"created_by":user,
+            })
+            s.flush();return row
+
     def save_endorsement(self, data: dict[str, Any], expected_version: int | None = None):
         with self.session() as s:
             item=s.scalar(select(Endorsement).where(Endorsement.endorsement_no==data["endorsement_no"]))
@@ -4270,6 +5024,162 @@ class Database:
 
     def list_storage_locations(self):
         with self.session() as s: return list(s.scalars(select(StorageLocation).order_by(StorageLocation.location_code)))
+
+    def save_part_catalog(self, data: dict[str, Any], expected_version: int | None = None):
+        payload=dict(data);part=str(payload.get("part_number","")).strip()
+        if not part:raise ValueError("Part number is required.")
+        payload["part_number"]=part
+        with self.session() as s:
+            row=s.scalar(select(PartCatalog).where(PartCatalog.part_number==part))
+            if row:self._update_versioned(row,payload,expected_version,"Part catalog")
+            else:row=PartCatalog(**payload);s.add(row)
+            s.flush();return row
+
+    def list_part_catalog(self, search_text: str = "", active_only: bool = False):
+        with self.session() as s:
+            stmt=select(PartCatalog).order_by(PartCatalog.part_number)
+            if search_text:
+                q=f"%{search_text}%"
+                stmt=stmt.where(or_(
+                    PartCatalog.part_number.ilike(q),PartCatalog.description.ilike(q),
+                    PartCatalog.supplier.ilike(q),PartCatalog.supplier_part_number.ilike(q),
+                    PartCatalog.barcode.ilike(q),
+                ))
+            if active_only:stmt=stmt.where(PartCatalog.active.is_(True))
+            return list(s.scalars(stmt))
+
+    def resolve_part_scan(self, value: str):
+        code=(value or "").strip()
+        if not code:return None
+        with self.session() as s:
+            catalog=s.scalar(select(PartCatalog).where(or_(
+                PartCatalog.part_number==code,PartCatalog.barcode==code,PartCatalog.supplier_part_number==code
+            )))
+            if catalog:return catalog.part_number
+            item=s.scalar(select(InventoryItem).where(InventoryItem.part_number==code))
+            return item.part_number if item else None
+
+    def save_part_alternate(self, part_number: str, alternate_part_number: str, user: str, approved: bool=True, note: str=""):
+        part_number=part_number.strip();alternate_part_number=alternate_part_number.strip()
+        if not part_number or not alternate_part_number:raise ValueError("Primary and alternate part numbers are required.")
+        if part_number==alternate_part_number:raise ValueError("Alternate part must differ from the primary part.")
+        with self.session() as s:
+            row=s.scalar(select(PartAlternate).where(
+                PartAlternate.part_number==part_number,PartAlternate.alternate_part_number==alternate_part_number
+            ))
+            if row:row.approved=bool(approved);row.note=note.strip()
+            else:
+                row=PartAlternate(part_number=part_number,alternate_part_number=alternate_part_number,approved=bool(approved),note=note.strip(),created_by=user)
+                s.add(row)
+            s.flush();return row
+
+    def list_part_alternates(self, part_number: str = "", approved_only: bool = False):
+        with self.session() as s:
+            stmt=select(PartAlternate).order_by(PartAlternate.part_number,PartAlternate.alternate_part_number)
+            if part_number:stmt=stmt.where(PartAlternate.part_number==part_number)
+            if approved_only:stmt=stmt.where(PartAlternate.approved.is_(True))
+            return list(s.scalars(stmt))
+
+    def receive_inventory(self, part_number: str, location_code: str, qty: float, user: str, reference: str="", note: str=""):
+        if qty<=0:raise ValueError("Received quantity must be positive.")
+        self.assert_authorized(user,"inventory.edit")
+        with self.session() as s:
+            stmt=select(InventoryItem).where(InventoryItem.part_number==part_number,InventoryItem.location_code==location_code)
+            if self.url.startswith("postgresql"):stmt=stmt.with_for_update()
+            item=s.scalar(stmt)
+            if not item:
+                catalog=s.scalar(select(PartCatalog).where(PartCatalog.part_number==part_number))
+                item=InventoryItem(
+                    part_number=part_number,description=catalog.description if catalog else "",
+                    category=catalog.category if catalog else "",manufacturer=catalog.manufacturer if catalog else "",
+                    quantity=0.0,min_quantity=0.0,unit="ea",condition="Available",location_code=location_code,
+                );s.add(item);s.flush()
+            item.quantity=float(item.quantity or 0)+float(qty);item.version+=1
+            tx=InventoryTransaction(
+                part_number=part_number,location_code=location_code,transaction_type="Receive",
+                quantity=float(qty),user=user,note=" | ".join(x for x in [reference.strip(),note.strip()] if x),
+            )
+            s.add(tx);s.add(AuditLog(user=user,action="INVENTORY_RECEIVE",entity_type="PART",entity_key=f"{part_number}@{location_code}",detail=f"{qty:g} {reference}".strip()))
+            s.flush();return item,tx
+
+    def transfer_inventory(self, part_number: str, from_location: str, to_location: str, qty: float, user: str, note: str=""):
+        if qty<=0:raise ValueError("Transfer quantity must be positive.")
+        if from_location==to_location:raise ValueError("Source and destination must differ.")
+        self.assert_authorized(user,"inventory.edit")
+        with self.session() as s:
+            stmt=select(InventoryItem).where(InventoryItem.part_number==part_number,InventoryItem.location_code==from_location)
+            if self.url.startswith("postgresql"):stmt=stmt.with_for_update()
+            source=s.scalar(stmt)
+            if not source or float(source.quantity or 0)<qty:raise ValueError("Insufficient source stock.")
+            dest_stmt=select(InventoryItem).where(InventoryItem.part_number==part_number,InventoryItem.location_code==to_location)
+            if self.url.startswith("postgresql"):dest_stmt=dest_stmt.with_for_update()
+            dest=s.scalar(dest_stmt)
+            if not dest:
+                dest=InventoryItem(
+                    part_number=part_number,description=source.description,category=source.category,
+                    manufacturer=source.manufacturer,model=source.model,compatible_equipment=source.compatible_equipment,
+                    quantity=0.0,min_quantity=0.0,unit=source.unit,condition=source.condition,
+                    location_code=to_location,image_path=source.image_path,notes=source.notes,
+                );s.add(dest);s.flush()
+            source.quantity-=qty;source.version+=1;dest.quantity+=qty;dest.version+=1
+            transfer_key=secrets.token_hex(6)
+            out=InventoryTransaction(part_number=part_number,location_code=from_location,transaction_type="Transfer Out",quantity=-qty,user=user,note=f"{transfer_key} → {to_location} {note}".strip())
+            inc=InventoryTransaction(part_number=part_number,location_code=to_location,transaction_type="Transfer In",quantity=qty,user=user,note=f"{transfer_key} ← {from_location} {note}".strip())
+            s.add_all([out,inc]);s.flush();return source,dest
+
+    def cycle_count_inventory(self, part_number: str, location_code: str, counted_qty: float, user: str, reason: str=""):
+        if counted_qty<0:raise ValueError("Counted quantity cannot be negative.")
+        self.assert_authorized(user,"inventory.edit")
+        with self.session() as s:
+            stmt=select(InventoryItem).where(InventoryItem.part_number==part_number,InventoryItem.location_code==location_code)
+            if self.url.startswith("postgresql"):stmt=stmt.with_for_update()
+            item=s.scalar(stmt)
+            if not item:raise ValueError("Inventory item not found.")
+            previous=float(item.quantity or 0);delta=float(counted_qty)-previous
+            item.quantity=float(counted_qty);item.version+=1
+            tx=InventoryTransaction(
+                part_number=part_number,location_code=location_code,transaction_type="Cycle Count",
+                quantity=delta,user=user,note=f"Count {previous:g} → {counted_qty:g}. {reason}".strip(),
+            )
+            s.add(tx);s.add(AuditLog(user=user,action="INVENTORY_CYCLE_COUNT",entity_type="PART",entity_key=f"{part_number}@{location_code}",detail=tx.note))
+            s.flush();return item,tx
+
+    def inventory_reorder_queue(self) -> list[dict[str, Any]]:
+        with self.session() as s:
+            items=list(s.scalars(select(InventoryItem).where(InventoryItem.condition=="Available")))
+            reservations=list(s.scalars(select(InventoryReservation).where(InventoryReservation.status=="Reserved")))
+            catalog={x.part_number:x for x in s.scalars(select(PartCatalog))}
+        reserved={}
+        for row in reservations:
+            reserved[(row.part_number,row.location_code)]=reserved.get((row.part_number,row.location_code),0.0)+float(row.quantity or 0)
+            if not row.location_code:reserved[(row.part_number,"*")]=reserved.get((row.part_number,"*"),0.0)+float(row.quantity or 0)
+        rows=[]
+        for item in items:
+            on_hand=float(item.quantity or 0);res=reserved.get((item.part_number,item.location_code),0.0)+reserved.get((item.part_number,"*"),0.0)
+            available=max(0.0,on_hand-res);minimum=float(item.min_quantity or 0)
+            if available>minimum:continue
+            cat=catalog.get(item.part_number)
+            rows.append({
+                "part_number":item.part_number,"description":item.description,"location_code":item.location_code,
+                "on_hand":on_hand,"reserved":res,"available":available,"min_quantity":minimum,
+                "shortage_to_min":max(0.0,minimum-available),
+                "suggested_order_qty":float(cat.reorder_qty or 0) if cat else 0.0,
+                "supplier":cat.supplier if cat else "","supplier_part_number":cat.supplier_part_number if cat else "",
+                "lead_time_days":cat.lead_time_days if cat else 0,
+            })
+        rows.sort(key=lambda x:(-x["shortage_to_min"],x["part_number"],x["location_code"]))
+        return rows
+
+    def pm_kit_status(self, task_id: int) -> dict[str, Any]:
+        readiness=self.pm_task_readiness(task_id)
+        reservations=[x for x in self.list_reservations() if x.pm_task_id==task_id]
+        for part in readiness["parts"]:
+            part["alternates"]=[x.alternate_part_number for x in self.list_part_alternates(part["part_number"],True)]
+        readiness["reservations"]=[{
+            "id":x.id,"part_number":x.part_number,"location_code":x.location_code,
+            "quantity":x.quantity,"status":x.status,"reserved_by":x.reserved_by,
+        } for x in reservations]
+        return readiness
 
     def save_inventory_item(self, data: dict[str, Any], expected_version: int | None = None):
         with self.session() as s:
@@ -4528,6 +5438,13 @@ class Database:
                     label=f"{task.pm_id} — {task.pm_name}" if task else f"PM task {ex.task_id}"
                     add(ex.started_at,"PM",ex.task_id,f"Execution started: {label}",ex.started_by,ex.status,"PM execution")
                     if ex.completed_at:add(ex.completed_at,"PM",ex.task_id,f"Execution completed: {label}",ex.completed_by,"Completed","PM execution")
+            work_orders=list(s.scalars(select(WorkOrder).where(WorkOrder.equipment_id==equipment_id)))
+            work_order_nos=[x.work_order_no for x in work_orders]
+            for wo in work_orders:
+                add(wo.created_at,"WORK_ORDER",wo.work_order_no,f"{wo.title}",wo.created_by,wo.status,"Work order")
+            if work_order_nos:
+                for ev in s.scalars(select(WorkOrderEvent).where(WorkOrderEvent.work_order_no.in_(work_order_nos))):
+                    add(ev.occurred_at,"WORK_ORDER",ev.work_order_no,f"{ev.from_state or '—'} → {ev.to_state}: {ev.reason}",ev.changed_by,ev.to_state,"Work order lifecycle")
             for w in s.scalars(select(WorkLog).where(WorkLog.equipment_id==equipment_id)):
                 add(w.started_at,"WORK",w.id,f"{w.work_type} started · {w.entity_type}:{w.entity_key}",w.username,w.status,"Labor")
                 if w.ended_at:add(w.ended_at,"WORK",w.id,f"{w.work_type} completed · {w.duration_minutes:.1f} min",w.username,"Completed","Labor")
@@ -4645,6 +5562,62 @@ class Database:
         end=datetime.utcnow()
         start=end-timedelta(days=days)
         return [self.reliability_summary(eq.equipment_id,start,end) for eq in self.list_equipment()]
+
+    def engineering_analytics(self, days: int = 30) -> dict[str, Any]:
+        days=max(1,min(int(days),3650))
+        end=datetime.utcnow();start=end-timedelta(days=days)
+        reliability=self.reliability_report(days)
+        alarm_pareto=self.alarm_pareto(days)
+        with self.session() as s:
+            tickets=list(s.scalars(select(Ticket).where(Ticket.created_at>=start)))
+            open_tickets=list(s.scalars(select(Ticket).where(Ticket.status.notin_(["Closed","Cancelled"]))))
+            active_alarms=list(s.scalars(select(EquipmentAlarmEvent).where(EquipmentAlarmEvent.state=="ACTIVE")))
+            pm_tasks=list(s.scalars(select(PMTask).where(
+                PMTask.original_due_date.is_not(None),
+                PMTask.original_due_date>=start,
+                PMTask.original_due_date<=end,
+            )))
+        ticket_count={};open_count={};critical_open={}
+        for row in tickets:ticket_count[row.equipment_id]=ticket_count.get(row.equipment_id,0)+1
+        for row in open_tickets:
+            open_count[row.equipment_id]=open_count.get(row.equipment_id,0)+1
+            if row.priority in {"P1","P2"}:critical_open[row.equipment_id]=critical_open.get(row.equipment_id,0)+1
+        alarm_active={}
+        for row in active_alarms:alarm_active[row.equipment_id]=alarm_active.get(row.equipment_id,0)+1
+        tool_matrix=[]
+        for rel in reliability:
+            equipment_id=rel["equipment_id"]
+            tool_matrix.append({
+                "equipment_id":equipment_id,
+                "availability_pct":rel["availability_pct"],
+                "failure_count":rel["failure_count"],
+                "unplanned_downtime_hours":rel["unplanned_downtime_hours"],
+                "planned_downtime_hours":rel["planned_downtime_hours"],
+                "mttr_hours":rel["mttr_hours"],
+                "mtbf_hours":rel["mtbf_hours"],
+                "incidents_period":ticket_count.get(equipment_id,0),
+                "open_incidents":open_count.get(equipment_id,0),
+                "critical_open":critical_open.get(equipment_id,0),
+                "active_alarms":alarm_active.get(equipment_id,0),
+                "current_state":rel["current_state"],
+            })
+        tool_matrix.sort(key=lambda x:(-x["unplanned_downtime_hours"],-x["failure_count"],x["availability_pct"],x["equipment_id"]))
+        due=len(pm_tasks);completed=sum(1 for x in pm_tasks if x.status=="Completed")
+        overdue=sum(1 for x in pm_tasks if x.status=="Overdue" or (x.status not in {"Completed","Cancelled"} and x.original_due_date and x.original_due_date<end))
+        deferred=sum(1 for x in pm_tasks if x.status=="Deferred")
+        compliance_pct=(completed/due*100.0) if due else 100.0
+        incident_by_equipment={}
+        for row in tickets:incident_by_equipment[row.equipment_id]=incident_by_equipment.get(row.equipment_id,0)+1
+        incident_pareto=[
+            {"equipment_id":key,"count":value}
+            for key,value in sorted(incident_by_equipment.items(),key=lambda kv:(-kv[1],kv[0]))
+        ]
+        return {
+            "days":days,"start":start,"end":end,
+            "reliability":reliability,"tool_matrix":tool_matrix,
+            "alarm_pareto":alarm_pareto,"incident_pareto":incident_pareto,
+            "pm":{"due":due,"completed":completed,"overdue":overdue,"deferred":deferred,"compliance_pct":compliance_pct},
+        }
 
     def dashboard_counts(self):
         with self.session() as s:

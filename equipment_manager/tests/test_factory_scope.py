@@ -58,6 +58,15 @@ class FactoryHierarchyAndScopeTests(unittest.TestCase):
                 user="etch_ee",expected_version=cvd.version,
             )
 
+    def test_unrestricted_scope_remains_boolean_and_my_work_contains_owned_work_order(self):
+        self.assertTrue(self.db.equipment_in_scope("etch_ee","ETCH-A01","worklog.edit"))
+        wo=self.db.create_work_order({
+            "equipment_id":"ETCH-A01","source_type":"ENGINEERING","title":"Chamber inspection",
+            "owner":"etch_ee","priority":"High",
+        },"etch_ee")
+        rows=self.db.my_work("etch_ee")
+        self.assertTrue(any(x["kind"]=="WORK_ORDER" and x["key"]==wo.work_order_no for x in rows))
+
     def test_strict_authz_rejects_unknown_actor(self):
         old=os.environ.get("EMS_STRICT_AUTHZ")
         os.environ["EMS_STRICT_AUTHZ"]="1"

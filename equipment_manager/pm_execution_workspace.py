@@ -52,9 +52,10 @@ class PMExecutionWorkspace(QWidget):
         self.start_button=QPushButton("Start / Resume");self.start_button.clicked.connect(self.start_resume)
         self.complete_button=QPushButton("Complete PM");self.complete_button.clicked.connect(self.complete_pm)
         self.open_eq=QPushButton("Open Equipment");self.open_eq.clicked.connect(self.open_equipment)
+        self.work_order_button=QPushButton("Create / Open Work Order");self.work_order_button.clicked.connect(self.open_work_order)
         refresh=QPushButton("Refresh");refresh.clicked.connect(self.refresh)
         head.addWidget(self.title);head.addWidget(self.state);head.addStretch(1)
-        for b in [self.open_eq,self.start_button,self.complete_button,refresh]:head.addWidget(b)
+        for b in [self.open_eq,self.work_order_button,self.start_button,self.complete_button,refresh]:head.addWidget(b)
         root.addLayout(head)
         self.context=QLabel("Select a PM task from Maintenance Planner, My Work, Search, or Equipment 360.");self.context.setWordWrap(True);self.context.setStyleSheet("color:#647581;");root.addWidget(self.context)
         self.progress=QLabel();self.progress.setStyleSheet("font-weight:700;");root.addWidget(self.progress)
@@ -74,8 +75,13 @@ class PMExecutionWorkspace(QWidget):
         iv.addWidget(self.step_title);iv.addWidget(self.method);iv.addWidget(self.specification);iv.addWidget(self.reaction);iv.addWidget(self.text_value);iv.addWidget(self.pass_fail);iv.addWidget(QLabel("Comment"));iv.addWidget(self.comment);iv.addLayout(buttons);iv.addStretch(1)
         split.addWidget(inspector);split.setStretchFactor(0,3);split.setStretchFactor(1,2);ev.addWidget(split);tabs.addTab(execute,"Checklist Runner")
 
-        req=QWidget();rv=QVBoxLayout(req);rh=QHBoxLayout();ack=QPushButton("Acknowledge selected requirement");ack.clicked.connect(self.ack_requirement);rh.addWidget(ack);rh.addStretch(1);rv.addLayout(rh)
-        self.req_table=_table(["Requirement","Type","Key","Description","Qty","Mandatory","Acknowledged by","Time"]);rv.addWidget(self.req_table);tabs.addTab(req,"Requirements / Readiness")
+        req=QWidget();rv=QVBoxLayout(req);rh=QHBoxLayout();ack=QPushButton("Acknowledge selected requirement");ack.clicked.connect(self.ack_requirement)
+        reserve=QPushButton("Reserve required parts");reserve.clicked.connect(self.reserve_parts);reserve.setEnabled(db.has_permission(user,"inventory.reserve"))
+        consume=QPushButton("Consume reserved parts");consume.clicked.connect(self.consume_parts);consume.setEnabled(db.has_permission(user,"inventory.consume") or db.has_permission(user,"inventory.edit"))
+        rh.addWidget(ack);rh.addWidget(reserve);rh.addWidget(consume);rh.addStretch(1);rv.addLayout(rh)
+        self.readiness=QLabel();self.readiness.setWordWrap(True);self.readiness.setStyleSheet("color:#526471;font-weight:600;");rv.addWidget(self.readiness)
+        self.req_table=_table(["Requirement","Type","Key","Description","Qty","Mandatory","Acknowledged by","Time"]);rv.addWidget(self.req_table,2)
+        self.reservation_table=_table(["ID","Part","Location","Qty","Status","Reserved By","Time"]);rv.addWidget(QLabel("PM part reservations"));rv.addWidget(self.reservation_table,1);tabs.addTab(req,"Requirements / Readiness")
 
         self.attachments=AttachmentPanel(db,user);tabs.addTab(self.attachments,"Execution Evidence")
         self._enable_execution(False)
@@ -124,6 +130,20 @@ class PMExecutionWorkspace(QWidget):
             ack=self.acks.get(req.requirement_id)
             vals=[req.requirement_id,req.requirement_type,req.requirement_key,req.description,req.quantity,req.mandatory,ack.acknowledged_by if ack else "",ack.acknowledged_at if ack else ""]
             for c,val in enumerate(vals):self.req_table.setItem(r,c,_item(val))
+        reservations=[x for x in self.db.list_reservations() if x.pm_task_id==self.task.id]
+        self.reservation_table.setRowCount(len(reservations))
+        for r,row in enumerate(reservations):
+            vals=[row.id,row.part_number,row.location_code,row.quantity,row.status,row.reserved_by,row.reserved_at]
+            for col,val in enumerate(vals):self.reservation_table.setItem(r,col,_item(val))
+        try:
+            ready=self.db.pm_task_readiness(self.task.id)
+            part_detail="; ".join(f"{x['part_number']} short {x['shortage']:g}" for x in ready["part_shortages"])
+            cert_detail=", ".join(ready["missing_certifications"])
+            self.readiness.setText(
+                f"Parts: {ready['parts_status']}" + (f" ({part_detail})" if part_detail else "") +
+                f"    Certifications: {ready['certification_status']}" + (f" ({cert_detail})" if cert_detail else "")
+            )
+        except Exception as exc:self.readiness.setText(f"Readiness unavailable: {exc}")
         completed=len(self.results);total=len(self.specs);failed=sum(1 for x in self.results.values() if x.result in {"SPECIFICATION FAILURE","CONTROL FAILURE","FAIL","INVALID"})
         req_done=sum(1 for x in self.requirements if x.requirement_type=="CERTIFICATION" or x.requirement_id in self.acks)
         self.progress.setText(f"Checklist {completed}/{total} · Requirements {req_done}/{len(self.requirements)} · Blocking results {failed}")
@@ -218,6 +238,23 @@ class PMExecutionWorkspace(QWidget):
         try:self.db.acknowledge_pm_requirement(self.execution.id,req.requirement_id,self.user["username"],note,evidence);self.refresh()
         except Exception as exc:QMessageBox.critical(self,"Requirement",str(exc))
 
+    def reserve_parts(self):
+        if not self.task:return
+        try:
+            created=self.db.reserve_pm_required_parts(self.task.id,self.user["username"],"PM-RUNNER")
+            QMessageBox.information(self,"PM parts",f"Created {len(created)} reservation(s)." if created else "Required parts are already fully reserved or no parts are required.")
+            self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"PM parts",str(exc))
+
+    def consume_parts(self):
+        if not self.execution:return
+        if QMessageBox.question(self,"Consume PM parts","Consume all active part reservations for this PM execution from inventory?")!=QMessageBox.StandardButton.Yes:return
+        try:
+            tx=self.db.consume_pm_reserved_parts(self.execution.id,self.user["username"],"PM-RUNNER")
+            QMessageBox.information(self,"PM parts",f"Consumed {len(tx)} inventory line(s)." if tx else "No active PM part reservations to consume.")
+            self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"PM parts",str(exc))
+
     def offer_incident(self,spec,result):
         if QMessageBox.question(self,"Abnormal PM result",f"{result.result} on step {spec.step_no}.\nCreate an incident linked to this equipment now?")!=QMessageBox.StandardButton.Yes:return
         no=f"PM-{self.task.id}-{spec.step_no}-{datetime.now():%Y%m%d%H%M%S}"
@@ -236,6 +273,13 @@ class PMExecutionWorkspace(QWidget):
                     except Exception:pass
             QMessageBox.information(self,"PM","PM completed successfully.");self.execution.status="Completed";self.refresh()
         except Exception as exc:QMessageBox.critical(self,"Complete PM",str(exc))
+
+    def open_work_order(self):
+        if not self.task:return
+        try:
+            row=self.db.create_work_order_from_pm(self.task.id,self.user["username"],"PM-RUNNER")
+            self.open_entity.emit("WORK_ORDER",row.work_order_no,row.equipment_id)
+        except Exception as exc:QMessageBox.critical(self,"Work order",str(exc))
 
     def open_equipment(self):
         if self.task:self.open_entity.emit("EQUIPMENT",self.task.equipment_id,self.task.equipment_id)
