@@ -49,6 +49,7 @@ from main import (
 )
 from smart_map import SmartLayoutPage
 from workspaces import EquipmentWorkspaceTabs, MyWorkWorkspace, SearchWorkspace
+from table_productivity import configure_productivity_context
 
 DEMO_MODE=os.getenv("EMS_DEMO_MODE","0").strip().lower() in {"1","true","yes","on"}
 
@@ -141,6 +142,7 @@ class SmartMainWindow(QMainWindow):
         super().__init__()
         self.db = db
         self.user = user
+        configure_productivity_context(db,user["username"])
         self.nav_history=[]
         self.nav_history_index=-1
         self._history_suspended=False
