@@ -11,7 +11,10 @@ from typing import Any
 from sqlalchemy import Boolean, DateTime, Float, Integer, String, Text, UniqueConstraint, create_engine, func, select
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 
-from domain import DOWNTIME_STATES, EQUIPMENT_STATES, STATE_CLASS, validate_transition
+from domain import (
+    DOWNTIME_STATES, EQUIPMENT_STATES, STATE_CLASS, TICKET_STATES,
+    validate_ticket_transition, validate_transition,
+)
 
 
 class Base(DeclarativeBase):
@@ -199,6 +202,21 @@ class Ticket(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     version: Mapped[int] = mapped_column(Integer, default=1)
+
+
+class TicketStateEvent(Base):
+    __tablename__ = "ticket_state_events"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    event_key: Mapped[str] = mapped_column(String(40), unique=True, index=True, default=lambda: secrets.token_hex(16))
+    ticket_no: Mapped[str] = mapped_column(String(100), index=True)
+    from_state: Mapped[str] = mapped_column(String(50), default="")
+    to_state: Mapped[str] = mapped_column(String(50), index=True)
+    reason_code: Mapped[str] = mapped_column(String(60), index=True)
+    note: Mapped[str] = mapped_column(Text, default="")
+    owner: Mapped[str] = mapped_column(String(120), default="")
+    changed_by: Mapped[str] = mapped_column(String(120), default="", index=True)
+    workstation: Mapped[str] = mapped_column(String(120), default="")
+    changed_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
 
 
 class TicketInvestigation(Base):
@@ -743,12 +761,126 @@ class Database:
     def list_tickets(self):
         with self.session() as s: return list(s.scalars(select(Ticket).order_by(Ticket.created_at.desc())))
 
-    def save_ticket(self, data: dict[str, Any], expected_version: int | None = None):
+    def save_ticket(
+        self,
+        data: dict[str, Any],
+        expected_version: int | None = None,
+        workstation: str = "",
+    ):
+        payload = dict(data)
         with self.session() as s:
-            item = s.scalar(select(Ticket).where(Ticket.ticket_no == data["ticket_no"]))
-            if item: self._update_versioned(item, data, expected_version, "Ticket")
-            else: item=Ticket(**data); s.add(item)
-            s.flush(); return item
+            item = s.scalar(select(Ticket).where(Ticket.ticket_no == payload["ticket_no"]))
+            if item:
+                # Lifecycle state is controlled by transition_ticket_state(), not generic editing.
+                payload.pop("status", None)
+                payload.pop("created_by", None)
+                payload.pop("created_at", None)
+                self._update_versioned(item, payload, expected_version, "Ticket")
+            else:
+                payload["status"] = "Open"
+                if payload["status"] not in TICKET_STATES:
+                    raise ValueError(f"Unknown ticket state: {payload['status']}")
+                item = Ticket(**payload)
+                s.add(item)
+                s.add(TicketStateEvent(
+                    ticket_no=payload["ticket_no"],
+                    from_state="",
+                    to_state="Open",
+                    reason_code="INITIAL_STATE",
+                    note="Issue ticket created",
+                    owner=payload.get("owner", ""),
+                    changed_by=payload.get("created_by", ""),
+                    workstation=workstation,
+                ))
+            s.flush()
+            return item
+
+    def list_ticket_state_events(self, ticket_no: str, limit: int = 250):
+        with self.session() as s:
+            stmt = (
+                select(TicketStateEvent)
+                .where(TicketStateEvent.ticket_no == ticket_no)
+                .order_by(TicketStateEvent.changed_at.desc(), TicketStateEvent.id.desc())
+                .limit(max(1, min(int(limit), 2000)))
+            )
+            return list(s.scalars(stmt))
+
+    def transition_ticket_state(
+        self,
+        ticket_no: str,
+        target_state: str,
+        *,
+        reason_code: str,
+        note: str = "",
+        owner: str = "",
+        user: str,
+        workstation: str = "",
+        expected_version: int | None = None,
+        override: bool = False,
+    ):
+        with self.session() as s:
+            stmt = select(Ticket).where(Ticket.ticket_no == ticket_no)
+            if self.url.startswith("postgresql"):
+                stmt = stmt.with_for_update()
+            item = s.scalar(stmt)
+            if not item:
+                raise ValueError("Ticket not found")
+            if expected_version is not None and item.version != expected_version:
+                raise RuntimeError("CONFLICT: Ticket changed by another user. Refresh and retry.")
+
+            effective_owner = (owner or item.owner or "").strip()
+            validate_ticket_transition(
+                item.status,
+                target_state,
+                reason_code=reason_code,
+                owner=effective_owner,
+                note=note,
+                override=override,
+            )
+            if target_state in {"Resolved", "Verification", "Closed"}:
+                if not (item.root_cause or "").strip():
+                    raise ValueError("Root cause must be documented before resolution/verification.")
+                if not (item.corrective_action or "").strip():
+                    raise ValueError("Corrective action must be documented before resolution/verification.")
+            if target_state == "Closed" and not (item.verification or "").strip():
+                raise ValueError("Verification evidence/result must be documented before closure.")
+
+            now = datetime.utcnow()
+            previous = item.status
+            item.status = target_state
+            if effective_owner:
+                item.owner = effective_owner
+            item.updated_at = now
+            item.version += 1
+            event = TicketStateEvent(
+                ticket_no=ticket_no,
+                from_state=previous,
+                to_state=target_state,
+                reason_code=reason_code,
+                note=note.strip(),
+                owner=item.owner,
+                changed_by=user,
+                workstation=workstation,
+                changed_at=now,
+            )
+            s.add(event)
+            s.add(AuditLog(
+                user=user,
+                action="TICKET_STATE_TRANSITION",
+                entity_type="TICKET",
+                entity_key=ticket_no,
+                detail=json.dumps({
+                    "from": previous,
+                    "to": target_state,
+                    "reason_code": reason_code,
+                    "note": note.strip(),
+                    "owner": item.owner,
+                }, sort_keys=True),
+                workstation=workstation,
+                created_at=now,
+            ))
+            s.flush()
+            return item, event
 
     def add_ticket_investigation(self, ticket_no: str, data: dict[str, Any]):
         with self.session() as s:
