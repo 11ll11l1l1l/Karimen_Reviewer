@@ -11,6 +11,8 @@ from typing import Any
 from sqlalchemy import Boolean, DateTime, Float, Integer, String, Text, UniqueConstraint, create_engine, func, select
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 
+from domain import EQUIPMENT_STATES, STATE_CLASS, validate_transition
+
 
 class Base(DeclarativeBase):
     pass
@@ -60,6 +62,25 @@ class Equipment(Base):
     map_y: Mapped[float] = mapped_column(Float, default=0.0)
     version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class EquipmentStateEvent(Base):
+    __tablename__ = "equipment_state_events"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    event_key: Mapped[str] = mapped_column(String(40), unique=True, index=True, default=lambda: secrets.token_hex(16))
+    equipment_id: Mapped[str] = mapped_column(String(100), index=True)
+    from_state: Mapped[str] = mapped_column(String(40), default="")
+    to_state: Mapped[str] = mapped_column(String(40), index=True)
+    state_class: Mapped[str] = mapped_column(String(40), default="")
+    downtime: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    reason_code: Mapped[str] = mapped_column(String(60), index=True)
+    reason_text: Mapped[str] = mapped_column(Text, default="")
+    related_ticket: Mapped[str] = mapped_column(String(100), default="", index=True)
+    related_pm_task_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    owner: Mapped[str] = mapped_column(String(120), default="")
+    changed_by: Mapped[str] = mapped_column(String(120), default="", index=True)
+    workstation: Mapped[str] = mapped_column(String(120), default="")
+    changed_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
 
 
 class PMDefinition(Base):
@@ -356,9 +377,9 @@ PBKDF2_ROUNDS = 310_000
 
 ROLE_PERMISSIONS = {
     "Administrator": {"*"},
-    "Manager": {"view", "equipment.edit", "pm.edit", "pm.execute", "pm.approve", "ticket.edit", "disposition.edit", "release.approve", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
-    "Supervisor": {"view", "equipment.edit", "pm.edit", "pm.execute", "ticket.edit", "disposition.edit", "release.verify", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
-    "Equipment Engineer": {"view", "equipment.edit", "pm.edit", "pm.execute", "ticket.edit", "disposition.edit", "release.verify", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
+    "Manager": {"view", "equipment.edit", "equipment.transition", "pm.edit", "pm.execute", "pm.approve", "ticket.edit", "disposition.edit", "release.approve", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
+    "Supervisor": {"view", "equipment.edit", "equipment.transition", "pm.edit", "pm.execute", "ticket.edit", "disposition.edit", "release.verify", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
+    "Equipment Engineer": {"view", "equipment.edit", "equipment.transition", "pm.edit", "pm.execute", "ticket.edit", "disposition.edit", "release.verify", "endorsement.edit", "inventory.edit", "inventory.reserve", "document.link", "report.view"},
     "Maintenance": {"view", "pm.execute", "ticket.edit", "endorsement.edit", "inventory.consume", "inventory.reserve", "document.link"},
     "Technician": {"view", "pm.execute", "ticket.edit", "inventory.consume", "document.link"},
     "Process Engineer": {"view", "ticket.edit", "release.verify", "document.link", "report.view"},
@@ -368,7 +389,7 @@ ROLE_PERMISSIONS = {
 }
 
 PERMISSIONS = [
-    "view", "equipment.edit", "layout.edit", "pm.edit", "pm.execute", "pm.approve",
+    "view", "equipment.edit", "equipment.transition", "layout.edit", "pm.edit", "pm.execute", "pm.approve",
     "ticket.edit", "disposition.edit", "release.verify", "release.approve", "endorsement.edit",
     "inventory.edit", "inventory.consume", "inventory.reserve", "document.link", "document.control",
     "user.admin", "audit.view", "report.view",
@@ -497,11 +518,111 @@ class Database:
         with self.session() as s: return s.scalar(select(Equipment).where(Equipment.equipment_id == equipment_id))
 
     def save_equipment(self, data: dict[str, Any], expected_version: int | None = None):
+        payload = dict(data)
         with self.session() as s:
-            item = s.scalar(select(Equipment).where(Equipment.equipment_id == data["equipment_id"]))
-            if item: self._update_versioned(item, data, expected_version, "Equipment")
-            else: item = Equipment(**data); s.add(item)
-            s.flush(); return item
+            item = s.scalar(select(Equipment).where(Equipment.equipment_id == payload["equipment_id"]))
+            if item:
+                # Operational state and disposition are governed workflows, not editable master-data fields.
+                payload.pop("status", None)
+                payload.pop("disposition", None)
+                self._update_versioned(item, payload, expected_version, "Equipment")
+            else:
+                payload["status"] = payload.get("status") or "Available"
+                payload["disposition"] = payload.get("disposition") or "Released"
+                if payload["status"] not in EQUIPMENT_STATES:
+                    raise ValueError(f"Unknown equipment state: {payload['status']}")
+                item = Equipment(**payload)
+                s.add(item)
+            s.flush()
+            return item
+
+    def list_equipment_state_events(self, equipment_id: str, limit: int = 250):
+        with self.session() as s:
+            stmt = (
+                select(EquipmentStateEvent)
+                .where(EquipmentStateEvent.equipment_id == equipment_id)
+                .order_by(EquipmentStateEvent.changed_at.desc(), EquipmentStateEvent.id.desc())
+                .limit(max(1, min(int(limit), 2000)))
+            )
+            return list(s.scalars(stmt))
+
+    def transition_equipment_state(
+        self,
+        equipment_id: str,
+        target_state: str,
+        *,
+        reason_code: str,
+        reason_text: str = "",
+        related_ticket: str = "",
+        related_pm_task_id: int | None = None,
+        owner: str = "",
+        user: str,
+        workstation: str = "",
+        expected_version: int | None = None,
+        override: bool = False,
+    ):
+        with self.session() as s:
+            stmt = select(Equipment).where(Equipment.equipment_id == equipment_id)
+            if self.url.startswith("postgresql"):
+                stmt = stmt.with_for_update()
+            eq = s.scalar(stmt)
+            if not eq:
+                raise ValueError("Equipment not found")
+            if expected_version is not None and eq.version != expected_version:
+                raise RuntimeError("CONFLICT: Equipment changed by another user. Refresh and retry.")
+
+            decision = validate_transition(
+                eq.status,
+                target_state,
+                reason_code=reason_code,
+                reason_text=reason_text,
+                related_ticket=related_ticket,
+                related_pm_task_id=related_pm_task_id,
+                owner=owner,
+                disposition=eq.disposition,
+                override=override,
+            )
+            now = datetime.utcnow()
+            event = EquipmentStateEvent(
+                equipment_id=equipment_id,
+                from_state=eq.status,
+                to_state=target_state,
+                state_class=decision.state_class,
+                downtime=decision.downtime,
+                reason_code=reason_code,
+                reason_text=reason_text.strip(),
+                related_ticket=related_ticket.strip(),
+                related_pm_task_id=related_pm_task_id,
+                owner=owner.strip(),
+                changed_by=user,
+                workstation=workstation,
+                changed_at=now,
+            )
+            s.add(event)
+            previous = eq.status
+            eq.status = target_state
+            eq.version += 1
+            eq.updated_at = now
+            s.add(AuditLog(
+                user=user,
+                action="STATE_TRANSITION",
+                entity_type="EQUIPMENT",
+                entity_key=equipment_id,
+                detail=json.dumps({
+                    "from": previous,
+                    "to": target_state,
+                    "state_class": STATE_CLASS[target_state],
+                    "reason_code": reason_code,
+                    "reason_text": reason_text.strip(),
+                    "related_ticket": related_ticket.strip(),
+                    "related_pm_task_id": related_pm_task_id,
+                    "owner": owner.strip(),
+                }, sort_keys=True),
+                workstation=workstation,
+                created_at=now,
+            ))
+            s.flush()
+            return eq, event
 
     def update_map_position(self, entity_type: str, key: str, x: float, y: float, expected_version: int | None = None):
         with self.session() as s:
