@@ -325,17 +325,59 @@ class PMExecutionDialog(QDialog):
         except Exception as exc: QMessageBox.critical(self,"Complete PM",str(exc))
 
 
+class PMDeferralRequestDialog(QDialog):
+    def __init__(self, task, parent=None):
+        super().__init__(parent); self.task=task; self.setWindowTitle(f"Request PM Deferral — {task.equipment_id} / {task.pm_id}"); self.setMinimumWidth(620)
+        f=QFormLayout(self)
+        due=task.original_due_date.date() if task.original_due_date else datetime.now().date()
+        self.new_due=QDateEdit(); self.new_due.setCalendarPopup(True); self.new_due.setDate(due); self.new_due.setMinimumDate(due)
+        self.reason=QTextEdit(); self.risk=QTextEdit(); self.mitigation=QTextEdit()
+        self.reason.setPlaceholderText("Why the PM cannot be completed by its controlled due date.")
+        self.risk.setPlaceholderText("What equipment/process/quality/safety risk exists during the extension.")
+        self.mitigation.setPlaceholderText("Temporary controls, inspections, restrictions, monitoring, or contingency actions.")
+        f.addRow("Original Due",QLabel(str(task.original_due_date.date()) if task.original_due_date else ""))
+        f.addRow("Requested Due",self.new_due); f.addRow("Reason",self.reason); f.addRow("Risk Assessment",self.risk); f.addRow("Mitigation",self.mitigation)
+        note=QLabel("Submitting does not change the PM due date. A different authorized reviewer must approve it."); note.setWordWrap(True); note.setStyleSheet("color:#7a4b00"); f.addRow("",note)
+        b=QDialogButtonBox(QDialogButtonBox.StandardButton.Save|QDialogButtonBox.StandardButton.Cancel); b.accepted.connect(self.accept); b.rejected.connect(self.reject); f.addRow(b)
+
+    def data(self):
+        d=self.new_due.date()
+        return {
+            "requested_due_date":datetime(d.year(),d.month(),d.day()),
+            "reason":self.reason.toPlainText().strip(),
+            "risk_assessment":self.risk.toPlainText().strip(),
+            "mitigation":self.mitigation.toPlainText().strip(),
+        }
+
+
+class PMDeferralReviewDialog(QDialog):
+    def __init__(self,row,approve,parent=None):
+        super().__init__(parent); self.row=row; self.approve=approve; self.setWindowTitle(("Approve" if approve else "Reject")+f" PM Deferral #{row.id}")
+        f=QFormLayout(self)
+        for label,value in [
+            ("Equipment",row.equipment_id),("PM",row.pm_id),("Original Due",row.original_due_date),
+            ("Requested Due",row.requested_due_date),("Requested By",row.requested_by),
+            ("Reason",row.reason),("Risk",row.risk_assessment),("Mitigation",row.mitigation),
+        ]:
+            w=QLabel(str(value or "")); w.setWordWrap(True); f.addRow(label,w)
+        self.note=QTextEdit(); self.note.setPlaceholderText("Reviewer decision basis / conditions")
+        f.addRow("Review Note",self.note)
+        b=QDialogButtonBox(QDialogButtonBox.StandardButton.Save|QDialogButtonBox.StandardButton.Cancel); b.accepted.connect(self.accept); b.rejected.connect(self.reject); f.addRow(b)
+
+
 class PMPage(QWidget):
     def __init__(self,db,user):
-        super().__init__(); self.db=db; self.user=user; self.defs=[]; self.tasks=[]; self.specrows=[]; v=QVBoxLayout(self); self.tabs=QTabWidget(); v.addWidget(self.tabs)
+        super().__init__(); self.db=db; self.user=user; self.defs=[]; self.tasks=[]; self.specrows=[]; self.deferrals=[]; v=QVBoxLayout(self); self.tabs=QTabWidget(); v.addWidget(self.tabs)
         wd=QWidget(); vd=QVBoxLayout(wd); hd=QHBoxLayout(); add=QPushButton("Add Definition"); edit=QPushButton("Edit Definition"); gen=QPushButton("Generate Next PM"); ready=QPushButton("Parts Readiness"); add.clicked.connect(self.add_def); edit.clicked.connect(self.edit_def); gen.clicked.connect(self.generate_next); ready.clicked.connect(self.parts_ready); canedit=db.has_permission(user,"pm.edit"); add.setEnabled(canedit); edit.setEnabled(canedit); gen.setEnabled(canedit); hd.addWidget(add);hd.addWidget(edit);hd.addWidget(gen);hd.addWidget(ready);hd.addStretch(1);vd.addLayout(hd);self.def_table=make_table(["PM ID","Name","Equipment","Type","Frequency","Unit","Anchor","Early","Grace","Hours","Parts","Ver"]);vd.addWidget(self.def_table);self.tabs.addTab(wd,"Definitions")
-        wb=QWidget(); vb=QVBoxLayout(wb); hb=QHBoxLayout(); imp=QPushButton("Import Excel/CSV"); paste=QPushButton("Paste from Excel"); execute=QPushButton("Execute Selected"); forecast=QPushButton("Workload Forecast"); imp.clicked.connect(self.import_backlog); paste.clicked.connect(self.paste_backlog); execute.clicked.connect(self.execute); forecast.clicked.connect(self.forecast); imp.setEnabled(canedit); paste.setEnabled(canedit); execute.setEnabled(db.has_permission(user,"pm.execute")); [hb.addWidget(x) for x in [imp,paste,execute,forecast]];hb.addStretch(1);vb.addLayout(hb);self.task_table=make_table(["Equipment","PM ID","PM Name","Original Due","Scheduled","Status","Assigned","Hours","Priority","Ver"]);vb.addWidget(self.task_table);self.tabs.addTab(wb,"Backlog / Schedule")
+        wb=QWidget(); vb=QVBoxLayout(wb); hb=QHBoxLayout(); imp=QPushButton("Import Excel/CSV"); paste=QPushButton("Paste from Excel"); execute=QPushButton("Execute Selected"); defer=QPushButton("Request Deferral"); forecast=QPushButton("Workload Forecast"); imp.clicked.connect(self.import_backlog); paste.clicked.connect(self.paste_backlog); execute.clicked.connect(self.execute); defer.clicked.connect(self.request_deferral); forecast.clicked.connect(self.forecast); imp.setEnabled(canedit); paste.setEnabled(canedit); execute.setEnabled(db.has_permission(user,"pm.execute")); defer.setEnabled(db.has_permission(user,"pm.defer")); [hb.addWidget(x) for x in [imp,paste,execute,defer,forecast]];hb.addStretch(1);vb.addLayout(hb);self.task_table=make_table(["Equipment","PM ID","PM Name","Original Due","Scheduled","Status","Assigned","Hours","Priority","Ver"]);vb.addWidget(self.task_table);self.tabs.addTab(wb,"Backlog / Schedule")
         ws=QWidget(); vs=QVBoxLayout(ws); hs=QHBoxLayout(); ispec=QPushButton("Import Steps / Specs"); pspec=QPushButton("Paste Steps / Specs"); ispec.clicked.connect(self.import_specs); pspec.clicked.connect(self.paste_specs); ispec.setEnabled(canedit); pspec.setEnabled(canedit); hs.addWidget(ispec);hs.addWidget(pspec);hs.addStretch(1);vs.addLayout(hs);self.spec_table=make_table(["PM ID","Step","Activity","Method","Type","Unit","Target","CL","CH","LSL","USL","Rev"]);vs.addWidget(self.spec_table);self.tabs.addTab(ws,"Checklist / Specs")
+        wf=QWidget(); vf=QVBoxLayout(wf); hf=QHBoxLayout(); approve=QPushButton("Approve Selected"); reject=QPushButton("Reject Selected"); approve.clicked.connect(lambda:self.review_deferral(True)); reject.clicked.connect(lambda:self.review_deferral(False)); canreview=db.has_permission(user,"pm.defer.approve"); approve.setEnabled(canreview); reject.setEnabled(canreview); hf.addWidget(approve);hf.addWidget(reject);hf.addStretch(1);vf.addLayout(hf);self.deferral_table=make_table(["ID","Equipment","PM","Original Due","Requested Due","Status","Requested By","Reviewed By","Review Note","Ver"]);vf.addWidget(self.deferral_table);self.tabs.addTab(wf,"PM Deferrals")
         self.refresh()
     def refresh(self):
         self.defs=self.db.list_pm_definitions(); fill_table(self.def_table,self.defs,["pm_id","name","equipment_id","schedule_type","frequency_value","frequency_unit","anchor_mode","early_window_days","grace_days","estimated_hours","required_parts","version"])
         self.tasks=self.db.list_pm_tasks(); fill_table(self.task_table,self.tasks,["equipment_id","pm_id","pm_name","original_due_date","scheduled_date","status","assigned_to","estimated_hours","priority","version"])
         self.specrows=self.db.list_pm_specs(); fill_table(self.spec_table,self.specrows,["pm_id","step_no","activity","method","input_type","unit","target","control_low","control_high","spec_low","spec_high","revision"])
+        self.deferrals=self.db.list_pm_deferrals(); fill_table(self.deferral_table,self.deferrals,["id","equipment_id","pm_id","original_due_date","requested_due_date","status","requested_by","reviewed_by","review_note","version"])
     def add_def(self):
         d=PMDefinitionDialog(parent=self)
         if d.exec()==QDialog.DialogCode.Accepted:
@@ -406,6 +448,41 @@ class PMPage(QWidget):
     def paste_specs(self):
         try:self._import_specs_df(read_clipboard_table(QApplication.clipboard().text()))
         except Exception as exc:QMessageBox.critical(self,"Paste",str(exc))
+    def request_deferral(self):
+        row=selected_row(self.task_table,self.tasks)
+        if not row:return
+        d=PMDeferralRequestDialog(row,self)
+        if d.exec()==QDialog.DialogCode.Accepted:
+            try:
+                self.db.request_pm_deferral(
+                    row.id,
+                    user=self.user["username"],
+                    workstation=WORKSTATION,
+                    expected_task_version=row.version,
+                    **d.data(),
+                )
+                self.refresh()
+            except Exception as exc:QMessageBox.critical(self,"PM Deferral",str(exc))
+
+    def review_deferral(self,approve):
+        row=selected_row(self.deferral_table,self.deferrals)
+        if not row:return
+        if row.status!="Pending":
+            QMessageBox.information(self,"PM Deferral","Selected request is already reviewed.");return
+        d=PMDeferralReviewDialog(row,approve,self)
+        if d.exec()==QDialog.DialogCode.Accepted:
+            try:
+                self.db.review_pm_deferral(
+                    row.id,
+                    approve,
+                    self.user["username"],
+                    d.note.toPlainText().strip(),
+                    workstation=WORKSTATION,
+                    expected_version=row.version,
+                )
+                self.refresh()
+            except Exception as exc:QMessageBox.critical(self,"PM Deferral",str(exc))
+
     def execute(self):
         row=selected_row(self.task_table,self.tasks)
         if not row:return
