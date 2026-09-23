@@ -2835,6 +2835,168 @@ class Database:
             })
             s.flush();return task
 
+    def pm_task_readiness(self, task_id: int) -> dict[str, Any]:
+        now=datetime.utcnow()
+        with self.session() as s:
+            task=s.get(PMTask,task_id)
+            if not task:raise ValueError("PM task not found")
+            reqs=list(s.scalars(select(PMRequirement).where(
+                PMRequirement.pm_id==task.pm_id,
+                PMRequirement.active.is_(True),
+                PMRequirement.mandatory.is_(True),
+            )))
+            definition=s.scalar(select(PMDefinition).where(PMDefinition.pm_id==task.pm_id))
+            reservations=list(s.scalars(select(InventoryReservation).where(
+                InventoryReservation.pm_task_id==task.id,
+                InventoryReservation.status=="Reserved",
+            )))
+            reserved_by_part={}
+            for r in reservations:reserved_by_part[r.part_number]=reserved_by_part.get(r.part_number,0.0)+float(r.quantity or 0)
+            part_requirements={}
+            cert_codes=[]
+            for req in reqs:
+                if req.requirement_type=="PART" and req.requirement_key:
+                    part_requirements[req.requirement_key]=part_requirements.get(req.requirement_key,0.0)+float(req.quantity or 0)
+                elif req.requirement_type=="CERTIFICATION" and req.requirement_key:
+                    cert_codes.append(req.requirement_key.strip())
+            if definition and (definition.required_skill or "").strip():
+                cert_codes.append(definition.required_skill.strip())
+            cert_codes=list(dict.fromkeys(x for x in cert_codes if x))
+            assigned=(task.assigned_to or "").strip()
+            cert_rows=list(s.scalars(select(TechnicianCertification).where(
+                TechnicianCertification.username==assigned,
+                TechnicianCertification.active.is_(True),
+            ))) if assigned else []
+            valid_certs={x.cert_code for x in cert_rows if x.expires_at is None or x.expires_at>now}
+        parts=[];shortages=[]
+        for part,qty in sorted(part_requirements.items()):
+            reserved=float(reserved_by_part.get(part,0.0))
+            unreserved_available=float(self.inventory_available(part))
+            total_covered=reserved+unreserved_available
+            short=max(0.0,qty-total_covered)
+            row={"part_number":part,"required":qty,"reserved":reserved,"available_unreserved":unreserved_available,"shortage":short,"ready":short<=0}
+            parts.append(row)
+            if short>0:shortages.append(row)
+        missing_certs=[code for code in cert_codes if code not in valid_certs]
+        return {
+            "task_id":task_id,
+            "equipment_id":task.equipment_id,
+            "assigned_to":assigned,
+            "parts":parts,
+            "parts_status":"NONE" if not parts else ("READY" if not shortages else "SHORT"),
+            "part_shortages":shortages,
+            "required_certifications":cert_codes,
+            "missing_certifications":missing_certs,
+            "certification_status":"NONE" if not cert_codes else ("UNASSIGNED" if not assigned else ("READY" if not missing_certs else "MISSING")),
+        }
+
+    def reserve_pm_required_parts(self, task_id: int, user: str, workstation: str = "") -> list[InventoryReservation]:
+        with self.session() as s:
+            task_stmt=select(PMTask).where(PMTask.id==task_id)
+            if self.url.startswith("postgresql"):task_stmt=task_stmt.with_for_update()
+            task=s.scalar(task_stmt)
+            if not task:raise ValueError("PM task not found")
+            self.assert_authorized(user,"inventory.reserve",task.equipment_id)
+            reqs=list(s.scalars(select(PMRequirement).where(
+                PMRequirement.pm_id==task.pm_id,
+                PMRequirement.active.is_(True),
+                PMRequirement.mandatory.is_(True),
+                PMRequirement.requirement_type=="PART",
+            )))
+            required={}
+            for req in reqs:
+                if req.requirement_key:required[req.requirement_key]=required.get(req.requirement_key,0.0)+float(req.quantity or 0)
+            current=list(s.scalars(select(InventoryReservation).where(
+                InventoryReservation.pm_task_id==task.id,
+                InventoryReservation.status=="Reserved",
+            )))
+            reserved={}
+            for row in current:reserved[row.part_number]=reserved.get(row.part_number,0.0)+float(row.quantity or 0)
+            planned=[]
+            shortages=[]
+            for part,qty in required.items():
+                need=max(0.0,qty-reserved.get(part,0.0))
+                if need<=0:continue
+                stock_stmt=select(InventoryItem).where(InventoryItem.part_number==part,InventoryItem.condition=="Available")
+                if self.url.startswith("postgresql"):stock_stmt=stock_stmt.with_for_update()
+                stock=list(s.scalars(stock_stmt))
+                total=sum(float(x.quantity or 0) for x in stock)
+                global_reserved=float(s.scalar(select(func.sum(InventoryReservation.quantity)).where(
+                    InventoryReservation.part_number==part,
+                    InventoryReservation.status=="Reserved",
+                )) or 0.0)
+                available=max(0.0,total-global_reserved)
+                if available<need:
+                    shortages.append(f"{part}: need {need:g}, available {available:g}")
+                    continue
+                location=stock[0].location_code if len(stock)==1 else ""
+                planned.append((part,location,need))
+            if shortages:raise ValueError("Required parts cannot be fully reserved: "+"; ".join(shortages))
+            created=[]
+            for part,location,qty in planned:
+                row=InventoryReservation(
+                    part_number=part,location_code=location,quantity=qty,pm_task_id=task.id,
+                    equipment_id=task.equipment_id,status="Reserved",reserved_by=user,
+                    note=f"PM {task.pm_id} required part",
+                )
+                s.add(row);created.append(row)
+            if planned:
+                s.add(AuditLog(
+                    user=user,action="PM_PARTS_RESERVE",entity_type="PM_TASK",entity_key=str(task.id),
+                    detail=json.dumps([{"part":p,"location":loc,"quantity":q} for p,loc,q in planned],sort_keys=True),
+                    workstation=workstation,
+                ))
+            s.flush();return created
+
+    def consume_pm_reserved_parts(self, execution_id: int, user: str, workstation: str = "") -> list[InventoryTransaction]:
+        with self.session() as s:
+            ex=s.get(PMExecution,execution_id)
+            if not ex:raise ValueError("PM execution not found")
+            task=s.get(PMTask,ex.task_id)
+            if not task:raise ValueError("PM task not found")
+            self.assert_authorized(user,"inventory.consume",task.equipment_id)
+            reservations=list(s.scalars(select(InventoryReservation).where(
+                InventoryReservation.pm_task_id==task.id,
+                InventoryReservation.status=="Reserved",
+            )))
+            if not reservations:return []
+            allocations=[]
+            for reservation in reservations:
+                remaining=float(reservation.quantity or 0)
+                stmt=select(InventoryItem).where(
+                    InventoryItem.part_number==reservation.part_number,
+                    InventoryItem.condition=="Available",
+                )
+                if reservation.location_code:stmt=stmt.where(InventoryItem.location_code==reservation.location_code)
+                if self.url.startswith("postgresql"):stmt=stmt.with_for_update()
+                items=list(s.scalars(stmt.order_by(InventoryItem.location_code)))
+                available=sum(float(x.quantity or 0) for x in items)
+                if available<remaining:
+                    raise ValueError(f"Cannot consume reserved {reservation.part_number}: reserved {remaining:g}, physical available {available:g}.")
+                for item in items:
+                    if remaining<=0:break
+                    take=min(float(item.quantity or 0),remaining)
+                    if take<=0:continue
+                    allocations.append((reservation,item,take))
+                    remaining-=take
+            created=[]
+            for reservation,item,qty in allocations:
+                item.quantity-=qty;item.version+=1
+                tx=InventoryTransaction(
+                    part_number=item.part_number,location_code=item.location_code,
+                    transaction_type="Consume",quantity=-qty,equipment_id=task.equipment_id,
+                    related_ticket="",user=user,note=f"PM task {task.id} / execution {execution_id}",
+                )
+                s.add(tx);created.append(tx)
+            for reservation in reservations:
+                reservation.status="Consumed";reservation.released_at=datetime.utcnow();reservation.version+=1
+            s.add(AuditLog(
+                user=user,action="PM_PARTS_CONSUME",entity_type="PM_EXECUTION",entity_key=str(execution_id),
+                detail=json.dumps([{"part":x.part_number,"location":x.location_code,"quantity":-x.quantity} for x in created],sort_keys=True),
+                workstation=workstation,
+            ))
+            s.flush();return created
+
     def pm_planning_rows(self, days: int = 60, include_overdue: bool = True) -> list[dict[str, Any]]:
         horizon=max(1,min(int(days),730))
         now=datetime.utcnow();end=now+timedelta(days=horizon)
@@ -2854,10 +3016,14 @@ class Database:
             elif planned and latest and planned>latest and task.status!="Deferred":window="OUTSIDE GRACE"
             elif task.status=="Deferred":window="DEFERRED"
             else:window="IN WINDOW"
+            readiness=self.pm_task_readiness(task.id)
             rows.append({
                 "id":task.id,"equipment_id":task.equipment_id,"pm_id":task.pm_id,"pm_name":task.pm_name,
                 "original_due_date":due,"scheduled_date":planned,"status":task.status,"assigned_to":task.assigned_to,
                 "estimated_hours":float(task.estimated_hours or 0),"priority":task.priority,"window":window,
+                "parts_status":readiness["parts_status"],"certification_status":readiness["certification_status"],
+                "part_shortages":", ".join(f"{x['part_number']}:{x['shortage']:g}" for x in readiness["part_shortages"]),
+                "missing_certifications":", ".join(readiness["missing_certifications"]),
                 "early_date":early,"latest_date":latest,"version":task.version,
             })
         return rows
