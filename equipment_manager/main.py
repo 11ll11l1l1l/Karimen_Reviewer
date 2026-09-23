@@ -1336,18 +1336,29 @@ class UserDialog(QDialog):
 
 class AdminPage(QWidget):
     def __init__(self,db,user):
-        super().__init__();self.db=db;self.user=user;self.rows=[];self.attempts=[];v=QVBoxLayout(self)
-        h=QHBoxLayout();add=QPushButton("Add User");role=QPushButton("Change Role");toggle=QPushButton("Enable / Disable");reset=QPushButton("Reset Password");unlock=QPushButton("Unlock Login");override=QPushButton("Permission Override");backupb=QPushButton("Create DB Backup");verifyb=QPushButton("Verify Backup")
-        add.clicked.connect(self.add);role.clicked.connect(self.role);toggle.clicked.connect(self.toggle);reset.clicked.connect(self.reset);unlock.clicked.connect(self.unlock);override.clicked.connect(self.override);backupb.clicked.connect(self.create_backup);verifyb.clicked.connect(self.verify_backup)
-        allowed=db.has_permission(user,"user.admin") or user.get("role")=="Administrator";[x.setEnabled(allowed) for x in [add,role,toggle,reset,unlock,override,backupb,verifyb]];[h.addWidget(x) for x in [add,role,toggle,reset,unlock,override,backupb,verifyb]];h.addStretch(1);v.addLayout(h)
+        super().__init__();self.db=db;self.user=user;self.rows=[];self.attempts=[];self.scope_rows=[];v=QVBoxLayout(self)
+        h=QHBoxLayout();add=QPushButton("Add User");role=QPushButton("Change Role");toggle=QPushButton("Enable / Disable");reset=QPushButton("Reset Password");unlock=QPushButton("Unlock Login");override=QPushButton("Permission Override");scope=QPushButton("Access Scope");clearscope=QPushButton("Clear Scopes");backupb=QPushButton("Create DB Backup");verifyb=QPushButton("Verify Backup")
+        add.clicked.connect(self.add);role.clicked.connect(self.role);toggle.clicked.connect(self.toggle);reset.clicked.connect(self.reset);unlock.clicked.connect(self.unlock);override.clicked.connect(self.override);scope.clicked.connect(self.manage_scope);clearscope.clicked.connect(self.clear_scopes);backupb.clicked.connect(self.create_backup);verifyb.clicked.connect(self.verify_backup)
+        allowed=db.has_permission(user,"user.admin") or user.get("role")=="Administrator";[x.setEnabled(allowed) for x in [add,role,toggle,reset,unlock,override,scope,clearscope,backupb,verifyb]];[h.addWidget(x) for x in [add,role,toggle,reset,unlock,override,scope,clearscope,backupb,verifyb]];h.addStretch(1);v.addLayout(h)
         tabs=QTabWidget()
         wu=QWidget();vu=QVBoxLayout(wu);self.table=make_table(["Username","Display Name","Role","Active","Last Login","Created"]);vu.addWidget(self.table);tabs.addTab(wu,"Users")
+        ws=QWidget();vs=QVBoxLayout(ws);self.scope_table=make_table(["Username","Mode","Scope Type","Scope Key","Permission"]);vs.addWidget(self.scope_table);tabs.addTab(ws,"Access Scopes")
         wa=QWidget();va=QVBoxLayout(wa);self.attempt_table=make_table(["Username","Success","Reason","Workstation","Attempted"]);va.addWidget(self.attempt_table);tabs.addTab(wa,"Login Attempts")
         v.addWidget(tabs);self.refresh()
 
     def refresh(self):
         self.rows=self.db.list_users();fill_table(self.table,self.rows,["username","display_name","role","active","last_login","created_at"])
         self.attempts=self.db.list_login_attempts(limit=500);fill_table(self.attempt_table,self.attempts,["username","success","reason","workstation","attempted_at"])
+        self.scope_rows=[]
+        for u in self.rows:
+            policy=self.db.user_access_policy(u.username);mode=policy.scope_mode if policy else "UNRESTRICTED"
+            scopes=self.db.list_user_scopes(u.username)
+            if scopes:
+                for s in scopes:self.scope_rows.append({"username":u.username,"mode":mode,"scope_type":s.scope_type,"scope_key":s.scope_key,"permission":s.permission})
+            else:self.scope_rows.append({"username":u.username,"mode":mode,"scope_type":"","scope_key":"","permission":""})
+        self.scope_table.setRowCount(len(self.scope_rows))
+        for r,row in enumerate(self.scope_rows):
+            for col,key in enumerate(["username","mode","scope_type","scope_key","permission"]):self.scope_table.setItem(r,col,ti(row.get(key,"")))
 
     def current(self):return selected_row(self.table,self.rows)
 
@@ -1391,6 +1402,43 @@ class AdminPage(QWidget):
         if not ok:return
         choice,ok=QInputDialog.getItem(self,"Permission Override",f"{row.username}: {perm}",["Allow","Deny","Use Role Default"],0,False)
         if ok:self.db.set_permission_override(row.username,perm,{"Allow":True,"Deny":False,"Use Role Default":None}[choice]);self.refresh()
+
+    def manage_scope(self):
+        row=self.current()
+        if not row:return
+        current=self.db.user_access_policy(row.username)
+        current_mode=current.scope_mode if current else "UNRESTRICTED"
+        mode,ok=QInputDialog.getItem(self,"Access Scope","Scope mode",["UNRESTRICTED","RESTRICTED"],0 if current_mode=="UNRESTRICTED" else 1,False)
+        if not ok:return
+        try:self.db.set_user_access_policy(row.username,mode)
+        except Exception as exc:QMessageBox.critical(self,"Access Scope",str(exc));return
+        if mode=="UNRESTRICTED":self.refresh();return
+        scope_type,ok=QInputDialog.getItem(self,"Access Scope","Grant scope by",["NODE","EQUIPMENT"],0,False)
+        if not ok:self.refresh();return
+        if scope_type=="NODE":
+            items=[f"{n.node_code} — {n.node_type}: {n.name}" for n in self.db.list_factory_nodes()]
+            if not items:QMessageBox.warning(self,"Access Scope","No factory hierarchy nodes exist.");return
+            choice,ok=QInputDialog.getItem(self,"Factory Scope","Node",items,0,False)
+            if not ok:return
+            key=choice.split(" — ",1)[0]
+        else:
+            items=[e.equipment_id for e in self.db.list_equipment()]
+            choice,ok=QInputDialog.getItem(self,"Equipment Scope","Equipment",items,0,False)
+            if not ok:return
+            key=choice
+        perms=["*"]+PERMISSIONS
+        perm,ok=QInputDialog.getItem(self,"Access Scope","Permission within scope",perms,0,False)
+        if not ok:return
+        try:
+            self.db.add_user_scope(row.username,scope_type,key,perm)
+            self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"Access Scope",str(exc))
+
+    def clear_scopes(self):
+        row=self.current()
+        if not row:return
+        if QMessageBox.question(self,"Clear Scopes",f"Clear all explicit scopes for {row.username}?")!=QMessageBox.StandardButton.Yes:return
+        self.db.clear_user_scopes(row.username);self.refresh()
 
     def create_backup(self):
         postgres=self.db.url.startswith("postgresql")
