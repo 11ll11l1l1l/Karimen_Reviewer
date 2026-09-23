@@ -1531,14 +1531,6 @@ class Database:
 
     def equipment_in_scope(self, username: str, equipment_id: str, permission: str = "*") -> bool:
         with self.session() as s:
-            for wo in s.scalars(select(WorkOrder).where(
-                WorkOrder.owner==username,WorkOrder.status.notin_(["Completed","Cancelled"])
-            ).order_by(WorkOrder.updated_at.desc())):
-                rows.append({
-                    "severity":"HIGH" if wo.priority in {"P1","Critical","High"} else "MEDIUM",
-                    "kind":"WORK_ORDER","key":wo.work_order_no,"equipment_id":wo.equipment_id,
-                    "summary":f"{wo.status} — {wo.title}","owner":wo.owner,"age_hours":0.0,
-                })
             user=s.scalar(select(User).where(User.username==username))
             if user and user.role=="Administrator":return True
             policy=s.scalar(select(UserAccessPolicy).where(UserAccessPolicy.username==username))
@@ -1985,6 +1977,14 @@ class Database:
             if (item.get("owner") or "").strip().lower()==username.lower():
                 rows.append(dict(item))
         with self.session() as s:
+            for wo in s.scalars(select(WorkOrder).where(
+                WorkOrder.owner==username,WorkOrder.status.notin_(["Completed","Cancelled"])
+            ).order_by(WorkOrder.updated_at.desc())):
+                rows.append({
+                    "severity":"HIGH" if wo.priority in {"P1","Critical","High"} else "MEDIUM",
+                    "kind":"WORK_ORDER","key":wo.work_order_no,"equipment_id":wo.equipment_id,
+                    "summary":f"{wo.status} — {wo.title}","owner":wo.owner,"age_hours":0.0,
+                })
             user=s.scalar(select(User).where(User.username==username))
             userctx={"username":username,"role":user.role} if user else {"username":username,"role":"Read Only"}
             if self.has_permission(userctx,"release.approve"):
