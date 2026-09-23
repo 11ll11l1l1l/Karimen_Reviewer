@@ -32,6 +32,7 @@ from main import (
     APP_TITLE,
     WORKSTATION,
     AdminPage,
+    AlarmPage,
     ControlPage,
     DocumentPage,
     EndorsementPage,
@@ -214,6 +215,7 @@ class SmartMainWindow(QMainWindow):
         add("Live FAB Map", self.layout_page)
         add("PM Planning / Execution", PMPage(db, user))
         add("Issue / Repair Tickets", TicketPage(db, user))
+        add("Alarms / Events", AlarmPage(db, user))
         add("Qualification", QualificationPage(db, user))
         add("Reliability / MTBF", ReliabilityPage(db))
         add("Disposition / Release", ControlPage(db, user))
