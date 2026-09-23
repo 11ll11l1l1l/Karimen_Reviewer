@@ -1531,6 +1531,14 @@ class Database:
 
     def equipment_in_scope(self, username: str, equipment_id: str, permission: str = "*") -> bool:
         with self.session() as s:
+            for wo in s.scalars(select(WorkOrder).where(
+                WorkOrder.owner==username,WorkOrder.status.notin_(["Completed","Cancelled"])
+            ).order_by(WorkOrder.updated_at.desc())):
+                rows.append({
+                    "severity":"HIGH" if wo.priority in {"P1","Critical","High"} else "MEDIUM",
+                    "kind":"WORK_ORDER","key":wo.work_order_no,"equipment_id":wo.equipment_id,
+                    "summary":f"{wo.status} — {wo.title}","owner":wo.owner,"age_hours":0.0,
+                })
             user=s.scalar(select(User).where(User.username==username))
             if user and user.role=="Administrator":return True
             policy=s.scalar(select(UserAccessPolicy).where(UserAccessPolicy.username==username))
@@ -1937,6 +1945,11 @@ class Database:
                 EquipmentAlarmEvent.alarm_code.ilike(like),EquipmentAlarmEvent.message.ilike(like),EquipmentAlarmEvent.equipment_id.ilike(like),
             )).order_by(EquipmentAlarmEvent.occurred_at.desc()).limit(max_each)):
                 add("ALARM",row.event_key,f"{row.alarm_code} — {row.message}",f"{row.state} · {row.equipment_id}",row.equipment_id)
+            for row in s.scalars(select(WorkOrder).where(or_(
+                WorkOrder.work_order_no.ilike(like),WorkOrder.title.ilike(like),WorkOrder.description.ilike(like),
+                WorkOrder.equipment_id.ilike(like),WorkOrder.owner.ilike(like),
+            )).limit(max_each)):
+                add("WORK_ORDER",row.work_order_no,f"{row.work_order_no} — {row.title}",f"{row.status} · {row.equipment_id} · {row.owner}",row.equipment_id)
             for row in s.scalars(select(InventoryItem).where(or_(
                 InventoryItem.part_number.ilike(like),InventoryItem.description.ilike(like),InventoryItem.location_code.ilike(like),
             )).limit(max_each)):
@@ -5008,6 +5021,13 @@ class Database:
                     label=f"{task.pm_id} — {task.pm_name}" if task else f"PM task {ex.task_id}"
                     add(ex.started_at,"PM",ex.task_id,f"Execution started: {label}",ex.started_by,ex.status,"PM execution")
                     if ex.completed_at:add(ex.completed_at,"PM",ex.task_id,f"Execution completed: {label}",ex.completed_by,"Completed","PM execution")
+            work_orders=list(s.scalars(select(WorkOrder).where(WorkOrder.equipment_id==equipment_id)))
+            work_order_nos=[x.work_order_no for x in work_orders]
+            for wo in work_orders:
+                add(wo.created_at,"WORK_ORDER",wo.work_order_no,f"{wo.title}",wo.created_by,wo.status,"Work order")
+            if work_order_nos:
+                for ev in s.scalars(select(WorkOrderEvent).where(WorkOrderEvent.work_order_no.in_(work_order_nos))):
+                    add(ev.occurred_at,"WORK_ORDER",ev.work_order_no,f"{ev.from_state or '—'} → {ev.to_state}: {ev.reason}",ev.changed_by,ev.to_state,"Work order lifecycle")
             for w in s.scalars(select(WorkLog).where(WorkLog.equipment_id==equipment_id)):
                 add(w.started_at,"WORK",w.id,f"{w.work_type} started · {w.entity_type}:{w.entity_key}",w.username,w.status,"Labor")
                 if w.ended_at:add(w.ended_at,"WORK",w.id,f"{w.work_type} completed · {w.duration_minutes:.1f} min",w.username,"Completed","Labor")
