@@ -75,6 +75,16 @@ class UserFavorite(Base):
     __table_args__ = (UniqueConstraint("username","entity_type","entity_key",name="uq_user_favorite"),)
 
 
+class UserPreference(Base):
+    __tablename__ = "user_preferences"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    username: Mapped[str] = mapped_column(String(80), index=True)
+    preference_key: Mapped[str] = mapped_column(String(180), index=True)
+    value_json: Mapped[str] = mapped_column(Text, default="null")
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    __table_args__ = (UniqueConstraint("username","preference_key",name="uq_user_preference"),)
+
+
 class EntityAttachment(Base):
     __tablename__ = "entity_attachments"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -1032,6 +1042,9 @@ class Database:
             ("20260923_003","Create productivity workspace and universal evidence tables",lambda: [
                 table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
             ]),
+            ("20260923_004","Create account-level productivity preferences",lambda: [
+                table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
+            ]),
         ]
 
     def _migration_indexes(self):
@@ -1690,6 +1703,31 @@ class Database:
     def list_recovery_drills(self, limit: int = 100):
         with self.session() as s:
             return list(s.scalars(select(RecoveryDrill).order_by(RecoveryDrill.performed_at.desc()).limit(max(1,min(int(limit),1000)))))
+
+    def set_user_preference(self, username: str, key: str, value: Any):
+        if not username or not key:raise ValueError("Username and preference key are required.")
+        encoded=json.dumps(value,default=str,sort_keys=True)
+        with self.session() as s:
+            row=s.scalar(select(UserPreference).where(UserPreference.username==username,UserPreference.preference_key==key))
+            if row:row.value_json=encoded;row.updated_at=datetime.utcnow()
+            else:row=UserPreference(username=username,preference_key=key,value_json=encoded);s.add(row)
+            s.flush();return row
+
+    def get_user_preference(self, username: str, key: str, default: Any = None):
+        with self.session() as s:
+            row=s.scalar(select(UserPreference).where(UserPreference.username==username,UserPreference.preference_key==key))
+            if not row:return default
+            try:return json.loads(row.value_json)
+            except Exception:return default
+
+    def list_user_preferences(self, username: str):
+        with self.session() as s:
+            rows=list(s.scalars(select(UserPreference).where(UserPreference.username==username).order_by(UserPreference.preference_key)))
+            result={}
+            for row in rows:
+                try:result[row.preference_key]=json.loads(row.value_json)
+                except Exception:result[row.preference_key]=None
+            return result
 
     def record_recent_item(
         self,
