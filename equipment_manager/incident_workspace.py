@@ -4,7 +4,7 @@ from datetime import datetime
 
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
-    QAbstractItemView, QComboBox, QDateTimeEdit, QDialog, QDialogButtonBox,
+    QAbstractItemView, QComboBox, QDateTimeEdit, QDialog, QDialogButtonBox, QFileDialog,
     QFormLayout, QHBoxLayout, QHeaderView, QLabel, QLineEdit, QMessageBox,
     QPushButton, QTableWidget, QTableWidgetItem, QTabWidget, QTextEdit,
     QVBoxLayout, QWidget, QInputDialog,
@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
 
 from table_productivity import install_table_productivity
 from workspaces import AttachmentPanel
+from reporting import export_incident_pptx, export_incident_xlsx
 
 
 def _item(value):
@@ -81,9 +82,11 @@ class IncidentWorkspace(QWidget):
         self.status=QLabel();self.status.setStyleSheet("font-size:12pt;font-weight:700")
         self.open_eq=QPushButton("Open Equipment");self.open_eq.clicked.connect(self.open_equipment)
         self.work_order_button=QPushButton("Create / Open Work Order");self.work_order_button.clicked.connect(self.open_work_order)
+        ppt=QPushButton("Export PPTX");ppt.clicked.connect(self.export_pptx)
+        xlsx=QPushButton("Export Excel");xlsx.clicked.connect(self.export_xlsx)
         legacy=QPushButton("Lifecycle / troubleshooting editor");legacy.clicked.connect(self.open_legacy)
         refresh=QPushButton("Refresh");refresh.clicked.connect(self.refresh)
-        head.addWidget(self.title);head.addWidget(self.status);head.addStretch(1);head.addWidget(self.open_eq);head.addWidget(self.work_order_button);head.addWidget(legacy);head.addWidget(refresh);root.addLayout(head)
+        head.addWidget(self.title);head.addWidget(self.status);head.addStretch(1);head.addWidget(self.open_eq);head.addWidget(self.work_order_button);head.addWidget(ppt);head.addWidget(xlsx);head.addWidget(legacy);head.addWidget(refresh);root.addLayout(head)
         self.context=QLabel("Select an incident from Global Search, My Work, or Equipment 360.");self.context.setWordWrap(True);self.context.setStyleSheet("color:#647581;");root.addWidget(self.context)
 
         self.tabs=QTabWidget();root.addWidget(self.tabs,1)
@@ -212,6 +215,24 @@ class IncidentWorkspace(QWidget):
         if not ok:return
         try:self.db.verify_incident_action(row.id,self.user["username"],note,row.version);self.refresh()
         except Exception as exc:QMessageBox.critical(self,"Incident action",str(exc))
+
+    def export_pptx(self):
+        if not self.ticket:return
+        default=f"{self.ticket.ticket_no}_Incident_Review.pptx"
+        path,_=QFileDialog.getSaveFileName(self,"Export Incident PowerPoint",default,"PowerPoint (*.pptx)")
+        if not path:return
+        if not path.lower().endswith(".pptx"):path+=".pptx"
+        try:export_incident_pptx(self.db,self.ticket.ticket_no,path);QMessageBox.information(self,"PowerPoint",f"Editable incident review deck created.\n{path}")
+        except Exception as exc:QMessageBox.critical(self,"PowerPoint",str(exc))
+
+    def export_xlsx(self):
+        if not self.ticket:return
+        default=f"{self.ticket.ticket_no}_Incident_Data.xlsx"
+        path,_=QFileDialog.getSaveFileName(self,"Export Incident Excel",default,"Excel Workbook (*.xlsx)")
+        if not path:return
+        if not path.lower().endswith(".xlsx"):path+=".xlsx"
+        try:export_incident_xlsx(self.db,self.ticket.ticket_no,path);QMessageBox.information(self,"Excel",f"Incident workbook created.\n{path}")
+        except Exception as exc:QMessageBox.critical(self,"Excel",str(exc))
 
     def open_work_order(self):
         if not self.ticket:return
