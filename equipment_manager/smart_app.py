@@ -48,7 +48,7 @@ from main import (
     WorkLogPage,
 )
 from smart_map import SmartLayoutPage
-from workspaces import Equipment360Workspace, MyWorkWorkspace, SearchWorkspace
+from workspaces import EquipmentWorkspaceTabs, MyWorkWorkspace, SearchWorkspace
 
 DEMO_MODE=os.getenv("EMS_DEMO_MODE","0").strip().lower() in {"1","true","yes","on"}
 
@@ -207,7 +207,7 @@ class SmartMainWindow(QMainWindow):
         self.search_workspace=add("Global Search",SearchWorkspace(db,user))
         self.my_work=add("My Work",MyWorkWorkspace(db,user))
         self.dashboard=add("Operations Overview",SmartDashboardPage(db,lambda:self.open_page("Live FAB Map")))
-        self.equipment360=add("Equipment 360",Equipment360Workspace(db,user))
+        self.equipment360=add("Equipment Workspaces",EquipmentWorkspaceTabs(db,user))
         self.equipment_page=add("Equipment Registry",EquipmentPage(db,user))
         self.layout_page=add("Live FAB Map",SmartLayoutPage(db,user))
         self.pm_page=add("PM Planning / Execution",PMPage(db,user))
@@ -293,7 +293,7 @@ class SmartMainWindow(QMainWindow):
         if entity_type=="EQUIPMENT" or (equipment_id and entity_type in {"ALARM","QUALIFICATION","DOCUMENT","RELEASE"}):
             target=entity_key if entity_type=="EQUIPMENT" else equipment_id
             self.equipment360.set_equipment(target)
-            self.open_page("Equipment 360")
+            self.open_page("Equipment Workspaces")
             return
         if entity_type=="TICKET":
             if hasattr(self.ticket_page,"select_ticket"):self.ticket_page.select_ticket(entity_key)
@@ -315,7 +315,7 @@ class SmartMainWindow(QMainWindow):
             self.open_page("Shift Endorsements")
             return
         if equipment_id:
-            self.equipment360.set_equipment(equipment_id);self.open_page("Equipment 360")
+            self.equipment360.set_equipment(equipment_id);self.open_page("Equipment Workspaces")
             return
         self.open_page("Global Search")
 
