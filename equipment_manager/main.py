@@ -545,6 +545,10 @@ class TicketPage(QWidget):
     def change_state(self):
         row=selected_row(self.table,self.rows)
         if not row:return
+        targets=allowed_ticket_targets(row.status)
+        if not targets:
+            QMessageBox.information(self,"Ticket Lifecycle",f"{row.status} is a terminal state. No further lifecycle transition is available.")
+            return
         d=TicketStateDialog(row,self)
         if d.exec()==QDialog.DialogCode.Accepted:
             try:
