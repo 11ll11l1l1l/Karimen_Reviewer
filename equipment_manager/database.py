@@ -249,6 +249,35 @@ class PMUsageOccurrence(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
 
 
+class PMConditionTrigger(Base):
+    __tablename__ = "pm_condition_triggers"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    trigger_id: Mapped[str] = mapped_column(String(100), unique=True, index=True)
+    equipment_id: Mapped[str] = mapped_column(String(100), index=True)
+    pm_id: Mapped[str] = mapped_column(String(100), index=True)
+    meter_code: Mapped[str] = mapped_column(String(80), index=True)
+    comparator: Mapped[str] = mapped_column(String(10))
+    threshold: Mapped[float] = mapped_column(Float)
+    reset_threshold: Mapped[float | None] = mapped_column(Float, nullable=True)
+    latched: Mapped[bool] = mapped_column(Boolean, default=False)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
+class PMConditionOccurrence(Base):
+    __tablename__ = "pm_condition_occurrences"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    trigger_id: Mapped[str] = mapped_column(String(100), index=True)
+    task_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    equipment_id: Mapped[str] = mapped_column(String(100), index=True)
+    pm_id: Mapped[str] = mapped_column(String(100), index=True)
+    meter_code: Mapped[str] = mapped_column(String(80), index=True)
+    threshold: Mapped[float] = mapped_column(Float)
+    reading_value: Mapped[float] = mapped_column(Float)
+    event_type: Mapped[str] = mapped_column(String(30), default="TRIGGERED")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
 class PMDefinition(Base):
     __tablename__ = "pm_definitions"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -1773,6 +1802,7 @@ class Database:
                 created=[]
             else:
                 created=self._evaluate_usage_triggers_in_session(s,meter,user=user,workstation=workstation)
+                created+=self._evaluate_condition_triggers_in_session(s,meter,user=user,workstation=workstation)
 
             s.add(AuditLog(
                 user=user,
@@ -1823,6 +1853,104 @@ class Database:
             if equipment_id:
                 stmt=stmt.where(PMUsageTrigger.equipment_id==equipment_id)
             return list(s.scalars(stmt))
+
+    def save_pm_condition_trigger(self, data: dict[str, Any], expected_version: int | None = None):
+        payload=dict(data)
+        comp=str(payload.get("comparator","")).strip()
+        if comp not in {">",">=","<","<="}:raise ValueError("Condition comparator must be >, >=, <, or <=.")
+        with self.session() as s:
+            meter=s.scalar(select(EquipmentMeter).where(
+                EquipmentMeter.equipment_id==payload.get("equipment_id",""),
+                EquipmentMeter.meter_code==payload.get("meter_code",""),
+            ))
+            if not meter:raise ValueError("Configured equipment meter not found")
+            if not s.scalar(select(PMDefinition).where(PMDefinition.pm_id==payload.get("pm_id",""))):
+                raise ValueError("PM definition not found")
+            row=s.scalar(select(PMConditionTrigger).where(PMConditionTrigger.trigger_id==payload["trigger_id"]))
+            if row:
+                payload.pop("latched",None)
+                self._update_versioned(row,payload,expected_version,"PM condition trigger")
+            else:
+                payload.setdefault("latched",False);row=PMConditionTrigger(**payload);s.add(row)
+            s.flush();return row
+
+    def list_pm_condition_triggers(self, equipment_id: str = ""):
+        with self.session() as s:
+            stmt=select(PMConditionTrigger).order_by(PMConditionTrigger.equipment_id,PMConditionTrigger.trigger_id)
+            if equipment_id:stmt=stmt.where(PMConditionTrigger.equipment_id==equipment_id)
+            return list(s.scalars(stmt))
+
+    def list_pm_condition_occurrences(self, trigger_id: str = ""):
+        with self.session() as s:
+            stmt=select(PMConditionOccurrence).order_by(PMConditionOccurrence.created_at.desc())
+            if trigger_id:stmt=stmt.where(PMConditionOccurrence.trigger_id==trigger_id)
+            return list(s.scalars(stmt))
+
+    @staticmethod
+    def _condition_matches(value: float, comparator: str, threshold: float) -> bool:
+        if comparator==">":return value>threshold
+        if comparator==">=":return value>=threshold
+        if comparator=="<":return value<threshold
+        if comparator=="<=":return value<=threshold
+        raise ValueError("Unsupported condition comparator")
+
+    def _evaluate_condition_triggers_in_session(self, s, meter: EquipmentMeter, user: str = "", workstation: str = ""):
+        created=[]
+        stmt=select(PMConditionTrigger).where(
+            PMConditionTrigger.equipment_id==meter.equipment_id,
+            PMConditionTrigger.meter_code==meter.meter_code,
+            PMConditionTrigger.active.is_(True),
+        )
+        if self.url.startswith("postgresql"):stmt=stmt.with_for_update()
+        for trigger in s.scalars(stmt):
+            matched=self._condition_matches(meter.current_value,trigger.comparator,trigger.threshold)
+            if trigger.latched:
+                reset=False
+                if trigger.reset_threshold is None:
+                    reset=not matched
+                elif trigger.comparator in {">",">="}:
+                    reset=meter.current_value<=trigger.reset_threshold
+                else:
+                    reset=meter.current_value>=trigger.reset_threshold
+                if reset:
+                    trigger.latched=False;trigger.version+=1
+                    s.add(PMConditionOccurrence(
+                        trigger_id=trigger.trigger_id,task_id=None,equipment_id=meter.equipment_id,
+                        pm_id=trigger.pm_id,meter_code=meter.meter_code,threshold=trigger.threshold,
+                        reading_value=meter.current_value,event_type="RESET",
+                    ))
+                continue
+            if not matched:continue
+            open_task=s.scalar(select(PMTask).where(
+                PMTask.equipment_id==meter.equipment_id,PMTask.pm_id==trigger.pm_id,
+                PMTask.status.notin_(["Completed","Cancelled"]),
+            ))
+            task=None
+            if not open_task:
+                definition=s.scalar(select(PMDefinition).where(PMDefinition.pm_id==trigger.pm_id))
+                now=datetime.utcnow()
+                task=PMTask(
+                    equipment_id=meter.equipment_id,pm_id=trigger.pm_id,
+                    pm_name=definition.name if definition else trigger.pm_id,
+                    original_due_date=now,scheduled_date=now,status="Pending",
+                    estimated_hours=definition.estimated_hours if definition else 0.0,
+                    priority="High",sop_path=definition.sop_path if definition else "",
+                )
+                s.add(task);s.flush();created.append(task)
+            trigger.latched=True;trigger.version+=1
+            s.add(PMConditionOccurrence(
+                trigger_id=trigger.trigger_id,task_id=task.id if task else (open_task.id if open_task else None),
+                equipment_id=meter.equipment_id,pm_id=trigger.pm_id,meter_code=meter.meter_code,
+                threshold=trigger.threshold,reading_value=meter.current_value,event_type="TRIGGERED",
+            ))
+            s.add(AuditLog(
+                user=user,action="PM_CONDITION_TRIGGER",entity_type="PM_TASK",
+                entity_key=str(task.id if task else open_task.id),
+                detail=json.dumps({"trigger_id":trigger.trigger_id,"meter_code":meter.meter_code,
+                    "reading":meter.current_value,"comparator":trigger.comparator,"threshold":trigger.threshold},sort_keys=True),
+                workstation=workstation,
+            ))
+        return created
 
     def list_pm_usage_occurrences(self, trigger_id: str = ""):
         with self.session() as s:
