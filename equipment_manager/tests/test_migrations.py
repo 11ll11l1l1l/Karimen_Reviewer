@@ -13,7 +13,7 @@ class MigrationLifecycleTests(unittest.TestCase):
             url=f"sqlite:///{Path(root)/'ems.db'}"
             db=Database(url)
             rows=db.list_schema_migrations()
-            self.assertEqual([x.revision for x in rows],["20260923_001","20260923_002"])
+            self.assertEqual([x.revision for x in rows],["20260923_001","20260923_002","20260923_003"])
             reopened=Database(url)
             self.assertEqual(len(reopened.list_schema_migrations()),2)
 
