@@ -73,6 +73,7 @@ def make_table(headers: list[str]) -> QTableWidget:
     t = QTableWidget(); t.setColumnCount(len(headers)); t.setHorizontalHeaderLabels(headers)
     t.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
     t.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+    t.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
     t.setAlternatingRowColors(True)
     install_table_productivity(t,headers[0] if headers else "EMS Export")
     return t
@@ -279,10 +280,10 @@ class EquipmentPage(QWidget):
     def __init__(self, db, user):
         super().__init__(); self.db=db; self.user=user; self.rows=[]; self.history=[]; self.components=[]; self.component_events=[]; self.meters=[]; self.meter_readings=[]
         v=QVBoxLayout(self); h=QHBoxLayout(); self.search=QLineEdit(); self.search.setPlaceholderText("Search equipment..."); self.search.textChanged.connect(self.refresh)
-        add=QPushButton("Add"); edit=QPushButton("Edit Master Data"); transition=QPushButton("Change State");imp=QPushButton("Import Excel/CSV");paste=QPushButton("Paste from Excel")
-        add.clicked.connect(self.add); edit.clicked.connect(self.edit); transition.clicked.connect(self.change_state);imp.clicked.connect(self.import_equipment);paste.clicked.connect(self.paste_equipment)
-        canedit=db.has_permission(user,"equipment.edit");add.setEnabled(canedit);edit.setEnabled(canedit);imp.setEnabled(canedit);paste.setEnabled(canedit);transition.setEnabled(db.has_permission(user,"equipment.transition"))
-        h.addWidget(self.search,1); h.addWidget(add); h.addWidget(edit);h.addWidget(imp);h.addWidget(paste); h.addWidget(transition); v.addLayout(h)
+        add=QPushButton("Add"); edit=QPushButton("Edit Master Data"); transition=QPushButton("Change State");imp=QPushButton("Import Excel/CSV");paste=QPushButton("Paste from Excel");bulk=QPushButton("Bulk Edit Selected")
+        add.clicked.connect(self.add); edit.clicked.connect(self.edit); transition.clicked.connect(self.change_state);imp.clicked.connect(self.import_equipment);paste.clicked.connect(self.paste_equipment);bulk.clicked.connect(self.bulk_edit)
+        canedit=db.has_permission(user,"equipment.edit");add.setEnabled(canedit);edit.setEnabled(canedit);imp.setEnabled(canedit);paste.setEnabled(canedit);bulk.setEnabled(canedit);transition.setEnabled(db.has_permission(user,"equipment.transition"))
+        h.addWidget(self.search,1); h.addWidget(add); h.addWidget(edit);h.addWidget(imp);h.addWidget(paste);h.addWidget(bulk); h.addWidget(transition); v.addLayout(h)
         self.table=make_table(["ID","Name","Type","Area","Line/Cell","Status","Disposition","Owner","Criticality","Ver"])
         self.table.doubleClicked.connect(self.edit); self.table.itemSelectionChanged.connect(self.load_details); v.addWidget(self.table,2)
 
@@ -318,6 +319,36 @@ class EquipmentPage(QWidget):
                 if row.equipment_id==current_id:
                     self.table.selectRow(i); break
         self.load_details()
+
+    def bulk_edit(self):
+        selected=sorted({idx.row() for idx in self.table.selectedIndexes()})
+        rows=[self.rows[i] for i in selected if 0<=i<len(self.rows)]
+        if not rows:
+            QMessageBox.information(self,"Bulk edit","Select one or more equipment rows.");return
+        field,ok=QInputDialog.getItem(self,"Bulk edit equipment","Field",["Owner","Criticality"],0,False)
+        if not ok:return
+        if field=="Owner":
+            value,ok=QInputDialog.getText(self,"Bulk edit equipment",f"New owner for {len(rows)} equipment")
+        else:
+            value,ok=QInputDialog.getItem(self,"Bulk edit equipment","Criticality",["Low","Normal","High","Critical"],1,False)
+        if not ok:return
+        if QMessageBox.question(self,"Confirm bulk edit",f"Update {field} on {len(rows)} equipment record(s)?")!=QMessageBox.StandardButton.Yes:return
+        failures=[];updated=0
+        for row in rows:
+            data={
+                "equipment_id":row.equipment_id,"name":row.name,"equipment_type":row.equipment_type,
+                "manufacturer":row.manufacturer,"model":row.model,"serial_number":row.serial_number,
+                "asset_number":row.asset_number,"site":row.site,"building":row.building,"floor":row.floor,
+                "area":row.area,"line_cell":row.line_cell,"owner":value.strip() if field=="Owner" else row.owner,
+                "criticality":value if field=="Criticality" else row.criticality,
+                "map_x":row.map_x,"map_y":row.map_y,
+            }
+            try:self.db.save_equipment(data,row.version,user=self.user["username"],workstation=WORKSTATION);updated+=1
+            except Exception as exc:failures.append(f"{row.equipment_id}: {exc}")
+        self.refresh()
+        text=f"Updated {updated}/{len(rows)} equipment record(s)."
+        if failures:text+="\n"+"\n".join(failures[:12])
+        QMessageBox.information(self,"Bulk edit",text)
 
     def _equipment_import_df(self,df):
         fields=[
@@ -1463,10 +1494,41 @@ class InventoryPage(QWidget):
     show_map_part=Signal(str)
     def __init__(self,db,user):
         super().__init__();self.db=db;self.user=user;self.items=[];self.locs=[];self.res=[];v=QVBoxLayout(self);tabs=QTabWidget();v.addWidget(tabs)
-        wi=QWidget();vi=QVBoxLayout(wi);hi=QHBoxLayout();self.search=QLineEdit();self.search.setPlaceholderText("Search part / description / location");self.search.textChanged.connect(self.refresh);add=QPushButton("Add Item");edit=QPushButton("Edit");imp=QPushButton("Import Excel/CSV");paste=QPushButton("Paste from Excel");consume=QPushButton("Consume");reserve=QPushButton("Reserve");show=QPushButton("Show on Map");add.clicked.connect(self.add_item);edit.clicked.connect(self.edit_item);imp.clicked.connect(self.import_inventory);paste.clicked.connect(self.paste_inventory);consume.clicked.connect(self.consume);reserve.clicked.connect(self.reserve);show.clicked.connect(self.map_item);canedit=db.has_permission(user,"inventory.edit");add.setEnabled(canedit);edit.setEnabled(canedit);imp.setEnabled(canedit);paste.setEnabled(canedit);consume.setEnabled(db.has_permission(user,"inventory.consume") or canedit);reserve.setEnabled(db.has_permission(user,"inventory.reserve"));hi.addWidget(self.search,1);[hi.addWidget(x) for x in [add,edit,imp,paste,consume,reserve,show]];vi.addLayout(hi);self.itable=make_table(["Part","Description","Qty","Min","Unit","Condition","Location","Image","Ver"]);vi.addWidget(self.itable);tabs.addTab(wi,"Inventory")
+        wi=QWidget();vi=QVBoxLayout(wi);hi=QHBoxLayout();self.search=QLineEdit();self.search.setPlaceholderText("Search part / description / location");self.search.textChanged.connect(self.refresh);add=QPushButton("Add Item");edit=QPushButton("Edit");imp=QPushButton("Import Excel/CSV");paste=QPushButton("Paste from Excel");bulk=QPushButton("Bulk Edit Selected");consume=QPushButton("Consume");reserve=QPushButton("Reserve");show=QPushButton("Show on Map");add.clicked.connect(self.add_item);edit.clicked.connect(self.edit_item);imp.clicked.connect(self.import_inventory);paste.clicked.connect(self.paste_inventory);bulk.clicked.connect(self.bulk_edit_inventory);consume.clicked.connect(self.consume);reserve.clicked.connect(self.reserve);show.clicked.connect(self.map_item);canedit=db.has_permission(user,"inventory.edit");add.setEnabled(canedit);edit.setEnabled(canedit);imp.setEnabled(canedit);paste.setEnabled(canedit);bulk.setEnabled(canedit);consume.setEnabled(db.has_permission(user,"inventory.consume") or canedit);reserve.setEnabled(db.has_permission(user,"inventory.reserve"));hi.addWidget(self.search,1);[hi.addWidget(x) for x in [add,edit,imp,paste,bulk,consume,reserve,show]];vi.addLayout(hi);self.itable=make_table(["Part","Description","Qty","Min","Unit","Condition","Location","Image","Ver"]);vi.addWidget(self.itable);tabs.addTab(wi,"Inventory")
         wl=QWidget();vl=QVBoxLayout(wl);addl=QPushButton("Add Storage Location");addl.clicked.connect(self.add_loc);addl.setEnabled(db.has_permission(user,"inventory.edit"));vl.addWidget(addl);self.ltable=make_table(["Code","Name","Building","Floor","Area","Cabinet","Shelf","Bin","Image","Ver"]);vl.addWidget(self.ltable);tabs.addTab(wl,"Storage Locations")
         wr=QWidget();vr=QVBoxLayout(wr);rel=QPushButton("Release Selected Reservation");rel.clicked.connect(self.release_res);rel.setEnabled(db.has_permission(user,"inventory.reserve"));vr.addWidget(rel);self.rtable=make_table(["ID","Part","Location","Qty","PM Task","Equipment","Status","Reserved By","Time","Ver"]);vr.addWidget(self.rtable);tabs.addTab(wr,"Reservations");self.refresh()
     def refresh(self):self.items=self.db.list_inventory(self.search.text().strip());fill_table(self.itable,self.items,["part_number","description","quantity","min_quantity","unit","condition","location_code","image_path","version"]);self.locs=self.db.list_storage_locations();fill_table(self.ltable,self.locs,["location_code","name","building","floor","area","cabinet","shelf","drawer_bin","image_path","version"]);self.res=self.db.list_reservations();fill_table(self.rtable,self.res,["id","part_number","location_code","quantity","pm_task_id","equipment_id","status","reserved_by","reserved_at","version"])
+    def bulk_edit_inventory(self):
+        selected=sorted({idx.row() for idx in self.itable.selectedIndexes()})
+        rows=[self.items[i] for i in selected if 0<=i<len(self.items)]
+        if not rows:
+            QMessageBox.information(self,"Bulk edit","Select one or more inventory rows.");return
+        field,ok=QInputDialog.getItem(self,"Bulk edit inventory","Field",["Condition","Minimum quantity","Unit"],0,False)
+        if not ok:return
+        if field=="Condition":
+            value,ok=QInputDialog.getItem(self,"Bulk edit inventory","Condition",["Available","Reserved","Quarantine","Repair","Scrap"],0,False)
+        elif field=="Minimum quantity":
+            value,ok=QInputDialog.getDouble(self,"Bulk edit inventory","Minimum quantity",0,0,1e12,3)
+        else:
+            value,ok=QInputDialog.getText(self,"Bulk edit inventory","Unit")
+        if not ok:return
+        if QMessageBox.question(self,"Confirm bulk edit",f"Update {field} on {len(rows)} inventory record(s)?")!=QMessageBox.StandardButton.Yes:return
+        failures=[];updated=0
+        for row in rows:
+            data={
+                "part_number":row.part_number,"description":row.description,"quantity":row.quantity,
+                "min_quantity":float(value) if field=="Minimum quantity" else row.min_quantity,
+                "unit":value.strip() if field=="Unit" else row.unit,
+                "condition":value if field=="Condition" else row.condition,
+                "location_code":row.location_code,"image_path":row.image_path,
+            }
+            try:self.db.save_inventory_item(data,row.version);updated+=1
+            except Exception as exc:failures.append(f"{row.part_number} @ {row.location_code}: {exc}")
+        self.refresh()
+        text=f"Updated {updated}/{len(rows)} inventory record(s)."
+        if failures:text+="\n"+"\n".join(failures[:12])
+        QMessageBox.information(self,"Bulk edit",text)
+
     def _inventory_import_df(self,df):
         fields=[
             ("part_number","Part number"),("description","Description"),("quantity","Quantity"),("min_quantity","Minimum quantity"),
