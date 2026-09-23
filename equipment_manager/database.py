@@ -312,6 +312,36 @@ class PMDeferral(Base):
     version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
 
 
+class TechnicianCertification(Base):
+    __tablename__ = "technician_certifications"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    username: Mapped[str] = mapped_column(String(80), index=True)
+    cert_code: Mapped[str] = mapped_column(String(100), index=True)
+    issuer: Mapped[str] = mapped_column(String(180), default="")
+    issued_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    note: Mapped[str] = mapped_column(Text, default="")
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    __table_args__ = (UniqueConstraint("username","cert_code",name="uq_technician_certification"),)
+
+
+class PMRequirement(Base):
+    __tablename__ = "pm_requirements"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    requirement_id: Mapped[str] = mapped_column(String(120), index=True)
+    pm_id: Mapped[str] = mapped_column(String(100), index=True)
+    requirement_type: Mapped[str] = mapped_column(String(40), index=True)
+    requirement_key: Mapped[str] = mapped_column(String(160), default="")
+    description: Mapped[str] = mapped_column(Text)
+    quantity: Mapped[float] = mapped_column(Float, default=1.0)
+    mandatory: Mapped[bool] = mapped_column(Boolean, default=True)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    revision: Mapped[int] = mapped_column(Integer, default=1)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    __table_args__ = (UniqueConstraint("requirement_id","revision",name="uq_pm_requirement_revision"),)
+
+
 class PMSpec(Base):
     __tablename__ = "pm_specs"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -376,6 +406,33 @@ class PMExecutionStepSnapshot(Base):
     sop_page: Mapped[str] = mapped_column(String(40), default="")
     sop_section: Mapped[str] = mapped_column(String(80), default="")
     __table_args__ = (UniqueConstraint("execution_id", "step_no", name="uq_pm_execution_snapshot_step"),)
+
+
+class PMExecutionRequirementSnapshot(Base):
+    __tablename__ = "pm_execution_requirement_snapshots"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    execution_id: Mapped[int] = mapped_column(Integer, index=True)
+    source_requirement_id: Mapped[int] = mapped_column(Integer)
+    requirement_id: Mapped[str] = mapped_column(String(120))
+    requirement_type: Mapped[str] = mapped_column(String(40), index=True)
+    requirement_key: Mapped[str] = mapped_column(String(160), default="")
+    description: Mapped[str] = mapped_column(Text)
+    quantity: Mapped[float] = mapped_column(Float, default=1.0)
+    mandatory: Mapped[bool] = mapped_column(Boolean, default=True)
+    source_revision: Mapped[int] = mapped_column(Integer)
+    __table_args__ = (UniqueConstraint("execution_id","requirement_id",name="uq_pm_execution_requirement"),)
+
+
+class PMExecutionRequirementAck(Base):
+    __tablename__ = "pm_execution_requirement_acks"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    execution_id: Mapped[int] = mapped_column(Integer, index=True)
+    requirement_id: Mapped[str] = mapped_column(String(120), index=True)
+    acknowledged_by: Mapped[str] = mapped_column(String(120))
+    note: Mapped[str] = mapped_column(Text, default="")
+    evidence_path: Mapped[str] = mapped_column(Text, default="")
+    acknowledged_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    __table_args__ = (UniqueConstraint("execution_id","requirement_id",name="uq_pm_execution_requirement_ack"),)
 
 
 class PMResult(Base):
@@ -2042,6 +2099,53 @@ class Database:
             s.flush()
             return row
 
+    def save_technician_certification(self, data: dict[str, Any], expected_version: int | None = None):
+        payload=dict(data)
+        with self.session() as s:
+            if not s.scalar(select(User).where(User.username==payload.get("username",""))):
+                raise ValueError("Certification user not found.")
+            row=s.scalar(select(TechnicianCertification).where(
+                TechnicianCertification.username==payload["username"],
+                TechnicianCertification.cert_code==payload["cert_code"],
+            ))
+            if row:self._update_versioned(row,payload,expected_version,"Technician certification")
+            else:row=TechnicianCertification(**payload);s.add(row)
+            s.flush();return row
+
+    def list_technician_certifications(self, username: str = ""):
+        with self.session() as s:
+            stmt=select(TechnicianCertification).order_by(TechnicianCertification.username,TechnicianCertification.cert_code)
+            if username:stmt=stmt.where(TechnicianCertification.username==username)
+            return list(s.scalars(stmt))
+
+    def upsert_pm_requirement(self, data: dict[str, Any], create_revision: bool = False):
+        payload=dict(data)
+        rtype=str(payload.get("requirement_type","")).upper()
+        if rtype not in {"CERTIFICATION","LOTO","SAFETY","TOOL","PART","DOCUMENT"}:
+            raise ValueError("PM requirement type must be CERTIFICATION, LOTO, SAFETY, TOOL, PART, or DOCUMENT.")
+        payload["requirement_type"]=rtype
+        with self.session() as s:
+            current=s.scalar(select(PMRequirement).where(
+                PMRequirement.requirement_id==payload["requirement_id"],
+                PMRequirement.active.is_(True),
+            ).order_by(PMRequirement.revision.desc()))
+            if current and create_revision:
+                current.active=False;current.version+=1
+                payload["revision"]=current.revision+1
+                row=PMRequirement(**payload);s.add(row)
+            elif current:
+                self._update_versioned(current,payload,None,"PM requirement");row=current
+            else:
+                payload.setdefault("revision",1);row=PMRequirement(**payload);s.add(row)
+            s.flush();return row
+
+    def list_pm_requirements(self, pm_id: str = "", active_only: bool = True):
+        with self.session() as s:
+            stmt=select(PMRequirement).order_by(PMRequirement.pm_id,PMRequirement.requirement_id,PMRequirement.revision.desc())
+            if pm_id:stmt=stmt.where(PMRequirement.pm_id==pm_id)
+            if active_only:stmt=stmt.where(PMRequirement.active.is_(True))
+            return list(s.scalars(stmt))
+
     def upsert_pm_spec(self, data: dict[str, Any], create_revision: bool = False):
         with self.session() as s:
             current = s.scalar(select(PMSpec).where(PMSpec.pm_id == data["pm_id"], PMSpec.step_no == int(data["step_no"]), PMSpec.active.is_(True)).order_by(PMSpec.revision.desc()))
@@ -2076,6 +2180,84 @@ class Database:
             normalized = (value_text or "").strip().lower()
             return "PASS" if normalized in {"pass", "ok", "yes", "good", "acceptable"} else "FAIL"
         return "RECORDED" if (value_text or "").strip() else "INVALID"
+
+    @staticmethod
+    def _snapshot_pm_requirements(s, ex: PMExecution, task: PMTask):
+        existing=int(s.scalar(select(func.count()).select_from(PMExecutionRequirementSnapshot).where(
+            PMExecutionRequirementSnapshot.execution_id==ex.id
+        )) or 0)
+        if existing:return
+        reqs=list(s.scalars(select(PMRequirement).where(
+            PMRequirement.pm_id==task.pm_id,PMRequirement.active.is_(True)
+        ).order_by(PMRequirement.requirement_id)))
+        for req in reqs:
+            s.add(PMExecutionRequirementSnapshot(
+                execution_id=ex.id,source_requirement_id=req.id,requirement_id=req.requirement_id,
+                requirement_type=req.requirement_type,requirement_key=req.requirement_key,
+                description=req.description,quantity=req.quantity,mandatory=req.mandatory,
+                source_revision=req.revision,
+            ))
+
+    def _validate_pm_certifications(self, s, execution_id: int, username: str):
+        now=datetime.utcnow()
+        reqs=list(s.scalars(select(PMExecutionRequirementSnapshot).where(
+            PMExecutionRequirementSnapshot.execution_id==execution_id,
+            PMExecutionRequirementSnapshot.requirement_type=="CERTIFICATION",
+            PMExecutionRequirementSnapshot.mandatory.is_(True),
+        )))
+        missing=[]
+        for req in reqs:
+            cert=s.scalar(select(TechnicianCertification).where(
+                TechnicianCertification.username==username,
+                TechnicianCertification.cert_code==req.requirement_key,
+                TechnicianCertification.active.is_(True),
+                ((TechnicianCertification.expires_at.is_(None)) | (TechnicianCertification.expires_at>now)),
+            ))
+            if not cert:missing.append(req.requirement_key or req.description)
+        if missing:
+            raise PermissionError("Required active certification(s) missing: "+", ".join(missing))
+
+    def list_pm_execution_requirements(self, execution_id: int):
+        with self.session() as s:
+            return list(s.scalars(select(PMExecutionRequirementSnapshot).where(
+                PMExecutionRequirementSnapshot.execution_id==execution_id
+            ).order_by(PMExecutionRequirementSnapshot.requirement_type,PMExecutionRequirementSnapshot.requirement_id)))
+
+    def acknowledge_pm_requirement(
+        self,
+        execution_id: int,
+        requirement_id: str,
+        user: str,
+        note: str = "",
+        evidence_path: str = "",
+    ):
+        with self.session() as s:
+            ex=s.get(PMExecution,execution_id)
+            if not ex:raise ValueError("PM execution not found")
+            if ex.status=="Completed":raise ValueError("Completed PM execution is read-only.")
+            req=s.scalar(select(PMExecutionRequirementSnapshot).where(
+                PMExecutionRequirementSnapshot.execution_id==execution_id,
+                PMExecutionRequirementSnapshot.requirement_id==requirement_id,
+            ))
+            if not req:raise ValueError("PM execution requirement not found")
+            if req.requirement_type=="CERTIFICATION":
+                raise ValueError("Certification requirements are validated automatically at execution start.")
+            row=s.scalar(select(PMExecutionRequirementAck).where(
+                PMExecutionRequirementAck.execution_id==execution_id,
+                PMExecutionRequirementAck.requirement_id==requirement_id,
+            ))
+            if row:raise ValueError("Requirement is already acknowledged.")
+            row=PMExecutionRequirementAck(
+                execution_id=execution_id,requirement_id=requirement_id,acknowledged_by=user,
+                note=note.strip(),evidence_path=evidence_path.strip(),
+            )
+            s.add(row);s.flush();return row
+
+    def list_pm_requirement_acks(self, execution_id: int):
+        with self.session() as s:
+            return list(s.scalars(select(PMExecutionRequirementAck).where(
+                PMExecutionRequirementAck.execution_id==execution_id
+            ).order_by(PMExecutionRequirementAck.acknowledged_at)))
 
     @staticmethod
     def _snapshot_pm_specs(s, ex: PMExecution, task: PMTask):
@@ -2129,12 +2311,16 @@ class Database:
             ex = s.scalar(select(PMExecution).where(PMExecution.task_id == task_id))
             if ex:
                 self._snapshot_pm_specs(s, ex, task)
+                self._snapshot_pm_requirements(s, ex, task)
                 s.flush()
+                self._validate_pm_certifications(s,ex.id,user)
                 return ex
             ex = PMExecution(task_id=task_id, started_by=user)
             s.add(ex)
             s.flush()
             self._snapshot_pm_specs(s, ex, task)
+            self._snapshot_pm_requirements(s, ex, task)
+            self._validate_pm_certifications(s,ex.id,user)
             task.status = "In Progress"
             task.version += 1
             s.flush()
@@ -2216,6 +2402,17 @@ class Database:
                 raise ValueError(
                     f"Failed/invalid PM steps require correction, disposition, or engineering review: {hard_fail}"
                 )
+            requirements=list(s.scalars(select(PMExecutionRequirementSnapshot).where(
+                PMExecutionRequirementSnapshot.execution_id==execution_id,
+                PMExecutionRequirementSnapshot.mandatory.is_(True),
+                PMExecutionRequirementSnapshot.requirement_type!="CERTIFICATION",
+            )))
+            acked={x.requirement_id for x in s.scalars(select(PMExecutionRequirementAck).where(
+                PMExecutionRequirementAck.execution_id==execution_id
+            ))}
+            missing_req=[x.requirement_id for x in requirements if x.requirement_id not in acked]
+            if missing_req:
+                raise ValueError(f"Mandatory PM execution requirements not acknowledged: {missing_req}")
             now = datetime.utcnow()
             ex.status = "Completed"
             ex.completed_by = user
