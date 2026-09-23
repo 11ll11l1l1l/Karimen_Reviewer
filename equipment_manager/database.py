@@ -4689,6 +4689,146 @@ class Database:
             })
             s.flush();return row
 
+    def applicable_qualification_protocols(self, equipment_id: str):
+        with self.session() as s:
+            eq=s.scalar(select(Equipment).where(Equipment.equipment_id==equipment_id))
+            if not eq:raise ValueError("Equipment not found")
+            rows=list(s.scalars(
+                select(QualificationProtocol)
+                .where(QualificationProtocol.active.is_(True))
+                .order_by(QualificationProtocol.protocol_id,QualificationProtocol.revision.desc())
+            ))
+            latest={}
+            for row in rows:
+                if row.protocol_id in latest:continue
+                if row.equipment_id and row.equipment_id!=equipment_id:continue
+                if row.equipment_type and row.equipment_type!=eq.equipment_type:continue
+                latest[row.protocol_id]=row
+            return list(latest.values())
+
+    def work_order_closeout_status(self, work_order_no: str) -> dict[str, Any]:
+        with self.session() as s:
+            wo=s.scalar(select(WorkOrder).where(WorkOrder.work_order_no==work_order_no))
+            if not wo:raise ValueError("Work order not found")
+            links=list(s.scalars(select(WorkOrderLink).where(WorkOrderLink.work_order_no==work_order_no)))
+            logs=list(s.scalars(select(WorkLog).where(
+                WorkLog.entity_type=="WORK_ORDER",WorkLog.entity_key==work_order_no
+            ).order_by(WorkLog.started_at)))
+            attachments=list(s.scalars(select(EntityAttachment).where(
+                EntityAttachment.entity_type=="WORK_ORDER",EntityAttachment.entity_key==work_order_no,
+                EntityAttachment.active.is_(True),
+            )))
+            qualifications=list(s.scalars(select(QualificationRun).where(
+                QualificationRun.equipment_id==wo.equipment_id
+            ).order_by(QualificationRun.started_at.desc())))
+            releases=list(s.scalars(select(EquipmentRelease).where(
+                EquipmentRelease.equipment_id==wo.equipment_id
+            ).order_by(EquipmentRelease.requested_at.desc())))
+            related_ticket=""
+            if wo.source_type=="TICKET" and wo.source_key:related_ticket=wo.source_key
+            if not related_ticket:
+                ticket_link=next((x for x in links if x.entity_type=="TICKET"),None)
+                related_ticket=ticket_link.entity_key if ticket_link else ""
+            source_pm_id=None
+            if wo.source_type=="PM_TASK" and str(wo.source_key).isdigit():source_pm_id=int(wo.source_key)
+            if source_pm_id is None:
+                pm_link=next((x for x in links if x.entity_type=="PM_TASK" and str(x.entity_key).isdigit()),None)
+                source_pm_id=int(pm_link.entity_key) if pm_link else None
+            reservations=list(s.scalars(select(InventoryReservation).where(
+                InventoryReservation.pm_task_id==source_pm_id
+            ))) if source_pm_id else []
+        precheck=self.release_precheck(wo.equipment_id)
+        valid_qualification=self.latest_valid_qualification(wo.equipment_id)
+        open_qualification=next((x for x in qualifications if x.status in {"In Progress","Submitted","Verified"}),None)
+        active_release=next((x for x in releases if x.status!="Approved / Released"),None)
+        blockers=[]
+        if wo.status not in {"Ready for Qualification","Completed"} and (wo.qualification_required or wo.release_required):
+            blockers.append(f"Work order is still {wo.status}; finish repair/work before controlled closeout.")
+        if precheck["critical_tickets_open"]:
+            blockers.append(f"{precheck['critical_tickets_open']} open P1/P2 incident(s) remain.")
+        if wo.qualification_required and not valid_qualification:
+            blockers.append("Approved valid qualification is required.")
+        if any(x.status=="Reserved" for x in reservations):
+            blockers.append("PM part reservations remain active; consume or release them before closeout.")
+        return {
+            "work_order_no":wo.work_order_no,"equipment_id":wo.equipment_id,"status":wo.status,
+            "qualification_required":wo.qualification_required,"release_required":wo.release_required,
+            "related_ticket":related_ticket,"source_pm_task_id":source_pm_id,
+            "labor_entries":len(logs),"active_labor":sum(1 for x in logs if x.status=="Active"),
+            "attachment_count":len(attachments),"part_reservations":len(reservations),
+            "active_part_reservations":sum(1 for x in reservations if x.status=="Reserved"),
+            "critical_tickets_open":precheck["critical_tickets_open"],"overdue_pm":precheck["overdue_pm"],
+            "valid_qualification_run":valid_qualification.run_no if valid_qualification else "",
+            "open_qualification_run":open_qualification.run_no if open_qualification else "",
+            "active_release_id":active_release.id if active_release else None,
+            "active_release_status":active_release.status if active_release else "",
+            "blockers":blockers,
+            "can_start_qualification":bool(
+                wo.qualification_required and wo.status in {"Ready for Qualification","Completed"}
+                and not valid_qualification and not open_qualification
+            ),
+            "can_request_release":bool(
+                wo.release_required and wo.status in {"Ready for Qualification","Completed"}
+                and precheck["critical_tickets_open"]==0
+                and (not wo.qualification_required or bool(valid_qualification))
+                and not active_release
+            ),
+        }
+
+    def start_work_order_qualification(
+        self, work_order_no: str, user: str, protocol_id: str = "", workstation: str = ""
+    ):
+        wo=self.get_work_order(work_order_no)
+        if not wo:raise ValueError("Work order not found")
+        if not wo.qualification_required:raise ValueError("This work order does not require qualification.")
+        if wo.status not in {"Ready for Qualification","Completed"}:
+            raise ValueError("Work order must be Ready for Qualification before starting qualification.")
+        current=self.latest_valid_qualification(wo.equipment_id)
+        if current:return current
+        open_runs=[x for x in self.list_qualification_runs(wo.equipment_id) if x.status in {"In Progress","Submitted","Verified"}]
+        if open_runs:return open_runs[0]
+        protocols=self.applicable_qualification_protocols(wo.equipment_id)
+        if protocol_id:
+            protocol=next((x for x in protocols if x.protocol_id==protocol_id),None)
+            if not protocol:raise ValueError("Selected qualification protocol is not applicable to this equipment.")
+        elif len(protocols)==1:
+            protocol=protocols[0]
+        elif not protocols:
+            raise ValueError("No active qualification protocol is applicable to this equipment.")
+        else:
+            raise ValueError("Multiple qualification protocols are applicable; select one explicitly.")
+        run=self.start_qualification_run(wo.equipment_id,protocol.protocol_id,user,workstation=workstation)
+        self.add_work_order_link(work_order_no,"QUALIFICATION",run.run_no,"CLOSEOUT",user)
+        return run
+
+    def create_work_order_release_request(self, work_order_no: str, user: str, workstation: str = ""):
+        wo=self.get_work_order(work_order_no)
+        if not wo:raise ValueError("Work order not found")
+        if not wo.release_required:raise ValueError("This work order does not require release verification.")
+        status=self.work_order_closeout_status(work_order_no)
+        if status["critical_tickets_open"]:
+            raise ValueError("Cannot request release while P1/P2 incidents remain open.")
+        if wo.qualification_required and not status["valid_qualification_run"]:
+            raise ValueError("Approved valid qualification is required before release request.")
+        if wo.status not in {"Ready for Qualification","Completed"}:
+            raise ValueError("Work order must be ready for closeout before release request.")
+        if status["active_release_id"]:
+            return next(x for x in self.list_release_requests() if x.id==status["active_release_id"])
+        checks={
+            "maintenance_complete":False,
+            "measurements_pass":False,
+            "calibration_valid":False,
+            "safety_check":False,
+            "verification_run":False,
+            "critical_tickets_cleared":False,
+        }
+        notes=f"Generated from work order {work_order_no}. Independent release verification remains required."
+        release=self.create_release_request(
+            wo.equipment_id,status["related_ticket"],checks,notes,user,workstation
+        )
+        self.add_work_order_link(work_order_no,"RELEASE",str(release.id),"CLOSEOUT",user)
+        return release
+
     def start_work_log(
         self,
         entity_type: str,
