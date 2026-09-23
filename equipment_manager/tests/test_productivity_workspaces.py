@@ -26,6 +26,12 @@ class ProductivityWorkspaceTests(unittest.TestCase):
         ticket=self.db.global_search("Vacuum instability")
         self.assertTrue(any(x["entity_type"]=="TICKET" and x["entity_key"]=="INC-9001" for x in ticket))
 
+    def test_account_preferences_round_trip(self):
+        self.assertEqual(self.db.get_user_preference("ee","excel_mapping.pm_backlog",{}),{})
+        value={"equipment_id":"Tool ID","pm_id":"PM Code"}
+        self.db.set_user_preference("ee","excel_mapping.pm_backlog",value)
+        self.assertEqual(self.db.get_user_preference("ee","excel_mapping.pm_backlog",{}),value)
+
     def test_recent_and_favorite_round_trip(self):
         self.db.record_recent_item("ee","EQUIPMENT","ETCH-A01","ETCH-A01 — Etcher A01","ETCH-A01")
         recent=self.db.list_recent_items("ee")
@@ -61,7 +67,7 @@ class ProductivityWorkspaceTests(unittest.TestCase):
 
     def test_productivity_migration_is_recorded(self):
         revisions={x.revision for x in self.db.list_schema_migrations()}
-        self.assertIn("20260923_003",revisions)
+        self.assertIn("20260923_004",revisions)
 
 
 if __name__=="__main__":
