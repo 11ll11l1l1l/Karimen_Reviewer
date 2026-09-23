@@ -4,6 +4,16 @@ Local Windows desktop equipment-management system isolated under `equipment_mana
 
 ## Current build
 
+### Release-candidate controls
+
+- Formal equipment qualification protocols have controlled revisions; each run freezes the exact protocol/check set used for execution.
+- Qualification requires completed passing checks, independent verification, and an independent final approver. Optional validity periods support qualification expiry.
+- Equipment in Qualification state/disposition cannot pass final release approval without a current approved qualification run.
+- Existing pre-governed equipment and tickets receive one idempotent baseline event on upgrade so reliability and lifecycle history start from a known state.
+- `PREFLIGHT_WINDOWS.bat` validates database/schema access, file/attachment writeability, backup path readiness and PostgreSQL backup tooling before site rollout.
+- `INSTALL_DAILY_BACKUP_WINDOWS.bat` can install an optional daily Windows backup task; the backup destination honors `EMS_BACKUP_ROOT`.
+- See `PRODUCTION_DEPLOYMENT.md` for the deployment, upgrade, backup/restore and site-acceptance runbook.
+
 ### Final production hardening
 
 - Authentication now records login attempts and applies timed lockout after repeated password failures. Successful login, administrator unlock, or password reset clears the lockout state.
