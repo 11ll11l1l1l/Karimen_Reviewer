@@ -2318,9 +2318,12 @@ class Database:
         if len(equipment_ids)!=1: raise ValueError("A burst incident can only contain one equipment ID.")
         existing={alarm.related_ticket for alarm in alarms if alarm.related_ticket}
         if len(existing)>1: raise ValueError("Burst alarms already link to different incidents.")
-        ticket=self.create_incident_from_alarm(keys[0],user,owner=owner,workstation=workstation)
-        for key in keys[1:]:
-            self.link_alarm_to_ticket(key,ticket.ticket_no,user,workstation)
+        rank={"critical":4,"fatal":4,"emergency":4,"high":3,"major":3,"warning":2,"medium":2,"low":1}
+        primary=max(alarms,key=lambda alarm: rank.get((alarm.severity or "").strip().lower(),0))
+        ticket=self.create_incident_from_alarm(primary.event_key,user,owner=owner,workstation=workstation)
+        for key in keys:
+            if key!=primary.event_key:
+                self.link_alarm_to_ticket(key,ticket.ticket_no,user,workstation)
         return ticket
 
     def list_alarms_for_event_keys(self, event_keys: list[str]):
