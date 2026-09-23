@@ -16,6 +16,15 @@ Local Windows desktop equipment-management system isolated under `equipment_mana
 - Equipment creation now creates the initial state event; ordinary master-data edits cannot bypass status/disposition workflows.
 - Dedicated EMS CI compiles the equipment module and runs state-machine unit + database integration tests.
 
+### Governed incident lifecycle
+
+- Ticket status is no longer editable as a free-form field in the issue editor.
+- Tickets follow a controlled lifecycle: Open → assignment/investigation → waiting/monitoring → resolution → verification → closure.
+- Resolution requires documented root cause and corrective action; closure additionally requires documented verification.
+- Reopen, cancellation, and failed-verification transitions require explicit lifecycle notes.
+- Ticket transitions are version-checked, PostgreSQL row-locked, evented in `ticket_state_events`, and audited in the same transaction.
+- Troubleshooting history and lifecycle history are shown separately so engineering evidence is not confused with administrative state changes.
+
 - Login page and first-run administrator creation; no default password is committed.
 - PostgreSQL-ready multi-user architecture. SQLite remains a local/demo fallback only and must not be placed on the shared drive.
 - Role-based permissions plus per-user allow/deny overrides. Administrator UI supports user creation, enable/disable, role changes, password resets, and granular overrides.
