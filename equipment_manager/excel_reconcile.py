@@ -18,7 +18,19 @@ def _norm(value):
     return str(value)
 
 
+def _validate_keys(rows, fields, label):
+    seen=set()
+    key_fields=("equipment_id",) if label=="equipment" else ("part_number","location_code")
+    for index,row in enumerate(rows,1):
+        missing=[field for field in key_fields if not str(row.get(field,"")).strip()]
+        if missing: raise ValueError(f"{label} row {index} is missing: {', '.join(missing)}")
+        key=tuple(str(row[field]).strip() for field in key_fields)
+        if key in seen: raise ValueError(f"Duplicate {label} key at row {index}: {' @ '.join(key)}")
+        seen.add(key)
+
+
 def reconcile_equipment(db,imported_rows: list[dict[str,Any]],mapping: dict[str,str]):
+    _validate_keys(imported_rows,EQUIPMENT_FIELDS,"equipment")
     mapped={x for x in EQUIPMENT_FIELDS if x in mapping}
     actions=[]
     for source in imported_rows:
@@ -44,6 +56,7 @@ def reconcile_equipment(db,imported_rows: list[dict[str,Any]],mapping: dict[str,
 
 
 def reconcile_inventory(db,imported_rows: list[dict[str,Any]],mapping: dict[str,str]):
+    _validate_keys(imported_rows,INVENTORY_FIELDS,"inventory")
     mapped={x for x in INVENTORY_FIELDS if x in mapping}
     existing={(x.part_number,x.location_code):x for x in db.list_inventory()}
     actions=[]
@@ -67,6 +80,35 @@ def reconcile_inventory(db,imported_rows: list[dict[str,Any]],mapping: dict[str,
             status="CREATE"
         actions.append({"key":f"{key[0]} @ {key[1]}","status":status,"current":current,"data":merged,"changes":changes})
     return actions
+
+
+def apply_reconciliation(db,actions:list[dict[str,Any]],*,entity:str,user:str,allow_deletes:bool=False):
+    """Apply only validated CREATE/UPDATE actions.
+
+    Deletions are deliberately refused until an explicit, separately reviewed
+    delete workflow is implemented. This prevents an incomplete workbook from
+    deleting live maintenance records.
+    """
+    if any(action.get("status")=="DELETE" for action in actions):
+        if not allow_deletes:
+            raise ValueError("Workbook contains deletions; explicit delete approval is required")
+        raise NotImplementedError("Bulk deletion workflow is not enabled")
+    actionable=[action for action in actions if action.get("status") in {"CREATE","UPDATE"}]
+    if entity=="equipment":
+        saver=db.save_equipment
+    elif entity=="inventory":
+        saver=db.save_inventory_item
+    else:
+        raise ValueError(f"Unsupported reconciliation entity: {entity}")
+    applied=0
+    for action in actionable:
+        data=dict(action["data"])
+        try:
+            saver(data,user=user)
+        except TypeError:
+            saver(data)
+        applied+=1
+    return {"applied":applied,"skipped":len(actions)-applied,"entity":entity}
 
 
 def _reconciliation_dialog_class():
