@@ -124,7 +124,7 @@ class ConfigurabilityTests(unittest.TestCase):
         },"admin")
 
         bundle=self.db.export_configuration_bundle()
-        self.assertEqual(bundle["schema"],"EMS_CONFIGURATION_V1")
+        self.assertEqual(bundle["schema"],"EMS_CONFIGURATION_V2")
 
         other=Database("sqlite:///:memory:")
         other.create_user("admin","Administrator","admin-password-123","Administrator")
