@@ -4252,6 +4252,49 @@ class Database:
             s.flush()
             return item
 
+    def pm_step_history(
+        self,
+        equipment_id: str,
+        pm_id: str,
+        step_no: int,
+        limit: int = 12,
+        exclude_execution_id: int | None = None,
+    ) -> list[dict[str, Any]]:
+        with self.session() as s:
+            tasks=list(s.scalars(select(PMTask).where(
+                PMTask.equipment_id==equipment_id,
+                PMTask.pm_id==pm_id,
+            )))
+            if not tasks:return []
+            task_by_id={x.id:x for x in tasks}
+            executions=list(s.scalars(select(PMExecution).where(
+                PMExecution.task_id.in_(list(task_by_id))
+            )))
+            execution_by_id={x.id:x for x in executions if exclude_execution_id is None or x.id!=exclude_execution_id}
+            if not execution_by_id:return []
+            results=list(s.scalars(select(PMResult).where(
+                PMResult.execution_id.in_(list(execution_by_id)),
+                PMResult.step_no==int(step_no),
+            ).order_by(PMResult.entered_at.desc(),PMResult.id.desc()).limit(max(1,min(int(limit),200)))))
+            rows=[]
+            for result in results:
+                execution=execution_by_id.get(result.execution_id)
+                if not execution:continue
+                task=task_by_id.get(execution.task_id)
+                rows.append({
+                    "entered_at":result.entered_at,
+                    "result":result.result,
+                    "value_text":result.value_text,
+                    "value_numeric":result.value_numeric,
+                    "comment":result.comment,
+                    "entered_by":result.entered_by,
+                    "task_id":task.id if task else None,
+                    "execution_id":execution.id,
+                    "scheduled_date":task.scheduled_date if task else None,
+                    "completed_at":execution.completed_at,
+                })
+            return rows
+
     def list_pm_results(self, execution_id: int):
         with self.session() as s:
             return list(s.scalars(
