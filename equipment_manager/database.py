@@ -924,6 +924,93 @@ class PartAlternate(Base):
     __table_args__ = (UniqueConstraint("part_number","alternate_part_number",name="uq_part_alternate"),)
 
 
+
+class SupplierOrder(Base):
+    __tablename__ = "supplier_orders"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    order_no: Mapped[str] = mapped_column(String(120), unique=True, index=True)
+    supplier: Mapped[str] = mapped_column(String(180), index=True)
+    status: Mapped[str] = mapped_column(String(40), default="Draft", index=True)
+    order_date: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    expected_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    external_reference: Mapped[str] = mapped_column(String(180), default="")
+    notes: Mapped[str] = mapped_column(Text, default="")
+    created_by: Mapped[str] = mapped_column(String(120), default="")
+    submitted_by: Mapped[str] = mapped_column(String(120), default="")
+    submitted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
+class SupplierOrderLine(Base):
+    __tablename__ = "supplier_order_lines"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    order_no: Mapped[str] = mapped_column(String(120), index=True)
+    line_no: Mapped[int] = mapped_column(Integer)
+    part_number: Mapped[str] = mapped_column(String(120), index=True)
+    supplier_part_number: Mapped[str] = mapped_column(String(160), default="")
+    ordered_qty: Mapped[float] = mapped_column(Float)
+    received_qty: Mapped[float] = mapped_column(Float, default=0.0)
+    unit_cost: Mapped[float] = mapped_column(Float, default=0.0)
+    currency: Mapped[str] = mapped_column(String(12), default="JPY")
+    destination_location: Mapped[str] = mapped_column(String(100), default="", index=True)
+    status: Mapped[str] = mapped_column(String(40), default="Open", index=True)
+    note: Mapped[str] = mapped_column(Text, default="")
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    __table_args__ = (UniqueConstraint("order_no","line_no",name="uq_supplier_order_line"),)
+
+
+class RotableAsset(Base):
+    __tablename__ = "rotable_assets"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    asset_id: Mapped[str] = mapped_column(String(120), unique=True, index=True)
+    part_number: Mapped[str] = mapped_column(String(120), index=True)
+    serial_number: Mapped[str] = mapped_column(String(160), default="", index=True)
+    description: Mapped[str] = mapped_column(String(300), default="")
+    status: Mapped[str] = mapped_column(String(40), default="Stock", index=True)
+    condition: Mapped[str] = mapped_column(String(60), default="Serviceable", index=True)
+    current_location: Mapped[str] = mapped_column(String(100), default="", index=True)
+    equipment_id: Mapped[str] = mapped_column(String(100), default="", index=True)
+    component_id: Mapped[str] = mapped_column(String(120), default="", index=True)
+    vendor: Mapped[str] = mapped_column(String(180), default="")
+    repair_reference: Mapped[str] = mapped_column(String(180), default="")
+    repair_count: Mapped[int] = mapped_column(Integer, default=0)
+    installed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    removed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    sent_for_repair_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    returned_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    notes: Mapped[str] = mapped_column(Text, default="")
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
+class RotableEvent(Base):
+    __tablename__ = "rotable_events"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    asset_id: Mapped[str] = mapped_column(String(120), index=True)
+    event_type: Mapped[str] = mapped_column(String(50), index=True)
+    from_status: Mapped[str] = mapped_column(String(40), default="")
+    to_status: Mapped[str] = mapped_column(String(40), default="")
+    location_code: Mapped[str] = mapped_column(String(100), default="")
+    equipment_id: Mapped[str] = mapped_column(String(100), default="")
+    reference: Mapped[str] = mapped_column(String(180), default="")
+    note: Mapped[str] = mapped_column(Text, default="")
+    user: Mapped[str] = mapped_column(String(120), default="")
+    occurred_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
+class PMKitStage(Base):
+    __tablename__ = "pm_kit_stages"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    task_id: Mapped[int] = mapped_column(Integer, unique=True, index=True)
+    staging_location: Mapped[str] = mapped_column(String(100), default="", index=True)
+    status: Mapped[str] = mapped_column(String(40), default="Reserved", index=True)
+    staged_by: Mapped[str] = mapped_column(String(120), default="")
+    staged_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    issued_by: Mapped[str] = mapped_column(String(120), default="")
+    issued_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    note: Mapped[str] = mapped_column(Text, default="")
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
 class InventoryItem(Base):
     __tablename__ = "inventory_items"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -1372,6 +1459,9 @@ class Database:
                 table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
             ]),
             ("20260924_012","Create configurable numbering sequences",lambda: [
+                table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
+            ]),
+            ("20260924_013","Create supplier-order rotable and PM-kit staging lifecycle tables",lambda: [
                 table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
             ]),
         ]
@@ -6222,6 +6312,201 @@ class Database:
 
     def list_storage_locations(self):
         with self.session() as s: return list(s.scalars(select(StorageLocation).order_by(StorageLocation.location_code)))
+
+    def save_supplier_order(self, data: dict[str, Any], user: str, expected_version: int | None = None):
+        payload=dict(data);order_no=str(payload.get("order_no","")).strip();supplier=str(payload.get("supplier","")).strip()
+        if not order_no or not supplier:raise ValueError("Order number and supplier are required.")
+        payload["order_no"]=order_no;payload["supplier"]=supplier;payload.setdefault("created_by",user)
+        with self.session() as s:
+            row=s.scalar(select(SupplierOrder).where(SupplierOrder.order_no==order_no))
+            if row:
+                if row.status not in {"Draft","Submitted","Partially Received"}:raise ValueError(f"Cannot edit supplier order in {row.status} status.")
+                self._update_versioned(row,payload,expected_version,"Supplier order")
+            else:
+                row=SupplierOrder(**payload);s.add(row)
+            s.add(AuditLog(user=user,action="SUPPLIER_ORDER_SAVE",entity_type="SUPPLIER_ORDER",entity_key=order_no,detail=supplier))
+            s.flush();return row
+
+    def list_supplier_orders(self, status: str = ""):
+        with self.session() as s:
+            stmt=select(SupplierOrder).order_by(SupplierOrder.order_date.desc(),SupplierOrder.order_no.desc())
+            if status:stmt=stmt.where(SupplierOrder.status==status)
+            return list(s.scalars(stmt))
+
+    def add_supplier_order_line(self, order_no: str, data: dict[str, Any], user: str, expected_version: int | None = None):
+        payload=dict(data);part=str(payload.get("part_number","")).strip();qty=float(payload.get("ordered_qty") or 0)
+        if not part or qty<=0:raise ValueError("Part number and positive ordered quantity are required.")
+        with self.session() as s:
+            order=s.scalar(select(SupplierOrder).where(SupplierOrder.order_no==order_no))
+            if not order:raise ValueError("Supplier order not found")
+            if order.status not in {"Draft","Submitted","Partially Received"}:raise ValueError(f"Cannot edit lines in {order.status} order.")
+            line_no=int(payload.get("line_no") or 0)
+            row=s.scalar(select(SupplierOrderLine).where(SupplierOrderLine.order_no==order_no,SupplierOrderLine.line_no==line_no)) if line_no else None
+            if row:
+                if float(row.received_qty or 0)>qty:raise ValueError("Ordered quantity cannot be reduced below received quantity.")
+                self._update_versioned(row,payload,expected_version,"Supplier order line")
+            else:
+                line_no=int(s.scalar(select(func.max(SupplierOrderLine.line_no)).where(SupplierOrderLine.order_no==order_no)) or 0)+1
+                payload["line_no"]=line_no;payload["order_no"]=order_no
+                catalog=s.scalar(select(PartCatalog).where(PartCatalog.part_number==part))
+                if catalog and not payload.get("supplier_part_number"):payload["supplier_part_number"]=catalog.supplier_part_number
+                row=SupplierOrderLine(**payload);s.add(row)
+            s.flush();return row
+
+    def list_supplier_order_lines(self, order_no: str):
+        with self.session() as s:
+            return list(s.scalars(select(SupplierOrderLine).where(SupplierOrderLine.order_no==order_no).order_by(SupplierOrderLine.line_no)))
+
+    def submit_supplier_order(self, order_no: str, user: str, expected_version: int | None = None):
+        with self.session() as s:
+            stmt=select(SupplierOrder).where(SupplierOrder.order_no==order_no)
+            if self.url.startswith("postgresql"):stmt=stmt.with_for_update()
+            order=s.scalar(stmt)
+            if not order:raise ValueError("Supplier order not found")
+            if expected_version is not None and order.version!=expected_version:raise RuntimeError("CONFLICT: Supplier order changed.")
+            if order.status!="Draft":raise ValueError("Only Draft supplier orders can be submitted.")
+            count=int(s.scalar(select(func.count()).select_from(SupplierOrderLine).where(SupplierOrderLine.order_no==order_no)) or 0)
+            if not count:raise ValueError("Supplier order requires at least one line.")
+            order.status="Submitted";order.submitted_by=user;order.submitted_at=datetime.utcnow();order.version+=1
+            s.add(AuditLog(user=user,action="SUPPLIER_ORDER_SUBMIT",entity_type="SUPPLIER_ORDER",entity_key=order_no,detail=f"{count} line(s)"))
+            s.flush();return order
+
+    def receive_supplier_order_line(self, line_id: int, qty: float, user: str, reference: str = "", note: str = ""):
+        if qty<=0:raise ValueError("Receipt quantity must be positive.")
+        self.assert_authorized(user,"inventory.edit")
+        with self.session() as s:
+            stmt=select(SupplierOrderLine).where(SupplierOrderLine.id==line_id)
+            if self.url.startswith("postgresql"):stmt=stmt.with_for_update()
+            line=s.scalar(stmt)
+            if not line:raise ValueError("Supplier order line not found")
+            order_stmt=select(SupplierOrder).where(SupplierOrder.order_no==line.order_no)
+            if self.url.startswith("postgresql"):order_stmt=order_stmt.with_for_update()
+            order=s.scalar(order_stmt)
+            if not order or order.status not in {"Submitted","Partially Received"}:raise ValueError("Order must be Submitted before receipt.")
+            remaining=float(line.ordered_qty or 0)-float(line.received_qty or 0)
+            if qty>remaining+1e-9:raise ValueError(f"Receipt exceeds remaining ordered quantity ({remaining:g}).")
+            location=(line.destination_location or "").strip()
+            if not location:raise ValueError("Destination location is required before receipt.")
+            item_stmt=select(InventoryItem).where(InventoryItem.part_number==line.part_number,InventoryItem.location_code==location)
+            if self.url.startswith("postgresql"):item_stmt=item_stmt.with_for_update()
+            item=s.scalar(item_stmt)
+            if not item:
+                catalog=s.scalar(select(PartCatalog).where(PartCatalog.part_number==line.part_number))
+                item=InventoryItem(part_number=line.part_number,description=catalog.description if catalog else "",category=catalog.category if catalog else "",manufacturer=catalog.manufacturer if catalog else "",quantity=0.0,min_quantity=0.0,unit="ea",condition="Available",location_code=location)
+                s.add(item);s.flush()
+            item.quantity=float(item.quantity or 0)+qty;item.version+=1
+            line.received_qty=float(line.received_qty or 0)+qty
+            line.status="Received" if line.received_qty>=float(line.ordered_qty or 0)-1e-9 else "Partial";line.version+=1
+            tx=InventoryTransaction(part_number=line.part_number,location_code=location,transaction_type="PO Receive",quantity=qty,user=user,note=" | ".join(x for x in [line.order_no,reference.strip(),note.strip()] if x))
+            s.add(tx)
+            lines=list(s.scalars(select(SupplierOrderLine).where(SupplierOrderLine.order_no==order.order_no)))
+            statuses=[("Received" if x.id==line.id and line.status=="Received" else x.status) for x in lines]
+            if all(x=="Received" for x in statuses):
+                order.status="Received";order.closed_at=datetime.utcnow()
+            else:order.status="Partially Received"
+            order.version+=1
+            s.add(AuditLog(user=user,action="SUPPLIER_ORDER_RECEIVE",entity_type="SUPPLIER_ORDER",entity_key=order.order_no,detail=json.dumps({"line_id":line.id,"part_number":line.part_number,"qty":qty,"location":location,"reference":reference},sort_keys=True)))
+            s.flush();return line,order,tx
+
+    def cancel_supplier_order(self, order_no: str, user: str, reason: str = ""):
+        with self.session() as s:
+            order=s.scalar(select(SupplierOrder).where(SupplierOrder.order_no==order_no))
+            if not order:raise ValueError("Supplier order not found")
+            if order.status=="Received":raise ValueError("Received supplier order cannot be cancelled.")
+            if s.scalar(select(func.count()).select_from(SupplierOrderLine).where(SupplierOrderLine.order_no==order_no,SupplierOrderLine.received_qty>0)):
+                raise ValueError("Order with received quantity cannot be cancelled.")
+            order.status="Cancelled";order.closed_at=datetime.utcnow();order.version+=1
+            for line in s.scalars(select(SupplierOrderLine).where(SupplierOrderLine.order_no==order_no)):line.status="Cancelled";line.version+=1
+            s.add(AuditLog(user=user,action="SUPPLIER_ORDER_CANCEL",entity_type="SUPPLIER_ORDER",entity_key=order_no,detail=reason.strip()))
+            s.flush();return order
+
+    def register_rotable(self, data: dict[str, Any], user: str, expected_version: int | None = None):
+        payload=dict(data);asset_id=str(payload.get("asset_id","")).strip();part=str(payload.get("part_number","")).strip()
+        if not asset_id or not part:raise ValueError("Rotable asset ID and part number are required.")
+        with self.session() as s:
+            row=s.scalar(select(RotableAsset).where(RotableAsset.asset_id==asset_id))
+            if row:self._update_versioned(row,payload,expected_version,"Rotable asset")
+            else:
+                row=RotableAsset(**payload);s.add(row);s.flush()
+                s.add(RotableEvent(asset_id=asset_id,event_type="REGISTER",from_status="",to_status=row.status,location_code=row.current_location,user=user,note=row.notes))
+            s.flush();return row
+
+    def list_rotables(self, search_text: str = "", status: str = ""):
+        with self.session() as s:
+            stmt=select(RotableAsset).order_by(RotableAsset.part_number,RotableAsset.asset_id)
+            if search_text:
+                q=f"%{search_text}%";stmt=stmt.where(or_(RotableAsset.asset_id.ilike(q),RotableAsset.part_number.ilike(q),RotableAsset.serial_number.ilike(q),RotableAsset.equipment_id.ilike(q),RotableAsset.vendor.ilike(q)))
+            if status:stmt=stmt.where(RotableAsset.status==status)
+            return list(s.scalars(stmt))
+
+    def list_rotable_events(self, asset_id: str):
+        with self.session() as s:
+            return list(s.scalars(select(RotableEvent).where(RotableEvent.asset_id==asset_id).order_by(RotableEvent.occurred_at.desc(),RotableEvent.id.desc())))
+
+    def transition_rotable(self, asset_id: str, target_status: str, user: str, *, location_code: str = "", equipment_id: str = "", component_id: str = "", vendor: str = "", reference: str = "", note: str = "", expected_version: int | None = None):
+        target_status=target_status.strip()
+        allowed={
+            "Stock":{"Installed","In Repair","Quarantine","Scrapped"},
+            "Installed":{"Stock","In Repair","Quarantine","Scrapped"},
+            "In Repair":{"Stock","Quarantine","Scrapped"},
+            "Quarantine":{"Stock","In Repair","Scrapped"},
+            "Scrapped":set(),
+        }
+        if target_status not in {"Stock","Installed","In Repair","Quarantine","Scrapped"}:raise ValueError("Invalid rotable lifecycle status.")
+        with self.session() as s:
+            stmt=select(RotableAsset).where(RotableAsset.asset_id==asset_id)
+            if self.url.startswith("postgresql"):stmt=stmt.with_for_update()
+            row=s.scalar(stmt)
+            if not row:raise ValueError("Rotable asset not found")
+            if expected_version is not None and row.version!=expected_version:raise RuntimeError("CONFLICT: Rotable asset changed.")
+            if target_status==row.status:return row
+            if target_status not in allowed.get(row.status,set()):raise ValueError(f"Invalid rotable transition {row.status} → {target_status}.")
+            if target_status=="Installed" and not equipment_id.strip():raise ValueError("Equipment ID is required when installing a rotable.")
+            if target_status=="In Repair" and not vendor.strip():raise ValueError("Vendor is required when sending a rotable for repair.")
+            previous=row.status;now=datetime.utcnow()
+            row.status=target_status;row.version+=1
+            if target_status=="Installed":
+                row.equipment_id=equipment_id.strip();row.component_id=component_id.strip();row.current_location="";row.installed_at=now
+            elif target_status=="In Repair":
+                row.vendor=vendor.strip();row.repair_reference=reference.strip();row.sent_for_repair_at=now;row.equipment_id="";row.component_id=""
+            elif target_status=="Stock":
+                row.current_location=location_code.strip() or row.current_location;row.equipment_id="";row.component_id=""
+                if previous=="Installed":row.removed_at=now
+                if previous=="In Repair":row.returned_at=now;row.repair_count+=1;row.condition="Serviceable"
+            elif target_status=="Quarantine":
+                row.current_location=location_code.strip() or row.current_location;row.equipment_id="";row.component_id="";row.condition="Quarantine"
+            elif target_status=="Scrapped":
+                row.equipment_id="";row.component_id="";row.condition="Scrapped"
+            row.notes=note.strip() or row.notes
+            s.add(RotableEvent(asset_id=asset_id,event_type="STATUS",from_status=previous,to_status=target_status,location_code=row.current_location,equipment_id=row.equipment_id,reference=reference.strip(),note=note.strip(),user=user,occurred_at=now))
+            s.add(AuditLog(user=user,action="ROTABLE_TRANSITION",entity_type="ROTABLE",entity_key=asset_id,detail=json.dumps({"from":previous,"to":target_status,"equipment_id":equipment_id,"vendor":vendor,"reference":reference},sort_keys=True)))
+            s.flush();return row
+
+    def pm_kit_stage(self, task_id: int):
+        with self.session() as s:return s.scalar(select(PMKitStage).where(PMKitStage.task_id==task_id))
+
+    def set_pm_kit_stage(self, task_id: int, status: str, user: str, staging_location: str = "", note: str = "", expected_version: int | None = None):
+        status=status.strip()
+        if status not in {"Reserved","Staged","Issued","Returned","Completed"}:raise ValueError("Invalid PM kit stage status.")
+        with self.session() as s:
+            task=s.get(PMTask,task_id)
+            if not task:raise ValueError("PM task not found")
+            row=s.scalar(select(PMKitStage).where(PMKitStage.task_id==task_id))
+            if row and expected_version is not None and row.version!=expected_version:raise RuntimeError("CONFLICT: PM kit stage changed.")
+            if status in {"Staged","Issued"}:
+                reservations=list(s.scalars(select(InventoryReservation).where(InventoryReservation.pm_task_id==task_id,InventoryReservation.status=="Reserved")))
+                readiness=self.pm_task_readiness(task_id)
+                if readiness["parts_status"]!="READY":raise ValueError("PM kit cannot be staged while required parts are short.")
+                if not reservations and readiness["parts"]:raise ValueError("Reserve required parts before staging the PM kit.")
+            now=datetime.utcnow()
+            if not row:
+                row=PMKitStage(task_id=task_id,status=status,staging_location=staging_location.strip(),note=note.strip());s.add(row)
+            else:
+                row.status=status;row.staging_location=staging_location.strip() or row.staging_location;row.note=note.strip() or row.note;row.version+=1
+            if status=="Staged":row.staged_by=user;row.staged_at=now
+            if status=="Issued":row.issued_by=user;row.issued_at=now
+            s.add(AuditLog(user=user,action="PM_KIT_STAGE",entity_type="PM_TASK",entity_key=str(task_id),detail=json.dumps({"status":status,"location":row.staging_location,"note":note},sort_keys=True)))
+            s.flush();return row
 
     def save_part_catalog(self, data: dict[str, Any], expected_version: int | None = None):
         payload=dict(data);part=str(payload.get("part_number","")).strip()
