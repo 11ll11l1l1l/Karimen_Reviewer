@@ -96,6 +96,44 @@ class PolicyOptionDialog(QDialog):
         return {"category":self.category,"code":self.code.text().strip(),"label":self.label.text().strip(),"sort_order":self.order.value(),"active":self.active.isChecked(),"metadata_json":json.dumps(meta,sort_keys=True)}
 
 
+class ReportTemplateDialog(QDialog):
+    TYPES=[
+        "WEEKLY_ENGINEERING","EQUIPMENT","INCIDENT","PM_EXECUTION",
+        "WORK_ORDER","WORK_ORDER_CLOSEOUT","QUALIFICATION","RELEASE",
+    ]
+    def __init__(self,row=None,parent=None):
+        super().__init__(parent);self.row=row;self.setWindowTitle("Report Template Policy");self.resize(650,420)
+        f=QFormLayout(self)
+        self.code=QLineEdit();self.label=QLineEdit();self.report_type=QComboBox();self.report_type.addItems(self.TYPES)
+        self.equipment_type=QLineEdit();self.area=QLineEdit();self.path=QLineEdit()
+        browse=QPushButton("Browse…");browse.clicked.connect(self.browse)
+        ph=QHBoxLayout();ph.addWidget(self.path,1);ph.addWidget(browse)
+        self.order=QSpinBox();self.order.setRange(0,99999);self.order.setValue(100);self.active=QCheckBox("Active");self.active.setChecked(True)
+        f.addRow("Policy code",self.code);f.addRow("Label",self.label);f.addRow("Report type",self.report_type)
+        f.addRow("Match equipment type",self.equipment_type);f.addRow("Match area",self.area);f.addRow("PowerPoint template",ph)
+        f.addRow("Priority order",self.order);f.addRow("",self.active)
+        note=QLabel("Leave equipment type/area blank for a site-wide default. More specific matching templates take precedence.");note.setWordWrap(True);note.setStyleSheet("color:#647581");f.addRow("",note)
+        b=QDialogButtonBox(QDialogButtonBox.StandardButton.Save|QDialogButtonBox.StandardButton.Cancel);b.accepted.connect(self.accept);b.rejected.connect(self.reject);f.addRow(b)
+        if row:
+            self.code.setText(row.code);self.code.setReadOnly(True);self.label.setText(row.label);self.order.setValue(row.sort_order);self.active.setChecked(row.active)
+            try:meta=json.loads(row.metadata_json or "{}")
+            except Exception:meta={}
+            match=meta.get("match",{}) if isinstance(meta,dict) else {}
+            self.report_type.setCurrentText(str(match.get("report_type","WEEKLY_ENGINEERING")))
+            self.equipment_type.setText(str(match.get("equipment_type","")));self.area.setText(str(match.get("area","")));self.path.setText(str(meta.get("path","")))
+
+    def browse(self):
+        path,_=QFileDialog.getOpenFileName(self,"Select PowerPoint Template","","PowerPoint (*.pptx *.potx)")
+        if path:self.path.setText(path)
+
+    def data(self):
+        match={"report_type":self.report_type.currentText()}
+        if self.equipment_type.text().strip():match["equipment_type"]=self.equipment_type.text().strip()
+        if self.area.text().strip():match["area"]=self.area.text().strip()
+        meta={"match":match,"path":self.path.text().strip()}
+        return {"category":"REPORT_TEMPLATE","code":self.code.text().strip(),"label":self.label.text().strip(),"sort_order":self.order.value(),"active":self.active.isChecked(),"metadata_json":json.dumps(meta,sort_keys=True)}
+
+
 class EntityTemplateDialog(QDialog):
     def __init__(self,row=None,parent=None):
         super().__init__(parent);self.row=row;self.setWindowTitle("Entity Template");self.resize(650,520)
@@ -190,7 +228,7 @@ class ConfigurationStudio(QWidget):
         root=QVBoxLayout(self);head=QHBoxLayout();title=QLabel("Configuration Studio");title.setStyleSheet("font-size:20pt;font-weight:800");note=QLabel("Adapt plant-facing lists, templates and custom fields without editing Python.");note.setStyleSheet("color:#647581");exportb=QPushButton("Export package");importb=QPushButton("Import package");exportb.clicked.connect(self.export_package);importb.clicked.connect(self.import_package);head.addWidget(title);head.addWidget(note);head.addStretch(1);head.addWidget(exportb);head.addWidget(importb);root.addLayout(head)
         tabs=QTabWidget();root.addWidget(tabs,1)
 
-        ow=QWidget();ov=QVBoxLayout(ow);oh=QHBoxLayout();self.category=QComboBox();self.category.addItems(["EQUIPMENT_CRITICALITY","TICKET_SEVERITY","TICKET_PRIORITY","DISPOSITION_STATE","INVENTORY_CONDITION","WORK_TYPE","ALARM_BURST_POLICY","NUMBERING_SCHEME","DEFAULT_OWNER_RULE","SLA_POLICY","EQUIPMENT_REASON_LABEL","TICKET_REASON_LABEL"]);self.category.currentTextChanged.connect(self.refresh_options);add=QPushButton("Add option");edit=QPushButton("Edit selected");add.clicked.connect(self.add_option);edit.clicked.connect(self.edit_option);oh.addWidget(QLabel("Category"));oh.addWidget(self.category);oh.addWidget(add);oh.addWidget(edit);oh.addStretch(1);ov.addLayout(oh);self.option_table=_table(["Code","Label","Order","Active","System","Metadata","Ver"]);ov.addWidget(self.option_table);tabs.addTab(ow,"Reference Options")
+        ow=QWidget();ov=QVBoxLayout(ow);oh=QHBoxLayout();self.category=QComboBox();self.category.addItems(["EQUIPMENT_CRITICALITY","TICKET_SEVERITY","TICKET_PRIORITY","DISPOSITION_STATE","INVENTORY_CONDITION","WORK_TYPE","ALARM_BURST_POLICY","NUMBERING_SCHEME","DEFAULT_OWNER_RULE","SLA_POLICY","REPORT_TEMPLATE","EQUIPMENT_REASON_LABEL","TICKET_REASON_LABEL"]);self.category.currentTextChanged.connect(self.refresh_options);add=QPushButton("Add option");edit=QPushButton("Edit selected");add.clicked.connect(self.add_option);edit.clicked.connect(self.edit_option);oh.addWidget(QLabel("Category"));oh.addWidget(self.category);oh.addWidget(add);oh.addWidget(edit);oh.addStretch(1);ov.addLayout(oh);self.option_table=_table(["Code","Label","Order","Active","System","Metadata","Ver"]);ov.addWidget(self.option_table);tabs.addTab(ow,"Reference Options")
 
         tw=QWidget();tv=QVBoxLayout(tw);th=QHBoxLayout();addt=QPushButton("New template");editt=QPushButton("Edit selected");addt.clicked.connect(self.add_template);editt.clicked.connect(self.edit_template);th.addWidget(addt);th.addWidget(editt);th.addStretch(1);tv.addLayout(th);self.template_table=_table(["Template","Entity","Name","Applies To","Active","Created By","Ver"]);tv.addWidget(self.template_table);tabs.addTab(tw,"Entity Templates")
 
@@ -239,6 +277,8 @@ class ConfigurationStudio(QWidget):
         category=self.category.currentText()
         if category in {"NUMBERING_SCHEME","DEFAULT_OWNER_RULE","SLA_POLICY"}:
             d=PolicyOptionDialog(category,parent=self)
+        elif category=="REPORT_TEMPLATE":
+            d=ReportTemplateDialog(parent=self)
         else:
             d=ConfigOptionDialog(parent=self);d.category.setText(category)
         if d.exec()==QDialog.DialogCode.Accepted:
@@ -248,6 +288,7 @@ class ConfigurationStudio(QWidget):
         row=_selected(self.option_table,self.options)
         if not row:return
         if row.category in {"NUMBERING_SCHEME","DEFAULT_OWNER_RULE","SLA_POLICY"}:d=PolicyOptionDialog(row.category,row,self)
+        elif row.category=="REPORT_TEMPLATE":d=ReportTemplateDialog(row,self)
         else:d=ConfigOptionDialog(row,self)
         if d.exec()==QDialog.DialogCode.Accepted:
             try:self.db.save_config_option(d.data(),row.version);self.refresh_options()
