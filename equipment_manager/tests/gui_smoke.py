@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import time
 
 os.environ.setdefault("QT_QPA_PLATFORM","offscreen")
 
@@ -25,7 +26,10 @@ def run() -> None:
     app.processEvents()
     main.close()
 
+    started=time.perf_counter()
     smart=SmartMainWindow(db,user)
+    startup=time.perf_counter()-started
+    assert startup<8.0,f"Smart shell startup took {startup:.3f}s"
     assert smart.nav.count()>=10
     assert smart.stack.count()==smart.nav.count()
     assert isinstance(smart.dashboard.table,QTableView)
