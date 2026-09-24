@@ -6,7 +6,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Callable
 
-from PySide6.QtCore import QTimer
+from PySide6.QtCore import QTimer, Qt
 from PySide6.QtGui import QAction, QKeySequence
 from PySide6.QtWidgets import (
     QApplication,
@@ -323,6 +323,15 @@ class SmartMainWindow(QMainWindow):
         self.refresh_my_work_badge();self.refresh_notification_badge()
         self.accessibility_issues=apply_accessibility_defaults(self)
 
+    def resizeEvent(self,event):
+        super().resizeEvent(event)
+        compact=self.width()<1300
+        self.nav.setFixedWidth(185 if compact else 225)
+        self.global_search.setMinimumWidth(220 if compact else 360)
+        # The keyboard shortcut remains available when the less-frequent button
+        # is hidden on smaller engineering laptops.
+        self.quick_capture.setVisible(self.width()>=1150)
+
     def current_evidence_context(self):
         page=self.stack.currentWidget()
         if page is self.equipment360:
@@ -527,6 +536,7 @@ def main():
             print(f"{check['status']:<4} {check['name']}: {check['detail']}")
         return 0 if result["ok"] else 2
     configure_logging("ems-smart");install_exception_hook("ems-smart")
+    QApplication.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
     app = QApplication(sys.argv)
     app.setStyleSheet(SMART_STYLE)
     db = Database()
