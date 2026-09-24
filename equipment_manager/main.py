@@ -27,11 +27,11 @@ from domain import REASON_CODES, TICKET_REASON_CODES, allowed_targets, allowed_t
 from workspaces import AttachmentPanel
 from table_productivity import configure_productivity_context, install_table_productivity
 from excel_import_studio import run_mapping_studio
-from excel_reconcile import confirm_reconciliation, reconcile_equipment, reconcile_inventory
+from excel_reconcile import confirm_reconciliation, reconcile_equipment, reconcile_inventory, reconcile_tickets
 from alarm_correlation import correlate_alarm_bursts
 from reporting import export_qualification_pptx, export_qualification_xlsx, export_release_pptx, export_release_xlsx
 from services import (
-    auto_mapping, calculate_next_due, copy_clipboard_image, dataframe_to_equipment, dataframe_to_inventory, dataframe_to_pm_backlog,
+    auto_mapping, calculate_next_due, copy_clipboard_image, dataframe_to_equipment, dataframe_to_inventory, dataframe_to_tickets, dataframe_to_pm_backlog,
     dataframe_to_pm_specs, evaluate_measurement, pm_parts_readiness, read_clipboard_table,
     read_table, readonly_open_copy, workbook_sheets, workload_by_day,
 )
@@ -1071,10 +1071,10 @@ class TicketPage(QWidget):
     def __init__(self,db,user):
         super().__init__();self.db=db;self.user=user;self.rows=[];self.inv=[];self.lifecycle=[];self.control=None;self.escalations=[]
         v=QVBoxLayout(self);h=QHBoxLayout()
-        add=QPushButton("New Ticket");edit=QPushButton("Edit Details");state=QPushButton("Change Status");invest=QPushButton("Add Investigation Step");control=QPushButton("Operational Control")
-        add.clicked.connect(self.add);edit.clicked.connect(self.edit);state.clicked.connect(self.change_state);invest.clicked.connect(self.add_investigation);control.clicked.connect(self.edit_operational_control)
-        allowed=db.has_permission(user,"ticket.edit");add.setEnabled(allowed);edit.setEnabled(allowed);state.setEnabled(allowed);invest.setEnabled(allowed);control.setEnabled(allowed)
-        h.addWidget(add);h.addWidget(edit);h.addWidget(state);h.addWidget(invest);h.addWidget(control);h.addStretch(1);v.addLayout(h)
+        add=QPushButton("New Ticket");edit=QPushButton("Edit Details");imp=QPushButton("Import Excel/CSV");paste=QPushButton("Paste from Excel");state=QPushButton("Change Status");invest=QPushButton("Add Investigation Step");control=QPushButton("Operational Control")
+        add.clicked.connect(self.add);edit.clicked.connect(self.edit);imp.clicked.connect(self.import_tickets);paste.clicked.connect(self.paste_tickets);state.clicked.connect(self.change_state);invest.clicked.connect(self.add_investigation);control.clicked.connect(self.edit_operational_control)
+        allowed=db.has_permission(user,"ticket.edit");add.setEnabled(allowed);edit.setEnabled(allowed);imp.setEnabled(allowed);paste.setEnabled(allowed);state.setEnabled(allowed);invest.setEnabled(allowed);control.setEnabled(allowed)
+        h.addWidget(add);h.addWidget(edit);h.addWidget(imp);h.addWidget(paste);h.addWidget(state);h.addWidget(invest);h.addWidget(control);h.addStretch(1);v.addLayout(h)
         self.table=make_table(["Ticket","Equipment","Title","Severity","Priority","Status","Owner","Updated","Ver"]);self.table.itemSelectionChanged.connect(self.load_details);v.addWidget(self.table,2)
 
         tabs=QTabWidget();self.tabs=tabs
@@ -1101,6 +1101,51 @@ class TicketPage(QWidget):
                 item=self.table.item(i,0)
                 if item:self.table.scrollToItem(item)
                 break
+
+    def _ticket_import_df(self,df):
+        fields=[
+            ("ticket_no","Ticket number"),("equipment_id","Equipment ID"),("title","Title"),("description","Description"),
+            ("severity","Severity"),("priority","Priority"),("owner","Owner"),("root_cause","Root cause"),
+            ("corrective_action","Corrective action"),("verification","Verification"),
+        ]
+        mapping=run_mapping_studio(
+            self,self.db,self.user["username"],"excel_mapping.tickets",df,fields,
+            auto_mapping(list(df.columns)),{"ticket_no","equipment_id"},"Incident / Ticket Import Studio",
+        )
+        if mapping is None:return
+        rows,errors=dataframe_to_tickets(df,mapping)
+        if not rows:
+            QMessageBox.warning(self,"Incident import","No valid rows.\n"+"\n".join(errors[:20]));return
+        actions=reconcile_tickets(self.db,rows,mapping)
+        if not any(x["status"] in {"CREATE","UPDATE"} for x in actions):
+            QMessageBox.information(self,"Incident import","No changes detected.");return
+        if not confirm_reconciliation(self,"Incident / Ticket Reconciliation",actions):return
+        applied=0;failures=[]
+        for action in actions:
+            if action["status"]=="UNCHANGED":continue
+            data=dict(action["data"]);current=action["current"];data["created_by"]=data.get("created_by") or self.user["username"]
+            try:
+                self.db.save_ticket(data,current.version if current else None,workstation=WORKSTATION);applied+=1
+            except Exception as exc:failures.append(f"{data.get('ticket_no')}: {exc}")
+        self.refresh()
+        detail=f"Applied {applied} incident create/update row(s). Lifecycle status was not imported. Source warnings: {len(errors)}. Failures: {len(failures)}."
+        if failures:detail+="\n"+"\n".join(failures[:12])
+        QMessageBox.information(self,"Incident import",detail)
+
+    def import_tickets(self):
+        path,_=QFileDialog.getOpenFileName(self,"Import Incidents / Tickets","","Excel/CSV (*.xlsx *.xlsm *.csv)")
+        if not path:return
+        try:
+            sheets=workbook_sheets(path);sheet=sheets[0]
+            if len(sheets)>1:
+                sheet,ok=QInputDialog.getItem(self,"Import Incidents","Sheet",sheets,0,False)
+                if not ok:return
+            self._ticket_import_df(read_table(path,sheet))
+        except Exception as exc:QMessageBox.critical(self,"Incident import",str(exc))
+
+    def paste_tickets(self):
+        try:self._ticket_import_df(read_clipboard_table(QApplication.clipboard().text()))
+        except Exception as exc:QMessageBox.critical(self,"Incident paste",str(exc))
 
     def add(self):
         d=TicketDialog(parent=self)
