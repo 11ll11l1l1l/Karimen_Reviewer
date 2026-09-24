@@ -431,3 +431,63 @@ def export_release_xlsx(db,release_id: int,path: str) -> str:
     ws=wb.create_sheet("Attachments");_sheet(ws,["Name","Category","Caption","Tags","Path","Added By","Added"],[[x.original_name,x.category,x.caption,x.tags,x.stored_path,x.created_by,x.created_at] for x in attachments])
     Path(path).parent.mkdir(parents=True,exist_ok=True);wb.save(path);return str(path)
 
+def export_engineering_review_pptx(db,days: int,path: str) -> str:
+    data=db.engineering_analytics(days)
+    tools=data["tool_matrix"];alarms=data["alarm_pareto"];incidents=data["incident_pareto"];pm=data["pm"];trend=data.get("trend",[])
+    prs=_new_presentation()
+    slide=prs.slides.add_slide(prs.slide_layouts[0]);slide.shapes.title.text="Equipment Engineering Review"
+    slide.placeholders[1].text=f"{data['start']:%Y-%m-%d} to {data['end']:%Y-%m-%d} · {len(tools)} tools"
+
+    if tools:
+        fleet_av=sum(float(x["availability_pct"]) for x in tools)/len(tools)
+        unplanned=sum(float(x["unplanned_downtime_hours"]) for x in tools)
+        failures=sum(int(x["failure_count"]) for x in tools)
+        critical=sum(int(x["critical_open"]) for x in tools)
+        active_alarms=sum(int(x["active_alarms"]) for x in tools)
+    else:
+        fleet_av=100.0;unplanned=0.0;failures=critical=active_alarms=0
+    slide=prs.slides.add_slide(prs.slide_layouts[1])
+    _add_bullets(slide,"Executive Engineering Summary",[
+        f"Fleet availability: {fleet_av:.1f}%",
+        f"Unplanned downtime: {unplanned:.1f} h",
+        f"Failures: {failures}",
+        f"Open P1/P2 incidents: {critical}",
+        f"Active alarms: {active_alarms}",
+        f"PM compliance: {pm['compliance_pct']:.1f}% ({pm['completed']}/{pm['due']})",
+        f"PM overdue: {pm['overdue']} · deferred: {pm['deferred']}",
+    ])
+
+    _add_table_pages(prs,"Fleet Reliability / Chronic Tools",
+        ["Equipment","Availability %","Failures","Unplanned h","MTTR h","MTBF h","Incidents","P1/P2","Alarms","State"],
+        [[x["equipment_id"],f"{x['availability_pct']:.1f}",x["failure_count"],f"{x['unplanned_downtime_hours']:.1f}",f"{x['mttr_hours']:.1f}",f"{x['mtbf_hours']:.1f}",x["incidents_period"],x["critical_open"],x["active_alarms"],x["current_state"]] for x in tools],12)
+    _add_table_pages(prs,"Alarm Pareto",["Alarm Code","Message","Count"],[[x["alarm_code"],x["message"],x["count"]] for x in alarms],14)
+    _add_table_pages(prs,"Incident Pareto",["Equipment","Incident Count"],[[x["equipment_id"],x["count"]] for x in incidents],14)
+    _add_table_pages(prs,"Reliability Trend",["Period Start","Availability %","Unplanned h","Failures"],[[x["label"],f"{x['availability_pct']:.1f}",f"{x['unplanned_downtime_hours']:.1f}",x["failure_count"]] for x in trend],14)
+
+    slide=prs.slides.add_slide(prs.slide_layouts[1])
+    _add_bullets(slide,"PM Compliance",[
+        f"Due in period: {pm['due']}",f"Completed: {pm['completed']}",f"Overdue: {pm['overdue']}",
+        f"Deferred: {pm['deferred']}",f"Compliance: {pm['compliance_pct']:.1f}%",
+    ])
+    Path(path).parent.mkdir(parents=True,exist_ok=True);prs.save(path);return str(path)
+
+
+def export_engineering_review_xlsx(db,days: int,path: str) -> str:
+    data=db.engineering_analytics(days);tools=data["tool_matrix"];alarms=data["alarm_pareto"];incidents=data["incident_pareto"];pm=data["pm"];trend=data.get("trend",[])
+    wb=Workbook();summary=wb.active;summary.title="Summary"
+    fleet_av=(sum(float(x["availability_pct"]) for x in tools)/len(tools)) if tools else 100.0
+    _sheet(summary,["Metric","Value"],[
+        ["Period start",data["start"]],["Period end",data["end"]],["Tools",len(tools)],
+        ["Fleet availability %",fleet_av],["Unplanned downtime h",sum(float(x["unplanned_downtime_hours"]) for x in tools)],
+        ["Failures",sum(int(x["failure_count"]) for x in tools)],["Open P1/P2",sum(int(x["critical_open"]) for x in tools)],
+        ["Active alarms",sum(int(x["active_alarms"]) for x in tools)],["PM due",pm["due"]],["PM completed",pm["completed"]],
+        ["PM overdue",pm["overdue"]],["PM deferred",pm["deferred"]],["PM compliance %",pm["compliance_pct"]],
+    ])
+    ws=wb.create_sheet("Tool Matrix");_sheet(ws,
+        ["Equipment","Availability %","Failures","Unplanned h","Planned h","MTTR h","MTBF h","Incidents","Open Incidents","P1/P2 Open","Active Alarms","State"],
+        [[x["equipment_id"],x["availability_pct"],x["failure_count"],x["unplanned_downtime_hours"],x["planned_downtime_hours"],x["mttr_hours"],x["mtbf_hours"],x["incidents_period"],x["open_incidents"],x["critical_open"],x["active_alarms"],x["current_state"]] for x in tools])
+    ws=wb.create_sheet("Alarm Pareto");_sheet(ws,["Alarm Code","Message","Count"],[[x["alarm_code"],x["message"],x["count"]] for x in alarms])
+    ws=wb.create_sheet("Incident Pareto");_sheet(ws,["Equipment","Count"],[[x["equipment_id"],x["count"]] for x in incidents])
+    ws=wb.create_sheet("Trend");_sheet(ws,["Start","End","Availability %","Unplanned h","Failures"],[[x["start"],x["end"],x["availability_pct"],x["unplanned_downtime_hours"],x["failure_count"]] for x in trend])
+    Path(path).parent.mkdir(parents=True,exist_ok=True);wb.save(path);return str(path)
+
