@@ -6,6 +6,7 @@ from pathlib import Path
 from database import Database
 from integrations import dispatch_pending
 from orchestration import process_pending_rules
+from inbound_drop import process_drop
 
 
 class IntegrationStudioTests(unittest.TestCase):
@@ -58,6 +59,28 @@ class IntegrationStudioTests(unittest.TestCase):
         replayed=self.db.replay_integration_delivery(delivery.id)
         self.assertEqual(replayed.status,"Pending")
         self.assertIsNone(replayed.next_attempt_at)
+
+    def test_inbound_drop_processes_duplicates_and_quarantines_invalid_files(self):
+        with tempfile.TemporaryDirectory() as td:
+            root=Path(td)
+            payload={
+                "source_id":"MES","external_event_id":"evt-200","topic":"mes.tool.context",
+                "entity_type":"EQUIPMENT","entity_key":"ETCH-INT","payload":{"equipment_id":"ETCH-INT","recipe":"R1"},
+            }
+            (root/"001.json").write_text(json.dumps(payload),encoding="utf-8")
+            result=process_drop(self.db,root)
+            self.assertEqual(result["processed"],1)
+            self.assertTrue(any((root/"_processed").rglob("001.json")))
+
+            (root/"002.json").write_text(json.dumps(payload),encoding="utf-8")
+            (root/"bad.json").write_text("{not-json",encoding="utf-8")
+            result=process_drop(self.db,root)
+            self.assertEqual(result["duplicate"],1)
+            self.assertEqual(result["rejected"],1)
+            self.assertTrue(any((root/"_duplicate").rglob("002.json")))
+            rejected=list((root/"_rejected").rglob("bad.json"))
+            self.assertEqual(len(rejected),1)
+            self.assertTrue(Path(str(rejected[0])+".error.txt").exists())
 
     def test_inbound_receipt_is_idempotent(self):
         payload={"equipment_id":"ETCH-INT","value":123}
