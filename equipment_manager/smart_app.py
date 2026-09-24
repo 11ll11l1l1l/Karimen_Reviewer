@@ -31,6 +31,7 @@ from attachment_store import store_clipboard_image
 from feedback import notify
 from logging_config import configure_logging, install_exception_hook
 from incident_workspace import IncidentWorkspace
+from integration_studio import IntegrationStudio
 from maintenance_planner import MaintenancePlanningWorkspace
 from pm_execution_workspace import PMExecutionWorkspace
 from return_to_service_workspace import ReturnToServiceWorkspace
@@ -257,6 +258,7 @@ class SmartMainWindow(QMainWindow):
         self.inventory=add("Parts / Inventory (Legacy)",InventoryPage(db,user))
         self.document_page=add("SOPs / Documents",DocumentPage(db,user))
         self.automation_studio=add("Workflow Automation",WorkflowAutomationStudio(db,user))
+        self.integration_studio=add("Integration Studio",IntegrationStudio(db,user))
         self.configuration_studio=add("Configuration Studio",ConfigurationStudio(db,user))
         self.admin_page=add("Users / Administration",AdminPage(db,user))
 
