@@ -12,7 +12,7 @@ from sqlalchemy import Boolean, DateTime, Float, Integer, String, Text, UniqueCo
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 
 from domain import (
-    DOWNTIME_STATES, EQUIPMENT_STATES, STATE_CLASS, TICKET_STATES,
+    DOWNTIME_STATES, EQUIPMENT_STATES, STATE_CLASS, TICKET_STATES, REASON_CODES, TICKET_REASON_CODES,
     validate_ticket_transition, validate_transition,
 )
 
@@ -1903,6 +1903,8 @@ class Database:
                 ("Expired","Expired"),("Obsolete","Obsolete"),("Scrap","Scrap"),("Vendor","Vendor"),
             ],
             "WORK_TYPE":[("Engineering","Engineering"),("Maintenance","Maintenance"),("Troubleshooting","Troubleshooting"),("Qualification","Qualification")],
+            "EQUIPMENT_REASON_LABEL":list(REASON_CODES.items()),
+            "TICKET_REASON_LABEL":list(TICKET_REASON_CODES.items()),
         }
         with self.session() as s:
             for category,items in defaults.items():
