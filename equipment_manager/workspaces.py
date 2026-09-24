@@ -18,6 +18,7 @@ from reporting import export_equipment_pptx, export_equipment_xlsx
 from pdf_reporting import export_equipment_pdf
 from image_annotator import ImageAnnotationDialog
 from table_productivity import install_table_productivity
+from ui_quality import make_model_table
 
 FILE_ROOT=os.getenv("EMS_FILE_ROOT",str(Path.cwd()/"equipment_files"))
 
@@ -46,8 +47,12 @@ def _fill_objects(table: QTableWidget, rows: list[Any], fields: list[str]):
             table.setItem(r,c,_item(value))
 
 
-def _selected(table: QTableWidget, rows: list[Any]):
-    i=table.currentRow()
+def _selected(table, rows: list[Any]):
+    if hasattr(table,"currentRow"):
+        i=table.currentRow()
+    else:
+        index=table.currentIndex()
+        i=index.row() if index.isValid() else -1
     return rows[i] if 0<=i<len(rows) else None
 
 
@@ -386,7 +391,15 @@ class Equipment360Workspace(QWidget):
             card=QFrame();card.setFrameShape(QFrame.Shape.StyledPanel);box=QVBoxLayout(card);value=QLabel("—");value.setStyleSheet("font-size:18pt;font-weight:700");box.addWidget(value);box.addWidget(QLabel(key));self.metric_labels[key]=value;self.metrics.addWidget(card,i//4,i%4)
         ov.addStretch(1);self.tabs.addTab(overview,"Overview")
 
-        timeline=QWidget();tl=QVBoxLayout(timeline);self.timeline_table=_table(["Time","Type","Key","Activity","Status","User","Source"]);self.timeline_table.doubleClicked.connect(self.open_timeline_item);tl.addWidget(self.timeline_table);self.tabs.addTab(timeline,"Unified timeline")
+        timeline=QWidget();tl=QVBoxLayout(timeline)
+        self.timeline_table,self.timeline_model=make_model_table(
+            ["Time","Type","Key","Activity","Status","User","Source"],
+            ["occurred_at","kind","key","summary","status","user","source"],
+            "Equipment unified activity timeline",
+        )
+        self.timeline_table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        self.timeline_table.doubleClicked.connect(self.open_timeline_item)
+        tl.addWidget(self.timeline_table);self.tabs.addTab(timeline,"Unified timeline")
 
         issues=QWidget();iv=QVBoxLayout(issues)
         self.ticket_table=_table(["Ticket","Title","Priority","Status","Owner","Updated"]);self.ticket_table.doubleClicked.connect(self.open_ticket)
@@ -416,7 +429,8 @@ class Equipment360Workspace(QWidget):
         self._clear()
 
     def _clear(self):
-        for table in [self.timeline_table,self.ticket_table,self.alarm_table,self.pm_table,self.work_table,self.qual_table,self.release_table,self.component_table,self.meter_table,self.inventory_table,self.document_table,self.handover_table,self.disposition_table,self.related_table]:table.setRowCount(0)
+        self.timeline_model.set_rows([])
+        for table in [self.ticket_table,self.alarm_table,self.pm_table,self.work_table,self.qual_table,self.release_table,self.component_table,self.meter_table,self.inventory_table,self.document_table,self.handover_table,self.disposition_table,self.related_table]:table.setRowCount(0)
         self.relationships=[]
         for value in self.metric_labels.values():value.setText("—")
 
@@ -507,7 +521,7 @@ class Equipment360Workspace(QWidget):
         rel=self.db.reliability_summary(eq.equipment_id)
 
         self.activity_rows=activity
-        _fill_objects(self.timeline_table,activity,["occurred_at","kind","key","summary","status","user","source"])
+        self.timeline_model.set_rows(activity)
         _fill_objects(self.ticket_table,tickets,["ticket_no","title","priority","status","owner","updated_at"])
         _fill_objects(self.alarm_table,alarms,["alarm_code","severity","message","state","occurred_at","related_ticket"])
         _fill_objects(self.pm_table,pm,["id","pm_id","pm_name","scheduled_date","status","assigned_to","priority"])
