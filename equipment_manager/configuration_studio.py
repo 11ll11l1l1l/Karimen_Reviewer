@@ -6,7 +6,7 @@ from datetime import datetime
 from PySide6.QtCore import QDate
 from PySide6.QtWidgets import (
     QAbstractItemView,QCheckBox,QComboBox,QDateEdit,QDialog,QDialogButtonBox,
-    QDoubleSpinBox,QFileDialog,QFormLayout,QGroupBox,QHBoxLayout,QHeaderView,QInputDialog,QLabel,QLineEdit,
+    QDoubleSpinBox,QFileDialog,QFormLayout,QGroupBox,QHBoxLayout,QHeaderView,QInputDialog,QLabel,QLineEdit,QSpinBox,
     QMessageBox,QPushButton,QTableWidget,QTableWidgetItem,QTabWidget,QTextEdit,
     QVBoxLayout,QWidget,
 )
