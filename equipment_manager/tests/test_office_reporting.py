@@ -13,6 +13,7 @@ from reporting import (
     export_work_order_pptx,export_work_order_xlsx,
     export_qualification_pptx,export_qualification_xlsx,
     export_release_pptx,export_release_xlsx,
+    export_engineering_review_pptx,export_engineering_review_xlsx,
 )
 
 
@@ -121,6 +122,16 @@ class OfficeReportingTests(unittest.TestCase):
             export_release_xlsx(self.db,self.release.id,str(rx))
             self.assertGreaterEqual(len(Presentation(str(rp)).slides),3)
             rwb=load_workbook(str(rx),read_only=True);self.assertIn("Checklist",rwb.sheetnames)
+
+    def test_engineering_review_pptx_and_xlsx_are_reopenable(self):
+        with tempfile.TemporaryDirectory() as td:
+            ppt=Path(td)/"review.pptx";xlsx=Path(td)/"review.xlsx"
+            export_engineering_review_pptx(self.db,30,str(ppt))
+            export_engineering_review_xlsx(self.db,30,str(xlsx))
+            deck=Presentation(str(ppt));self.assertGreaterEqual(len(deck.slides),6)
+            wb=load_workbook(str(xlsx),read_only=True)
+            self.assertIn("Summary",wb.sheetnames);self.assertIn("Tool Matrix",wb.sheetnames)
+            self.assertIn("Alarm Pareto",wb.sheetnames);self.assertIn("Trend",wb.sheetnames)
 
     def test_equipment_pptx_and_xlsx_are_reopenable(self):
         with tempfile.TemporaryDirectory() as td:
