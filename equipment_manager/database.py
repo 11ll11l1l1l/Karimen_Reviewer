@@ -1186,6 +1186,33 @@ class CustomFieldValue(Base):
     __table_args__ = (UniqueConstraint("entity_type","entity_key","field_id",name="uq_custom_field_value"),)
 
 
+
+class FormSectionDefinition(Base):
+    __tablename__ = "form_section_definitions"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    section_id: Mapped[str] = mapped_column(String(120), unique=True, index=True)
+    entity_type: Mapped[str] = mapped_column(String(60), index=True)
+    applies_to: Mapped[str] = mapped_column(String(180), default="", index=True)
+    title: Mapped[str] = mapped_column(String(180))
+    description: Mapped[str] = mapped_column(Text, default="")
+    sort_order: Mapped[int] = mapped_column(Integer, default=100)
+    columns: Mapped[int] = mapped_column(Integer, default=1)
+    collapsible: Mapped[bool] = mapped_column(Boolean, default=False)
+    active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
+class CustomFieldLayout(Base):
+    __tablename__ = "custom_field_layouts"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    field_id: Mapped[str] = mapped_column(String(120), unique=True, index=True)
+    section_id: Mapped[str] = mapped_column(String(120), default="", index=True)
+    column_index: Mapped[int] = mapped_column(Integer, default=0)
+    width_span: Mapped[int] = mapped_column(Integer, default=1)
+    placeholder: Mapped[str] = mapped_column(String(250), default="")
+    help_text: Mapped[str] = mapped_column(Text, default="")
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
 class WorkflowAutomationRule(Base):
     __tablename__ = "workflow_automation_rules"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -1462,6 +1489,9 @@ class Database:
                 table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
             ]),
             ("20260924_013","Create supplier-order rotable and PM-kit staging lifecycle tables",lambda: [
+                table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
+            ]),
+            ("20260924_014","Create configurable form-section and custom-field layout tables",lambda: [
                 table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
             ]),
         ]
@@ -2241,6 +2271,53 @@ class Database:
             if applies_to:rows=[x for x in rows if not x.applies_to or x.applies_to==applies_to]
             return rows
 
+    def save_form_section(self, data: dict[str,Any], expected_version: int | None = None):
+        payload=dict(data)
+        payload["section_id"]=str(payload.get("section_id","")).strip()
+        payload["entity_type"]=str(payload.get("entity_type","")).strip().upper()
+        payload["applies_to"]=str(payload.get("applies_to","")).strip()
+        payload["title"]=str(payload.get("title","")).strip()
+        payload["columns"]=max(1,min(3,int(payload.get("columns",1) or 1)))
+        if not payload["section_id"] or not payload["entity_type"] or not payload["title"]:
+            raise ValueError("Section ID, entity type and title are required.")
+        with self.session() as s:
+            row=s.scalar(select(FormSectionDefinition).where(FormSectionDefinition.section_id==payload["section_id"]))
+            if row:self._update_versioned(row,payload,expected_version,"Form section")
+            else:row=FormSectionDefinition(**payload);s.add(row)
+            s.flush();return row
+
+    def list_form_sections(self, entity_type: str = "", applies_to: str = "", active_only: bool = True):
+        with self.session() as s:
+            stmt=select(FormSectionDefinition).order_by(FormSectionDefinition.entity_type,FormSectionDefinition.sort_order,FormSectionDefinition.title)
+            if entity_type:stmt=stmt.where(FormSectionDefinition.entity_type==entity_type.strip().upper())
+            if active_only:stmt=stmt.where(FormSectionDefinition.active.is_(True))
+            rows=list(s.scalars(stmt))
+            if applies_to:rows=[x for x in rows if not x.applies_to or x.applies_to==applies_to]
+            return rows
+
+    def save_custom_field_layout(self, field_id: str, data: dict[str,Any], expected_version: int | None = None):
+        field_id=field_id.strip()
+        if not field_id:raise ValueError("Field ID is required.")
+        payload=dict(data);payload["field_id"]=field_id
+        payload["section_id"]=str(payload.get("section_id","")).strip()
+        payload["column_index"]=max(0,min(2,int(payload.get("column_index",0) or 0)))
+        payload["width_span"]=max(1,min(3,int(payload.get("width_span",1) or 1)))
+        with self.session() as s:
+            if not s.scalar(select(CustomFieldDefinition).where(CustomFieldDefinition.field_id==field_id)):
+                raise ValueError("Custom field definition not found.")
+            if payload["section_id"] and not s.scalar(select(FormSectionDefinition).where(FormSectionDefinition.section_id==payload["section_id"])):
+                raise ValueError("Form section not found.")
+            row=s.scalar(select(CustomFieldLayout).where(CustomFieldLayout.field_id==field_id))
+            if row:self._update_versioned(row,payload,expected_version,"Custom field layout")
+            else:row=CustomFieldLayout(**payload);s.add(row)
+            s.flush();return row
+
+    def custom_field_layouts(self, field_ids: list[str] | None = None) -> dict[str,CustomFieldLayout]:
+        with self.session() as s:
+            stmt=select(CustomFieldLayout)
+            if field_ids:stmt=stmt.where(CustomFieldLayout.field_id.in_(field_ids))
+            return {x.field_id:x for x in s.scalars(stmt)}
+
     def save_custom_field_definition(self, data: dict[str,Any], expected_version: int | None = None):
         payload=dict(data);payload["field_id"]=str(payload.get("field_id","")).strip();payload["entity_type"]=str(payload.get("entity_type","")).strip().upper();payload["field_type"]=str(payload.get("field_type","TEXT")).strip().upper()
         if payload["field_type"] not in {"TEXT","MULTILINE","NUMBER","BOOLEAN","DATE","CHOICE"}:raise ValueError("Unsupported custom field type.")
@@ -2310,9 +2387,11 @@ class Database:
             options=list(s.scalars(select(ConfigOption).order_by(ConfigOption.category,ConfigOption.sort_order,ConfigOption.code)))
             templates=list(s.scalars(select(EntityTemplate).order_by(EntityTemplate.entity_type,EntityTemplate.template_id)))
             fields=list(s.scalars(select(CustomFieldDefinition).order_by(CustomFieldDefinition.entity_type,CustomFieldDefinition.sort_order,CustomFieldDefinition.field_id)))
+            form_sections=list(s.scalars(select(FormSectionDefinition).order_by(FormSectionDefinition.entity_type,FormSectionDefinition.sort_order,FormSectionDefinition.section_id)))
+            layouts=list(s.scalars(select(CustomFieldLayout).order_by(CustomFieldLayout.field_id)))
             rules=list(s.scalars(select(WorkflowAutomationRule).order_by(WorkflowAutomationRule.priority,WorkflowAutomationRule.rule_id)))
         return {
-            "schema":"EMS_CONFIGURATION_V1",
+            "schema":"EMS_CONFIGURATION_V2",
             "exported_at":datetime.utcnow().isoformat(),
             "config_options":[{
                 "category":x.category,"code":x.code,"label":x.label,"sort_order":x.sort_order,
@@ -2327,6 +2406,14 @@ class Database:
                 "field_type":x.field_type,"options_json":x.options_json,"required":x.required,
                 "sort_order":x.sort_order,"active":x.active,
             } for x in fields],
+            "form_sections":[{
+                "section_id":x.section_id,"entity_type":x.entity_type,"applies_to":x.applies_to,"title":x.title,
+                "description":x.description,"sort_order":x.sort_order,"columns":x.columns,"collapsible":x.collapsible,"active":x.active,
+            } for x in form_sections],
+            "custom_field_layouts":[{
+                "field_id":x.field_id,"section_id":x.section_id,"column_index":x.column_index,"width_span":x.width_span,
+                "placeholder":x.placeholder,"help_text":x.help_text,
+            } for x in layouts],
             "workflow_rules":[{
                 "rule_id":x.rule_id,"name":x.name,"trigger":x.trigger,"match_json":x.match_json,
                 "actions_json":x.actions_json,"enabled":x.enabled,"priority":x.priority,
@@ -2334,12 +2421,14 @@ class Database:
         }
 
     def _validate_configuration_bundle(self,bundle: dict[str,Any]) -> dict[str,int]:
-        if not isinstance(bundle,dict) or bundle.get("schema")!="EMS_CONFIGURATION_V1":
+        if not isinstance(bundle,dict) or bundle.get("schema") not in {"EMS_CONFIGURATION_V1","EMS_CONFIGURATION_V2"}:
             raise ValueError("Unsupported configuration package schema.")
         sections={
             "config_options":bundle.get("config_options",[]),
             "entity_templates":bundle.get("entity_templates",[]),
             "custom_fields":bundle.get("custom_fields",[]),
+            "form_sections":bundle.get("form_sections",[]),
+            "custom_field_layouts":bundle.get("custom_field_layouts",[]),
             "workflow_rules":bundle.get("workflow_rules",[]),
         }
         for name,rows in sections.items():
@@ -2366,7 +2455,18 @@ class Database:
             if field_type not in {"TEXT","MULTILINE","NUMBER","BOOLEAN","DATE","CHOICE"}:raise ValueError(f"Unsupported field type for {key}: {field_type}")
             options=json.loads(row.get("options_json","[]") or "[]")
             if not isinstance(options,list):raise ValueError(f"Custom field {key} options must be an array.")
-        seen=set();allowed_triggers={"ALARM_ACTIVE","PM_ABNORMAL_RESULT","QUALIFICATION_APPROVED","RELEASE_APPROVED"};allowed_actions={"CREATE_INCIDENT","CREATE_WORK_ORDER","CREATE_HANDOVER","SET_DISPOSITION"}
+        seen=set()
+        for row in sections["form_sections"]:
+            key=str(row.get("section_id","")).strip()
+            if not key or key in seen:raise ValueError(f"Invalid or duplicate form section ID: {key or '<blank>'}")
+            seen.add(key)
+            if not str(row.get("entity_type","")).strip() or not str(row.get("title","")).strip():raise ValueError(f"Form section {key} requires entity type and title.")
+        seen=set()
+        for row in sections["custom_field_layouts"]:
+            key=str(row.get("field_id","")).strip()
+            if not key or key in seen:raise ValueError(f"Invalid or duplicate custom-field layout: {key or '<blank>'}")
+            seen.add(key)
+        seen=set();allowed_triggers={"ALARM_ACTIVE","ALARM_BURST","PM_ABNORMAL_RESULT","QUALIFICATION_APPROVED","RELEASE_APPROVED"};allowed_actions={"CREATE_INCIDENT","CREATE_WORK_ORDER","CREATE_HANDOVER","SET_DISPOSITION"}
         for row in sections["workflow_rules"]:
             key=str(row.get("rule_id","")).strip();trigger=str(row.get("trigger","")).strip().upper()
             if not key or key in seen:raise ValueError(f"Invalid or duplicate workflow rule ID: {key or '<blank>'}")
@@ -2385,12 +2485,16 @@ class Database:
                 "config_options":{(x.category,x.code) for x in s.scalars(select(ConfigOption))},
                 "entity_templates":{x.template_id for x in s.scalars(select(EntityTemplate))},
                 "custom_fields":{x.field_id for x in s.scalars(select(CustomFieldDefinition))},
+                "form_sections":{x.section_id for x in s.scalars(select(FormSectionDefinition))},
+                "custom_field_layouts":{x.field_id for x in s.scalars(select(CustomFieldLayout))},
                 "workflow_rules":{x.rule_id for x in s.scalars(select(WorkflowAutomationRule))},
             }
         creates={
             "config_options":sum(1 for x in bundle.get("config_options",[]) if (str(x.get("category","")).strip().upper(),str(x.get("code","")).strip()) not in existing["config_options"]),
             "entity_templates":sum(1 for x in bundle.get("entity_templates",[]) if str(x.get("template_id","")).strip() not in existing["entity_templates"]),
             "custom_fields":sum(1 for x in bundle.get("custom_fields",[]) if str(x.get("field_id","")).strip() not in existing["custom_fields"]),
+            "form_sections":sum(1 for x in bundle.get("form_sections",[]) if str(x.get("section_id","")).strip() not in existing["form_sections"]),
+            "custom_field_layouts":sum(1 for x in bundle.get("custom_field_layouts",[]) if str(x.get("field_id","")).strip() not in existing["custom_field_layouts"]),
             "workflow_rules":sum(1 for x in bundle.get("workflow_rules",[]) if str(x.get("rule_id","")).strip() not in existing["workflow_rules"]),
         }
         preview={"counts":counts,"creates":creates,"updates":{k:counts[k]-creates[k] for k in counts},"dry_run":dry_run}
@@ -2422,6 +2526,20 @@ class Database:
                     for k,v in payload.items():setattr(row,k,v)
                     row.version+=1
                 else:s.add(CustomFieldDefinition(field_id=key,**payload))
+            for data in bundle.get("form_sections",[]):
+                key=str(data["section_id"]).strip();row=s.scalar(select(FormSectionDefinition).where(FormSectionDefinition.section_id==key))
+                payload={"entity_type":str(data["entity_type"]).strip().upper(),"applies_to":str(data.get("applies_to","")).strip(),"title":str(data["title"]).strip(),"description":str(data.get("description","")).strip(),"sort_order":int(data.get("sort_order",100)),"columns":max(1,min(3,int(data.get("columns",1) or 1))),"collapsible":bool(data.get("collapsible",False)),"active":bool(data.get("active",True))}
+                if row:
+                    for k,v in payload.items():setattr(row,k,v)
+                    row.version+=1
+                else:s.add(FormSectionDefinition(section_id=key,**payload))
+            for data in bundle.get("custom_field_layouts",[]):
+                key=str(data["field_id"]).strip();row=s.scalar(select(CustomFieldLayout).where(CustomFieldLayout.field_id==key))
+                payload={"section_id":str(data.get("section_id","")).strip(),"column_index":max(0,min(2,int(data.get("column_index",0) or 0))),"width_span":max(1,min(3,int(data.get("width_span",1) or 1))),"placeholder":str(data.get("placeholder","")),"help_text":str(data.get("help_text",""))}
+                if row:
+                    for k,v in payload.items():setattr(row,k,v)
+                    row.version+=1
+                else:s.add(CustomFieldLayout(field_id=key,**payload))
             for data in bundle.get("workflow_rules",[]):
                 key=str(data["rule_id"]).strip();row=s.scalar(select(WorkflowAutomationRule).where(WorkflowAutomationRule.rule_id==key))
                 payload={"name":str(data["name"]).strip(),"trigger":str(data["trigger"]).strip().upper(),"match_json":data.get("match_json","{}") or "{}","actions_json":data.get("actions_json","[]") or "[]","enabled":bool(data.get("enabled",True)),"priority":int(data.get("priority",100)),"created_by":user}
@@ -2429,7 +2547,7 @@ class Database:
                     for k,v in payload.items():setattr(row,k,v)
                     row.version+=1
                 else:s.add(WorkflowAutomationRule(rule_id=key,**payload))
-            s.add(AuditLog(user=user,action="CONFIGURATION_IMPORT",entity_type="SYSTEM_CONFIGURATION",entity_key="EMS_CONFIGURATION_V1",detail=json.dumps(preview,sort_keys=True)))
+            s.add(AuditLog(user=user,action="CONFIGURATION_IMPORT",entity_type="SYSTEM_CONFIGURATION",entity_key=str(bundle.get("schema","EMS_CONFIGURATION_V1")),detail=json.dumps(preview,sort_keys=True)))
             s.flush()
         preview["dry_run"]=False
         return preview
