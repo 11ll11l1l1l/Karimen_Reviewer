@@ -385,7 +385,9 @@ class Equipment360Workspace(QWidget):
         path,_=QFileDialog.getSaveFileName(self,"Export Equipment Review PowerPoint",default,"PowerPoint (*.pptx)")
         if not path:return
         if not path.lower().endswith(".pptx"):path+=".pptx"
-        try:export_equipment_pptx(self.db,self.eq.equipment_id,path);QMessageBox.information(self,"PowerPoint",f"Editable equipment review deck created.\n{path}")
+        try:
+            template=self.db.resolve_report_template("EQUIPMENT",self.eq.equipment_id)
+            export_equipment_pptx(self.db,self.eq.equipment_id,path,template);QMessageBox.information(self,"PowerPoint",f"Editable equipment review deck created.\n{path}")
         except Exception as exc:QMessageBox.critical(self,"PowerPoint",str(exc))
 
     def export_xlsx(self):
