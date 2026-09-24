@@ -6185,10 +6185,28 @@ class Database:
             {"equipment_id":key,"count":value}
             for key,value in sorted(incident_by_equipment.items(),key=lambda kv:(-kv[1],kv[0]))
         ]
+        # Keep trend resolution bounded so a multi-year review does not explode
+        # into thousands of per-tool reliability calculations.
+        target_points=16
+        bucket_days=max(1,(days+target_points-1)//target_points)
+        equipments=self.list_equipment()
+        trend=[]
+        cursor=start
+        while cursor<end:
+            bucket_end=min(end,cursor+timedelta(days=bucket_days))
+            summaries=[self.reliability_summary(eq.equipment_id,cursor,bucket_end) for eq in equipments]
+            trend.append({
+                "start":cursor,"end":bucket_end,
+                "label":cursor.strftime("%Y-%m-%d"),
+                "availability_pct":(sum(float(x["availability_pct"]) for x in summaries)/len(summaries)) if summaries else 100.0,
+                "unplanned_downtime_hours":sum(float(x["unplanned_downtime_hours"]) for x in summaries),
+                "failure_count":sum(int(x["failure_count"]) for x in summaries),
+            })
+            cursor=bucket_end
         return {
             "days":days,"start":start,"end":end,
             "reliability":reliability,"tool_matrix":tool_matrix,
-            "alarm_pareto":alarm_pareto,"incident_pareto":incident_pareto,
+            "alarm_pareto":alarm_pareto,"incident_pareto":incident_pareto,"trend":trend,
             "pm":{"due":due,"completed":completed,"overdue":overdue,"deferred":deferred,"compliance_pct":compliance_pct},
         }
 
