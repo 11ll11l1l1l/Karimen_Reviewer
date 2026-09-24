@@ -4914,6 +4914,13 @@ class Database:
             s.add(QualificationEvent(run_no=row.run_no,action="REJECT",user=user,detail=reason.strip(),workstation=workstation))
             s.flush();return row
 
+    def list_qualification_events(self, run_no: str, limit: int = 500):
+        with self.session() as s:return list(s.scalars(
+            select(QualificationEvent).where(QualificationEvent.run_no==run_no)
+            .order_by(QualificationEvent.occurred_at,QualificationEvent.id)
+            .limit(max(1,min(int(limit),5000)))
+        ))
+
     def latest_valid_qualification(self, equipment_id: str):
         now=datetime.utcnow()
         with self.session() as s:
