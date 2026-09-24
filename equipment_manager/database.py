@@ -1034,6 +1034,37 @@ class ControlledDocumentRevision(Base):
     __table_args__ = (UniqueConstraint("document_id","revision",name="uq_controlled_document_revision"),)
 
 
+class WorkflowAutomationRule(Base):
+    __tablename__ = "workflow_automation_rules"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    rule_id: Mapped[str] = mapped_column(String(100), unique=True, index=True)
+    name: Mapped[str] = mapped_column(String(180))
+    trigger: Mapped[str] = mapped_column(String(80), index=True)
+    match_json: Mapped[str] = mapped_column(Text, default="{}")
+    actions_json: Mapped[str] = mapped_column(Text, default="[]")
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    priority: Mapped[int] = mapped_column(Integer, default=100, index=True)
+    created_by: Mapped[str] = mapped_column(String(120), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
+class WorkflowAutomationExecution(Base):
+    __tablename__ = "workflow_automation_executions"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    execution_key: Mapped[str] = mapped_column(String(48), unique=True, index=True, default=lambda: secrets.token_hex(20))
+    rule_id: Mapped[str] = mapped_column(String(100), index=True)
+    trigger: Mapped[str] = mapped_column(String(80), index=True)
+    entity_type: Mapped[str] = mapped_column(String(60), default="", index=True)
+    entity_key: Mapped[str] = mapped_column(String(180), default="", index=True)
+    equipment_id: Mapped[str] = mapped_column(String(100), default="", index=True)
+    context_json: Mapped[str] = mapped_column(Text, default="{}")
+    result_json: Mapped[str] = mapped_column(Text, default="{}")
+    status: Mapped[str] = mapped_column(String(30), default="Completed", index=True)
+    error: Mapped[str] = mapped_column(Text, default="")
+    executed_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
 class IntegrationEndpoint(Base):
     __tablename__ = "integration_endpoints"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -1217,6 +1248,9 @@ class Database:
                 table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
             ]),
             ("20260923_008","Create record collaboration comments watchers and mentions",lambda: [
+                table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
+            ]),
+            ("20260924_009","Create configurable workflow orchestration tables",lambda: [
                 table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
             ]),
         ]
@@ -1792,6 +1826,107 @@ class Database:
                 ApprovalDelegation.starts_at<=now,
                 ApprovalDelegation.ends_at>now,
             )) or 0)
+
+    def save_workflow_rule(self, data: dict[str, Any], user: str = "", expected_version: int | None = None):
+        payload=dict(data)
+        trigger=str(payload.get("trigger","")).strip().upper()
+        allowed={"ALARM_ACTIVE","PM_ABNORMAL_RESULT","QUALIFICATION_APPROVED","RELEASE_APPROVED"}
+        if trigger not in allowed:raise ValueError(f"Unsupported workflow trigger: {trigger}")
+        payload["trigger"]=trigger
+        rule_id=str(payload.get("rule_id","")).strip()
+        if not rule_id:raise ValueError("Rule ID is required.")
+        try:
+            match=json.loads(payload.get("match_json","{}") or "{}")
+            actions=json.loads(payload.get("actions_json","[]") or "[]")
+        except Exception as exc:raise ValueError(f"Rule JSON is invalid: {exc}")
+        if not isinstance(match,dict):raise ValueError("match_json must be an object.")
+        if not isinstance(actions,list) or not actions:raise ValueError("actions_json must be a non-empty list.")
+        supported={"CREATE_INCIDENT","CREATE_WORK_ORDER","CREATE_HANDOVER","SET_DISPOSITION"}
+        for action in actions:
+            if not isinstance(action,dict) or str(action.get("type","")).upper() not in supported:
+                raise ValueError("Unsupported or invalid workflow action.")
+        payload["match_json"]=json.dumps(match,sort_keys=True)
+        payload["actions_json"]=json.dumps(actions,sort_keys=True)
+        payload["created_by"]=payload.get("created_by") or user
+        with self.session() as s:
+            row=s.scalar(select(WorkflowAutomationRule).where(WorkflowAutomationRule.rule_id==rule_id))
+            if row:self._update_versioned(row,payload,expected_version,"Workflow automation rule")
+            else:row=WorkflowAutomationRule(**payload);s.add(row)
+            s.flush();return row
+
+    def list_workflow_rules(self, enabled_only: bool = False):
+        with self.session() as s:
+            stmt=select(WorkflowAutomationRule).order_by(WorkflowAutomationRule.priority,WorkflowAutomationRule.rule_id)
+            if enabled_only:stmt=stmt.where(WorkflowAutomationRule.enabled.is_(True))
+            return list(s.scalars(stmt))
+
+    def list_workflow_automation_executions(self, limit: int = 500):
+        with self.session() as s:
+            return list(s.scalars(
+                select(WorkflowAutomationExecution)
+                .order_by(WorkflowAutomationExecution.executed_at.desc(),WorkflowAutomationExecution.id.desc())
+                .limit(max(1,min(int(limit),5000)))
+            ))
+
+    @staticmethod
+    def _automation_matches(match: dict[str, Any], context: dict[str, Any]) -> bool:
+        for key,expected in match.items():
+            actual=context.get(key)
+            if isinstance(expected,list):
+                if actual not in expected:return False
+            elif isinstance(expected,str) and expected.startswith("contains:"):
+                if expected.split(":",1)[1].lower() not in str(actual or "").lower():return False
+            elif str(actual or "").lower()!=str(expected or "").lower():
+                return False
+        return True
+
+    def _execute_workflow_action(self, s, action: dict[str, Any], context: dict[str, Any], rule: WorkflowAutomationRule):
+        kind=str(action.get("type","")).upper()
+        equipment_id=str(context.get("equipment_id","") or "")
+        actor=f"automation:{rule.rule_id}"
+        if kind=="CREATE_INCIDENT":
+            ticket_no=f"{str(action.get('ticket_prefix') or 'AUTO')}-{datetime.utcnow():%Y%m%d%H%M%S%f}"
+            title=str(action.get("title") or context.get("summary") or context.get("message") or f"Automated {context.get('trigger','event')}")
+            ticket=Ticket(ticket_no=ticket_no,equipment_id=equipment_id,title=title,description=str(action.get("description") or context.get("detail") or context.get("message") or ""),severity=str(action.get("severity") or "S2"),priority=str(action.get("priority") or "P2"),status="Open",owner=str(action.get("owner") or ""),root_cause="",corrective_action="",verification="",created_by=actor)
+            s.add(ticket);s.flush()
+            s.add(TicketStateEvent(ticket_no=ticket_no,from_state="",to_state="Open",reason_code="INITIAL_STATE",note=f"Created by workflow rule {rule.rule_id}",owner=ticket.owner,changed_by=actor,workstation="AUTOMATION"))
+            return {"type":kind,"ticket_no":ticket_no}
+        if kind=="CREATE_WORK_ORDER":
+            work_order_no=f"AUTO-WO-{datetime.utcnow():%Y%m%d%H%M%S%f}"
+            row=WorkOrder(work_order_no=work_order_no,equipment_id=equipment_id,source_type=str(context.get("entity_type") or "AUTOMATION"),source_key=str(context.get("entity_key") or ""),title=str(action.get("title") or context.get("summary") or "Automated follow-up"),description=str(action.get("description") or context.get("detail") or ""),priority=str(action.get("priority") or "Normal"),status="Open",owner=str(action.get("owner") or ""),team=str(action.get("team") or ""),qualification_required=bool(action.get("qualification_required",False)),release_required=bool(action.get("release_required",False)),created_by=actor)
+            s.add(row);s.flush();return {"type":kind,"work_order_no":work_order_no}
+        if kind=="CREATE_HANDOVER":
+            number=f"AUTO-HO-{datetime.utcnow():%Y%m%d%H%M%S%f}"
+            row=Endorsement(endorsement_no=number,equipment_id=equipment_id,current_condition=str(action.get("condition") or context.get("summary") or context.get("message") or ""),pending_work=str(action.get("pending_work") or context.get("detail") or ""),restrictions=str(action.get("restrictions") or ""),next_action=str(action.get("next_action") or ""),next_owner=str(action.get("next_owner") or ""),status="Open",created_by=actor)
+            s.add(row);s.flush();return {"type":kind,"endorsement_no":number}
+        if kind=="SET_DISPOSITION":
+            state=str(action.get("state") or "Hold")
+            eq=s.scalar(select(Equipment).where(Equipment.equipment_id==equipment_id))
+            if not eq:raise ValueError("Automation disposition requires valid equipment.")
+            for current in s.scalars(select(Disposition).where(Disposition.equipment_id==equipment_id,Disposition.active.is_(True))):current.active=False
+            row=Disposition(equipment_id=equipment_id,state=state,reason=str(action.get("reason") or context.get("summary") or context.get("message") or f"Workflow rule {rule.rule_id}"),restrictions=str(action.get("restrictions") or ""),release_criteria=str(action.get("release_criteria") or ""),related_ticket=str(context.get("ticket_no") or ""),created_by=actor,active=True)
+            s.add(row);eq.disposition=state;eq.version+=1;s.flush();return {"type":kind,"disposition":state}
+        raise ValueError(f"Unsupported workflow action {kind}")
+
+    def _apply_workflow_automation_in_session(self, s, trigger: str, context: dict[str, Any]):
+        trigger=trigger.upper();context=dict(context);context["trigger"]=trigger
+        rules=list(s.scalars(select(WorkflowAutomationRule).where(
+            WorkflowAutomationRule.enabled.is_(True),WorkflowAutomationRule.trigger==trigger
+        ).order_by(WorkflowAutomationRule.priority,WorkflowAutomationRule.rule_id)))
+        results=[]
+        for rule in rules:
+            match=json.loads(rule.match_json or "{}")
+            if not self._automation_matches(match,context):continue
+            execution=WorkflowAutomationExecution(rule_id=rule.rule_id,trigger=trigger,entity_type=str(context.get("entity_type","")),entity_key=str(context.get("entity_key","")),equipment_id=str(context.get("equipment_id","")),context_json=json.dumps(context,default=str,sort_keys=True),status="Completed")
+            s.add(execution);s.flush()
+            action_results=[]
+            try:
+                for action in json.loads(rule.actions_json or "[]"):action_results.append(self._execute_workflow_action(s,action,context,rule))
+                execution.result_json=json.dumps(action_results,default=str,sort_keys=True)
+            except Exception as exc:
+                execution.status="Failed";execution.error=str(exc);raise
+            results.append({"rule_id":rule.rule_id,"actions":action_results})
+        return results
 
     def save_integration_endpoint(self, data: dict[str, Any], expected_version: int | None = None):
         payload=dict(data)
