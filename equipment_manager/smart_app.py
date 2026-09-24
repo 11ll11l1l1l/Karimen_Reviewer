@@ -192,6 +192,10 @@ class SmartMainWindow(QMainWindow):
         self.global_search.setMinimumWidth(360)
         self.global_search.returnPressed.connect(self.run_global_search)
         top_layout.addWidget(self.global_search)
+        self.my_work_badge=QPushButton("My Work")
+        self.my_work_badge.setToolTip("Open personal action center")
+        self.my_work_badge.clicked.connect(lambda:self.open_page("My Work"))
+        top_layout.addWidget(self.my_work_badge)
         user_label = QLabel(f"{user['display_name']}  |  {user['role']}  |  {WORKSTATION}")
         user_label.setStyleSheet("color:#c8d6df;")
         top_layout.addWidget(user_label)
@@ -268,7 +272,18 @@ class SmartMainWindow(QMainWindow):
         self._update_history_buttons()
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.dashboard.refresh)
+        self.timer.timeout.connect(self.refresh_my_work_badge)
         self.timer.start(30000)
+        self.refresh_my_work_badge()
+
+    def refresh_my_work_badge(self):
+        try:
+            rows=self.db.my_work(self.user["username"],500)
+            high=sum(1 for x in rows if x.get("severity") in {"CRITICAL","HIGH"})
+            mentions=sum(1 for x in rows if x.get("kind")=="MENTION")
+            self.my_work_badge.setText(f"My Work {len(rows)}" + (f" · {high} high" if high else "") + (f" · @{mentions}" if mentions else ""))
+        except Exception:
+            self.my_work_badge.setText("My Work")
 
     def _on_nav_changed(self,index: int):
         self.refresh_current()
