@@ -36,6 +36,7 @@ from analytics_workspace import EngineeringAnalyticsWorkspace
 from inventory_logistics_workspace import InventoryLogisticsWorkspace
 from integration_studio import IntegrationStudioWorkspace
 from configuration_studio import ConfigurationStudioWorkspace
+from qualification_workspace import QualificationWorkspace
 from version import __version__
 from demo_data import active_tickets, seed_demo_data
 from main import (
@@ -235,7 +236,8 @@ class SmartMainWindow(QMainWindow):
         self.incident_workspace=add("Incident / RCA Workspace",IncidentWorkspace(db,user))
         self.ticket_page=add("Ticket Lifecycle / Troubleshooting",TicketPage(db,user))
         self.alarm_page=add("Alarms / Events",AlarmPage(db,user))
-        self.qualification_page=add("Qualification",QualificationPage(db,user))
+        self.qualification_workspace=add("Qualification Runner",QualificationWorkspace(db,user))
+        self.qualification_page=add("Qualification Configuration",QualificationPage(db,user))
         self.analytics_workspace=add("Engineering Analytics",EngineeringAnalyticsWorkspace(db,user))
         self.reliability_page=add("Reliability / MTBF (Legacy)",ReliabilityPage(db))
         self.control_page=add("Disposition / Release",ControlPage(db,user))
@@ -259,6 +261,7 @@ class SmartMainWindow(QMainWindow):
         self.analytics_workspace.open_entity.connect(self.open_entity)
         self.inventory_logistics.open_entity.connect(self.open_entity)
         self.incident_workspace.open_entity.connect(self.open_entity)
+        self.qualification_workspace.open_entity.connect(self.open_entity)
         self.alarm_page.open_incident.connect(lambda ticket,equipment:self.open_entity("TICKET",ticket,equipment))
         self.inventory.show_map_part.connect(self.show_part_map)
         self.nav.currentRowChanged.connect(self.stack.setCurrentIndex)
@@ -339,10 +342,14 @@ class SmartMainWindow(QMainWindow):
             self.layout_page.highlight_equipment(target)
             self.open_page("Live FAB Map")
             return
-        if entity_type=="EQUIPMENT" or (equipment_id and entity_type in {"ALARM","QUALIFICATION","DOCUMENT","RELEASE"}):
+        if entity_type=="EQUIPMENT" or (equipment_id and entity_type in {"ALARM","DOCUMENT","RELEASE"}):
             target=entity_key if entity_type=="EQUIPMENT" else equipment_id
             self.equipment360.set_equipment(target)
             self.open_page("Equipment Workspaces")
+            return
+        if entity_type=="QUALIFICATION":
+            self.qualification_workspace.set_run(entity_key)
+            self.open_page("Qualification Runner")
             return
         if entity_type=="TICKET":
             self.incident_workspace.set_ticket(entity_key)
