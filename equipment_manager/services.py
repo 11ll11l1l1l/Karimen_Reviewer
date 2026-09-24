@@ -61,6 +61,12 @@ ALIASES = {
     "quantity": ["quantity", "qty", "stock"], "min_quantity": ["min_quantity", "minimum", "min_qty", "reorder_point"],
     "condition": ["condition", "stock_condition"], "location_code": ["location_code", "location", "bin", "storage_location"],
     "image_path": ["image_path", "image", "photo"],
+    "ticket_no": ["ticket_no", "ticket", "incident_no", "incident", "issue_no"],
+    "title": ["title", "issue", "incident_title", "problem_title"],
+    "severity": ["severity", "sev"], "owner": ["owner", "assignee", "responsible", "engineer"],
+    "root_cause": ["root_cause", "rootcause", "rca", "cause"],
+    "corrective_action": ["corrective_action", "corrective", "action_taken", "countermeasure"],
+    "verification": ["verification", "verify", "effectiveness_check"],
 }
 
 
@@ -97,6 +103,22 @@ def normalize_pm_status(v: str) -> str:
         "defer": "Deferred", "deferred": "Deferred", "done": "Completed", "complete": "Completed", "completed": "Completed",
         "cancel": "Cancelled", "cancelled": "Cancelled",
     }.get(s, v.strip().title() or "Pending")
+
+
+def dataframe_to_tickets(df: pd.DataFrame, mapping: dict[str,str]):
+    rows,errors=[],[]
+    fields=["ticket_no","equipment_id","title","description","severity","priority","owner","root_cause","corrective_action","verification"]
+    for idx,r in df.iterrows():
+        ticket_no=_text(r.get(mapping.get("ticket_no","")))
+        equipment_id=_text(r.get(mapping.get("equipment_id","")))
+        if not ticket_no or not equipment_id:
+            errors.append(f"Row {idx+2}: ticket number and equipment ID required");continue
+        row={field:_text(r.get(mapping.get(field,""))) for field in fields}
+        row["ticket_no"]=ticket_no;row["equipment_id"]=equipment_id
+        row["title"]=row["title"] or f"Imported incident {ticket_no}"
+        row["severity"]=row["severity"] or "S3";row["priority"]=row["priority"] or "P3"
+        rows.append(row)
+    return rows,errors
 
 
 def dataframe_to_equipment(df: pd.DataFrame, mapping: dict[str,str]):
