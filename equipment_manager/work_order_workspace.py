@@ -182,7 +182,7 @@ class WorkOrderWorkspace(QWidget):
         if not path:return
         if not path.lower().endswith(".pptx"):path+=".pptx"
         try:
-            export_work_order_closeout_pptx(self.db,self.work_order.work_order_no,path)
+            export_work_order_closeout_pptx(self.db,self.work_order.work_order_no,path,self.db.resolve_report_template("WORK_ORDER_CLOSEOUT",self.work_order.equipment_id))
             QMessageBox.information(self,"Closeout Pack",f"Editable return-to-service packet created.\n{path}")
         except Exception as exc:QMessageBox.critical(self,"Closeout Pack",str(exc))
 
@@ -203,7 +203,7 @@ class WorkOrderWorkspace(QWidget):
         path,_=QFileDialog.getSaveFileName(self,"Export Work Order PowerPoint",f"{self.work_order.work_order_no}_Review.pptx","PowerPoint (*.pptx)")
         if not path:return
         if not path.lower().endswith(".pptx"):path+=".pptx"
-        try:export_work_order_pptx(self.db,self.work_order.work_order_no,path);QMessageBox.information(self,"PowerPoint",f"Editable work-order review deck created.\n{path}")
+        try:export_work_order_pptx(self.db,self.work_order.work_order_no,path,self.db.resolve_report_template("WORK_ORDER",self.work_order.equipment_id));QMessageBox.information(self,"PowerPoint",f"Editable work-order review deck created.\n{path}")
         except Exception as exc:QMessageBox.critical(self,"PowerPoint",str(exc))
 
     def export_xlsx(self):
