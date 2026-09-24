@@ -11,7 +11,7 @@ from database import Database, EquipmentAlarmEvent
 @unittest.skipUnless(os.getenv("EMS_RUN_STRESS","0")=="1","set EMS_RUN_STRESS=1 for 100k timeline stress gate")
 class M14StressTests(unittest.TestCase):
     def test_100k_event_timeline_first_page(self):
-        db=Database("sqlite:///:memory:")
+        db=Database(os.getenv("EMS_TEST_POSTGRES_URL","sqlite:///:memory:"))
         db.save_equipment({
             "equipment_id":"STRESS-01","name":"Stress Tool","equipment_type":"Etch",
             "site":"SITE","building":"B1","floor":"1","area":"ETCH","owner":"eng",
