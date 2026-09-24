@@ -6,9 +6,9 @@ This file is the persistent progress tracker for the full-production roadmap.
 
 **Program state:** Internal Alpha — connected engineering workflow transformation
 
-**Current main:** `041810cded3979c8247d8c85d39fa50c1d10f111`
+**Current main:** `86c0dd48f046de3ca2d3d805715994249c5d1a66`
 
-**Active development wave:** `ems/internal-alpha-wave2-reconciled`
+**Active development wave:** `ems/internal-alpha-wave3-reconciled`
 
 The production backend remains intact while the user-facing product is being rebuilt around connected operational workspaces, Office interoperability, universal evidence, planning/execution and cross-feature orchestration.
 
@@ -43,6 +43,7 @@ The production backend remains intact while the user-facing product is being reb
 6. Extend M11 with controlled PDF output, site-defined PowerPoint templates and weekly/batch review packs.
 7. Continue M12 with inbound connectors, visual mapping/transforms and replay/dead-letter operations.
 8. Continue M9 with team queues and richer activity/notification preferences.
+9. Continue M13 with PM/qualification templates, SLA/numbering/default-owner rules and configurable form sections.
 
 ## Reporting rule
 

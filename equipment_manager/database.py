@@ -12,7 +12,7 @@ from sqlalchemy import Boolean, DateTime, Float, Integer, String, Text, UniqueCo
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 
 from domain import (
-    DOWNTIME_STATES, EQUIPMENT_STATES, STATE_CLASS, TICKET_STATES,
+    DOWNTIME_STATES, EQUIPMENT_STATES, STATE_CLASS, TICKET_STATES, REASON_CODES, TICKET_REASON_CODES,
     validate_ticket_transition, validate_transition,
 )
 
@@ -1033,6 +1033,62 @@ class ControlledDocumentRevision(Base):
     __table_args__ = (UniqueConstraint("document_id","revision",name="uq_controlled_document_revision"),)
 
 
+class ConfigOption(Base):
+    __tablename__ = "config_options"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    category: Mapped[str] = mapped_column(String(100), index=True)
+    code: Mapped[str] = mapped_column(String(120), index=True)
+    label: Mapped[str] = mapped_column(String(180))
+    sort_order: Mapped[int] = mapped_column(Integer, default=100)
+    active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    system_locked: Mapped[bool] = mapped_column(Boolean, default=False)
+    metadata_json: Mapped[str] = mapped_column(Text, default="{}")
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    __table_args__ = (UniqueConstraint("category","code",name="uq_config_option"),)
+
+
+class EntityTemplate(Base):
+    __tablename__ = "entity_templates"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    template_id: Mapped[str] = mapped_column(String(120), unique=True, index=True)
+    entity_type: Mapped[str] = mapped_column(String(60), index=True)
+    name: Mapped[str] = mapped_column(String(180))
+    applies_to: Mapped[str] = mapped_column(String(180), default="", index=True)
+    defaults_json: Mapped[str] = mapped_column(Text, default="{}")
+    active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    created_by: Mapped[str] = mapped_column(String(120), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
+class CustomFieldDefinition(Base):
+    __tablename__ = "custom_field_definitions"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    field_id: Mapped[str] = mapped_column(String(120), unique=True, index=True)
+    entity_type: Mapped[str] = mapped_column(String(60), index=True)
+    applies_to: Mapped[str] = mapped_column(String(180), default="", index=True)
+    label: Mapped[str] = mapped_column(String(180))
+    field_type: Mapped[str] = mapped_column(String(40), default="TEXT")
+    options_json: Mapped[str] = mapped_column(Text, default="[]")
+    required: Mapped[bool] = mapped_column(Boolean, default=False)
+    sort_order: Mapped[int] = mapped_column(Integer, default=100)
+    active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
+class CustomFieldValue(Base):
+    __tablename__ = "custom_field_values"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    entity_type: Mapped[str] = mapped_column(String(60), index=True)
+    entity_key: Mapped[str] = mapped_column(String(180), index=True)
+    field_id: Mapped[str] = mapped_column(String(120), index=True)
+    value_json: Mapped[str] = mapped_column(Text, default="null")
+    updated_by: Mapped[str] = mapped_column(String(120), default="")
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    __table_args__ = (UniqueConstraint("entity_type","entity_key","field_id",name="uq_custom_field_value"),)
+
+
 class WorkflowAutomationRule(Base):
     __tablename__ = "workflow_automation_rules"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -1219,6 +1275,7 @@ class Database:
         self._assert_schema_compatible()
         self._bootstrap_legacy_event_history()
         self._bootstrap_factory_hierarchy()
+        self._bootstrap_configuration_catalog()
 
     @staticmethod
     def _migration_checksum(revision: str, description: str) -> str:
@@ -1249,6 +1306,9 @@ class Database:
                 table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
             ]),
             ("20260924_009","Create record comments watchers and mentions",lambda: [
+                table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
+            ]),
+            ("20260924_010","Create configuration catalog templates and custom fields",lambda: [
                 table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
             ]),
         ]
@@ -1824,6 +1884,291 @@ class Database:
                 ApprovalDelegation.starts_at<=now,
                 ApprovalDelegation.ends_at>now,
             )) or 0)
+
+    def _bootstrap_configuration_catalog(self):
+        defaults={
+            "EQUIPMENT_CRITICALITY":[("Low","Low"),("Normal","Normal"),("High","High"),("Critical","Critical")],
+            "TICKET_SEVERITY":[("S1","S1"),("S2","S2"),("S3","S3"),("S4","S4")],
+            "TICKET_PRIORITY":[("P1","P1"),("P2","P2"),("P3","P3"),("P4","P4")],
+            "DISPOSITION_STATE":[
+                ("Released With Conditions","Released With Conditions"),("Restricted Use","Restricted Use"),
+                ("Engineering Use","Engineering Use"),("Monitoring","Monitoring"),("Hold","Hold"),
+                ("PM Hold","PM Hold"),("Quality Hold","Quality Hold"),("Safety Hold","Safety Hold"),
+                ("Waiting Parts","Waiting Parts"),("Waiting Vendor","Waiting Vendor"),
+                ("Qualification","Qualification"),("Decommission","Decommission"),("Scrap","Scrap"),
+            ],
+            "INVENTORY_CONDITION":[
+                ("Available","Available"),("Reserved","Reserved"),("Installed","Installed"),("In Use","In Use"),
+                ("Repair","Repair"),("Quarantine","Quarantine"),("Inspection Required","Inspection Required"),
+                ("Expired","Expired"),("Obsolete","Obsolete"),("Scrap","Scrap"),("Vendor","Vendor"),
+            ],
+            "WORK_TYPE":[("Engineering","Engineering"),("Maintenance","Maintenance"),("Troubleshooting","Troubleshooting"),("Qualification","Qualification")],
+            "EQUIPMENT_REASON_LABEL":list(REASON_CODES.items()),
+            "TICKET_REASON_LABEL":list(TICKET_REASON_CODES.items()),
+        }
+        with self.session() as s:
+            for category,items in defaults.items():
+                for order,(code,label) in enumerate(items,10):
+                    row=s.scalar(select(ConfigOption).where(ConfigOption.category==category,ConfigOption.code==code))
+                    if not row:s.add(ConfigOption(category=category,code=code,label=label,sort_order=order,active=True,system_locked=True))
+
+    def list_config_options(self, category: str, active_only: bool = True):
+        with self.session() as s:
+            stmt=select(ConfigOption).where(ConfigOption.category==category.strip().upper()).order_by(ConfigOption.sort_order,ConfigOption.label)
+            if active_only:stmt=stmt.where(ConfigOption.active.is_(True))
+            return list(s.scalars(stmt))
+
+    def save_config_option(self, data: dict[str,Any], expected_version: int | None = None):
+        payload=dict(data);payload["category"]=str(payload.get("category","")).strip().upper();payload["code"]=str(payload.get("code","")).strip()
+        if not payload["category"] or not payload["code"] or not str(payload.get("label","")).strip():raise ValueError("Category, code and label are required.")
+        metadata=payload.get("metadata_json","{}")
+        if isinstance(metadata,dict):metadata=json.dumps(metadata,sort_keys=True)
+        try:json.loads(metadata or "{}")
+        except Exception as exc:raise ValueError(f"Option metadata JSON is invalid: {exc}")
+        payload["metadata_json"]=metadata or "{}"
+        with self.session() as s:
+            row=s.scalar(select(ConfigOption).where(ConfigOption.category==payload["category"],ConfigOption.code==payload["code"]))
+            if row:
+                if row.system_locked:
+                    allowed={"label","sort_order","active","metadata_json"}
+                    payload={k:v for k,v in payload.items() if k in allowed}
+                    if row.category in {"EQUIPMENT_REASON_LABEL","TICKET_REASON_LABEL"}:
+                        payload["active"]=True
+                self._update_versioned(row,payload,expected_version,"Configuration option")
+            else:
+                row=ConfigOption(**payload);s.add(row)
+            s.flush();return row
+
+    def list_entity_templates(self, entity_type: str = "", active_only: bool = True):
+        with self.session() as s:
+            stmt=select(EntityTemplate).order_by(EntityTemplate.entity_type,EntityTemplate.name)
+            if entity_type:stmt=stmt.where(EntityTemplate.entity_type==entity_type.strip().upper())
+            if active_only:stmt=stmt.where(EntityTemplate.active.is_(True))
+            return list(s.scalars(stmt))
+
+    def save_entity_template(self, data: dict[str,Any], user: str = "", expected_version: int | None = None):
+        payload=dict(data);payload["template_id"]=str(payload.get("template_id","")).strip();payload["entity_type"]=str(payload.get("entity_type","")).strip().upper()
+        if not payload["template_id"] or not payload["entity_type"] or not str(payload.get("name","")).strip():raise ValueError("Template ID, entity type and name are required.")
+        defaults=payload.get("defaults_json","{}")
+        if isinstance(defaults,dict):defaults=json.dumps(defaults,sort_keys=True)
+        try:
+            decoded=json.loads(defaults or "{}")
+            if not isinstance(decoded,dict):raise ValueError("Defaults must be a JSON object.")
+        except Exception as exc:raise ValueError(f"Template defaults JSON is invalid: {exc}")
+        payload["defaults_json"]=defaults or "{}";payload["created_by"]=payload.get("created_by") or user
+        with self.session() as s:
+            row=s.scalar(select(EntityTemplate).where(EntityTemplate.template_id==payload["template_id"]))
+            if row:self._update_versioned(row,payload,expected_version,"Entity template")
+            else:row=EntityTemplate(**payload);s.add(row)
+            s.flush();return row
+
+    def apply_entity_template(self, template_id: str, base: dict[str,Any] | None = None) -> dict[str,Any]:
+        with self.session() as s:
+            row=s.scalar(select(EntityTemplate).where(EntityTemplate.template_id==template_id,EntityTemplate.active.is_(True)))
+            if not row:raise ValueError("Template not found or inactive.")
+            defaults=json.loads(row.defaults_json or "{}")
+        result=dict(defaults);result.update(base or {});return result
+
+    def list_custom_field_definitions(self, entity_type: str, applies_to: str = "", active_only: bool = True):
+        with self.session() as s:
+            stmt=select(CustomFieldDefinition).where(CustomFieldDefinition.entity_type==entity_type.strip().upper()).order_by(CustomFieldDefinition.sort_order,CustomFieldDefinition.label)
+            if active_only:stmt=stmt.where(CustomFieldDefinition.active.is_(True))
+            rows=list(s.scalars(stmt))
+            if applies_to:rows=[x for x in rows if not x.applies_to or x.applies_to==applies_to]
+            return rows
+
+    def save_custom_field_definition(self, data: dict[str,Any], expected_version: int | None = None):
+        payload=dict(data);payload["field_id"]=str(payload.get("field_id","")).strip();payload["entity_type"]=str(payload.get("entity_type","")).strip().upper();payload["field_type"]=str(payload.get("field_type","TEXT")).strip().upper()
+        if payload["field_type"] not in {"TEXT","MULTILINE","NUMBER","BOOLEAN","DATE","CHOICE"}:raise ValueError("Unsupported custom field type.")
+        if not payload["field_id"] or not payload["entity_type"] or not str(payload.get("label","")).strip():raise ValueError("Field ID, entity type and label are required.")
+        options=payload.get("options_json","[]")
+        if isinstance(options,list):options=json.dumps(options)
+        try:
+            decoded=json.loads(options or "[]")
+            if not isinstance(decoded,list):raise ValueError("Options must be a JSON array.")
+        except Exception as exc:raise ValueError(f"Custom field options JSON is invalid: {exc}")
+        payload["options_json"]=options or "[]"
+        with self.session() as s:
+            row=s.scalar(select(CustomFieldDefinition).where(CustomFieldDefinition.field_id==payload["field_id"]))
+            if row:self._update_versioned(row,payload,expected_version,"Custom field definition")
+            else:row=CustomFieldDefinition(**payload);s.add(row)
+            s.flush();return row
+
+    @staticmethod
+    def _validate_custom_field_value(definition: CustomFieldDefinition, value: Any):
+        if value is None or value=="":
+            if definition.required:raise ValueError(f"{definition.label} is required.")
+            return None
+        if definition.field_type=="NUMBER":
+            try:return float(value)
+            except Exception:raise ValueError(f"{definition.label} must be numeric.")
+        if definition.field_type=="BOOLEAN":
+            if isinstance(value,bool):return value
+            return str(value).strip().lower() in {"1","true","yes","on"}
+        if definition.field_type=="CHOICE":
+            options=json.loads(definition.options_json or "[]")
+            if value not in options:raise ValueError(f"{definition.label} must be one of: {', '.join(map(str,options))}")
+        return value
+
+    def save_custom_field_values(self, entity_type: str, entity_key: str, values: dict[str,Any], user: str = "", applies_to: str = ""):
+        entity_type=entity_type.strip().upper();entity_key=str(entity_key);applies_to=(applies_to or "").strip()
+        with self.session() as s:
+            definitions=list(s.scalars(select(CustomFieldDefinition).where(CustomFieldDefinition.entity_type==entity_type,CustomFieldDefinition.active.is_(True))))
+            if applies_to:definitions=[x for x in definitions if not x.applies_to or x.applies_to==applies_to]
+            defs={x.field_id:x for x in definitions}
+            unknown=set(values)-set(defs)
+            if unknown:raise ValueError("Unknown custom field(s): "+", ".join(sorted(unknown)))
+            for field_id,definition in defs.items():
+                incoming=values.get(field_id)
+                if field_id not in values and definition.required:
+                    existing=s.scalar(select(CustomFieldValue).where(CustomFieldValue.entity_type==entity_type,CustomFieldValue.entity_key==entity_key,CustomFieldValue.field_id==field_id))
+                    if not existing:raise ValueError(f"{definition.label} is required.")
+                    continue
+                if field_id not in values:continue
+                normalized=self._validate_custom_field_value(definition,incoming)
+                row=s.scalar(select(CustomFieldValue).where(CustomFieldValue.entity_type==entity_type,CustomFieldValue.entity_key==entity_key,CustomFieldValue.field_id==field_id))
+                encoded=json.dumps(normalized,default=str)
+                if row:row.value_json=encoded;row.updated_by=user;row.updated_at=datetime.utcnow();row.version+=1
+                else:s.add(CustomFieldValue(entity_type=entity_type,entity_key=entity_key,field_id=field_id,value_json=encoded,updated_by=user))
+            s.flush()
+
+    def custom_field_values(self, entity_type: str, entity_key: str) -> dict[str,Any]:
+        with self.session() as s:
+            rows=list(s.scalars(select(CustomFieldValue).where(CustomFieldValue.entity_type==entity_type.strip().upper(),CustomFieldValue.entity_key==str(entity_key))))
+            out={}
+            for row in rows:
+                try:out[row.field_id]=json.loads(row.value_json)
+                except Exception:out[row.field_id]=row.value_json
+            return out
+
+    def export_configuration_bundle(self) -> dict[str,Any]:
+        with self.session() as s:
+            options=list(s.scalars(select(ConfigOption).order_by(ConfigOption.category,ConfigOption.sort_order,ConfigOption.code)))
+            templates=list(s.scalars(select(EntityTemplate).order_by(EntityTemplate.entity_type,EntityTemplate.template_id)))
+            fields=list(s.scalars(select(CustomFieldDefinition).order_by(CustomFieldDefinition.entity_type,CustomFieldDefinition.sort_order,CustomFieldDefinition.field_id)))
+            rules=list(s.scalars(select(WorkflowAutomationRule).order_by(WorkflowAutomationRule.priority,WorkflowAutomationRule.rule_id)))
+        return {
+            "schema":"EMS_CONFIGURATION_V1",
+            "exported_at":datetime.utcnow().isoformat(),
+            "config_options":[{
+                "category":x.category,"code":x.code,"label":x.label,"sort_order":x.sort_order,
+                "active":x.active,"system_locked":x.system_locked,"metadata_json":x.metadata_json,
+            } for x in options],
+            "entity_templates":[{
+                "template_id":x.template_id,"entity_type":x.entity_type,"name":x.name,"applies_to":x.applies_to,
+                "defaults_json":x.defaults_json,"active":x.active,
+            } for x in templates],
+            "custom_fields":[{
+                "field_id":x.field_id,"entity_type":x.entity_type,"applies_to":x.applies_to,"label":x.label,
+                "field_type":x.field_type,"options_json":x.options_json,"required":x.required,
+                "sort_order":x.sort_order,"active":x.active,
+            } for x in fields],
+            "workflow_rules":[{
+                "rule_id":x.rule_id,"name":x.name,"trigger":x.trigger,"match_json":x.match_json,
+                "actions_json":x.actions_json,"enabled":x.enabled,"priority":x.priority,
+            } for x in rules],
+        }
+
+    def _validate_configuration_bundle(self,bundle: dict[str,Any]) -> dict[str,int]:
+        if not isinstance(bundle,dict) or bundle.get("schema")!="EMS_CONFIGURATION_V1":
+            raise ValueError("Unsupported configuration package schema.")
+        sections={
+            "config_options":bundle.get("config_options",[]),
+            "entity_templates":bundle.get("entity_templates",[]),
+            "custom_fields":bundle.get("custom_fields",[]),
+            "workflow_rules":bundle.get("workflow_rules",[]),
+        }
+        for name,rows in sections.items():
+            if not isinstance(rows,list):raise ValueError(f"{name} must be an array.")
+            if not all(isinstance(row,dict) for row in rows):raise ValueError(f"{name} contains an invalid record.")
+        seen=set()
+        for row in sections["config_options"]:
+            key=(str(row.get("category","")).strip().upper(),str(row.get("code","")).strip())
+            if not all(key):raise ValueError("Configuration option category/code is required.")
+            if key in seen:raise ValueError(f"Duplicate configuration option: {key[0]} / {key[1]}")
+            seen.add(key)
+            json.loads(row.get("metadata_json","{}") or "{}")
+        seen=set()
+        for row in sections["entity_templates"]:
+            key=str(row.get("template_id","")).strip()
+            if not key or key in seen:raise ValueError(f"Invalid or duplicate template ID: {key or '<blank>'}")
+            seen.add(key);defaults=json.loads(row.get("defaults_json","{}") or "{}")
+            if not isinstance(defaults,dict):raise ValueError(f"Template {key} defaults must be a JSON object.")
+        seen=set()
+        for row in sections["custom_fields"]:
+            key=str(row.get("field_id","")).strip()
+            if not key or key in seen:raise ValueError(f"Invalid or duplicate custom field ID: {key or '<blank>'}")
+            seen.add(key);field_type=str(row.get("field_type","TEXT")).upper()
+            if field_type not in {"TEXT","MULTILINE","NUMBER","BOOLEAN","DATE","CHOICE"}:raise ValueError(f"Unsupported field type for {key}: {field_type}")
+            options=json.loads(row.get("options_json","[]") or "[]")
+            if not isinstance(options,list):raise ValueError(f"Custom field {key} options must be an array.")
+        seen=set();allowed_triggers={"ALARM_ACTIVE","PM_ABNORMAL_RESULT","QUALIFICATION_APPROVED","RELEASE_APPROVED"};allowed_actions={"CREATE_INCIDENT","CREATE_WORK_ORDER","CREATE_HANDOVER","SET_DISPOSITION"}
+        for row in sections["workflow_rules"]:
+            key=str(row.get("rule_id","")).strip();trigger=str(row.get("trigger","")).strip().upper()
+            if not key or key in seen:raise ValueError(f"Invalid or duplicate workflow rule ID: {key or '<blank>'}")
+            seen.add(key)
+            if trigger not in allowed_triggers:raise ValueError(f"Unsupported trigger for {key}: {trigger}")
+            match=json.loads(row.get("match_json","{}") or "{}");actions=json.loads(row.get("actions_json","[]") or "[]")
+            if not isinstance(match,dict) or not isinstance(actions,list) or not actions:raise ValueError(f"Invalid workflow rule JSON for {key}.")
+            for action in actions:
+                if not isinstance(action,dict) or str(action.get("type","")).upper() not in allowed_actions:raise ValueError(f"Unsupported action in workflow rule {key}.")
+        return {name:len(rows) for name,rows in sections.items()}
+
+    def import_configuration_bundle(self,bundle: dict[str,Any],user: str,dry_run: bool = True) -> dict[str,Any]:
+        counts=self._validate_configuration_bundle(bundle)
+        with self.session() as s:
+            existing={
+                "config_options":{(x.category,x.code) for x in s.scalars(select(ConfigOption))},
+                "entity_templates":{x.template_id for x in s.scalars(select(EntityTemplate))},
+                "custom_fields":{x.field_id for x in s.scalars(select(CustomFieldDefinition))},
+                "workflow_rules":{x.rule_id for x in s.scalars(select(WorkflowAutomationRule))},
+            }
+        creates={
+            "config_options":sum(1 for x in bundle.get("config_options",[]) if (str(x.get("category","")).strip().upper(),str(x.get("code","")).strip()) not in existing["config_options"]),
+            "entity_templates":sum(1 for x in bundle.get("entity_templates",[]) if str(x.get("template_id","")).strip() not in existing["entity_templates"]),
+            "custom_fields":sum(1 for x in bundle.get("custom_fields",[]) if str(x.get("field_id","")).strip() not in existing["custom_fields"]),
+            "workflow_rules":sum(1 for x in bundle.get("workflow_rules",[]) if str(x.get("rule_id","")).strip() not in existing["workflow_rules"]),
+        }
+        preview={"counts":counts,"creates":creates,"updates":{k:counts[k]-creates[k] for k in counts},"dry_run":dry_run}
+        if dry_run:return preview
+        with self.session() as s:
+            for data in bundle.get("config_options",[]):
+                category=str(data["category"]).strip().upper();code=str(data["code"]).strip()
+                row=s.scalar(select(ConfigOption).where(ConfigOption.category==category,ConfigOption.code==code))
+                payload={
+                    "label":str(data.get("label") or code),"sort_order":int(data.get("sort_order",100)),
+                    "active":bool(data.get("active",True)),"metadata_json":data.get("metadata_json","{}") or "{}",
+                }
+                if row:
+                    if row.category in {"EQUIPMENT_REASON_LABEL","TICKET_REASON_LABEL"}:payload["active"]=True
+                    for k,v in payload.items():setattr(row,k,v)
+                    row.version+=1
+                else:s.add(ConfigOption(category=category,code=code,system_locked=bool(data.get("system_locked",False)),**payload))
+            for data in bundle.get("entity_templates",[]):
+                key=str(data["template_id"]).strip();row=s.scalar(select(EntityTemplate).where(EntityTemplate.template_id==key))
+                payload={"entity_type":str(data["entity_type"]).strip().upper(),"name":str(data["name"]).strip(),"applies_to":str(data.get("applies_to","")).strip(),"defaults_json":data.get("defaults_json","{}") or "{}","active":bool(data.get("active",True)),"created_by":user}
+                if row:
+                    for k,v in payload.items():setattr(row,k,v)
+                    row.version+=1
+                else:s.add(EntityTemplate(template_id=key,**payload))
+            for data in bundle.get("custom_fields",[]):
+                key=str(data["field_id"]).strip();row=s.scalar(select(CustomFieldDefinition).where(CustomFieldDefinition.field_id==key))
+                payload={"entity_type":str(data["entity_type"]).strip().upper(),"applies_to":str(data.get("applies_to","")).strip(),"label":str(data["label"]).strip(),"field_type":str(data.get("field_type","TEXT")).upper(),"options_json":data.get("options_json","[]") or "[]","required":bool(data.get("required",False)),"sort_order":int(data.get("sort_order",100)),"active":bool(data.get("active",True))}
+                if row:
+                    for k,v in payload.items():setattr(row,k,v)
+                    row.version+=1
+                else:s.add(CustomFieldDefinition(field_id=key,**payload))
+            for data in bundle.get("workflow_rules",[]):
+                key=str(data["rule_id"]).strip();row=s.scalar(select(WorkflowAutomationRule).where(WorkflowAutomationRule.rule_id==key))
+                payload={"name":str(data["name"]).strip(),"trigger":str(data["trigger"]).strip().upper(),"match_json":data.get("match_json","{}") or "{}","actions_json":data.get("actions_json","[]") or "[]","enabled":bool(data.get("enabled",True)),"priority":int(data.get("priority",100)),"created_by":user}
+                if row:
+                    for k,v in payload.items():setattr(row,k,v)
+                    row.version+=1
+                else:s.add(WorkflowAutomationRule(rule_id=key,**payload))
+            s.add(AuditLog(user=user,action="CONFIGURATION_IMPORT",entity_type="SYSTEM_CONFIGURATION",entity_key="EMS_CONFIGURATION_V1",detail=json.dumps(preview,sort_keys=True)))
+            s.flush()
+        preview["dry_run"]=False
+        return preview
 
     def save_workflow_rule(self, data: dict[str, Any], user: str = "", expected_version: int | None = None):
         payload=dict(data);trigger=str(payload.get("trigger","")).strip().upper()
