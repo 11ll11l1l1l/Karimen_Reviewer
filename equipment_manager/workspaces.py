@@ -7,7 +7,7 @@ from typing import Any
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QKeySequence, QPixmap, QShortcut
 from PySide6.QtWidgets import (
-    QAbstractItemView, QApplication, QDialog, QFileDialog, QFrame, QGridLayout, QHBoxLayout, QHeaderView,
+    QAbstractItemView, QApplication, QComboBox, QDialog, QFileDialog, QFrame, QGridLayout, QHBoxLayout, QHeaderView,
     QInputDialog, QLabel, QLineEdit, QMessageBox, QPushButton, QSplitter,
     QTabWidget, QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget,
 )
@@ -279,29 +279,65 @@ class MyWorkWorkspace(QWidget):
     open_entity=Signal(str,str,str)
 
     def __init__(self,db,user,parent=None):
-        super().__init__(parent);self.db=db;self.user=user;self.rows=[]
+        super().__init__(parent);self.db=db;self.user=user;self.rows=[];self.filtered=[];self.watched=[]
         root=QVBoxLayout(self);head=QHBoxLayout()
-        title=QLabel("My Work");title.setStyleSheet("font-size:18pt;font-weight:700")
+        title=QLabel("My Work / Action Center");title.setStyleSheet("font-size:18pt;font-weight:700")
+        self.filter=QComboBox();self.filter.addItems(["All","Critical / High","Approvals / Verification","Mentions","Work Orders","PM","Incidents / Equipment"])
+        self.filter.currentTextChanged.connect(self.apply_filter)
+        ack=QPushButton("Acknowledge mention");ack.clicked.connect(self.acknowledge_selected_mention)
         refresh=QPushButton("Refresh");refresh.clicked.connect(self.refresh)
-        head.addWidget(title);head.addStretch(1);head.addWidget(refresh);root.addLayout(head)
-        note=QLabel("Assigned operational exceptions plus verification and approval work that requires your role.")
+        head.addWidget(title);head.addStretch(1);head.addWidget(QLabel("Filter"));head.addWidget(self.filter);head.addWidget(ack);head.addWidget(refresh);root.addLayout(head)
+        note=QLabel("Assigned work, approvals, verification, mentions and watched-record activity in one queue.")
         note.setStyleSheet("color:#647581;");root.addWidget(note)
+        tabs=QTabWidget();root.addWidget(tabs,1)
+        queue=QWidget();qv=QVBoxLayout(queue)
         self.table=_table(["Severity","Type","Equipment","Key","Work item","Owner","Age (h)"])
-        self.table.doubleClicked.connect(self.open_selected);root.addWidget(self.table,1)
+        self.table.doubleClicked.connect(self.open_selected);qv.addWidget(self.table);tabs.addTab(queue,"Action Queue")
+        watch=QWidget();wv=QVBoxLayout(watch)
+        self.watch_table=_table(["Type","Key","Equipment","Last activity","By","Latest comment"])
+        self.watch_table.doubleClicked.connect(self.open_watched);wv.addWidget(self.watch_table);tabs.addTab(watch,"Watchlist")
+        self.summary=QLabel();self.summary.setStyleSheet("color:#647581");root.addWidget(self.summary)
         self.refresh()
 
     @staticmethod
     def _entity_for(row: dict) -> str:
         kind=row.get("kind","")
         if kind=="MENTION":return str(row.get("entity_type") or "")
-        return {"INCIDENT":"TICKET","PM":"PM_EXECUTION","EQUIPMENT":"EQUIPMENT","QUALIFICATION":"QUALIFICATION","VERIFY":"QUALIFICATION","APPROVAL":"EQUIPMENT","RELEASE":"EQUIPMENT","HANDOVER":"ENDORSEMENT"}.get(kind,kind)
+        return {"INCIDENT":"TICKET","PM":"PM_EXECUTION","EQUIPMENT":"EQUIPMENT","QUALIFICATION":"QUALIFICATION","VERIFY":"QUALIFICATION","APPROVAL":"EQUIPMENT","RELEASE":"EQUIPMENT","HANDOVER":"ENDORSEMENT","WORK_ORDER":"WORK_ORDER"}.get(kind,kind)
 
     def refresh(self):
-        self.rows=self.db.my_work(self.user["username"],250)
-        _fill_objects(self.table,self.rows,["severity","kind","equipment_id","key","summary","owner","age_hours"])
+        self.rows=self.db.my_work(self.user["username"],500)
+        self.watched=self.db.list_watched_records(self.user["username"],300)
+        _fill_objects(self.watch_table,self.watched,["entity_type","entity_key","equipment_id","last_activity","last_by","last_comment"])
+        self.apply_filter()
+
+    def apply_filter(self):
+        mode=self.filter.currentText()
+        def keep(row):
+            kind=row.get("kind","")
+            if mode=="Critical / High":return row.get("severity") in {"CRITICAL","HIGH"}
+            if mode=="Approvals / Verification":return kind in {"APPROVAL","VERIFY","QUALIFICATION","RELEASE"}
+            if mode=="Mentions":return kind=="MENTION"
+            if mode=="Work Orders":return kind=="WORK_ORDER"
+            if mode=="PM":return kind=="PM"
+            if mode=="Incidents / Equipment":return kind in {"INCIDENT","EQUIPMENT"}
+            return True
+        self.filtered=[x for x in self.rows if keep(x)]
+        _fill_objects(self.table,self.filtered,["severity","kind","equipment_id","key","summary","owner","age_hours"])
+        mentions=sum(1 for x in self.rows if x.get("kind")=="MENTION")
+        critical=sum(1 for x in self.rows if x.get("severity") in {"CRITICAL","HIGH"})
+        approvals=sum(1 for x in self.rows if x.get("kind") in {"APPROVAL","VERIFY"})
+        self.summary.setText(f"{len(self.rows)} active item(s) · {critical} high/critical · {approvals} approval/verification · {mentions} unacknowledged mention(s) · {len(self.watched)} watched record(s)")
+
+    def acknowledge_selected_mention(self):
+        row=_selected(self.table,self.filtered)
+        if not row or row.get("kind")!="MENTION":
+            QMessageBox.information(self,"Mention","Select a mention in the action queue.");return
+        try:self.db.acknowledge_mention(int(row.get("key") or 0),self.user["username"]);self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"Mention",str(exc))
 
     def open_selected(self):
-        row=_selected(self.table,self.rows)
+        row=_selected(self.table,self.filtered)
         if not row:return
         entity=self._entity_for(row)
         if row.get("kind")=="MENTION":
@@ -312,6 +348,11 @@ class MyWorkWorkspace(QWidget):
         equipment=row.get("equipment_id","")
         self.open_entity.emit(entity,key,equipment)
         if row.get("kind")=="MENTION":self.refresh()
+
+    def open_watched(self):
+        row=_selected(self.watch_table,self.watched)
+        if not row:return
+        self.open_entity.emit(str(row.get("entity_type") or ""),str(row.get("entity_key") or ""),str(row.get("equipment_id") or ""))
 
 
 class Equipment360Workspace(QWidget):
