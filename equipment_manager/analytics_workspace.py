@@ -5,11 +5,12 @@ from datetime import datetime
 from PySide6.QtCore import QRectF, Qt, Signal
 from PySide6.QtGui import QColor, QFont, QPainter, QPen
 from PySide6.QtWidgets import (
-    QAbstractItemView,QFrame,QGridLayout,QHBoxLayout,QHeaderView,QLabel,
-    QPushButton,QSpinBox,QTableWidget,QTableWidgetItem,QTabWidget,QVBoxLayout,QWidget
+    QAbstractItemView,QFileDialog,QFrame,QGridLayout,QHBoxLayout,QHeaderView,QLabel,
+    QMessageBox,QPushButton,QSpinBox,QTableWidget,QTableWidgetItem,QTabWidget,QVBoxLayout,QWidget
 )
 
 from table_productivity import install_table_productivity
+from reporting import export_engineering_review_pptx, export_engineering_review_xlsx
 
 
 def _item(value):
@@ -81,6 +82,46 @@ class BarChart(QWidget):
         if 0<=idx<len(self.rows):self.itemActivated.emit(str(self.rows[idx][2]))
 
 
+class TrendChart(QWidget):
+    def __init__(self,title="",suffix="",parent=None):
+        super().__init__(parent);self.title=title;self.suffix=suffix;self.rows=[];self.setMinimumHeight(210)
+
+    def set_data(self,rows):
+        self.rows=list(rows);self.update()
+
+    def paintEvent(self,event):
+        painter=QPainter(self);painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        rect=self.rect();painter.fillRect(rect,QColor("#ffffff"))
+        painter.setPen(QColor("#1b2733"));font=QFont();font.setBold(True);font.setPointSize(10);painter.setFont(font)
+        painter.drawText(QRectF(12,8,rect.width()-24,26),Qt.AlignmentFlag.AlignLeft|Qt.AlignmentFlag.AlignVCenter,self.title)
+        if not self.rows:
+            painter.setPen(QColor("#647581"));painter.drawText(rect,Qt.AlignmentFlag.AlignCenter,"No data");return
+        left=58;right=20;top=42;bottom=36
+        width=max(40,rect.width()-left-right);height=max(40,rect.height()-top-bottom)
+        values=[float(x[1] or 0) for x in self.rows];low=min(values);high=max(values)
+        if high<=low:high=low+1.0
+        painter.setPen(QPen(QColor("#d9e1e6"),1))
+        for i in range(5):
+            y=top+height*i/4;painter.drawLine(left,int(y),left+width,int(y))
+            value=high-(high-low)*i/4
+            painter.setPen(QColor("#647581"));painter.drawText(QRectF(2,y-10,left-8,20),Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignVCenter,f"{value:.1f}{self.suffix}")
+            painter.setPen(QPen(QColor("#d9e1e6"),1))
+        points=[]
+        denom=max(1,len(self.rows)-1)
+        for i,(label,value) in enumerate(self.rows):
+            x=left+width*i/denom;y=top+height*(high-float(value or 0))/(high-low)
+            points.append((x,y))
+        painter.setPen(QPen(QColor("#397fa6"),2))
+        for i in range(1,len(points)):painter.drawLine(int(points[i-1][0]),int(points[i-1][1]),int(points[i][0]),int(points[i][1]))
+        painter.setBrush(QColor("#397fa6"))
+        for x,y in points:painter.drawEllipse(QRectF(x-3,y-3,6,6))
+        painter.setPen(QColor("#647581"));font.setBold(False);font.setPointSize(8);painter.setFont(font)
+        if self.rows:
+            for idx in sorted({0,len(self.rows)//2,len(self.rows)-1}):
+                label=str(self.rows[idx][0]);x=left+width*idx/denom
+                painter.drawText(QRectF(x-55,top+height+5,110,22),Qt.AlignmentFlag.AlignHCenter|Qt.AlignmentFlag.AlignTop,label)
+
+
 class EngineeringAnalyticsWorkspace(QWidget):
     open_entity=Signal(str,str,str)
 
@@ -89,8 +130,10 @@ class EngineeringAnalyticsWorkspace(QWidget):
         root=QVBoxLayout(self);head=QHBoxLayout()
         title=QLabel("Engineering Analytics");title.setStyleSheet("font-size:20pt;font-weight:800")
         self.days=QSpinBox();self.days.setRange(7,3650);self.days.setValue(30);self.days.setSuffix(" days")
+        ppt=QPushButton("Review PPTX");ppt.clicked.connect(self.export_pptx)
+        xlsx=QPushButton("Review Excel");xlsx.clicked.connect(self.export_xlsx)
         refresh=QPushButton("Refresh");refresh.clicked.connect(self.refresh)
-        head.addWidget(title);head.addStretch(1);head.addWidget(QLabel("Period"));head.addWidget(self.days);head.addWidget(refresh);root.addLayout(head)
+        head.addWidget(title);head.addStretch(1);head.addWidget(QLabel("Period"));head.addWidget(self.days);head.addWidget(ppt);head.addWidget(xlsx);head.addWidget(refresh);root.addLayout(head)
         self.period=QLabel();self.period.setStyleSheet("color:#647581");root.addWidget(self.period)
 
         cards=QGridLayout();root.addLayout(cards);self.cards={}
@@ -112,6 +155,12 @@ class EngineeringAnalyticsWorkspace(QWidget):
         self.incident_chart=BarChart("Incident Pareto by equipment");self.incident_chart.itemActivated.connect(self.open_equipment);iv.addWidget(self.incident_chart,1)
         self.incident_table=_table(["Equipment","Incidents"]);self.incident_table.doubleClicked.connect(self.open_selected_incident_tool);iv.addWidget(self.incident_table,1);tabs.addTab(incident,"Incident Pareto")
 
+        trends=QWidget();tv=QVBoxLayout(trends)
+        self.availability_trend=TrendChart("Fleet availability trend","%")
+        self.downtime_trend=TrendChart("Unplanned downtime trend"," h")
+        self.failure_trend=TrendChart("Failure count trend","")
+        tv.addWidget(self.availability_trend);tv.addWidget(self.downtime_trend);tv.addWidget(self.failure_trend);tabs.addTab(trends,"Reliability Trends")
+
         pm=QWidget();pv=QVBoxLayout(pm);self.pm_summary=QLabel();self.pm_summary.setStyleSheet("font-size:16pt;font-weight:700");pv.addWidget(self.pm_summary)
         self.pm_bar=BarChart("PM completion / overdue / deferred");pv.addWidget(self.pm_bar);pv.addStretch(1);tabs.addTab(pm,"PM Compliance")
         self.refresh()
@@ -127,6 +176,10 @@ class EngineeringAnalyticsWorkspace(QWidget):
         self.downtime_chart.set_data([(x["equipment_id"],x["unplanned_downtime_hours"],x["equipment_id"]) for x in self.tool_rows if x["unplanned_downtime_hours"]>0][:15])
         self.alarm_chart.set_data([(x["alarm_code"],x["count"],x["alarm_code"]) for x in self.alarm_rows[:15]])
         self.incident_chart.set_data([(x["equipment_id"],x["count"],x["equipment_id"]) for x in self.incident_rows[:15]])
+        trend=self.data.get("trend",[])
+        self.availability_trend.set_data([(x["label"],x["availability_pct"]) for x in trend])
+        self.downtime_trend.set_data([(x["label"],x["unplanned_downtime_hours"]) for x in trend])
+        self.failure_trend.set_data([(x["label"],x["failure_count"]) for x in trend])
         pm=self.data["pm"];self.pm_summary.setText(f"PM compliance: {pm['compliance_pct']:.1f}%   Due: {pm['due']}   Completed: {pm['completed']}   Overdue: {pm['overdue']}   Deferred: {pm['deferred']}")
         self.pm_bar.set_data([("Completed",pm["completed"],"completed"),("Overdue",pm["overdue"],"overdue"),("Deferred",pm["deferred"],"deferred")])
         if self.tool_rows:
@@ -143,6 +196,20 @@ class EngineeringAnalyticsWorkspace(QWidget):
             "PM compliance":f"{pm['compliance_pct']:.1f}%","PM overdue":str(pm["overdue"]),"Tools analyzed":str(len(self.tool_rows)),
         }
         for key,val in vals.items():self.cards[key].value.setText(val)
+
+    def export_pptx(self):
+        path,_=QFileDialog.getSaveFileName(self,"Export Engineering Review PowerPoint",f"EMS_Engineering_Review_{self.days.value()}d.pptx","PowerPoint (*.pptx)")
+        if not path:return
+        if not path.lower().endswith(".pptx"):path+=".pptx"
+        try:export_engineering_review_pptx(self.db,self.days.value(),path);QMessageBox.information(self,"Engineering review",f"Editable review deck created.\n{path}")
+        except Exception as exc:QMessageBox.critical(self,"Engineering review",str(exc))
+
+    def export_xlsx(self):
+        path,_=QFileDialog.getSaveFileName(self,"Export Engineering Review Excel",f"EMS_Engineering_Review_{self.days.value()}d.xlsx","Excel Workbook (*.xlsx)")
+        if not path:return
+        if not path.lower().endswith(".xlsx"):path+=".xlsx"
+        try:export_engineering_review_xlsx(self.db,self.days.value(),path);QMessageBox.information(self,"Engineering review",f"Review workbook created.\n{path}")
+        except Exception as exc:QMessageBox.critical(self,"Engineering review",str(exc))
 
     def open_equipment(self,equipment_id: str):
         if equipment_id:self.open_entity.emit("EQUIPMENT",equipment_id,equipment_id)
