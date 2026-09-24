@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from feedback import notify
+
 import json
 from pathlib import Path
 
@@ -192,7 +194,7 @@ class IntegrationStudio(QWidget):
         if not row:return
         try:
             stats=process_inbound_endpoint(self.db,row.endpoint_id,500)
-            QMessageBox.information(self,"Inbound Feed",f"Files {stats['files']} · processed {stats['processed']} · quarantined/partial {stats['quarantined']} · duplicates {stats['duplicates']} · applied {stats['applied']} · rejected {stats['rejected']}")
+            notify(f"Files {stats['files']} · processed {stats['processed']} · quarantined/partial {stats['quarantined']} · duplicates {stats['duplicates']} · applied {stats['applied']} · rejected {stats['rejected']}")
             self.refresh()
         except Exception as exc:QMessageBox.critical(self,"Inbound Feed",str(exc))
 
@@ -218,12 +220,12 @@ class IntegrationStudio(QWidget):
         if QMessageBox.question(self,"Replay",f"Replay receipt {receipt.id}?\n{path}")!=QMessageBox.StandardButton.Yes:return
         try:
             result=process_inbound_file(self.db,receipt.endpoint_id,path,replay=True);self.refresh()
-            QMessageBox.information(self,"Replay",f"{result['status']} · applied {result['applied']} · rejected {result['rejected']} · skipped {result['skipped']}")
+            notify(f"{result['status']} · applied {result['applied']} · rejected {result['rejected']} · skipped {result['skipped']}")
         except Exception as exc:QMessageBox.critical(self,"Replay",str(exc))
 
     def dispatch_now(self):
         try:
-            result=dispatch_pending(self.db,1000);self.refresh();QMessageBox.information(self,"Outbound Dispatch",f"Pending {result['pending']} · sent {result['sent']} · failed {result['failed']}")
+            result=dispatch_pending(self.db,1000);self.refresh();notify(f"Pending {result['pending']} · sent {result['sent']} · failed {result['failed']}")
         except Exception as exc:QMessageBox.critical(self,"Outbound Dispatch",str(exc))
 
     def _selected_delivery_ids(self):
@@ -249,5 +251,5 @@ class IntegrationStudio(QWidget):
 
     def requeue_all_dead(self):
         try:
-            count=self.db.requeue_dead_letters();self.refresh();QMessageBox.information(self,"Dead Letters",f"Requeued {count} delivery record(s).")
+            count=self.db.requeue_dead_letters();self.refresh();notify(f"Requeued {count} delivery record(s).")
         except Exception as exc:QMessageBox.critical(self,"Dead Letters",str(exc))
