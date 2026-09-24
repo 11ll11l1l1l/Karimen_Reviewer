@@ -2216,11 +2216,24 @@ class Database:
         if kind=="CREATE_INCIDENT":
             ticket_no=f"{str(action.get('ticket_prefix') or 'AUTO')}-{datetime.utcnow():%Y%m%d%H%M%S%f}"
             ticket=Ticket(ticket_no=ticket_no,equipment_id=equipment_id,title=str(action.get("title") or context.get("summary") or context.get("message") or "Automated incident"),description=str(action.get("description") or context.get("detail") or context.get("message") or ""),severity=str(action.get("severity") or "S2"),priority=str(action.get("priority") or "P2"),status="Open",owner=str(action.get("owner") or ""),root_cause="",corrective_action="",verification="",created_by=actor)
-            s.add(ticket);s.flush();s.add(TicketStateEvent(ticket_no=ticket_no,from_state="",to_state="Open",reason_code="INITIAL_STATE",note=f"Created by workflow rule {rule.rule_id}",owner=ticket.owner,changed_by=actor,workstation="AUTOMATION"));return {"type":kind,"ticket_no":ticket_no}
+            s.add(ticket);s.flush()
+            s.add(TicketStateEvent(ticket_no=ticket_no,from_state="",to_state="Open",reason_code="INITIAL_STATE",note=f"Created by workflow rule {rule.rule_id}",owner=ticket.owner,changed_by=actor,workstation="AUTOMATION"))
+            alarm_keys=context.get("alarm_ids") or ([context.get("entity_key")] if context.get("entity_type")=="ALARM" else [])
+            for alarm_key in alarm_keys:
+                if not alarm_key:continue
+                alarm=s.scalar(select(EquipmentAlarmEvent).where(EquipmentAlarmEvent.event_key==str(alarm_key)))
+                if alarm and (not alarm.related_ticket or alarm.related_ticket==ticket_no):alarm.related_ticket=ticket_no
+            context["ticket_no"]=ticket_no
+            return {"type":kind,"ticket_no":ticket_no}
         if kind=="CREATE_WORK_ORDER":
             work_order_no=f"AUTO-WO-{datetime.utcnow():%Y%m%d%H%M%S%f}"
-            row=WorkOrder(work_order_no=work_order_no,equipment_id=equipment_id,source_type=str(context.get("entity_type") or "AUTOMATION"),source_key=str(context.get("entity_key") or ""),title=str(action.get("title") or context.get("summary") or "Automated follow-up"),description=str(action.get("description") or context.get("detail") or ""),priority=str(action.get("priority") or "Normal"),status="Open",owner=str(action.get("owner") or ""),team=str(action.get("team") or ""),qualification_required=bool(action.get("qualification_required",False)),release_required=bool(action.get("release_required",False)),created_by=actor)
-            s.add(row);s.flush();return {"type":kind,"work_order_no":work_order_no}
+            source_type="TICKET" if context.get("ticket_no") else str(context.get("entity_type") or "AUTOMATION")
+            source_key=str(context.get("ticket_no") or context.get("entity_key") or "")
+            row=WorkOrder(work_order_no=work_order_no,equipment_id=equipment_id,source_type=source_type,source_key=source_key,title=str(action.get("title") or context.get("summary") or "Automated follow-up"),description=str(action.get("description") or context.get("detail") or ""),priority=str(action.get("priority") or "Normal"),status="Open",owner=str(action.get("owner") or ""),team=str(action.get("team") or ""),qualification_required=bool(action.get("qualification_required",False)),release_required=bool(action.get("release_required",False)),created_by=actor)
+            s.add(row);s.flush()
+            if context.get("ticket_no"):
+                s.add(WorkOrderLink(work_order_no=work_order_no,entity_type="TICKET",entity_key=str(context["ticket_no"]),relation="SOURCE",created_by=actor))
+            return {"type":kind,"work_order_no":work_order_no,"source_type":source_type,"source_key":source_key}
         if kind=="CREATE_HANDOVER":
             number=f"AUTO-HO-{datetime.utcnow():%Y%m%d%H%M%S%f}"
             row=Endorsement(endorsement_no=number,equipment_id=equipment_id,current_condition=str(action.get("condition") or context.get("summary") or context.get("message") or ""),pending_work=str(action.get("pending_work") or context.get("detail") or ""),restrictions=str(action.get("restrictions") or ""),next_action=str(action.get("next_action") or ""),next_owner=str(action.get("next_owner") or ""),status="Open",created_by=actor)
