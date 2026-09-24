@@ -103,6 +103,53 @@ class ConfigurabilityTests(unittest.TestCase):
                 "EQUIPMENT","ETCH-CFG",{"process_family":"Unknown"},"admin","Etch"
             )
 
+    def test_configuration_package_round_trip_with_dry_run(self):
+        self.db.save_config_option({
+            "category":"WORK_TYPE","code":"Metrology Support","label":"Metrology Support",
+            "sort_order":88,"active":True,"system_locked":False,"metadata_json":"{}",
+        })
+        self.db.save_entity_template({
+            "template_id":"INC-VAC","entity_type":"TICKET","name":"Vacuum Incident",
+            "applies_to":"Etch","defaults_json":json.dumps({"title":"Vacuum instability","severity":"S2","priority":"P2"}),
+            "active":True,
+        },"admin")
+        self.db.save_custom_field_definition({
+            "field_id":"vacuum_pressure","entity_type":"TICKET","applies_to":"Etch","label":"Vacuum Pressure",
+            "field_type":"NUMBER","options_json":"[]","required":False,"sort_order":5,"active":True,
+        })
+        self.db.save_workflow_rule({
+            "rule_id":"CFG-RULE","name":"Configuration package rule","trigger":"ALARM_ACTIVE",
+            "match_json":"{}","actions_json":json.dumps([{"type":"CREATE_HANDOVER"}]),
+            "enabled":True,"priority":99,
+        },"admin")
+
+        bundle=self.db.export_configuration_bundle()
+        self.assertEqual(bundle["schema"],"EMS_CONFIGURATION_V1")
+
+        other=Database("sqlite:///:memory:")
+        other.create_user("admin","Administrator","admin-password-123","Administrator")
+        preview=other.import_configuration_bundle(bundle,"admin",True)
+        self.assertTrue(preview["dry_run"])
+        self.assertGreaterEqual(preview["creates"]["entity_templates"],1)
+        self.assertGreaterEqual(preview["creates"]["custom_fields"],1)
+        self.assertGreaterEqual(preview["creates"]["workflow_rules"],1)
+
+        applied=other.import_configuration_bundle(bundle,"admin",False)
+        self.assertFalse(applied["dry_run"])
+        self.assertTrue(any(x.template_id=="INC-VAC" for x in other.list_entity_templates("TICKET")))
+        self.assertTrue(any(x.field_id=="vacuum_pressure" for x in other.list_custom_field_definitions("TICKET","Etch")))
+        self.assertTrue(any(x.rule_id=="CFG-RULE" for x in other.list_workflow_rules()))
+        self.assertIn("Metrology Support",[x.code for x in other.list_config_options("WORK_TYPE")])
+
+    def test_configuration_import_keeps_canonical_reason_active(self):
+        bundle=self.db.export_configuration_bundle()
+        reason=next(x for x in bundle["config_options"] if x["category"]=="EQUIPMENT_REASON_LABEL" and x["code"]=="FAILURE")
+        reason["label"]="Tool failure / alarm event";reason["active"]=False
+        self.db.import_configuration_bundle(bundle,"admin",False)
+        row=next(x for x in self.db.list_config_options("EQUIPMENT_REASON_LABEL",False) if x.code=="FAILURE")
+        self.assertEqual(row.label,"Tool failure / alarm event")
+        self.assertTrue(row.active)
+
     def test_inactive_custom_fields_disappear_from_active_definition_list(self):
         row=self.db.save_custom_field_definition({
             "field_id":"legacy_note","entity_type":"TICKET","applies_to":"",
