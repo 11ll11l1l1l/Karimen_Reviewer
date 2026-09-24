@@ -1034,6 +1034,54 @@ class ControlledDocumentRevision(Base):
     __table_args__ = (UniqueConstraint("document_id","revision",name="uq_controlled_document_revision"),)
 
 
+class CustomFieldDefinition(Base):
+    __tablename__ = "custom_field_definitions"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    field_id: Mapped[str] = mapped_column(String(120), unique=True, index=True)
+    entity_type: Mapped[str] = mapped_column(String(60), index=True)
+    label: Mapped[str] = mapped_column(String(180))
+    data_type: Mapped[str] = mapped_column(String(30), default="TEXT")
+    scope_type: Mapped[str] = mapped_column(String(40), default="GLOBAL", index=True)
+    scope_key: Mapped[str] = mapped_column(String(180), default="", index=True)
+    required: Mapped[bool] = mapped_column(Boolean, default=False)
+    choices_json: Mapped[str] = mapped_column(Text, default="[]")
+    default_json: Mapped[str] = mapped_column(Text, default="null")
+    help_text: Mapped[str] = mapped_column(Text, default="")
+    display_order: Mapped[int] = mapped_column(Integer, default=100)
+    active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    created_by: Mapped[str] = mapped_column(String(120), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
+class EntityCustomFieldValue(Base):
+    __tablename__ = "entity_custom_field_values"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    entity_type: Mapped[str] = mapped_column(String(60), index=True)
+    entity_key: Mapped[str] = mapped_column(String(180), index=True)
+    field_id: Mapped[str] = mapped_column(String(120), index=True)
+    value_json: Mapped[str] = mapped_column(Text, default="null")
+    updated_by: Mapped[str] = mapped_column(String(120), default="")
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    __table_args__ = (UniqueConstraint("entity_type","entity_key","field_id",name="uq_entity_custom_field_value"),)
+
+
+class RecordTemplate(Base):
+    __tablename__ = "record_templates"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    template_id: Mapped[str] = mapped_column(String(120), unique=True, index=True)
+    entity_type: Mapped[str] = mapped_column(String(60), index=True)
+    name: Mapped[str] = mapped_column(String(180))
+    scope_type: Mapped[str] = mapped_column(String(40), default="GLOBAL", index=True)
+    scope_key: Mapped[str] = mapped_column(String(180), default="", index=True)
+    payload_json: Mapped[str] = mapped_column(Text, default="{}")
+    active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    created_by: Mapped[str] = mapped_column(String(120), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
 class WorkflowAutomationRule(Base):
     __tablename__ = "workflow_automation_rules"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -1251,6 +1299,9 @@ class Database:
                 table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
             ]),
             ("20260924_009","Create configurable workflow orchestration tables",lambda: [
+                table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
+            ]),
+            ("20260924_010","Create configurable custom-field and record-template tables",lambda: [
                 table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
             ]),
         ]
@@ -1826,6 +1877,189 @@ class Database:
                 ApprovalDelegation.starts_at<=now,
                 ApprovalDelegation.ends_at>now,
             )) or 0)
+
+    @staticmethod
+    def _normalize_custom_value(data_type: str, value: Any, choices: list[str]):
+        kind=(data_type or "TEXT").upper()
+        if value is None or value=="":
+            return None
+        if kind=="TEXT":return str(value)
+        if kind=="NUMBER":
+            try:return float(value)
+            except Exception:raise ValueError(f"Expected numeric value, got {value!r}")
+        if kind=="BOOLEAN":
+            if isinstance(value,bool):return value
+            lowered=str(value).strip().lower()
+            if lowered in {"1","true","yes","on"}:return True
+            if lowered in {"0","false","no","off"}:return False
+            raise ValueError(f"Expected boolean value, got {value!r}")
+        if kind=="DATE":
+            if isinstance(value,datetime):return value.date().isoformat()
+            text=str(value).strip()
+            try:return datetime.fromisoformat(text).date().isoformat()
+            except Exception:raise ValueError(f"Expected ISO date value, got {value!r}")
+        if kind=="CHOICE":
+            text=str(value)
+            if choices and text not in choices:raise ValueError(f"Value {text!r} is not in configured choices.")
+            return text
+        raise ValueError(f"Unsupported custom-field data type: {kind}")
+
+    def save_custom_field_definition(self, data: dict[str, Any], user: str = "", expected_version: int | None = None):
+        payload=dict(data)
+        payload["field_id"]=str(payload.get("field_id","")).strip()
+        payload["entity_type"]=str(payload.get("entity_type","")).strip().upper()
+        payload["label"]=str(payload.get("label","")).strip()
+        payload["data_type"]=str(payload.get("data_type","TEXT")).strip().upper()
+        payload["scope_type"]=str(payload.get("scope_type","GLOBAL")).strip().upper()
+        payload["scope_key"]=str(payload.get("scope_key","")).strip()
+        if not payload["field_id"] or not payload["entity_type"] or not payload["label"]:
+            raise ValueError("Field ID, entity type and label are required.")
+        if payload["data_type"] not in {"TEXT","NUMBER","BOOLEAN","DATE","CHOICE"}:
+            raise ValueError("Custom field type must be TEXT, NUMBER, BOOLEAN, DATE or CHOICE.")
+        if payload["scope_type"] not in {"GLOBAL","EQUIPMENT_TYPE","AREA"}:
+            raise ValueError("Custom field scope must be GLOBAL, EQUIPMENT_TYPE or AREA.")
+        if payload["scope_type"]!="GLOBAL" and not payload["scope_key"]:
+            raise ValueError("Scoped custom fields require a scope key.")
+        choices=payload.get("choices_json","[]")
+        if isinstance(choices,list):choices_json=json.dumps(choices)
+        else:
+            try:
+                parsed=json.loads(choices or "[]")
+                if not isinstance(parsed,list):raise ValueError()
+                choices_json=json.dumps([str(x) for x in parsed])
+            except Exception:raise ValueError("choices_json must be a JSON array.")
+        if payload["data_type"]=="CHOICE" and not json.loads(choices_json):
+            raise ValueError("CHOICE fields require at least one configured choice.")
+        payload["choices_json"]=choices_json
+        default=payload.get("default_json","null")
+        if not isinstance(default,str):default=json.dumps(default,default=str)
+        else:
+            try:json.loads(default)
+            except Exception:default=json.dumps(default)
+        payload["default_json"]=default
+        payload["created_by"]=payload.get("created_by") or user
+        with self.session() as s:
+            row=s.scalar(select(CustomFieldDefinition).where(CustomFieldDefinition.field_id==payload["field_id"]))
+            if row:self._update_versioned(row,payload,expected_version,"Custom field definition")
+            else:row=CustomFieldDefinition(**payload);s.add(row)
+            s.flush();return row
+
+    def list_custom_field_definitions(self, entity_type: str = "", active_only: bool = False):
+        with self.session() as s:
+            stmt=select(CustomFieldDefinition).order_by(CustomFieldDefinition.entity_type,CustomFieldDefinition.display_order,CustomFieldDefinition.label)
+            if entity_type:stmt=stmt.where(CustomFieldDefinition.entity_type==entity_type.strip().upper())
+            if active_only:stmt=stmt.where(CustomFieldDefinition.active.is_(True))
+            return list(s.scalars(stmt))
+
+    def resolve_custom_field_definitions(self, entity_type: str, equipment_id: str = ""):
+        entity_type=entity_type.strip().upper()
+        eq=self.get_equipment(equipment_id) if equipment_id else None
+        rows=self.list_custom_field_definitions(entity_type,True)
+        out=[]
+        for row in rows:
+            if row.scope_type=="GLOBAL":out.append(row)
+            elif row.scope_type=="EQUIPMENT_TYPE" and eq and row.scope_key==eq.equipment_type:out.append(row)
+            elif row.scope_type=="AREA" and eq and row.scope_key==eq.area:out.append(row)
+        return out
+
+    def get_custom_field_values(self, entity_type: str, entity_key: str) -> dict[str, Any]:
+        with self.session() as s:
+            rows=list(s.scalars(select(EntityCustomFieldValue).where(
+                EntityCustomFieldValue.entity_type==entity_type.strip().upper(),
+                EntityCustomFieldValue.entity_key==str(entity_key),
+            )))
+        out={}
+        for row in rows:
+            try:out[row.field_id]=json.loads(row.value_json)
+            except Exception:out[row.field_id]=row.value_json
+        return out
+
+    def set_custom_field_values(
+        self,
+        entity_type: str,
+        entity_key: str,
+        values: dict[str, Any],
+        user: str,
+        equipment_id: str = "",
+        workstation: str = "",
+    ):
+        entity_type=entity_type.strip().upper();entity_key=str(entity_key)
+        definitions=self.resolve_custom_field_definitions(entity_type,equipment_id)
+        by_id={x.field_id:x for x in definitions}
+        unknown=sorted(set(values)-set(by_id))
+        if unknown:raise ValueError("Unknown or non-applicable custom field(s): "+", ".join(unknown))
+        normalized={}
+        for definition in definitions:
+            choices=json.loads(definition.choices_json or "[]")
+            raw=values.get(definition.field_id)
+            value=self._normalize_custom_value(definition.data_type,raw,choices)
+            if definition.required and (value is None or value==""):
+                raise ValueError(f"{definition.label} is required.")
+            normalized[definition.field_id]=value
+        with self.session() as s:
+            for field_id,value in normalized.items():
+                row=s.scalar(select(EntityCustomFieldValue).where(
+                    EntityCustomFieldValue.entity_type==entity_type,
+                    EntityCustomFieldValue.entity_key==entity_key,
+                    EntityCustomFieldValue.field_id==field_id,
+                ))
+                encoded=json.dumps(value,default=str)
+                if row:
+                    row.value_json=encoded;row.updated_by=user;row.updated_at=datetime.utcnow();row.version+=1
+                else:
+                    s.add(EntityCustomFieldValue(
+                        entity_type=entity_type,entity_key=entity_key,field_id=field_id,
+                        value_json=encoded,updated_by=user,
+                    ))
+            s.add(AuditLog(
+                user=user,action="CUSTOM_FIELDS_SAVE",entity_type=entity_type,entity_key=entity_key,
+                detail=json.dumps(normalized,default=str,sort_keys=True),workstation=workstation,
+            ))
+            s.flush()
+        return normalized
+
+    def save_record_template(self, data: dict[str, Any], user: str = "", expected_version: int | None = None):
+        payload=dict(data)
+        payload["template_id"]=str(payload.get("template_id","")).strip()
+        payload["entity_type"]=str(payload.get("entity_type","")).strip().upper()
+        payload["name"]=str(payload.get("name","")).strip()
+        payload["scope_type"]=str(payload.get("scope_type","GLOBAL")).strip().upper()
+        payload["scope_key"]=str(payload.get("scope_key","")).strip()
+        if not payload["template_id"] or not payload["entity_type"] or not payload["name"]:
+            raise ValueError("Template ID, entity type and name are required.")
+        if payload["scope_type"] not in {"GLOBAL","EQUIPMENT_TYPE","AREA"}:
+            raise ValueError("Template scope must be GLOBAL, EQUIPMENT_TYPE or AREA.")
+        raw=payload.get("payload_json","{}")
+        if isinstance(raw,dict):encoded=json.dumps(raw,sort_keys=True)
+        else:
+            try:
+                parsed=json.loads(raw or "{}")
+                if not isinstance(parsed,dict):raise ValueError()
+                encoded=json.dumps(parsed,sort_keys=True)
+            except Exception:raise ValueError("Template payload must be a JSON object.")
+        payload["payload_json"]=encoded;payload["created_by"]=payload.get("created_by") or user
+        with self.session() as s:
+            row=s.scalar(select(RecordTemplate).where(RecordTemplate.template_id==payload["template_id"]))
+            if row:self._update_versioned(row,payload,expected_version,"Record template")
+            else:row=RecordTemplate(**payload);s.add(row)
+            s.flush();return row
+
+    def list_record_templates(self, entity_type: str = "", active_only: bool = False, equipment_id: str = ""):
+        with self.session() as s:
+            stmt=select(RecordTemplate).order_by(RecordTemplate.entity_type,RecordTemplate.name)
+            if entity_type:stmt=stmt.where(RecordTemplate.entity_type==entity_type.strip().upper())
+            if active_only:stmt=stmt.where(RecordTemplate.active.is_(True))
+            rows=list(s.scalars(stmt))
+        if not equipment_id:return rows
+        eq=self.get_equipment(equipment_id)
+        return [x for x in rows if x.scope_type=="GLOBAL" or (eq and x.scope_type=="EQUIPMENT_TYPE" and x.scope_key==eq.equipment_type) or (eq and x.scope_type=="AREA" and x.scope_key==eq.area)]
+
+    def get_record_template_payload(self, template_id: str) -> dict[str, Any]:
+        with self.session() as s:
+            row=s.scalar(select(RecordTemplate).where(RecordTemplate.template_id==template_id,RecordTemplate.active.is_(True)))
+            if not row:raise ValueError("Record template not found or inactive.")
+            try:return json.loads(row.payload_json or "{}")
+            except Exception:return {}
 
     def save_workflow_rule(self, data: dict[str, Any], user: str = "", expected_version: int | None = None):
         payload=dict(data)
