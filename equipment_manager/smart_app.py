@@ -323,14 +323,17 @@ class SmartMainWindow(QMainWindow):
         self.refresh_my_work_badge();self.refresh_notification_badge()
         self.accessibility_issues=apply_accessibility_defaults(self)
 
-    def resizeEvent(self,event):
-        super().resizeEvent(event)
-        compact=self.width()<1300
+    def _apply_responsive_layout(self,width: int):
+        compact=width<1300
         self.nav.setFixedWidth(185 if compact else 225)
         self.global_search.setMinimumWidth(220 if compact else 360)
         # The keyboard shortcut remains available when the less-frequent button
         # is hidden on smaller engineering laptops.
-        self.quick_capture.setVisible(self.width()>=1150)
+        self.quick_capture.setVisible(width>=1150)
+
+    def resizeEvent(self,event):
+        super().resizeEvent(event)
+        self._apply_responsive_layout(self.width())
 
     def current_evidence_context(self):
         page=self.stack.currentWidget()
