@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
 from attachment_store import duplicate_attachment_file, store_attachment_file, store_clipboard_image
 from services import readonly_open_copy
 from reporting import export_equipment_pptx, export_equipment_xlsx
+from pdf_reporting import export_equipment_pdf
 from image_annotator import ImageAnnotationDialog
 from table_productivity import install_table_productivity
 
@@ -329,9 +330,10 @@ class Equipment360Workspace(QWidget):
         map_button=QPushButton("Show on FAB map");map_button.clicked.connect(self.open_map)
         ppt=QPushButton("Review PPTX");ppt.clicked.connect(self.export_pptx)
         xlsx=QPushButton("Review Excel");xlsx.clicked.connect(self.export_xlsx)
+        pdf=QPushButton("Review PDF");pdf.clicked.connect(self.export_pdf)
         refresh=QPushButton("Refresh");refresh.clicked.connect(self.refresh)
         head.addWidget(self.title);head.addWidget(self.state);head.addStretch(1)
-        for button in [self.incident_button,self.pm_button,registry_button,map_button,ppt,xlsx,self.favorite,refresh]:head.addWidget(button)
+        for button in [self.incident_button,self.pm_button,registry_button,map_button,ppt,xlsx,pdf,self.favorite,refresh]:head.addWidget(button)
         root.addLayout(head)
         self.summary=QLabel("Select equipment from Global Search or another workspace.")
         self.summary.setWordWrap(True);self.summary.setStyleSheet("color:#647581;font-size:11pt;");root.addWidget(self.summary)
@@ -389,6 +391,15 @@ class Equipment360Workspace(QWidget):
             template=self.db.resolve_report_template("EQUIPMENT",self.eq.equipment_id)
             export_equipment_pptx(self.db,self.eq.equipment_id,path,template);QMessageBox.information(self,"PowerPoint",f"Editable equipment review deck created.\n{path}")
         except Exception as exc:QMessageBox.critical(self,"PowerPoint",str(exc))
+
+    def export_pdf(self):
+        if not self.eq:return
+        default=f"{self.eq.equipment_id}_Equipment_Review.pdf"
+        path,_=QFileDialog.getSaveFileName(self,"Export Equipment Review PDF",default,"PDF (*.pdf)")
+        if not path:return
+        if not path.lower().endswith(".pdf"):path+=".pdf"
+        try:export_equipment_pdf(self.db,self.eq.equipment_id,path);QMessageBox.information(self,"PDF",f"Controlled equipment review PDF created.\n{path}")
+        except Exception as exc:QMessageBox.critical(self,"PDF",str(exc))
 
     def export_xlsx(self):
         if not self.eq:return
