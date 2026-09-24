@@ -8,6 +8,8 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+import pandas as pd
+
 from PySide6.QtCore import Qt, QTimer, Signal
 from PySide6.QtGui import QAction, QBrush, QColor, QKeySequence, QPixmap
 from PySide6.QtWidgets import (
@@ -27,7 +29,12 @@ from domain import REASON_CODES, TICKET_REASON_CODES, allowed_targets, allowed_t
 from workspaces import AttachmentPanel
 from table_productivity import configure_productivity_context, install_table_productivity
 from excel_import_studio import run_mapping_studio
-from excel_reconcile import confirm_reconciliation, reconcile_equipment, reconcile_inventory, reconcile_tickets
+from excel_reconcile import (
+    apply_extended_reconciliation, confirm_reconciliation, dataframe_rows,
+    endorsement_export_rows, qualification_protocol_export_rows,
+    reconcile_endorsements, reconcile_equipment, reconcile_inventory,
+    reconcile_qualification_protocols, reconcile_tickets,
+)
 from alarm_correlation import correlate_alarm_bursts
 from reporting import export_qualification_pptx, export_qualification_xlsx, export_release_pptx, export_release_xlsx
 from services import (
@@ -1324,10 +1331,11 @@ class QualificationPage(QWidget):
         super().__init__();self.db=db;self.user=user;self.protocols=[];self.runs=[];self.check_rows=[];self.check_results={}
         v=QVBoxLayout(self);tabs=QTabWidget();self.tabs=tabs;v.addWidget(tabs)
 
-        wp=QWidget();vp=QVBoxLayout(wp);hp=QHBoxLayout();newp=QPushButton("New Protocol");revp=QPushButton("New Revision")
-        newp.clicked.connect(self.new_protocol);revp.clicked.connect(self.revise_protocol)
-        newp.setEnabled(db.has_permission(user,"qualification.edit"));revp.setEnabled(db.has_permission(user,"qualification.edit"))
-        hp.addWidget(newp);hp.addWidget(revp);hp.addStretch(1);vp.addLayout(hp)
+        wp=QWidget();vp=QVBoxLayout(wp);hp=QHBoxLayout();newp=QPushButton("New Protocol");revp=QPushButton("New Revision");exportp=QPushButton("Export Round-trip Excel");importp=QPushButton("Import Excel/CSV");pastep=QPushButton("Paste from Excel")
+        newp.clicked.connect(self.new_protocol);revp.clicked.connect(self.revise_protocol);exportp.clicked.connect(self.export_protocols_roundtrip);importp.clicked.connect(self.import_protocols);pastep.clicked.connect(self.paste_protocols)
+        canedit=db.has_permission(user,"qualification.edit");newp.setEnabled(canedit);revp.setEnabled(canedit);importp.setEnabled(canedit);pastep.setEnabled(canedit)
+        for x in [newp,revp,exportp,importp,pastep]:hp.addWidget(x)
+        hp.addStretch(1);vp.addLayout(hp)
         self.ptable=make_table(["Protocol","Revision","Name","Equipment","Type","Active","Created By","Created","Ver"]);vp.addWidget(self.ptable);tabs.addTab(wp,"Protocols")
 
         wr=QWidget();vr=QVBoxLayout(wr);hr=QHBoxLayout()
@@ -1362,6 +1370,53 @@ class QualificationPage(QWidget):
         for i,row in enumerate(self.runs):
             if row.run_no==run_no:
                 self.rtable.selectRow(i);break
+
+    def export_protocols_roundtrip(self):
+        rows=qualification_protocol_export_rows(self.db)
+        path,_=QFileDialog.getSaveFileName(self,"Export Qualification Protocols","Qualification_Protocols_RoundTrip.xlsx","Excel Workbook (*.xlsx)")
+        if not path:return
+        if not path.lower().endswith(".xlsx"):path+=".xlsx"
+        try:
+            pd.DataFrame(rows,columns=["protocol_id","name","equipment_id","equipment_type","revision","check_id","label","acceptance"]).to_excel(path,index=False)
+            QMessageBox.information(self,"Qualification protocols",f"Round-trip workbook created.\n{path}")
+        except Exception as exc:QMessageBox.critical(self,"Qualification protocols",str(exc))
+
+    def _qualification_protocol_import_df(self,df):
+        fields=[
+            ("protocol_id","Protocol ID"),("name","Protocol name"),("equipment_id","Equipment ID"),
+            ("equipment_type","Equipment type"),("check_id","Check ID"),("label","Check / requirement"),("acceptance","Acceptance"),
+        ]
+        mapping=run_mapping_studio(
+            self,self.db,self.user["username"],"excel_mapping.qualification_protocols",df,fields,
+            auto_mapping(list(df.columns)),{"protocol_id","name","check_id","label"},"Qualification Protocol / Checklist Import Studio",
+        )
+        if mapping is None:return
+        rows=dataframe_rows(df,mapping)
+        try:actions=reconcile_qualification_protocols(self.db,rows,mapping)
+        except Exception as exc:QMessageBox.critical(self,"Qualification protocol reconciliation",str(exc));return
+        if not confirm_reconciliation(self,"Qualification Protocol Reconciliation",actions):
+            unchanged=all(x["status"]=="UNCHANGED" for x in actions)
+            if unchanged:QMessageBox.information(self,"Qualification protocols","No changes detected.")
+            return
+        try:
+            result=apply_extended_reconciliation(self.db,actions,entity="qualification_protocol",user=self.user["username"],workstation=WORKSTATION)
+            self.refresh();QMessageBox.information(self,"Qualification protocols",f"Applied {result['applied']} protocol create/revision action(s).")
+        except Exception as exc:QMessageBox.critical(self,"Qualification protocols",str(exc))
+
+    def import_protocols(self):
+        path,_=QFileDialog.getOpenFileName(self,"Import Qualification Protocols","","Excel/CSV (*.xlsx *.xlsm *.csv)")
+        if not path:return
+        try:
+            sheets=workbook_sheets(path);sheet=sheets[0]
+            if len(sheets)>1:
+                sheet,ok=QInputDialog.getItem(self,"Qualification Protocol Import","Sheet",sheets,0,False)
+                if not ok:return
+            self._qualification_protocol_import_df(read_table(path,sheet))
+        except Exception as exc:QMessageBox.critical(self,"Qualification protocol import",str(exc))
+
+    def paste_protocols(self):
+        try:self._qualification_protocol_import_df(read_clipboard_table(QApplication.clipboard().text()))
+        except Exception as exc:QMessageBox.critical(self,"Qualification protocol paste",str(exc))
 
     def new_protocol(self):
         d=QualificationProtocolDialog(parent=self)
@@ -1602,7 +1657,11 @@ class EndorsementDialog(QDialog):
 
 class EndorsementPage(QWidget):
     def __init__(self,db,user):
-        super().__init__();self.db=db;self.user=user;self.rows=[];v=QVBoxLayout(self);h=QHBoxLayout();add=QPushButton("New Endorsement");ack=QPushButton("Acknowledge Selected");add.clicked.connect(self.add);ack.clicked.connect(self.ack);allowed=db.has_permission(user,"endorsement.edit");add.setEnabled(allowed);ack.setEnabled(allowed);h.addWidget(add);h.addWidget(ack);h.addStretch(1);v.addLayout(h);self.table=make_table(["No","Equipment","Condition","Pending","Restrictions","Next Owner","Status","Created By","Ack By","Time"]);self.table.itemSelectionChanged.connect(self.load_attachments);v.addWidget(self.table,2);self.attachments=AttachmentPanel(db,user);v.addWidget(self.attachments,1);self.refresh()
+        super().__init__();self.db=db;self.user=user;self.rows=[];v=QVBoxLayout(self);h=QHBoxLayout();add=QPushButton("New Endorsement");ack=QPushButton("Acknowledge Selected");exportb=QPushButton("Export Round-trip Excel");importb=QPushButton("Import Excel/CSV");pasteb=QPushButton("Paste from Excel")
+        add.clicked.connect(self.add);ack.clicked.connect(self.ack);exportb.clicked.connect(self.export_roundtrip);importb.clicked.connect(self.import_endorsements);pasteb.clicked.connect(self.paste_endorsements)
+        allowed=db.has_permission(user,"endorsement.edit");add.setEnabled(allowed);ack.setEnabled(allowed);importb.setEnabled(allowed);pasteb.setEnabled(allowed)
+        for x in [add,ack,exportb,importb,pasteb]:h.addWidget(x)
+        h.addStretch(1);v.addLayout(h);self.table=make_table(["No","Equipment","Condition","Pending","Restrictions","Next Owner","Status","Created By","Ack By","Time"]);self.table.itemSelectionChanged.connect(self.load_attachments);v.addWidget(self.table,2);self.attachments=AttachmentPanel(db,user);v.addWidget(self.attachments,1);self.refresh()
     def refresh(self):
         current=selected_row(self.table,self.rows);key=current.endorsement_no if current else ""
         self.rows=self.db.list_endorsements();fill_table(self.table,self.rows,["endorsement_no","equipment_id","current_condition","pending_work","restrictions","next_owner","status","created_by","acknowledged_by","created_at"])
@@ -1617,6 +1676,54 @@ class EndorsementPage(QWidget):
         self.refresh()
         for i,row in enumerate(self.rows):
             if row.endorsement_no==key:self.table.selectRow(i);break
+    def export_roundtrip(self):
+        rows=endorsement_export_rows(self.db)
+        path,_=QFileDialog.getSaveFileName(self,"Export Shift Handovers","Shift_Handovers_RoundTrip.xlsx","Excel Workbook (*.xlsx)")
+        if not path:return
+        if not path.lower().endswith(".xlsx"):path+=".xlsx"
+        try:
+            pd.DataFrame(rows).to_excel(path,index=False)
+            QMessageBox.information(self,"Shift handover",f"Round-trip workbook created.\n{path}")
+        except Exception as exc:QMessageBox.critical(self,"Shift handover",str(exc))
+
+    def _endorsement_import_df(self,df):
+        fields=[
+            ("endorsement_no","Endorsement No"),("equipment_id","Equipment ID"),("current_condition","Current condition"),
+            ("work_completed","Work completed"),("pending_work","Pending work"),("restrictions","Restrictions"),
+            ("next_action","Next action"),("next_owner","Next owner"),
+        ]
+        mapping=run_mapping_studio(
+            self,self.db,self.user["username"],"excel_mapping.endorsements",df,fields,
+            auto_mapping(list(df.columns)),{"endorsement_no","equipment_id"},"Shift Handover Import Studio",
+        )
+        if mapping is None:return
+        rows=dataframe_rows(df,mapping)
+        try:actions=reconcile_endorsements(self.db,rows,mapping)
+        except Exception as exc:QMessageBox.critical(self,"Shift handover reconciliation",str(exc));return
+        if not confirm_reconciliation(self,"Shift Handover Reconciliation",actions):
+            unchanged=all(x["status"]=="UNCHANGED" for x in actions)
+            if unchanged:QMessageBox.information(self,"Shift handover","No changes detected.")
+            return
+        try:
+            result=apply_extended_reconciliation(self.db,actions,entity="endorsement",user=self.user["username"],workstation=WORKSTATION)
+            self.refresh();QMessageBox.information(self,"Shift handover",f"Applied {result['applied']} create/update action(s).")
+        except Exception as exc:QMessageBox.critical(self,"Shift handover",str(exc))
+
+    def import_endorsements(self):
+        path,_=QFileDialog.getOpenFileName(self,"Import Shift Handovers","","Excel/CSV (*.xlsx *.xlsm *.csv)")
+        if not path:return
+        try:
+            sheets=workbook_sheets(path);sheet=sheets[0]
+            if len(sheets)>1:
+                sheet,ok=QInputDialog.getItem(self,"Shift Handover Import","Sheet",sheets,0,False)
+                if not ok:return
+            self._endorsement_import_df(read_table(path,sheet))
+        except Exception as exc:QMessageBox.critical(self,"Shift handover import",str(exc))
+
+    def paste_endorsements(self):
+        try:self._endorsement_import_df(read_clipboard_table(QApplication.clipboard().text()))
+        except Exception as exc:QMessageBox.critical(self,"Shift handover paste",str(exc))
+
     def add(self):
         d=EndorsementDialog(self)
         if d.exec()==QDialog.DialogCode.Accepted:
