@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from datetime import datetime
+import json
+import os
 from pathlib import Path
 from typing import Any
 
@@ -9,6 +11,25 @@ from openpyxl.styles import Font, PatternFill
 from openpyxl.utils import get_column_letter
 from pptx import Presentation
 from pptx.util import Inches, Pt
+
+
+def _new_presentation() -> Presentation:
+    template=os.getenv("EMS_PPT_TEMPLATE","").strip()
+    if template and Path(template).is_file():
+        return Presentation(template)
+    return Presentation()
+
+
+def _add_table_pages(prs: Presentation,title: str,headers: list[str],rows: list[list[Any]],rows_per_slide: int=14):
+    rows=list(rows)
+    if not rows:
+        slide=prs.slides.add_slide(prs.slide_layouts[5]);_add_table(slide,title,headers,[],rows_per_slide);return
+    for start in range(0,len(rows),rows_per_slide):
+        chunk=rows[start:start+rows_per_slide]
+        page=start//rows_per_slide+1
+        pages=(len(rows)+rows_per_slide-1)//rows_per_slide
+        slide=prs.slides.add_slide(prs.slide_layouts[5])
+        _add_table(slide,title if pages==1 else f"{title} ({page}/{pages})",headers,chunk,rows_per_slide)
 
 
 def _text(value: Any) -> str:
@@ -71,7 +92,7 @@ def export_incident_pptx(db,ticket_no: str,path: str) -> str:
     actions=db.list_incident_actions(ticket_no);lifecycle=db.list_ticket_state_events(ticket_no)
     attachments=db.list_attachments("TICKET",ticket_no)
 
-    prs=Presentation()
+    prs=_new_presentation()
     slide=prs.slides.add_slide(prs.slide_layouts[0])
     slide.shapes.title.text=f"{t.ticket_no} — {t.title}"
     slide.placeholders[1].text=f"{t.equipment_id} | {t.priority} | {t.status} | Owner: {t.owner or '—'}"
@@ -126,7 +147,7 @@ def export_equipment_pptx(db,equipment_id: str,path: str) -> str:
     timeline=db.equipment_activity_timeline(equipment_id,80)
     attachments=db.list_attachments("EQUIPMENT",equipment_id)
 
-    prs=Presentation()
+    prs=_new_presentation()
     slide=prs.slides.add_slide(prs.slide_layouts[0])
     slide.shapes.title.text=f"{eq.equipment_id} — {eq.name}"
     slide.placeholders[1].text=f"{eq.status} | {eq.disposition} | {eq.area} | Owner: {eq.owner or '—'}"
@@ -214,3 +235,199 @@ def export_equipment_xlsx(db,equipment_id: str,path: str) -> str:
     ws=wb.create_sheet("Alarms");_sheet(ws,["Code","Severity","Message","State","Occurred","Cleared","Ticket"],[[x.alarm_code,x.severity,x.message,x.state,x.occurred_at,x.cleared_at,x.related_ticket] for x in alarms])
     ws=wb.create_sheet("Attachments");_sheet(ws,["Name","Category","Caption","Tags","Path","Added By","Added"],[[x.original_name,x.category,x.caption,x.tags,x.stored_path,x.created_by,x.created_at] for x in db.list_attachments("EQUIPMENT",equipment_id)])
     Path(path).parent.mkdir(parents=True,exist_ok=True);wb.save(path);return str(path)
+
+def _pm_context(db,task_id: int):
+    task=db.get_pm_task(int(task_id))
+    if not task:raise ValueError("PM task not found")
+    execution=db.get_pm_execution_for_task(task.id)
+    if not execution:raise ValueError("PM task has not been started; no frozen execution record exists.")
+    specs=db.list_pm_execution_specs(execution.id)
+    results={x.step_no:x for x in db.list_pm_results(execution.id)}
+    requirements=db.list_pm_execution_requirements(execution.id)
+    acks={x.requirement_id:x for x in db.list_pm_requirement_acks(execution.id)}
+    attachments=db.list_attachments("PM_EXECUTION",str(execution.id))
+    return task,execution,specs,results,requirements,acks,attachments
+
+
+def export_pm_execution_pptx(db,task_id: int,path: str) -> str:
+    task,execution,specs,results,requirements,acks,attachments=_pm_context(db,task_id)
+    prs=_new_presentation()
+    slide=prs.slides.add_slide(prs.slide_layouts[0])
+    slide.shapes.title.text=f"{task.pm_id} — {task.pm_name}"
+    slide.placeholders[1].text=f"{task.equipment_id} | {execution.status} | Task {task.id}"
+
+    slide=prs.slides.add_slide(prs.slide_layouts[1])
+    _add_bullets(slide,"PM Execution Summary",[
+        f"Equipment: {task.equipment_id}",
+        f"Original due: {_text(task.original_due_date)}",
+        f"Scheduled: {_text(task.scheduled_date)}",
+        f"Assigned to: {task.assigned_to or '—'}",
+        f"Started by / at: {execution.started_by or '—'} / {_text(execution.started_at)}",
+        f"Completed by / at: {execution.completed_by or '—'} / {_text(execution.completed_at)}",
+        f"Status: {execution.status}",
+    ])
+
+    check_rows=[]
+    for spec in specs:
+        result=results.get(spec.step_no)
+        value=""
+        if result:value=result.value_text if result.value_text else result.value_numeric
+        acceptance=spec.acceptance_text or (f"{spec.spec_low}..{spec.spec_high}" if spec.spec_low is not None or spec.spec_high is not None else "")
+        check_rows.append([spec.step_no,spec.activity,spec.method,spec.source_revision,acceptance,result.result if result else "",value,result.comment if result else "",result.entered_by if result else ""])
+    _add_table_pages(prs,"Frozen Checklist / Results",["Step","Activity","Method","Spec Rev","Acceptance","Result","Value","Comment","By"],check_rows,10)
+
+    req_rows=[]
+    for req in requirements:
+        ack=acks.get(req.requirement_id)
+        req_rows.append([req.requirement_type,req.requirement_key,req.description,req.quantity,"Yes" if req.mandatory else "No",ack.acknowledged_by if ack else "",ack.note if ack else ""])
+    _add_table_pages(prs,"Execution Requirements",["Type","Key","Description","Qty","Mandatory","Acknowledged By","Note"],req_rows,12)
+    _add_evidence_slides(prs,attachments,"PM")
+    Path(path).parent.mkdir(parents=True,exist_ok=True);prs.save(path);return str(path)
+
+
+def export_pm_execution_xlsx(db,task_id: int,path: str) -> str:
+    task,execution,specs,results,requirements,acks,attachments=_pm_context(db,task_id)
+    wb=Workbook();summary=wb.active;summary.title="Summary"
+    _sheet(summary,["Field","Value"],[
+        ["Task ID",task.id],["Equipment",task.equipment_id],["PM ID",task.pm_id],["PM name",task.pm_name],
+        ["Task status",task.status],["Execution status",execution.status],["Original due",task.original_due_date],
+        ["Scheduled",task.scheduled_date],["Assigned to",task.assigned_to],["Started by",execution.started_by],
+        ["Started at",execution.started_at],["Completed by",execution.completed_by],["Completed at",execution.completed_at],
+    ])
+    rows=[]
+    for spec in specs:
+        r=results.get(spec.step_no);value=(r.value_text if r and r.value_text else (r.value_numeric if r else ""))
+        rows.append([spec.step_no,spec.activity,spec.method,spec.input_type,spec.unit,spec.source_revision,spec.acceptance_text,
+                     spec.target,spec.warning_low,spec.warning_high,spec.control_low,spec.control_high,spec.spec_low,spec.spec_high,
+                     r.result if r else "",value,r.comment if r else "",r.evidence_path if r else "",r.entered_by if r else "",r.entered_at if r else ""])
+    ws=wb.create_sheet("Checklist Results");_sheet(ws,["Step","Activity","Method","Input","Unit","Spec Rev","Acceptance","Target","Warn Low","Warn High","Ctrl Low","Ctrl High","Spec Low","Spec High","Result","Value","Comment","Evidence","By","Time"],rows)
+    req_rows=[]
+    for req in requirements:
+        ack=acks.get(req.requirement_id)
+        req_rows.append([req.requirement_id,req.requirement_type,req.requirement_key,req.description,req.quantity,req.mandatory,req.source_revision,
+                         ack.acknowledged_by if ack else "",ack.note if ack else "",ack.evidence_path if ack else "",ack.acknowledged_at if ack else ""])
+    ws=wb.create_sheet("Requirements");_sheet(ws,["ID","Type","Key","Description","Qty","Mandatory","Revision","Acknowledged By","Note","Evidence","Time"],req_rows)
+    ws=wb.create_sheet("Attachments");_sheet(ws,["Name","Category","Caption","Tags","Path","Added By","Added"],[[x.original_name,x.category,x.caption,x.tags,x.stored_path,x.created_by,x.created_at] for x in attachments])
+    Path(path).parent.mkdir(parents=True,exist_ok=True);wb.save(path);return str(path)
+
+
+def export_work_order_pptx(db,work_order_no: str,path: str) -> str:
+    wo=db.get_work_order(work_order_no)
+    if not wo:raise ValueError("Work order not found")
+    events=db.list_work_order_events(work_order_no);links=db.list_work_order_links(work_order_no)
+    logs=[x for x in db.list_work_logs(wo.equipment_id,False,5000) if x.entity_type=="WORK_ORDER" and x.entity_key==work_order_no]
+    attachments=db.list_attachments("WORK_ORDER",work_order_no);close=db.work_order_closeout_status(work_order_no)
+    prs=_new_presentation()
+    slide=prs.slides.add_slide(prs.slide_layouts[0]);slide.shapes.title.text=f"{wo.work_order_no} — {wo.title}"
+    slide.placeholders[1].text=f"{wo.equipment_id} | {wo.priority} | {wo.status} | Owner: {wo.owner or '—'}"
+    slide=prs.slides.add_slide(prs.slide_layouts[1])
+    _add_bullets(slide,"Work Order Summary",[
+        f"Source: {wo.source_type}:{wo.source_key or '—'}",f"Description: {wo.description}",
+        f"Owner / team: {wo.owner or '—'} / {wo.team or '—'}",f"Planned: {_text(wo.planned_start)} to {_text(wo.planned_end)}",
+        f"Actual: {_text(wo.started_at)} to {_text(wo.completed_at)}",
+        f"Qualification required: {'Yes' if wo.qualification_required else 'No'}",f"Release required: {'Yes' if wo.release_required else 'No'}",
+    ])
+    _add_table_pages(prs,"Lifecycle",["From","To","Reason","Owner","By","Time"],[[x.from_state,x.to_state,x.reason,x.owner,x.changed_by,x.occurred_at] for x in events],14)
+    _add_table_pages(prs,"Linked Records",["Type","Key","Relation","Created By","Created"],[[x.entity_type,x.entity_key,x.relation,x.created_by,x.created_at] for x in links],14)
+    _add_table_pages(prs,"Labor",["User","Type","Started","Ended","Minutes","Status","Note"],[[x.username,x.work_type,x.started_at,x.ended_at,x.duration_minutes,x.status,x.note] for x in logs],14)
+    slide=prs.slides.add_slide(prs.slide_layouts[1]);blockers=close.get("blockers",[])
+    _add_bullets(slide,"Qualification / Release Closeout",[
+        f"Work order status: {close['status']}",f"Evidence attachments: {close['attachment_count']}",f"Active labor: {close['active_labor']}",
+        f"Active part reservations: {close['active_part_reservations']}",f"Qualification: {close['valid_qualification_run'] or close['open_qualification_run'] or 'None'}",
+        f"Release: {close['active_release_status'] or 'None'}",*[f"Blocker: {x}" for x in blockers],
+    ])
+    _add_evidence_slides(prs,attachments,"Work Order")
+    Path(path).parent.mkdir(parents=True,exist_ok=True);prs.save(path);return str(path)
+
+
+def export_work_order_xlsx(db,work_order_no: str,path: str) -> str:
+    wo=db.get_work_order(work_order_no)
+    if not wo:raise ValueError("Work order not found")
+    events=db.list_work_order_events(work_order_no);links=db.list_work_order_links(work_order_no)
+    logs=[x for x in db.list_work_logs(wo.equipment_id,False,5000) if x.entity_type=="WORK_ORDER" and x.entity_key==work_order_no]
+    attachments=db.list_attachments("WORK_ORDER",work_order_no);close=db.work_order_closeout_status(work_order_no)
+    wb=Workbook();summary=wb.active;summary.title="Summary"
+    _sheet(summary,["Field","Value"],[
+        ["Work Order",wo.work_order_no],["Equipment",wo.equipment_id],["Title",wo.title],["Description",wo.description],
+        ["Source",f"{wo.source_type}:{wo.source_key}"],["Priority",wo.priority],["Status",wo.status],["Owner",wo.owner],["Team",wo.team],
+        ["Planned start",wo.planned_start],["Planned end",wo.planned_end],["Started",wo.started_at],["Completed",wo.completed_at],
+        ["Qualification required",wo.qualification_required],["Release required",wo.release_required],
+        ["Qualification run",close["valid_qualification_run"] or close["open_qualification_run"]],["Release status",close["active_release_status"]],["Blockers","; ".join(close["blockers"])],
+    ])
+    ws=wb.create_sheet("Lifecycle");_sheet(ws,["From","To","Reason","Owner","By","Time"],[[x.from_state,x.to_state,x.reason,x.owner,x.changed_by,x.occurred_at] for x in events])
+    ws=wb.create_sheet("Links");_sheet(ws,["Type","Key","Relation","Created By","Created"],[[x.entity_type,x.entity_key,x.relation,x.created_by,x.created_at] for x in links])
+    ws=wb.create_sheet("Labor");_sheet(ws,["User","Type","Started","Ended","Minutes","Status","Note"],[[x.username,x.work_type,x.started_at,x.ended_at,x.duration_minutes,x.status,x.note] for x in logs])
+    ws=wb.create_sheet("Attachments");_sheet(ws,["Name","Category","Caption","Tags","Path","Added By","Added"],[[x.original_name,x.category,x.caption,x.tags,x.stored_path,x.created_by,x.created_at] for x in attachments])
+    Path(path).parent.mkdir(parents=True,exist_ok=True);wb.save(path);return str(path)
+
+
+def _qualification_context(db,run_no: str):
+    run=next((x for x in db.list_qualification_runs() if x.run_no==run_no),None)
+    if not run:raise ValueError("Qualification run not found")
+    checks,results=db.qualification_run_checks(run.id);attachments=db.list_attachments("QUALIFICATION",run.run_no)
+    return run,checks,results,attachments
+
+
+def export_qualification_pptx(db,run_no: str,path: str) -> str:
+    run,checks,results,attachments=_qualification_context(db,run_no);prs=_new_presentation()
+    slide=prs.slides.add_slide(prs.slide_layouts[0]);slide.shapes.title.text=f"{run.run_no} — {run.protocol_name}"
+    slide.placeholders[1].text=f"{run.equipment_id} | {run.protocol_id} R{run.protocol_revision} | {run.status}"
+    slide=prs.slides.add_slide(prs.slide_layouts[1])
+    _add_bullets(slide,"Qualification Summary",[
+        f"Started by / at: {run.started_by} / {_text(run.started_at)}",f"Submitted by / at: {run.submitted_by or '—'} / {_text(run.submitted_at)}",
+        f"Verified by / at: {run.verified_by or '—'} / {_text(run.verified_at)}",f"Approved by / at: {run.approved_by or '—'} / {_text(run.approved_at)}",
+        f"Expires: {_text(run.expires_at) or 'No expiry'}",f"Conclusion: {run.conclusion}",
+    ])
+    rows=[]
+    for check in checks:
+        cid=str(check.get("check_id",""));r=results.get(cid,{})
+        rows.append([cid,check.get("label",""),check.get("acceptance",""),r.get("result",""),r.get("comment",""),r.get("entered_by",""),r.get("entered_at","")])
+    _add_table_pages(prs,"Qualification Checks",["ID","Check","Acceptance","Result","Comment","By","Time"],rows,12)
+    _add_evidence_slides(prs,attachments,"Qualification");Path(path).parent.mkdir(parents=True,exist_ok=True);prs.save(path);return str(path)
+
+
+def export_qualification_xlsx(db,run_no: str,path: str) -> str:
+    run,checks,results,attachments=_qualification_context(db,run_no);wb=Workbook();summary=wb.active;summary.title="Summary"
+    _sheet(summary,["Field","Value"],[
+        ["Run",run.run_no],["Equipment",run.equipment_id],["Protocol",run.protocol_id],["Revision",run.protocol_revision],["Protocol name",run.protocol_name],
+        ["Status",run.status],["Started by",run.started_by],["Started",run.started_at],["Submitted by",run.submitted_by],["Submitted",run.submitted_at],
+        ["Verified by",run.verified_by],["Verified",run.verified_at],["Approved by",run.approved_by],["Approved",run.approved_at],["Expires",run.expires_at],["Conclusion",run.conclusion],
+    ])
+    rows=[]
+    for check in checks:
+        cid=str(check.get("check_id",""));r=results.get(cid,{})
+        rows.append([cid,check.get("label",""),check.get("acceptance",""),r.get("result",""),r.get("comment",""),r.get("evidence_path",""),r.get("entered_by",""),r.get("entered_at","")])
+    ws=wb.create_sheet("Checks");_sheet(ws,["ID","Check","Acceptance","Result","Comment","Evidence","By","Time"],rows)
+    ws=wb.create_sheet("Attachments");_sheet(ws,["Name","Category","Caption","Tags","Path","Added By","Added"],[[x.original_name,x.category,x.caption,x.tags,x.stored_path,x.created_by,x.created_at] for x in attachments])
+    Path(path).parent.mkdir(parents=True,exist_ok=True);wb.save(path);return str(path)
+
+
+def _release_context(db,release_id: int):
+    row=next((x for x in db.list_release_requests() if x.id==int(release_id)),None)
+    if not row:raise ValueError("Release request not found")
+    return row,json.loads(row.checks_json or "{}"),db.list_attachments("RELEASE",str(row.id))
+
+
+def export_release_pptx(db,release_id: int,path: str) -> str:
+    row,checks,attachments=_release_context(db,release_id);prs=_new_presentation()
+    slide=prs.slides.add_slide(prs.slide_layouts[0]);slide.shapes.title.text=f"Equipment Release #{row.id}"
+    slide.placeholders[1].text=f"{row.equipment_id} | {row.status}"
+    slide=prs.slides.add_slide(prs.slide_layouts[1])
+    _add_bullets(slide,"Release Control",[
+        f"Related ticket: {row.related_ticket or '—'}",f"Requested by / at: {row.requested_by or '—'} / {_text(row.requested_at)}",
+        f"Verified by / at: {row.verified_by or '—'} / {_text(row.verified_at)}",f"Approved by / at: {row.approved_by or '—'} / {_text(row.approved_at)}",f"Notes: {row.notes}",
+    ])
+    _add_table_pages(prs,"Release Checklist",["Check","Passed"],[[k,"Yes" if v else "No"] for k,v in checks.items()],14)
+    _add_evidence_slides(prs,attachments,"Release");Path(path).parent.mkdir(parents=True,exist_ok=True);prs.save(path);return str(path)
+
+
+def export_release_xlsx(db,release_id: int,path: str) -> str:
+    row,checks,attachments=_release_context(db,release_id);wb=Workbook();summary=wb.active;summary.title="Summary"
+    _sheet(summary,["Field","Value"],[
+        ["Release ID",row.id],["Equipment",row.equipment_id],["Status",row.status],["Related ticket",row.related_ticket],["Requested by",row.requested_by],
+        ["Requested",row.requested_at],["Verified by",row.verified_by],["Verified",row.verified_at],["Approved by",row.approved_by],["Approved",row.approved_at],["Notes",row.notes],
+    ])
+    ws=wb.create_sheet("Checklist");_sheet(ws,["Check","Passed"],[[k,v] for k,v in checks.items()])
+    ws=wb.create_sheet("Attachments");_sheet(ws,["Name","Category","Caption","Tags","Path","Added By","Added"],[[x.original_name,x.category,x.caption,x.tags,x.stored_path,x.created_by,x.created_at] for x in attachments])
+    Path(path).parent.mkdir(parents=True,exist_ok=True);wb.save(path);return str(path)
+
