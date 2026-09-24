@@ -1064,6 +1064,41 @@ class WorkflowAutomationExecution(Base):
     executed_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
 
 
+class RecordComment(Base):
+    __tablename__ = "record_comments"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    entity_type: Mapped[str] = mapped_column(String(60), index=True)
+    entity_key: Mapped[str] = mapped_column(String(180), index=True)
+    equipment_id: Mapped[str] = mapped_column(String(100), default="", index=True)
+    body: Mapped[str] = mapped_column(Text)
+    created_by: Mapped[str] = mapped_column(String(120), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    edited_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
+class RecordWatcher(Base):
+    __tablename__ = "record_watchers"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    entity_type: Mapped[str] = mapped_column(String(60), index=True)
+    entity_key: Mapped[str] = mapped_column(String(180), index=True)
+    username: Mapped[str] = mapped_column(String(80), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    __table_args__ = (UniqueConstraint("entity_type","entity_key","username",name="uq_record_watcher"),)
+
+
+class RecordMention(Base):
+    __tablename__ = "record_mentions"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    comment_id: Mapped[int] = mapped_column(Integer, index=True)
+    username: Mapped[str] = mapped_column(String(80), index=True)
+    acknowledged: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    __table_args__ = (UniqueConstraint("comment_id","username",name="uq_comment_mention"),)
+
+
 class IntegrationEndpoint(Base):
     __tablename__ = "integration_endpoints"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -1211,6 +1246,9 @@ class Database:
                 table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
             ]),
             ("20260924_008","Create configurable workflow orchestration tables",lambda: [
+                table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
+            ]),
+            ("20260924_009","Create record comments watchers and mentions",lambda: [
                 table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
             ]),
         ]
@@ -1866,6 +1904,94 @@ class Database:
             results.append({"rule_id":rule.rule_id,"actions":action_results})
         return results
 
+    @staticmethod
+    def _mention_tokens(body: str) -> list[str]:
+        tokens=[]
+        for raw in (body or "").replace("\n"," ").split():
+            if raw.startswith("@") and len(raw)>1:
+                token=raw[1:].strip(".,:;!?()[]{}<>").lower()
+                if token and token not in tokens:tokens.append(token)
+        return tokens
+
+    def add_record_comment(self, entity_type: str, entity_key: str, body: str, user: str, equipment_id: str = ""):
+        text=(body or "").strip()
+        if not text:raise ValueError("Comment cannot be empty.")
+        entity_type=entity_type.strip().upper();entity_key=str(entity_key)
+        with self.session() as s:
+            row=RecordComment(entity_type=entity_type,entity_key=entity_key,equipment_id=equipment_id.strip(),body=text,created_by=user)
+            s.add(row);s.flush()
+            valid_users={u.username.lower():u.username for u in s.scalars(select(User).where(User.active.is_(True)))}
+            for token in self._mention_tokens(text):
+                username=valid_users.get(token)
+                if username and username.lower()!=user.lower():
+                    s.add(RecordMention(comment_id=row.id,username=username))
+            watcher=s.scalar(select(RecordWatcher).where(RecordWatcher.entity_type==entity_type,RecordWatcher.entity_key==entity_key,RecordWatcher.username==user))
+            if not watcher:s.add(RecordWatcher(entity_type=entity_type,entity_key=entity_key,username=user))
+            s.add(AuditLog(user=user,action="COMMENT_ADD",entity_type=entity_type,entity_key=entity_key,detail=str(row.id)))
+            s.flush();return row
+
+    def edit_record_comment(self, comment_id: int, body: str, user: str, expected_version: int | None = None):
+        text=(body or "").strip()
+        if not text:raise ValueError("Comment cannot be empty.")
+        with self.session() as s:
+            row=s.get(RecordComment,comment_id)
+            if not row or not row.active:raise ValueError("Comment not found")
+            if row.created_by!=user:raise PermissionError("Only the comment author can edit it.")
+            if expected_version is not None and row.version!=expected_version:raise RuntimeError("CONFLICT: Comment changed by another user.")
+            row.body=text;row.edited_at=datetime.utcnow();row.version+=1
+            for mention in s.scalars(select(RecordMention).where(RecordMention.comment_id==row.id)):s.delete(mention)
+            valid_users={u.username.lower():u.username for u in s.scalars(select(User).where(User.active.is_(True)))}
+            for token in self._mention_tokens(text):
+                username=valid_users.get(token)
+                if username and username.lower()!=user.lower():s.add(RecordMention(comment_id=row.id,username=username))
+            s.flush();return row
+
+    def remove_record_comment(self, comment_id: int, user: str):
+        with self.session() as s:
+            row=s.get(RecordComment,comment_id)
+            if not row or not row.active:raise ValueError("Comment not found")
+            if row.created_by!=user:raise PermissionError("Only the comment author can remove it.")
+            row.active=False;row.version+=1;s.flush();return row
+
+    def list_record_comments(self, entity_type: str, entity_key: str, limit: int = 500):
+        with self.session() as s:
+            return list(s.scalars(select(RecordComment).where(
+                RecordComment.entity_type==entity_type.strip().upper(),
+                RecordComment.entity_key==str(entity_key),
+                RecordComment.active.is_(True),
+            ).order_by(RecordComment.created_at.desc(),RecordComment.id.desc()).limit(max(1,min(int(limit),5000)))))
+
+    def set_record_watch(self, entity_type: str, entity_key: str, username: str, watching: bool):
+        entity_type=entity_type.strip().upper();entity_key=str(entity_key)
+        with self.session() as s:
+            row=s.scalar(select(RecordWatcher).where(RecordWatcher.entity_type==entity_type,RecordWatcher.entity_key==entity_key,RecordWatcher.username==username))
+            if watching and not row:
+                row=RecordWatcher(entity_type=entity_type,entity_key=entity_key,username=username);s.add(row)
+            elif not watching and row:
+                s.delete(row);row=None
+            s.flush();return row
+
+    def is_record_watching(self, entity_type: str, entity_key: str, username: str) -> bool:
+        with self.session() as s:return bool(s.scalar(select(func.count()).select_from(RecordWatcher).where(RecordWatcher.entity_type==entity_type.strip().upper(),RecordWatcher.entity_key==str(entity_key),RecordWatcher.username==username)))
+
+    def list_record_watchers(self, entity_type: str, entity_key: str):
+        with self.session() as s:return list(s.scalars(select(RecordWatcher).where(RecordWatcher.entity_type==entity_type.strip().upper(),RecordWatcher.entity_key==str(entity_key)).order_by(RecordWatcher.username)))
+
+    def list_unacknowledged_mentions(self, username: str, limit: int = 200):
+        with self.session() as s:
+            rows=[]
+            mentions=list(s.scalars(select(RecordMention).where(RecordMention.username==username,RecordMention.acknowledged.is_(False)).order_by(RecordMention.created_at.desc()).limit(limit)))
+            for mention in mentions:
+                comment=s.get(RecordComment,mention.comment_id)
+                if comment and comment.active:rows.append((mention,comment))
+            return rows
+
+    def acknowledge_mention(self, mention_id: int, username: str):
+        with self.session() as s:
+            row=s.get(RecordMention,mention_id)
+            if not row or row.username!=username:raise ValueError("Mention not found")
+            row.acknowledged=True;row.acknowledged_at=datetime.utcnow();s.flush();return row
+
     def save_integration_endpoint(self, data: dict[str, Any], expected_version: int | None = None):
         payload=dict(data)
         adapter=str(payload.get("adapter_type","")).upper()
@@ -2141,6 +2267,14 @@ class Database:
             if self.has_permission(userctx,"qualification.approve"):
                 for run in s.scalars(select(QualificationRun).where(QualificationRun.status=="Verified")):
                     rows.append({"severity":"HIGH","kind":"APPROVAL","key":run.run_no,"equipment_id":run.equipment_id,"summary":f"Qualification approval — {run.protocol_name}","owner":username,"age_hours":0.0})
+        for mention,comment in self.list_unacknowledged_mentions(username,limit):
+            rows.append({
+                "severity":"MEDIUM","kind":"MENTION","key":str(mention.id),
+                "equipment_id":comment.equipment_id,
+                "summary":f"@mention on {comment.entity_type}:{comment.entity_key} — {comment.body[:120]}",
+                "owner":username,"age_hours":max(0.0,(datetime.utcnow()-comment.created_at).total_seconds()/3600),
+                "entity_type":comment.entity_type,"entity_key":comment.entity_key,
+            })
         rank={"CRITICAL":0,"HIGH":1,"MEDIUM":2,"LOW":3}
         dedup={}
         for row in rows:
