@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from PySide6.QtCore import Signal
+from PySide6.QtCore import QTimer, Signal
 from PySide6.QtWidgets import (
     QAbstractItemView, QComboBox, QDateTimeEdit, QDialog, QDialogButtonBox, QFileDialog,
     QFormLayout, QHBoxLayout, QHeaderView, QLabel, QLineEdit, QMessageBox,
@@ -77,8 +77,9 @@ class IncidentWorkspace(QWidget):
     open_entity=Signal(str,str,str)
 
     def __init__(self,db,user,parent=None):
-        super().__init__(parent);self.db=db;self.user=user;self.ticket_no="";self.ticket=None
+        super().__init__(parent);self.db=db;self.user=user;self.ticket_no="";self.ticket=None;self._loading=False
         self.whys=[];self.factors=[];self.actions=[];self.similar=[];self.lifecycle=[];self.investigations=[];self.escalations=[]
+        self.draft_timer=QTimer(self);self.draft_timer.setSingleShot(True);self.draft_timer.setInterval(1200);self.draft_timer.timeout.connect(self.save_draft)
         root=QVBoxLayout(self);head=QHBoxLayout()
         self.title=QLabel("Incident Workspace");self.title.setStyleSheet("font-size:20pt;font-weight:800")
         self.status=QLabel();self.status.setStyleSheet("font-size:12pt;font-weight:700")
@@ -90,11 +91,15 @@ class IncidentWorkspace(QWidget):
         refresh=QPushButton("Refresh");refresh.clicked.connect(self.refresh)
         head.addWidget(self.title);head.addWidget(self.status);head.addStretch(1);head.addWidget(self.open_eq);head.addWidget(self.work_order_button);head.addWidget(ppt);head.addWidget(xlsx);head.addWidget(legacy);head.addWidget(refresh);root.addLayout(head)
         self.context=QLabel("Select an incident from Global Search, My Work, or Equipment 360.");self.context.setWordWrap(True);self.context.setStyleSheet("color:#647581;");root.addWidget(self.context)
+        draft_row=QHBoxLayout();self.draft_notice=QLabel();self.draft_notice.setStyleSheet("color:#8a5a00;font-weight:600")
+        restore=QPushButton("Restore Draft");restore.clicked.connect(self.restore_draft);discard=QPushButton("Discard Draft");discard.clicked.connect(self.discard_draft)
+        draft_row.addWidget(self.draft_notice);draft_row.addStretch(1);draft_row.addWidget(restore);draft_row.addWidget(discard);root.addLayout(draft_row)
+        self.restore_draft_button=restore;self.discard_draft_button=discard
 
         self.tabs=QTabWidget();root.addWidget(self.tabs,1)
         overview=QWidget();ov=QVBoxLayout(overview);self.description=QTextEdit();self.root_cause=QTextEdit();self.corrective=QTextEdit();self.verification=QTextEdit()
         for label,widget in [("Problem / description",self.description),("Root cause summary",self.root_cause),("Corrective action summary",self.corrective),("Verification summary",self.verification)]:
-            ov.addWidget(QLabel(label));ov.addWidget(widget)
+            ov.addWidget(QLabel(label));ov.addWidget(widget);widget.textChanged.connect(self.schedule_draft)
         save=QPushButton("Save incident summary");save.clicked.connect(self.save_summary);ov.addWidget(save);self.tabs.addTab(overview,"Incident Summary")
 
         ops=QWidget();opv=QVBoxLayout(ops);self.control_table=_table(["Containment","Production Impact","Affected Lots","Safety/Quality Risk","Response Due","Containment Due","Resolution Due","Esc Level","Esc Reason"]);opv.addWidget(self.control_table)
@@ -130,7 +135,7 @@ class IncidentWorkspace(QWidget):
 
     def refresh(self):
         if not self.ticket_no:
-            self.ticket=None;self._set_enabled(False);self.attachments.set_entity("","");self.collaboration.set_entity("","");self.custom_fields.set_entity("","");return
+            self.ticket=None;self._set_enabled(False);self.attachments.set_entity("","");self.collaboration.set_entity("","");self.custom_fields.set_entity("","");self.draft_notice.setText("");self.restore_draft_button.setVisible(False);self.discard_draft_button.setVisible(False);return
         self.ticket=next((x for x in self.db.list_tickets() if x.ticket_no==self.ticket_no),None)
         if not self.ticket:
             self.title.setText("Incident not found");self._set_enabled(False);return
@@ -138,7 +143,11 @@ class IncidentWorkspace(QWidget):
         self.db.record_recent_item(self.user["username"],"TICKET",t.ticket_no,f"{t.ticket_no} — {t.title}",t.equipment_id)
         self.title.setText(f"{t.ticket_no} · {t.title}");self.status.setText(f"{t.priority} · {t.status}")
         self.context.setText(f"{t.equipment_id}    Severity: {t.severity}    Owner: {t.owner or '—'}    Created by: {t.created_by}")
-        self.description.setPlainText(t.description or "");self.root_cause.setPlainText(t.root_cause or "");self.corrective.setPlainText(t.corrective_action or "");self.verification.setPlainText(t.verification or "")
+        self._loading=True
+        try:
+            self.description.setPlainText(t.description or "");self.root_cause.setPlainText(t.root_cause or "");self.corrective.setPlainText(t.corrective_action or "");self.verification.setPlainText(t.verification or "")
+        finally:self._loading=False
+        self.update_draft_notice()
         control=self.db.ticket_operational_control(t.ticket_no);_fill(self.control_table,[control] if control else [],["containment","production_impact","affected_lots","safety_quality_risk","response_due_at","containment_due_at","resolution_due_at","escalation_level","escalation_reason"])
         self.escalations=self.db.list_ticket_escalations(t.ticket_no);_fill(self.escalation_table,self.escalations,["from_level","to_level","reason","user","occurred_at"])
         self.lifecycle=self.db.list_ticket_state_events(t.ticket_no);_fill(self.lifecycle_table,self.lifecycle,["from_state","to_state","reason_code","note","owner","changed_by","changed_at"])
@@ -152,11 +161,67 @@ class IncidentWorkspace(QWidget):
         eq=self.db.get_equipment(t.equipment_id)
         self.custom_fields.set_entity("TICKET",t.ticket_no,eq.equipment_type if eq else "")
 
+    def draft_key(self):
+        return f"draft.incident.{self.ticket_no}" if self.ticket_no else ""
+
+    def schedule_draft(self):
+        if self._loading or not self.ticket:return
+        self.draft_timer.start()
+
+    def save_draft(self):
+        if self._loading or not self.ticket:return
+        data={
+            "base_version":self.ticket.version,
+            "description":self.description.toPlainText(),
+            "root_cause":self.root_cause.toPlainText(),
+            "corrective_action":self.corrective.toPlainText(),
+            "verification":self.verification.toPlainText(),
+        }
+        persisted={
+            "description":self.ticket.description or "","root_cause":self.ticket.root_cause or "",
+            "corrective_action":self.ticket.corrective_action or "","verification":self.ticket.verification or "",
+        }
+        changed=any(data[k]!=persisted[k] for k in persisted)
+        if changed:self.db.set_user_preference(self.user["username"],self.draft_key(),data)
+        else:self.db.clear_user_preference(self.user["username"],self.draft_key())
+        self.update_draft_notice()
+
+    def update_draft_notice(self):
+        if not self.ticket:
+            self.draft_notice.setText("");self.restore_draft_button.setVisible(False);self.discard_draft_button.setVisible(False);return
+        draft=self.db.get_user_preference(self.user["username"],self.draft_key(),None)
+        exists=isinstance(draft,dict) and bool(draft)
+        if exists:
+            stale=int(draft.get("base_version",-1))!=int(self.ticket.version)
+            self.draft_notice.setText("Unsaved draft available" + (" · record changed since draft" if stale else " · crash recovery ready"))
+        else:self.draft_notice.setText("")
+        self.restore_draft_button.setVisible(exists);self.discard_draft_button.setVisible(exists)
+
+    def restore_draft(self):
+        if not self.ticket:return
+        draft=self.db.get_user_preference(self.user["username"],self.draft_key(),None)
+        if not isinstance(draft,dict):return
+        self._loading=True
+        try:
+            self.description.setPlainText(str(draft.get("description","")))
+            self.root_cause.setPlainText(str(draft.get("root_cause","")))
+            self.corrective.setPlainText(str(draft.get("corrective_action","")))
+            self.verification.setPlainText(str(draft.get("verification","")))
+        finally:self._loading=False
+        self.draft_notice.setText("Draft restored into editor · save incident summary to commit")
+
+    def discard_draft(self):
+        if not self.ticket:return
+        self.db.clear_user_preference(self.user["username"],self.draft_key());self.update_draft_notice()
+
     def save_summary(self):
         if not self.ticket:return
         t=self.ticket
         data={"ticket_no":t.ticket_no,"equipment_id":t.equipment_id,"title":t.title,"description":self.description.toPlainText().strip(),"severity":t.severity,"priority":t.priority,"owner":t.owner,"root_cause":self.root_cause.toPlainText().strip(),"corrective_action":self.corrective.toPlainText().strip(),"verification":self.verification.toPlainText().strip(),"created_by":t.created_by}
-        try:self.db.save_ticket(data,t.version,workstation="INCIDENT-WORKSPACE");self.refresh()
+        try:
+            self.db.save_ticket(data,t.version,workstation="INCIDENT-WORKSPACE")
+            self.db.clear_user_preference(self.user["username"],self.draft_key())
+            self.refresh()
         except Exception as exc:QMessageBox.critical(self,"Incident",str(exc))
 
     def edit_why(self):
