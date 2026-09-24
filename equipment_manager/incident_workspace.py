@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from feedback import notify
+
 from datetime import datetime
 
 from PySide6.QtCore import Signal, QTimer
@@ -312,7 +314,7 @@ class IncidentWorkspace(QWidget):
         if not path.lower().endswith(".pptx"):path+=".pptx"
         try:
             template=self.db.resolve_report_template("INCIDENT",self.ticket.equipment_id)
-            export_incident_pptx(self.db,self.ticket.ticket_no,path,template);QMessageBox.information(self,"PowerPoint",f"Editable incident review deck created.\n{path}")
+            export_incident_pptx(self.db,self.ticket.ticket_no,path,template);notify(f"Editable incident review deck created: {path}")
         except Exception as exc:QMessageBox.critical(self,"PowerPoint",str(exc))
 
     def export_pdf(self):
@@ -320,7 +322,7 @@ class IncidentWorkspace(QWidget):
         path,_=QFileDialog.getSaveFileName(self,"Export Incident PDF",f"{self.ticket.ticket_no}_Incident_Review.pdf","PDF (*.pdf)")
         if not path:return
         if not path.lower().endswith(".pdf"):path+=".pdf"
-        try:export_incident_pdf(self.db,self.ticket.ticket_no,path);QMessageBox.information(self,"PDF",f"Controlled incident PDF created.\n{path}")
+        try:export_incident_pdf(self.db,self.ticket.ticket_no,path);notify(f"Controlled incident PDF created: {path}")
         except Exception as exc:QMessageBox.critical(self,"PDF",str(exc))
 
     def export_xlsx(self):
@@ -329,7 +331,7 @@ class IncidentWorkspace(QWidget):
         path,_=QFileDialog.getSaveFileName(self,"Export Incident Excel",default,"Excel Workbook (*.xlsx)")
         if not path:return
         if not path.lower().endswith(".xlsx"):path+=".xlsx"
-        try:export_incident_xlsx(self.db,self.ticket.ticket_no,path);QMessageBox.information(self,"Excel",f"Incident workbook created.\n{path}")
+        try:export_incident_xlsx(self.db,self.ticket.ticket_no,path);notify(f"Incident workbook created: {path}")
         except Exception as exc:QMessageBox.critical(self,"Excel",str(exc))
 
     def open_work_order(self):
