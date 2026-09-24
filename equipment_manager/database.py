@@ -1047,6 +1047,16 @@ class ConfigOption(Base):
     __table_args__ = (UniqueConstraint("category","code",name="uq_config_option"),)
 
 
+class NumberSequence(Base):
+    __tablename__ = "number_sequences"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    scheme_code: Mapped[str] = mapped_column(String(120), index=True)
+    period_key: Mapped[str] = mapped_column(String(40), index=True)
+    next_value: Mapped[int] = mapped_column(Integer, default=1)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    __table_args__ = (UniqueConstraint("scheme_code","period_key",name="uq_number_sequence"),)
+
+
 class EntityTemplate(Base):
     __tablename__ = "entity_templates"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -1359,6 +1369,9 @@ class Database:
                 table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
             ]),
             ("20260924_011","Create inbound integration endpoint receipt and record tables",lambda: [
+                table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
+            ]),
+            ("20260924_012","Create configurable numbering sequences",lambda: [
                 table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
             ]),
         ]
@@ -1968,6 +1981,117 @@ class Database:
             if active_only:stmt=stmt.where(ConfigOption.active.is_(True))
             return list(s.scalars(stmt))
 
+    def _matching_config_options(self, s, category: str, equipment_id: str = "", context: dict[str,Any] | None = None):
+        context=dict(context or {})
+        eq=s.scalar(select(Equipment).where(Equipment.equipment_id==equipment_id)) if equipment_id else None
+        actual={
+            "equipment_id":equipment_id or "",
+            "equipment_type":eq.equipment_type if eq else "",
+            "area":eq.area if eq else "",
+            "site":eq.site if eq else "",
+            **{str(k):v for k,v in context.items()},
+        }
+        rows=list(s.scalars(select(ConfigOption).where(
+            ConfigOption.category==category.strip().upper(),
+            ConfigOption.active.is_(True),
+        ).order_by(ConfigOption.sort_order,ConfigOption.code)))
+        matches=[]
+        for row in rows:
+            try:meta=json.loads(row.metadata_json or "{}")
+            except Exception:continue
+            if not isinstance(meta,dict):continue
+            constraints=meta.get("match",{})
+            if constraints and not isinstance(constraints,dict):continue
+            ok=True;score=0
+            for key,expected in (constraints or {}).items():
+                value=actual.get(key,"")
+                if isinstance(expected,list):
+                    if value not in expected:ok=False;break
+                elif str(expected)!=str(value):
+                    ok=False;break
+                score+=1
+            if ok:matches.append((score,row,meta))
+        matches.sort(key=lambda x:(-x[0],x[1].sort_order,x[1].code))
+        return matches
+
+    @staticmethod
+    def _sequence_period(reset: str, now: datetime) -> str:
+        reset=(reset or "DAILY").upper()
+        if reset=="NEVER":return "ALL"
+        if reset=="YEARLY":return now.strftime("%Y")
+        if reset=="MONTHLY":return now.strftime("%Y%m")
+        return now.strftime("%Y%m%d")
+
+    def _next_configured_number_in_session(
+        self,
+        s,
+        entity_type: str,
+        equipment_id: str = "",
+        context: dict[str,Any] | None = None,
+        now: datetime | None = None,
+    ) -> str:
+        now=now or datetime.utcnow()
+        matches=self._matching_config_options(s,"NUMBERING_SCHEME",equipment_id,{"entity_type":entity_type.upper(),**(context or {})})
+        if matches:
+            _,option,meta=matches[0]
+            prefix=str(meta.get("prefix") or option.code or entity_type[:4]).strip()
+            separator=str(meta.get("separator","-"))
+            date_format=str(meta.get("date_format","%Y%m%d"))
+            width=max(1,min(int(meta.get("width",5)),12))
+            period=self._sequence_period(str(meta.get("reset","DAILY")),now)
+            stmt=select(NumberSequence).where(NumberSequence.scheme_code==option.code,NumberSequence.period_key==period)
+            if self.url.startswith("postgresql"):stmt=stmt.with_for_update()
+            seq=s.scalar(stmt)
+            if not seq:
+                seq=NumberSequence(scheme_code=option.code,period_key=period,next_value=1);s.add(seq);s.flush()
+            value=seq.next_value;seq.next_value+=1;seq.version+=1
+            date_part=now.strftime(date_format) if date_format else ""
+            parts=[x for x in [prefix,date_part,f"{value:0{width}d}"] if x]
+            return separator.join(parts)
+        fallback={"TICKET":"INC","WORK_ORDER":"WO","QUALIFICATION":"QUAL"}.get(entity_type.upper(),entity_type.upper()[:6] or "REC")
+        return f"{fallback}-{now:%Y%m%d%H%M%S%f}"
+
+    def preview_configured_number(self, entity_type: str, equipment_id: str = "", context: dict[str,Any] | None = None) -> str:
+        now=datetime.utcnow()
+        with self.session() as s:
+            matches=self._matching_config_options(s,"NUMBERING_SCHEME",equipment_id,{"entity_type":entity_type.upper(),**(context or {})})
+            if not matches:
+                fallback={"TICKET":"INC","WORK_ORDER":"WO","QUALIFICATION":"QUAL"}.get(entity_type.upper(),entity_type.upper()[:6] or "REC")
+                return f"{fallback}-{now:%Y%m%d…}"
+            _,option,meta=matches[0]
+            prefix=str(meta.get("prefix") or option.code or entity_type[:4]).strip()
+            separator=str(meta.get("separator","-"));date_format=str(meta.get("date_format","%Y%m%d"));width=max(1,min(int(meta.get("width",5)),12))
+            date_part=now.strftime(date_format) if date_format else ""
+            return separator.join([x for x in [prefix,date_part,"0"*width] if x])
+
+    def resolve_default_owner(self, entity_type: str, equipment_id: str = "", context: dict[str,Any] | None = None) -> str:
+        with self.session() as s:
+            matches=self._matching_config_options(s,"DEFAULT_OWNER_RULE",equipment_id,{"entity_type":entity_type.upper(),**(context or {})})
+            if not matches:return ""
+            return str(matches[0][2].get("owner","")).strip()
+
+    def resolve_sla_policy(self, equipment_id: str = "", context: dict[str,Any] | None = None) -> dict[str,int]:
+        with self.session() as s:
+            matches=self._matching_config_options(s,"SLA_POLICY",equipment_id,context or {})
+            if not matches:return {}
+            meta=matches[0][2]
+            out={}
+            for key in ["response_minutes","containment_minutes","resolution_minutes"]:
+                if meta.get(key) is not None:
+                    try:out[key]=max(0,int(meta[key]))
+                    except Exception:pass
+            return out
+
+    def resolve_report_template(self, report_type: str, equipment_id: str = "", context: dict[str,Any] | None = None) -> str:
+        with self.session() as s:
+            matches=self._matching_config_options(
+                s,"REPORT_TEMPLATE",equipment_id,
+                {"report_type":report_type.strip().upper(),**(context or {})},
+            )
+            if not matches:return ""
+            path=str(matches[0][2].get("path","")).strip()
+            return path if path and os.path.isfile(path) else ""
+
     def save_config_option(self, data: dict[str,Any], expected_version: int | None = None):
         payload=dict(data);payload["category"]=str(payload.get("category","")).strip().upper();payload["code"]=str(payload.get("code","")).strip()
         if not payload["category"] or not payload["code"] or not str(payload.get("label","")).strip():raise ValueError("Category, code and label are required.")
@@ -2381,6 +2505,30 @@ class Database:
 
     def is_record_watching(self, entity_type: str, entity_key: str, username: str) -> bool:
         with self.session() as s:return bool(s.scalar(select(func.count()).select_from(RecordWatcher).where(RecordWatcher.entity_type==entity_type.strip().upper(),RecordWatcher.entity_key==str(entity_key),RecordWatcher.username==username)))
+
+    def list_watched_records(self, username: str, limit: int = 200) -> list[dict[str,Any]]:
+        with self.session() as s:
+            watches=list(s.scalars(select(RecordWatcher).where(
+                RecordWatcher.username==username
+            ).order_by(RecordWatcher.created_at.desc()).limit(max(1,min(int(limit),1000)))))
+            out=[]
+            for watch in watches:
+                last=s.scalar(select(RecordComment).where(
+                    RecordComment.entity_type==watch.entity_type,
+                    RecordComment.entity_key==watch.entity_key,
+                    RecordComment.active.is_(True),
+                ).order_by(RecordComment.created_at.desc(),RecordComment.id.desc()))
+                equipment_id=last.equipment_id if last else ""
+                if not equipment_id and watch.entity_type=="EQUIPMENT":equipment_id=watch.entity_key
+                out.append({
+                    "entity_type":watch.entity_type,"entity_key":watch.entity_key,
+                    "equipment_id":equipment_id,"watched_at":watch.created_at,
+                    "last_activity":last.created_at if last else watch.created_at,
+                    "last_by":last.created_by if last else "",
+                    "last_comment":last.body if last else "",
+                })
+            out.sort(key=lambda x:x["last_activity"],reverse=True)
+            return out
 
     def list_record_watchers(self, entity_type: str, entity_key: str):
         with self.session() as s:return list(s.scalars(select(RecordWatcher).where(RecordWatcher.entity_type==entity_type.strip().upper(),RecordWatcher.entity_key==str(entity_key)).order_by(RecordWatcher.username)))
@@ -4675,8 +4823,18 @@ class Database:
         workstation: str = "",
     ):
         payload = dict(data)
+        equipment_id=str(payload.get("equipment_id","")).strip()
+        context={"priority":str(payload.get("priority","")).strip(),"severity":str(payload.get("severity","")).strip()}
+        if not str(payload.get("owner","")).strip() and equipment_id:
+            owner=self.resolve_default_owner("TICKET",equipment_id,context)
+            if owner:payload["owner"]=owner
+        sla=self.resolve_sla_policy(equipment_id,context) if equipment_id else {}
         with self.session() as s:
-            item = s.scalar(select(Ticket).where(Ticket.ticket_no == payload["ticket_no"]))
+            ticket_no=str(payload.get("ticket_no","")).strip()
+            if not ticket_no:
+                ticket_no=self._next_configured_number_in_session(s,"TICKET",equipment_id,context)
+                payload["ticket_no"]=ticket_no
+            item = s.scalar(select(Ticket).where(Ticket.ticket_no == ticket_no))
             if item:
                 # Lifecycle state is controlled by transition_ticket_state(), not generic editing.
                 payload.pop("status", None)
@@ -4687,10 +4845,11 @@ class Database:
                 payload["status"] = "Open"
                 if payload["status"] not in TICKET_STATES:
                     raise ValueError(f"Unknown ticket state: {payload['status']}")
+                now=datetime.utcnow()
                 item = Ticket(**payload)
                 s.add(item)
                 s.add(TicketStateEvent(
-                    ticket_no=payload["ticket_no"],
+                    ticket_no=ticket_no,
                     from_state="",
                     to_state="Open",
                     reason_code="INITIAL_STATE",
@@ -4698,7 +4857,15 @@ class Database:
                     owner=payload.get("owner", ""),
                     changed_by=payload.get("created_by", ""),
                     workstation=workstation,
+                    changed_at=now,
                 ))
+                if sla:
+                    s.add(TicketOperationalControl(
+                        ticket_no=ticket_no,
+                        response_due_at=now+timedelta(minutes=sla["response_minutes"]) if sla.get("response_minutes") else None,
+                        containment_due_at=now+timedelta(minutes=sla["containment_minutes"]) if sla.get("containment_minutes") else None,
+                        resolution_due_at=now+timedelta(minutes=sla["resolution_minutes"]) if sla.get("resolution_minutes") else None,
+                    ))
             s.flush()
             return item
 
@@ -5192,7 +5359,9 @@ class Database:
             ))
             if existing:
                 raise ValueError(f"Open qualification run already exists: {existing.run_no}")
-            run_no=run_no.strip() or f"QUAL-{equipment_id}-{datetime.utcnow():%Y%m%d%H%M%S%f}"
+            run_no=run_no.strip() or self._next_configured_number_in_session(
+                s,"QUALIFICATION",equipment_id,{"protocol_id":protocol.protocol_id,"equipment_type":eq.equipment_type},
+            )
             row=QualificationRun(
                 run_no=run_no,equipment_id=equipment_id,protocol_id=protocol.protocol_id,
                 protocol_revision=protocol.revision,protocol_name=protocol.name,
@@ -5568,16 +5737,18 @@ class Database:
         equipment_id=str(payload.get("equipment_id","")).strip()
         if not equipment_id:raise ValueError("Equipment ID is required.")
         self.assert_authorized(user,"worklog.edit",equipment_id)
+        if not str(payload.get("owner","")).strip():
+            owner=self.resolve_default_owner("WORK_ORDER",equipment_id,{"priority":str(payload.get("priority","Normal")),"source_type":str(payload.get("source_type","ENGINEERING")).upper()})
+            if owner:payload["owner"]=owner
         with self.session() as s:
             if not s.scalar(select(Equipment).where(Equipment.equipment_id==equipment_id)):
                 raise ValueError("Equipment not found")
             no=str(payload.get("work_order_no","")).strip()
             if not no:
-                prefix="".join(ch if ch.isalnum() else "-" for ch in equipment_id.upper()).strip("-")[:28]
-                base=f"WO-{prefix}-{datetime.utcnow():%y%m%d%H%M%S}"
-                no=base;suffix=1
-                while s.scalar(select(WorkOrder).where(WorkOrder.work_order_no==no)):
-                    tail=f"-{suffix}";no=base[:120-len(tail)]+tail;suffix+=1
+                no=self._next_configured_number_in_session(
+                    s,"WORK_ORDER",equipment_id,
+                    {"priority":str(payload.get("priority","Normal")),"source_type":str(payload.get("source_type","ENGINEERING")).upper()},
+                )
             if s.scalar(select(WorkOrder).where(WorkOrder.work_order_no==no)):
                 raise ValueError("Work order number already exists.")
             row=WorkOrder(
@@ -5789,6 +5960,7 @@ class Database:
         ),None)
         open_qualification=next((x for x in qualifications if x.status in {"In Progress","Submitted","Verified"}),None)
         active_release=next((x for x in releases if x.status!="Approved / Released"),None)
+        approved_release=next((x for x in releases if x.status=="Approved / Released"),None)
         blockers=[]
         if wo.status not in {"Ready for Qualification","Completed"} and (wo.qualification_required or wo.release_required):
             blockers.append(f"Work order is still {wo.status}; finish repair/work before controlled closeout.")
@@ -5796,6 +5968,8 @@ class Database:
             blockers.append(f"{precheck['critical_tickets_open']} open P1/P2 incident(s) remain.")
         if wo.qualification_required and not valid_qualification:
             blockers.append("Approved valid qualification is required.")
+        if wo.release_required and not approved_release:
+            blockers.append("Approved equipment release is required." if active_release else "Equipment release request is required.")
         if any(x.status=="Reserved" for x in reservations):
             blockers.append("PM part reservations remain active; consume or release them before closeout.")
         return {
@@ -5810,6 +5984,8 @@ class Database:
             "open_qualification_run":open_qualification.run_no if open_qualification else "",
             "active_release_id":active_release.id if active_release else None,
             "active_release_status":active_release.status if active_release else "",
+            "approved_release_id":approved_release.id if approved_release else None,
+            "release_approved":bool(approved_release),
             "blockers":blockers,
             "can_start_qualification":bool(
                 wo.qualification_required and wo.status in {"Ready for Qualification","Completed"}
@@ -5819,7 +5995,7 @@ class Database:
                 wo.release_required and wo.status in {"Ready for Qualification","Completed"}
                 and precheck["critical_tickets_open"]==0
                 and (not wo.qualification_required or bool(valid_qualification))
-                and not active_release
+                and not active_release and not approved_release
             ),
         }
 
@@ -6584,6 +6760,78 @@ class Database:
         end=datetime.utcnow()
         start=end-timedelta(days=days)
         return [self.reliability_summary(eq.equipment_id,start,end) for eq in self.list_equipment()]
+
+    def fleet_reliability_trend(self, days: int = 90, bucket_days: int = 7, equipment_ids: list[str] | None = None) -> list[dict[str,Any]]:
+        days=max(1,min(int(days),3650));bucket_days=max(1,min(int(bucket_days),365))
+        end=datetime.utcnow();start=end-timedelta(days=days)
+        ids=list(equipment_ids or [x.equipment_id for x in self.list_equipment()])
+        if not ids:return []
+        rows=[];cursor=start
+        while cursor<end:
+            bucket_end=min(end,cursor+timedelta(days=bucket_days))
+            metrics=[]
+            for equipment_id in ids:
+                try:metrics.append(self.reliability_summary(equipment_id,cursor,bucket_end))
+                except Exception:continue
+            if metrics:
+                rows.append({
+                    "start":cursor,"end":bucket_end,
+                    "availability_pct":sum(float(x["availability_pct"]) for x in metrics)/len(metrics),
+                    "unplanned_downtime_hours":sum(float(x["unplanned_downtime_hours"]) for x in metrics),
+                    "planned_downtime_hours":sum(float(x["planned_downtime_hours"]) for x in metrics),
+                    "failure_count":sum(int(x["failure_count"]) for x in metrics),
+                    "equipment_count":len(metrics),
+                })
+            cursor=bucket_end
+        return rows
+
+    def compare_equipment(self, equipment_ids: list[str], days: int = 30) -> list[dict[str,Any]]:
+        ids=[str(x).strip() for x in equipment_ids if str(x).strip()]
+        if not ids:return []
+        days=max(1,min(int(days),3650));end=datetime.utcnow();start=end-timedelta(days=days)
+        rows=[]
+        with self.session() as s:
+            for equipment_id in ids:
+                eq=s.scalar(select(Equipment).where(Equipment.equipment_id==equipment_id))
+                if not eq:continue
+                rel=self.reliability_summary(equipment_id,start,end)
+                incidents=int(s.scalar(select(func.count()).select_from(Ticket).where(
+                    Ticket.equipment_id==equipment_id,Ticket.created_at>=start
+                )) or 0)
+                active_alarms=int(s.scalar(select(func.count()).select_from(EquipmentAlarmEvent).where(
+                    EquipmentAlarmEvent.equipment_id==equipment_id,EquipmentAlarmEvent.state=="ACTIVE"
+                )) or 0)
+                overdue_pm=int(s.scalar(select(func.count()).select_from(PMTask).where(
+                    PMTask.equipment_id==equipment_id,
+                    ((PMTask.status=="Overdue") | (
+                        PMTask.status.notin_(["Completed","Cancelled"]) &
+                        PMTask.original_due_date.is_not(None) &
+                        (PMTask.original_due_date<end)
+                    ))
+                )) or 0)
+                rows.append({
+                    "equipment_id":equipment_id,"name":eq.name,"equipment_type":eq.equipment_type,"area":eq.area,
+                    "current_state":eq.status,"availability_pct":rel["availability_pct"],"failure_count":rel["failure_count"],
+                    "unplanned_downtime_hours":rel["unplanned_downtime_hours"],"planned_downtime_hours":rel["planned_downtime_hours"],
+                    "mttr_hours":rel["mttr_hours"],"mtbf_hours":rel["mtbf_hours"],"incidents":incidents,
+                    "active_alarms":active_alarms,"overdue_pm":overdue_pm,
+                })
+        return rows
+
+    def meter_trend(self, equipment_id: str, meter_code: str, days: int = 30, limit: int = 5000) -> list[dict[str,Any]]:
+        days=max(1,min(int(days),3650));start=datetime.utcnow()-timedelta(days=days)
+        with self.session() as s:
+            rows=list(s.scalars(
+                select(MeterReading)
+                .where(
+                    MeterReading.equipment_id==equipment_id,
+                    MeterReading.meter_code==meter_code,
+                    MeterReading.recorded_at>=start,
+                )
+                .order_by(MeterReading.recorded_at,MeterReading.id)
+                .limit(max(1,min(int(limit),10000)))
+            ))
+        return [{"recorded_at":x.recorded_at,"value":float(x.value),"reading_type":x.reading_type,"note":x.note,"recorded_by":x.recorded_by} for x in rows]
 
     def engineering_analytics(self, days: int = 30) -> dict[str, Any]:
         days=max(1,min(int(days),3650))

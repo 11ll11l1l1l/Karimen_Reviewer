@@ -66,13 +66,13 @@ def _add_evidence_slides(prs: Presentation,attachments,title_prefix: str):
             p=tf.add_paragraph();p.text=f"Tags: {row.tags}"
 
 
-def export_incident_pptx(db,ticket_no: str,path: str) -> str:
+def export_incident_pptx(db,ticket_no: str,path: str,template_path: str="") -> str:
     t=_ticket(db,ticket_no);control=db.ticket_operational_control(ticket_no)
     whys=db.list_incident_whys(ticket_no);factors=db.list_incident_causal_factors(ticket_no)
     actions=db.list_incident_actions(ticket_no);lifecycle=db.list_ticket_state_events(ticket_no)
     attachments=db.list_attachments("TICKET",ticket_no)
 
-    prs=Presentation()
+    prs=_presentation(template_path)
     slide=prs.slides.add_slide(prs.slide_layouts[0])
     slide.shapes.title.text=f"{t.ticket_no} — {t.title}"
     slide.placeholders[1].text=f"{t.equipment_id} | {t.priority} | {t.status} | Owner: {t.owner or '—'}"
@@ -116,7 +116,7 @@ def export_incident_pptx(db,ticket_no: str,path: str) -> str:
     Path(path).parent.mkdir(parents=True,exist_ok=True);prs.save(path);return str(path)
 
 
-def export_equipment_pptx(db,equipment_id: str,path: str) -> str:
+def export_equipment_pptx(db,equipment_id: str,path: str,template_path: str="") -> str:
     eq=db.get_equipment(equipment_id)
     if not eq:raise ValueError("Equipment not found")
     rel=db.reliability_summary(equipment_id)
@@ -127,7 +127,7 @@ def export_equipment_pptx(db,equipment_id: str,path: str) -> str:
     timeline=db.equipment_activity_timeline(equipment_id,80)
     attachments=db.list_attachments("EQUIPMENT",equipment_id)
 
-    prs=Presentation()
+    prs=_presentation(template_path)
     slide=prs.slides.add_slide(prs.slide_layouts[0])
     slide.shapes.title.text=f"{eq.equipment_id} — {eq.name}"
     slide.placeholders[1].text=f"{eq.status} | {eq.disposition} | {eq.area} | Owner: {eq.owner or '—'}"
@@ -217,7 +217,7 @@ def export_equipment_xlsx(db,equipment_id: str,path: str) -> str:
     Path(path).parent.mkdir(parents=True,exist_ok=True);wb.save(path);return str(path)
 
 
-def export_pm_execution_pptx(db,task_id: int,path: str) -> str:
+def export_pm_execution_pptx(db,task_id: int,path: str,template_path: str="") -> str:
     task=db.get_pm_task(int(task_id))
     if not task:raise ValueError("PM task not found")
     execution=db.get_pm_execution_for_task(task.id)
@@ -227,7 +227,7 @@ def export_pm_execution_pptx(db,task_id: int,path: str) -> str:
     reservations=[x for x in db.list_reservations() if x.pm_task_id==task.id]
     logs=[x for x in db.list_work_logs(task.equipment_id,False,1000) if x.entity_type=="PM_EXECUTION" and x.entity_key==str(execution.id)]
     attachments=db.list_attachments("PM_EXECUTION",str(execution.id))
-    prs=Presentation()
+    prs=_presentation(template_path)
     slide=prs.slides.add_slide(prs.slide_layouts[0]);slide.shapes.title.text=f"{task.pm_id} — {task.pm_name}";slide.placeholders[1].text=f"{task.equipment_id} | {task.status} | Assigned: {task.assigned_to or '—'}"
     slide=prs.slides.add_slide(prs.slide_layouts[1]);_add_bullets(slide,"PM Execution Summary",[
         f"Task ID: {task.id}",f"Equipment: {task.equipment_id}",f"Scheduled: {_text(task.scheduled_date or task.original_due_date)}",
@@ -282,14 +282,14 @@ def export_pm_execution_xlsx(db,task_id: int,path: str) -> str:
     Path(path).parent.mkdir(parents=True,exist_ok=True);wb.save(path);return str(path)
 
 
-def export_work_order_pptx(db,work_order_no: str,path: str) -> str:
+def export_work_order_pptx(db,work_order_no: str,path: str,template_path: str="") -> str:
     wo=db.get_work_order(work_order_no)
     if not wo:raise ValueError("Work order not found")
     events=db.list_work_order_events(work_order_no);links=db.list_work_order_links(work_order_no)
     logs=[x for x in db.list_work_logs(wo.equipment_id,False,1000) if x.entity_type=="WORK_ORDER" and x.entity_key==work_order_no]
     attachments=db.list_attachments("WORK_ORDER",work_order_no)
     close=db.work_order_closeout_status(work_order_no)
-    prs=Presentation()
+    prs=_presentation(template_path)
     slide=prs.slides.add_slide(prs.slide_layouts[0]);slide.shapes.title.text=f"{wo.work_order_no} — {wo.title}";slide.placeholders[1].text=f"{wo.equipment_id} | {wo.priority} | {wo.status} | Owner: {wo.owner or '—'}"
     slide=prs.slides.add_slide(prs.slide_layouts[1]);_add_bullets(slide,"Work Scope / Closeout",[
         f"Source: {wo.source_type}:{wo.source_key or '—'}",f"Description: {wo.description}",f"Team: {wo.team or '—'}",
@@ -335,11 +335,11 @@ def _release_request(db,release_id: int):
     return row
 
 
-def export_qualification_pptx(db,run_no: str,path: str) -> str:
+def export_qualification_pptx(db,run_no: str,path: str,template_path: str="") -> str:
     run=_qualification_run(db,run_no)
     checks=json.loads(run.frozen_checks_json or "[]");results=json.loads(run.results_json or "{}")
     attachments=db.list_attachments("QUALIFICATION",run.run_no)
-    prs=Presentation()
+    prs=_presentation(template_path)
     slide=prs.slides.add_slide(prs.slide_layouts[0]);slide.shapes.title.text=f"Qualification — {run.run_no}";slide.placeholders[1].text=f"{run.equipment_id} | {run.protocol_id} R{run.protocol_revision} | {run.status}"
     slide=prs.slides.add_slide(prs.slide_layouts[1]);_add_bullets(slide,"Qualification Summary",[
         f"Protocol: {run.protocol_name}",f"Started: {_text(run.started_at)} by {run.started_by}",
@@ -376,10 +376,10 @@ def export_qualification_xlsx(db,run_no: str,path: str) -> str:
     Path(path).parent.mkdir(parents=True,exist_ok=True);wb.save(path);return str(path)
 
 
-def export_release_pptx(db,release_id: int,path: str) -> str:
+def export_release_pptx(db,release_id: int,path: str,template_path: str="") -> str:
     rel=_release_request(db,release_id);checks=json.loads(rel.checks_json or "{}")
     attachments=db.list_attachments("RELEASE",str(rel.id))
-    prs=Presentation()
+    prs=_presentation(template_path)
     slide=prs.slides.add_slide(prs.slide_layouts[0]);slide.shapes.title.text=f"Equipment Release — {rel.equipment_id}";slide.placeholders[1].text=f"Release #{rel.id} | {rel.status} | Ticket: {rel.related_ticket or '—'}"
     slide=prs.slides.add_slide(prs.slide_layouts[1]);_add_bullets(slide,"Release Summary",[
         f"Requested: {_text(rel.requested_at)} by {rel.requested_by}",f"Verified: {_text(rel.verified_at)} by {rel.verified_by or '—'}",
@@ -417,7 +417,7 @@ def _review_metrics(db,days: int):
     }
 
 
-def _weekly_presentation(template_path: str=""):
+def _presentation(template_path: str=""):
     template=Path(template_path) if template_path else None
     if template and template.is_file():
         prs=Presentation(str(template))
@@ -425,6 +425,10 @@ def _weekly_presentation(template_path: str=""):
             raise ValueError("PowerPoint template must provide standard title, content and blank layouts.")
         return prs
     return Presentation()
+
+
+def _weekly_presentation(template_path: str=""):
+    return _presentation(template_path)
 
 
 def export_weekly_review_pptx(db,path: str,days: int=7,template_path: str="") -> str:
@@ -533,9 +537,9 @@ def _work_order_closeout_context(db,work_order_no: str) -> dict[str,Any]:
     }
 
 
-def export_work_order_closeout_pptx(db,work_order_no: str,path: str) -> str:
+def export_work_order_closeout_pptx(db,work_order_no: str,path: str,template_path: str="") -> str:
     ctx=_work_order_closeout_context(db,work_order_no);wo=ctx["work_order"];close=ctx["closeout"]
-    prs=Presentation()
+    prs=_presentation(template_path)
     slide=prs.slides.add_slide(prs.slide_layouts[0]);slide.shapes.title.text=f"Return-to-Service Packet — {wo.work_order_no}"
     slide.placeholders[1].text=f"{wo.equipment_id} | {wo.title} | {wo.status} | Owner: {wo.owner or '—'}"
 

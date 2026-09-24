@@ -12,6 +12,7 @@ from table_productivity import install_table_productivity
 from workspaces import AttachmentPanel
 from collaboration_panel import CollaborationPanel
 from reporting import export_work_order_closeout_pptx, export_work_order_closeout_xlsx, export_work_order_pptx, export_work_order_xlsx
+from pdf_reporting import export_work_order_pdf
 
 
 def _item(value):
@@ -54,10 +55,11 @@ class WorkOrderWorkspace(QWidget):
         new=QPushButton("New engineering WO");new.clicked.connect(self.new_engineering)
         ppt=QPushButton("WO PPTX");ppt.clicked.connect(self.export_pptx)
         xlsx=QPushButton("WO Excel");xlsx.clicked.connect(self.export_xlsx)
+        pdf=QPushButton("WO PDF");pdf.clicked.connect(self.export_pdf)
         closeppt=QPushButton("Closeout Pack PPTX");closeppt.clicked.connect(self.export_closeout_pptx)
         closexlsx=QPushButton("Closeout Pack Excel");closexlsx.clicked.connect(self.export_closeout_xlsx)
         refresh=QPushButton("Refresh");refresh.clicked.connect(self.refresh)
-        head.addWidget(self.title);head.addStretch(1);head.addWidget(self.search);head.addWidget(new);head.addWidget(ppt);head.addWidget(xlsx);head.addWidget(closeppt);head.addWidget(closexlsx);head.addWidget(refresh);root.addLayout(head)
+        head.addWidget(self.title);head.addStretch(1);head.addWidget(self.search);head.addWidget(new);head.addWidget(ppt);head.addWidget(xlsx);head.addWidget(pdf);head.addWidget(closeppt);head.addWidget(closexlsx);head.addWidget(refresh);root.addLayout(head)
 
         self.list_table=_table(["Work Order","Equipment","Source","Title","Priority","Status","Owner","Team","Created","Updated"])
         self.list_table.itemSelectionChanged.connect(self.load_selected);self.list_table.doubleClicked.connect(self.load_selected);root.addWidget(self.list_table,2)
@@ -88,9 +90,10 @@ class WorkOrderWorkspace(QWidget):
         self.labor_table=_table(["ID","User","Type","Started","Ended","Minutes","Status","Note"]);labv.addWidget(self.labor_table);tabs.addTab(labor,"Labor")
 
         closeout=QWidget();cov=QVBoxLayout(closeout);coh=QHBoxLayout()
+        advance=QPushButton("Advance Closeout");advance.clicked.connect(self.advance_closeout)
         start_qual=QPushButton("Start / Open Qualification");start_qual.clicked.connect(self.start_qualification)
         request_release=QPushButton("Create / Open Release Request");request_release.clicked.connect(self.request_release)
-        coh.addWidget(start_qual);coh.addWidget(request_release);coh.addStretch(1);cov.addLayout(coh)
+        coh.addWidget(advance);coh.addWidget(start_qual);coh.addWidget(request_release);coh.addStretch(1);cov.addLayout(coh)
         self.closeout_summary=QLabel("Select a work order.");self.closeout_summary.setWordWrap(True);self.closeout_summary.setStyleSheet("background:#f8fafb;border:1px solid #d7dfe5;padding:10px;")
         cov.addWidget(self.closeout_summary);cov.addStretch(1);tabs.addTab(closeout,"Qualification / Release Closeout")
         self.attachments=AttachmentPanel(db,user);tabs.addTab(self.attachments,"Evidence / Attachments")
@@ -141,10 +144,52 @@ class WorkOrderWorkspace(QWidget):
                 f"Valid qualification: {close['valid_qualification_run'] or 'None'}  |  "
                 f"Open qualification: {close['open_qualification_run'] or 'None'}\n"
                 f"Release required: {'Yes' if close['release_required'] else 'No'}  |  "
-                f"Active release: {close['active_release_status'] or 'None'}\n\n"
+                f"Active release: {close['active_release_status'] or 'None'}  |  "
+                f"Approved release: {close.get('approved_release_id') or 'None'}\n\n"
                 f"Blockers / next controls:\n{blockers}"
             )
         except Exception as exc:self.closeout_summary.setText(f"Closeout status unavailable: {exc}")
+
+    def advance_closeout(self):
+        if not self.work_order:return
+        try:
+            close=self.db.work_order_closeout_status(self.work_order.work_order_no)
+            wo=self.work_order
+            if close["active_labor"]:
+                QMessageBox.warning(self,"Advance Closeout","Active work timers remain open. Stop active labor before advancing closeout.");return
+            if close["active_part_reservations"]:
+                QMessageBox.warning(self,"Advance Closeout","Active PM part reservations remain. Consume or release them before advancing closeout.");return
+            if close["critical_tickets_open"]:
+                QMessageBox.warning(self,"Advance Closeout",f"{close['critical_tickets_open']} open P1/P2 incident(s) remain. Resolve or downgrade them before closeout.");return
+
+            if wo.status in {"Open","Assigned","In Progress","Waiting Parts","Waiting Production"}:
+                if wo.status in {"Waiting Parts","Waiting Production"}:
+                    QMessageBox.information(self,"Advance Closeout",f"Work order is {wo.status}. Resume work before closeout.");return
+                target="Ready for Qualification" if (wo.qualification_required or wo.release_required) else "Completed"
+                if QMessageBox.question(self,"Advance Closeout",f"Mark the work phase complete and move this work order to {target}?")!=QMessageBox.StandardButton.Yes:return
+                updated=self.db.transition_work_order(wo.work_order_no,target,self.user["username"],"Work phase completed; advance controlled closeout",self.owner.text().strip(),wo.version,"WORK-ORDER-WORKSPACE")
+                self.work_order_no=updated.work_order_no;self.refresh()
+                wo=self.work_order;close=self.db.work_order_closeout_status(wo.work_order_no)
+
+            if close["qualification_required"] and not close["valid_qualification_run"]:
+                if close["open_qualification_run"]:
+                    self.open_entity.emit("QUALIFICATION",close["open_qualification_run"],wo.equipment_id);return
+                self.start_qualification();return
+
+            if close["release_required"] and not close.get("release_approved"):
+                if close["active_release_id"]:
+                    self.open_entity.emit("RELEASE",str(close["active_release_id"]),wo.equipment_id);return
+                self.request_release();return
+
+            if wo.status!="Completed":
+                if QMessageBox.question(self,"Advance Closeout","All controlled closeout gates are satisfied. Complete this work order?")!=QMessageBox.StandardButton.Yes:return
+                updated=self.db.transition_work_order(wo.work_order_no,"Completed",self.user["username"],"Qualification/release closeout complete",self.owner.text().strip(),wo.version,"WORK-ORDER-WORKSPACE")
+                self.work_order_no=updated.work_order_no;self.refresh()
+                QMessageBox.information(self,"Advance Closeout","Work order completed and return-to-service closeout is satisfied.")
+                return
+
+            QMessageBox.information(self,"Advance Closeout","This work order is already complete and all current closeout gates are satisfied.")
+        except Exception as exc:QMessageBox.critical(self,"Advance Closeout",str(exc))
 
     def start_qualification(self):
         if not self.work_order:return
@@ -182,7 +227,7 @@ class WorkOrderWorkspace(QWidget):
         if not path:return
         if not path.lower().endswith(".pptx"):path+=".pptx"
         try:
-            export_work_order_closeout_pptx(self.db,self.work_order.work_order_no,path)
+            export_work_order_closeout_pptx(self.db,self.work_order.work_order_no,path,self.db.resolve_report_template("WORK_ORDER_CLOSEOUT",self.work_order.equipment_id))
             QMessageBox.information(self,"Closeout Pack",f"Editable return-to-service packet created.\n{path}")
         except Exception as exc:QMessageBox.critical(self,"Closeout Pack",str(exc))
 
@@ -203,8 +248,16 @@ class WorkOrderWorkspace(QWidget):
         path,_=QFileDialog.getSaveFileName(self,"Export Work Order PowerPoint",f"{self.work_order.work_order_no}_Review.pptx","PowerPoint (*.pptx)")
         if not path:return
         if not path.lower().endswith(".pptx"):path+=".pptx"
-        try:export_work_order_pptx(self.db,self.work_order.work_order_no,path);QMessageBox.information(self,"PowerPoint",f"Editable work-order review deck created.\n{path}")
+        try:export_work_order_pptx(self.db,self.work_order.work_order_no,path,self.db.resolve_report_template("WORK_ORDER",self.work_order.equipment_id));QMessageBox.information(self,"PowerPoint",f"Editable work-order review deck created.\n{path}")
         except Exception as exc:QMessageBox.critical(self,"PowerPoint",str(exc))
+
+    def export_pdf(self):
+        if not self.work_order:return
+        path,_=QFileDialog.getSaveFileName(self,"Export Work Order PDF",f"{self.work_order.work_order_no}_Work_Order.pdf","PDF (*.pdf)")
+        if not path:return
+        if not path.lower().endswith(".pdf"):path+=".pdf"
+        try:export_work_order_pdf(self.db,self.work_order.work_order_no,path);QMessageBox.information(self,"PDF",f"Controlled work-order PDF created.\n{path}")
+        except Exception as exc:QMessageBox.critical(self,"PDF",str(exc))
 
     def export_xlsx(self):
         if not self.work_order:return

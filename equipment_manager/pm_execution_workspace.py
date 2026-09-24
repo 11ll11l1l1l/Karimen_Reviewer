@@ -14,9 +14,11 @@ from PySide6.QtWidgets import (
 from attachment_store import store_attachment_file, store_clipboard_image
 from services import readonly_open_copy
 from table_productivity import install_table_productivity
+from feedback import notify
 from workspaces import AttachmentPanel
 from collaboration_panel import CollaborationPanel
 from reporting import export_pm_execution_pptx, export_pm_execution_xlsx
+from pdf_reporting import export_pm_execution_pdf
 from PySide6.QtWidgets import QApplication
 
 FILE_ROOT=os.getenv("EMS_FILE_ROOT",str(Path.cwd()/"equipment_files"))
@@ -57,9 +59,10 @@ class PMExecutionWorkspace(QWidget):
         self.work_order_button=QPushButton("Create / Open Work Order");self.work_order_button.clicked.connect(self.open_work_order)
         ppt=QPushButton("PM PPTX");ppt.clicked.connect(self.export_pptx)
         xlsx=QPushButton("PM Excel");xlsx.clicked.connect(self.export_xlsx)
+        pdf=QPushButton("PM PDF");pdf.clicked.connect(self.export_pdf)
         refresh=QPushButton("Refresh");refresh.clicked.connect(self.refresh)
         head.addWidget(self.title);head.addWidget(self.state);head.addStretch(1)
-        for b in [self.open_eq,self.work_order_button,ppt,xlsx,self.start_button,self.complete_button,refresh]:head.addWidget(b)
+        for b in [self.open_eq,self.work_order_button,ppt,xlsx,pdf,self.start_button,self.complete_button,refresh]:head.addWidget(b)
         root.addLayout(head)
         self.context=QLabel("Select a PM task from Maintenance Planner, My Work, Search, or Equipment 360.");self.context.setWordWrap(True);self.context.setStyleSheet("color:#647581;");root.addWidget(self.context)
         self.progress=QLabel();self.progress.setStyleSheet("font-weight:700;");root.addWidget(self.progress)
@@ -269,7 +272,7 @@ class PMExecutionWorkspace(QWidget):
         if not self.task:return
         try:
             created=self.db.reserve_pm_required_parts(self.task.id,self.user["username"],"PM-RUNNER")
-            QMessageBox.information(self,"PM parts",f"Created {len(created)} reservation(s)." if created else "Required parts are already fully reserved or no parts are required.")
+            notify(f"PM parts: created {len(created)} reservation(s)." if created else "PM parts: already fully reserved or no required parts.")
             self.refresh()
         except Exception as exc:QMessageBox.critical(self,"PM parts",str(exc))
 
@@ -278,7 +281,7 @@ class PMExecutionWorkspace(QWidget):
         if QMessageBox.question(self,"Consume PM parts","Consume all active part reservations for this PM execution from inventory?")!=QMessageBox.StandardButton.Yes:return
         try:
             tx=self.db.consume_pm_reserved_parts(self.execution.id,self.user["username"],"PM-RUNNER")
-            QMessageBox.information(self,"PM parts",f"Consumed {len(tx)} inventory line(s)." if tx else "No active PM part reservations to consume.")
+            notify(f"PM parts: consumed {len(tx)} inventory line(s)." if tx else "PM parts: no active reservations to consume.")
             self.refresh()
         except Exception as exc:QMessageBox.critical(self,"PM parts",str(exc))
 
@@ -298,7 +301,7 @@ class PMExecutionWorkspace(QWidget):
                 if log.username==self.user["username"] and log.entity_type=="PM_EXECUTION" and log.entity_key==str(self.execution.id):
                     try:self.db.stop_work_log(log.id,self.user["username"],"PM execution completed")
                     except Exception:pass
-            QMessageBox.information(self,"PM","PM completed successfully.");self.execution.status="Completed";self.refresh()
+            notify("PM completed successfully.");self.execution.status="Completed";self.refresh()
         except Exception as exc:QMessageBox.critical(self,"Complete PM",str(exc))
 
     def open_work_order(self):
@@ -313,8 +316,16 @@ class PMExecutionWorkspace(QWidget):
         path,_=QFileDialog.getSaveFileName(self,"Export PM Review PowerPoint",f"{self.task.equipment_id}_{self.task.pm_id}_PM_Review.pptx","PowerPoint (*.pptx)")
         if not path:return
         if not path.lower().endswith(".pptx"):path+=".pptx"
-        try:export_pm_execution_pptx(self.db,self.task.id,path);QMessageBox.information(self,"PowerPoint",f"Editable PM review deck created.\n{path}")
+        try:export_pm_execution_pptx(self.db,self.task.id,path,self.db.resolve_report_template("PM_EXECUTION",self.task.equipment_id));QMessageBox.information(self,"PowerPoint",f"Editable PM review deck created.\n{path}")
         except Exception as exc:QMessageBox.critical(self,"PowerPoint",str(exc))
+
+    def export_pdf(self):
+        if not self.task:return
+        path,_=QFileDialog.getSaveFileName(self,"Export PM PDF",f"{self.task.equipment_id}_{self.task.pm_id}_{self.task.id}.pdf","PDF (*.pdf)")
+        if not path:return
+        if not path.lower().endswith(".pdf"):path+=".pdf"
+        try:export_pm_execution_pdf(self.db,self.task.id,path);QMessageBox.information(self,"PDF",f"Controlled PM execution PDF created.\n{path}")
+        except Exception as exc:QMessageBox.critical(self,"PDF",str(exc))
 
     def export_xlsx(self):
         if not self.task:return

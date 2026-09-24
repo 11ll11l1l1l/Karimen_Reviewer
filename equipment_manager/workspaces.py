@@ -7,7 +7,7 @@ from typing import Any
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QKeySequence, QPixmap, QShortcut
 from PySide6.QtWidgets import (
-    QAbstractItemView, QApplication, QDialog, QFileDialog, QFrame, QGridLayout, QHBoxLayout, QHeaderView,
+    QAbstractItemView, QApplication, QComboBox, QDialog, QFileDialog, QFrame, QGridLayout, QHBoxLayout, QHeaderView,
     QInputDialog, QLabel, QLineEdit, QMessageBox, QPushButton, QSplitter,
     QTabWidget, QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget,
 )
@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
 from attachment_store import duplicate_attachment_file, store_attachment_file, store_clipboard_image
 from services import readonly_open_copy
 from reporting import export_equipment_pptx, export_equipment_xlsx
+from pdf_reporting import export_equipment_pdf
 from image_annotator import ImageAnnotationDialog
 from table_productivity import install_table_productivity
 
@@ -278,29 +279,65 @@ class MyWorkWorkspace(QWidget):
     open_entity=Signal(str,str,str)
 
     def __init__(self,db,user,parent=None):
-        super().__init__(parent);self.db=db;self.user=user;self.rows=[]
+        super().__init__(parent);self.db=db;self.user=user;self.rows=[];self.filtered=[];self.watched=[]
         root=QVBoxLayout(self);head=QHBoxLayout()
-        title=QLabel("My Work");title.setStyleSheet("font-size:18pt;font-weight:700")
+        title=QLabel("My Work / Action Center");title.setStyleSheet("font-size:18pt;font-weight:700")
+        self.filter=QComboBox();self.filter.addItems(["All","Critical / High","Approvals / Verification","Mentions","Work Orders","PM","Incidents / Equipment"])
+        self.filter.currentTextChanged.connect(self.apply_filter)
+        ack=QPushButton("Acknowledge mention");ack.clicked.connect(self.acknowledge_selected_mention)
         refresh=QPushButton("Refresh");refresh.clicked.connect(self.refresh)
-        head.addWidget(title);head.addStretch(1);head.addWidget(refresh);root.addLayout(head)
-        note=QLabel("Assigned operational exceptions plus verification and approval work that requires your role.")
+        head.addWidget(title);head.addStretch(1);head.addWidget(QLabel("Filter"));head.addWidget(self.filter);head.addWidget(ack);head.addWidget(refresh);root.addLayout(head)
+        note=QLabel("Assigned work, approvals, verification, mentions and watched-record activity in one queue.")
         note.setStyleSheet("color:#647581;");root.addWidget(note)
+        tabs=QTabWidget();root.addWidget(tabs,1)
+        queue=QWidget();qv=QVBoxLayout(queue)
         self.table=_table(["Severity","Type","Equipment","Key","Work item","Owner","Age (h)"])
-        self.table.doubleClicked.connect(self.open_selected);root.addWidget(self.table,1)
+        self.table.doubleClicked.connect(self.open_selected);qv.addWidget(self.table);tabs.addTab(queue,"Action Queue")
+        watch=QWidget();wv=QVBoxLayout(watch)
+        self.watch_table=_table(["Type","Key","Equipment","Last activity","By","Latest comment"])
+        self.watch_table.doubleClicked.connect(self.open_watched);wv.addWidget(self.watch_table);tabs.addTab(watch,"Watchlist")
+        self.summary=QLabel();self.summary.setStyleSheet("color:#647581");root.addWidget(self.summary)
         self.refresh()
 
     @staticmethod
     def _entity_for(row: dict) -> str:
         kind=row.get("kind","")
         if kind=="MENTION":return str(row.get("entity_type") or "")
-        return {"INCIDENT":"TICKET","PM":"PM_EXECUTION","EQUIPMENT":"EQUIPMENT","QUALIFICATION":"QUALIFICATION","VERIFY":"QUALIFICATION","APPROVAL":"EQUIPMENT","RELEASE":"EQUIPMENT","HANDOVER":"ENDORSEMENT"}.get(kind,kind)
+        return {"INCIDENT":"TICKET","PM":"PM_EXECUTION","EQUIPMENT":"EQUIPMENT","QUALIFICATION":"QUALIFICATION","VERIFY":"QUALIFICATION","APPROVAL":"EQUIPMENT","RELEASE":"EQUIPMENT","HANDOVER":"ENDORSEMENT","WORK_ORDER":"WORK_ORDER"}.get(kind,kind)
 
     def refresh(self):
-        self.rows=self.db.my_work(self.user["username"],250)
-        _fill_objects(self.table,self.rows,["severity","kind","equipment_id","key","summary","owner","age_hours"])
+        self.rows=self.db.my_work(self.user["username"],500)
+        self.watched=self.db.list_watched_records(self.user["username"],300)
+        _fill_objects(self.watch_table,self.watched,["entity_type","entity_key","equipment_id","last_activity","last_by","last_comment"])
+        self.apply_filter()
+
+    def apply_filter(self):
+        mode=self.filter.currentText()
+        def keep(row):
+            kind=row.get("kind","")
+            if mode=="Critical / High":return row.get("severity") in {"CRITICAL","HIGH"}
+            if mode=="Approvals / Verification":return kind in {"APPROVAL","VERIFY","QUALIFICATION","RELEASE"}
+            if mode=="Mentions":return kind=="MENTION"
+            if mode=="Work Orders":return kind=="WORK_ORDER"
+            if mode=="PM":return kind=="PM"
+            if mode=="Incidents / Equipment":return kind in {"INCIDENT","EQUIPMENT"}
+            return True
+        self.filtered=[x for x in self.rows if keep(x)]
+        _fill_objects(self.table,self.filtered,["severity","kind","equipment_id","key","summary","owner","age_hours"])
+        mentions=sum(1 for x in self.rows if x.get("kind")=="MENTION")
+        critical=sum(1 for x in self.rows if x.get("severity") in {"CRITICAL","HIGH"})
+        approvals=sum(1 for x in self.rows if x.get("kind") in {"APPROVAL","VERIFY"})
+        self.summary.setText(f"{len(self.rows)} active item(s) · {critical} high/critical · {approvals} approval/verification · {mentions} unacknowledged mention(s) · {len(self.watched)} watched record(s)")
+
+    def acknowledge_selected_mention(self):
+        row=_selected(self.table,self.filtered)
+        if not row or row.get("kind")!="MENTION":
+            QMessageBox.information(self,"Mention","Select a mention in the action queue.");return
+        try:self.db.acknowledge_mention(int(row.get("key") or 0),self.user["username"]);self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"Mention",str(exc))
 
     def open_selected(self):
-        row=_selected(self.table,self.rows)
+        row=_selected(self.table,self.filtered)
         if not row:return
         entity=self._entity_for(row)
         if row.get("kind")=="MENTION":
@@ -311,6 +348,11 @@ class MyWorkWorkspace(QWidget):
         equipment=row.get("equipment_id","")
         self.open_entity.emit(entity,key,equipment)
         if row.get("kind")=="MENTION":self.refresh()
+
+    def open_watched(self):
+        row=_selected(self.watch_table,self.watched)
+        if not row:return
+        self.open_entity.emit(str(row.get("entity_type") or ""),str(row.get("entity_key") or ""),str(row.get("equipment_id") or ""))
 
 
 class Equipment360Workspace(QWidget):
@@ -329,9 +371,10 @@ class Equipment360Workspace(QWidget):
         map_button=QPushButton("Show on FAB map");map_button.clicked.connect(self.open_map)
         ppt=QPushButton("Review PPTX");ppt.clicked.connect(self.export_pptx)
         xlsx=QPushButton("Review Excel");xlsx.clicked.connect(self.export_xlsx)
+        pdf=QPushButton("Review PDF");pdf.clicked.connect(self.export_pdf)
         refresh=QPushButton("Refresh");refresh.clicked.connect(self.refresh)
         head.addWidget(self.title);head.addWidget(self.state);head.addStretch(1)
-        for button in [self.incident_button,self.pm_button,registry_button,map_button,ppt,xlsx,self.favorite,refresh]:head.addWidget(button)
+        for button in [self.incident_button,self.pm_button,registry_button,map_button,ppt,xlsx,pdf,self.favorite,refresh]:head.addWidget(button)
         root.addLayout(head)
         self.summary=QLabel("Select equipment from Global Search or another workspace.")
         self.summary.setWordWrap(True);self.summary.setStyleSheet("color:#647581;font-size:11pt;");root.addWidget(self.summary)
@@ -343,7 +386,7 @@ class Equipment360Workspace(QWidget):
             card=QFrame();card.setFrameShape(QFrame.Shape.StyledPanel);box=QVBoxLayout(card);value=QLabel("—");value.setStyleSheet("font-size:18pt;font-weight:700");box.addWidget(value);box.addWidget(QLabel(key));self.metric_labels[key]=value;self.metrics.addWidget(card,i//4,i%4)
         ov.addStretch(1);self.tabs.addTab(overview,"Overview")
 
-        timeline=QWidget();tl=QVBoxLayout(timeline);self.timeline_table=_table(["Time","Type","Key","Activity","Status","User","Source"]);tl.addWidget(self.timeline_table);self.tabs.addTab(timeline,"Unified timeline")
+        timeline=QWidget();tl=QVBoxLayout(timeline);self.timeline_table=_table(["Time","Type","Key","Activity","Status","User","Source"]);self.timeline_table.doubleClicked.connect(self.open_timeline_item);tl.addWidget(self.timeline_table);self.tabs.addTab(timeline,"Unified timeline")
 
         issues=QWidget();iv=QVBoxLayout(issues)
         self.ticket_table=_table(["Ticket","Title","Priority","Status","Owner","Updated"]);self.ticket_table.doubleClicked.connect(self.open_ticket)
@@ -354,7 +397,9 @@ class Equipment360Workspace(QWidget):
         self.work_table=_table(["ID","Type","Reference","User","Start","End","Minutes","Note"]);mv.addWidget(QLabel("Maintenance / PM"));mv.addWidget(self.pm_table,1);mv.addWidget(QLabel("Labor / work logs"));mv.addWidget(self.work_table,1);self.tabs.addTab(maintenance,"Maintenance / Work")
 
         qr=QWidget();qv=QVBoxLayout(qr)
-        self.qual_table=_table(["Run","Protocol","Revision","Status","Started","Verified","Approved","Expires"]);self.release_table=_table(["ID","Status","Requested By","Verified By","Approved By","Requested","Approved"]);qv.addWidget(QLabel("Qualification"));qv.addWidget(self.qual_table,1);qv.addWidget(QLabel("Release"));qv.addWidget(self.release_table,1);self.tabs.addTab(qr,"Qualification / Release")
+        self.qual_table=_table(["Run","Protocol","Revision","Status","Started","Verified","Approved","Expires"]);self.qual_table.doubleClicked.connect(self.open_qualification)
+        self.release_table=_table(["ID","Status","Requested By","Verified By","Approved By","Requested","Approved"]);self.release_table.doubleClicked.connect(self.open_release)
+        qv.addWidget(QLabel("Qualification"));qv.addWidget(self.qual_table,1);qv.addWidget(QLabel("Release"));qv.addWidget(self.release_table,1);self.tabs.addTab(qr,"Qualification / Release")
 
         cp=QWidget();cv=QVBoxLayout(cp)
         self.component_table=_table(["Component","Parent","Name","Type","Part","Serial","Status","Usage"]);self.meter_table=_table(["Meter","Name","Unit","Current","Last reading","Active"]);self.inventory_table=_table(["Part","Location","Type","Qty","Ticket","User","Time"]);cv.addWidget(QLabel("Installed components"));cv.addWidget(self.component_table,1);cv.addWidget(QLabel("Meters / counters"));cv.addWidget(self.meter_table,1);cv.addWidget(QLabel("Part transactions"));cv.addWidget(self.inventory_table,1);self.tabs.addTab(cp,"Components / Usage / Parts")
@@ -385,8 +430,19 @@ class Equipment360Workspace(QWidget):
         path,_=QFileDialog.getSaveFileName(self,"Export Equipment Review PowerPoint",default,"PowerPoint (*.pptx)")
         if not path:return
         if not path.lower().endswith(".pptx"):path+=".pptx"
-        try:export_equipment_pptx(self.db,self.eq.equipment_id,path);QMessageBox.information(self,"PowerPoint",f"Editable equipment review deck created.\n{path}")
+        try:
+            template=self.db.resolve_report_template("EQUIPMENT",self.eq.equipment_id)
+            export_equipment_pptx(self.db,self.eq.equipment_id,path,template);QMessageBox.information(self,"PowerPoint",f"Editable equipment review deck created.\n{path}")
         except Exception as exc:QMessageBox.critical(self,"PowerPoint",str(exc))
+
+    def export_pdf(self):
+        if not self.eq:return
+        default=f"{self.eq.equipment_id}_Equipment_Review.pdf"
+        path,_=QFileDialog.getSaveFileName(self,"Export Equipment Review PDF",default,"PDF (*.pdf)")
+        if not path:return
+        if not path.lower().endswith(".pdf"):path+=".pdf"
+        try:export_equipment_pdf(self.db,self.eq.equipment_id,path);QMessageBox.information(self,"PDF",f"Controlled equipment review PDF created.\n{path}")
+        except Exception as exc:QMessageBox.critical(self,"PDF",str(exc))
 
     def export_xlsx(self):
         if not self.eq:return
@@ -450,6 +506,7 @@ class Equipment360Workspace(QWidget):
         dispositions=[x for x in self.db.list_dispositions() if x.equipment_id==eq.equipment_id]
         rel=self.db.reliability_summary(eq.equipment_id)
 
+        self.activity_rows=activity
         _fill_objects(self.timeline_table,activity,["occurred_at","kind","key","summary","status","user","source"])
         _fill_objects(self.ticket_table,tickets,["ticket_no","title","priority","status","owner","updated_at"])
         _fill_objects(self.alarm_table,alarms,["alarm_code","severity","message","state","occurred_at","related_ticket"])
@@ -491,6 +548,23 @@ class Equipment360Workspace(QWidget):
         self.metric_labels["Availability 30d"].setText(f"{rel['availability_pct']:.1f}%")
         self.metric_labels["MTBF 30d"].setText(f"{rel['mtbf_hours']:.1f} h")
         self.metric_labels["MTTR 30d"].setText(f"{rel['mttr_hours']:.1f} h")
+
+    def open_timeline_item(self):
+        row=_selected(self.timeline_table,getattr(self,"activity_rows",[]))
+        if not row:return
+        kind=str(row.get("kind",""));key=str(row.get("key",""))
+        mapping={"INCIDENT":"TICKET","PM":"PM_TASK","QUALIFICATION":"QUALIFICATION","RELEASE":"RELEASE","ALARM":"ALARM","WORK_ORDER":"WORK_ORDER"}
+        entity=mapping.get(kind)
+        if entity:self.open_entity.emit(entity,key,self.equipment_id)
+
+    def open_qualification(self):
+        row=_selected(self.qual_table,[x for x in self.db.list_qualification_runs(self.equipment_id)])
+        if row:self.open_entity.emit("QUALIFICATION",row.run_no,self.equipment_id)
+
+    def open_release(self):
+        rows=[x for x in self.db.list_release_requests() if x.equipment_id==self.equipment_id]
+        row=_selected(self.release_table,rows)
+        if row:self.open_entity.emit("RELEASE",str(row.id),self.equipment_id)
 
     def open_related(self):
         row=_selected(self.related_table,self.relationships)
