@@ -36,6 +36,7 @@ from excel_reconcile import (
     reconcile_qualification_protocols, reconcile_tickets,
 )
 from alarm_correlation import correlate_alarm_bursts
+from integrations import dispatch_pending
 from reporting import export_qualification_pptx, export_qualification_xlsx, export_release_pptx, export_release_xlsx
 from services import (
     auto_mapping, calculate_next_due, copy_clipboard_image, dataframe_to_equipment, dataframe_to_inventory, dataframe_to_tickets, dataframe_to_pm_backlog,
@@ -2022,7 +2023,16 @@ class AdminPage(QWidget):
         wu=QWidget();vu=QVBoxLayout(wu);self.table=make_table(["Username","Display Name","Role","Active","Last Login","Created"]);vu.addWidget(self.table);tabs.addTab(wu,"Users")
         ws=QWidget();vs=QVBoxLayout(ws);self.scope_table=make_table(["Username","Mode","Scope Type","Scope Key","Permission"]);vs.addWidget(self.scope_table);tabs.addTab(ws,"Access Scopes")
         wc=QWidget();vc=QVBoxLayout(wc);self.cert_table=make_table(["Username","Certification","Issuer","Issued","Expires","Active","Note","Ver"]);vc.addWidget(self.cert_table);tabs.addTab(wc,"Certifications")
-        wi=QWidget();vi=QVBoxLayout(wi);self.integration_table=make_table(["Endpoint","Name","Adapter","Target","Topics","Auth Env","Enabled","Ver"]);self.delivery_table=make_table(["ID","Event","Endpoint","Status","Attempts","Next Attempt","Last Error","Sent"]);vi.addWidget(self.integration_table,1);vi.addWidget(self.delivery_table,1);tabs.addTab(wi,"Integrations / Outbox")
+        wi=QWidget();vi=QVBoxLayout(wi);ih=QHBoxLayout()
+        dispatchb=QPushButton("Dispatch Pending Now");dispatchb.clicked.connect(self.dispatch_integrations)
+        replayb=QPushButton("Replay Selected");replayb.clicked.connect(self.replay_delivery)
+        deadb=QPushButton("Dead-letter Selected");deadb.clicked.connect(self.dead_letter_delivery)
+        requeueb=QPushButton("Requeue Dead Letters");requeueb.clicked.connect(self.requeue_dead_letters)
+        for x in [dispatchb,replayb,deadb,requeueb]:x.setEnabled(allowed);ih.addWidget(x)
+        ih.addStretch(1);vi.addLayout(ih)
+        self.integration_table=make_table(["Endpoint","Name","Adapter","Target","Topics","Auth Env","Enabled","Ver"])
+        self.delivery_table=make_table(["ID","Topic","Entity","Key","Endpoint","Adapter","Target","Status","Attempts","Next Attempt","Last Error","Sent"])
+        vi.addWidget(self.integration_table,1);vi.addWidget(self.delivery_table,2);tabs.addTab(wi,"Integrations / Outbox")
         wa=QWidget();va=QVBoxLayout(wa);self.attempt_table=make_table(["Username","Success","Reason","Workstation","Attempted"]);va.addWidget(self.attempt_table);tabs.addTab(wa,"Login Attempts")
         v.addWidget(tabs);self.refresh()
 
@@ -2043,8 +2053,46 @@ class AdminPage(QWidget):
         fill_table(self.cert_table,self.cert_rows,["username","cert_code","issuer","issued_at","expires_at","active","note","version"])
         self.integration_endpoints=self.db.list_integration_endpoints()
         fill_table(self.integration_table,self.integration_endpoints,["endpoint_id","name","adapter_type","target","topics","auth_env","enabled","version"])
-        self.integration_deliveries=self.db.integration_delivery_status()
-        fill_table(self.delivery_table,self.integration_deliveries,["id","event_id","endpoint_id","status","attempts","next_attempt_at","last_error","sent_at"])
+        self.integration_deliveries=self.db.integration_delivery_rows()
+        self.delivery_table.setRowCount(len(self.integration_deliveries))
+        fields=["id","topic","entity_type","entity_key","endpoint_id","adapter_type","target","status","attempts","next_attempt_at","last_error","sent_at"]
+        for r,row in enumerate(self.integration_deliveries):
+            for col,key in enumerate(fields):self.delivery_table.setItem(r,col,ti(row.get(key,"")))
+
+    def selected_delivery(self):
+        return selected_row(self.delivery_table,self.integration_deliveries)
+
+    def dispatch_integrations(self):
+        try:
+            stats=dispatch_pending(self.db,500)
+            self.refresh()
+            QMessageBox.information(self,"Integration dispatch",f"Pending checked: {stats['pending']}\nSent: {stats['sent']}\nFailed: {stats['failed']}")
+        except Exception as exc:QMessageBox.critical(self,"Integration dispatch",str(exc))
+
+    def replay_delivery(self):
+        row=self.selected_delivery()
+        if not row:return
+        if QMessageBox.question(self,"Replay integration",f"Requeue delivery {row['id']} to {row['endpoint_id']}?")!=QMessageBox.StandardButton.Yes:return
+        try:self.db.requeue_integration_delivery(row["id"]);self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"Replay integration",str(exc))
+
+    def dead_letter_delivery(self):
+        row=self.selected_delivery()
+        if not row:return
+        reason,ok=QInputDialog.getText(self,"Dead-letter delivery","Reason / operator note")
+        if not ok:return
+        try:self.db.dead_letter_integration_delivery(row["id"],reason);self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"Dead-letter delivery",str(exc))
+
+    def requeue_dead_letters(self):
+        endpoint=""
+        row=selected_row(self.integration_table,self.integration_endpoints)
+        if row and QMessageBox.question(self,"Requeue Dead Letters",f"Requeue only dead letters for {row.endpoint_id}?\nChoose No to requeue all endpoints.")==QMessageBox.StandardButton.Yes:
+            endpoint=row.endpoint_id
+        try:
+            count=self.db.requeue_dead_letters(endpoint);self.refresh()
+            QMessageBox.information(self,"Requeue Dead Letters",f"Requeued {count} delivery(s).")
+        except Exception as exc:QMessageBox.critical(self,"Requeue Dead Letters",str(exc))
 
     def current(self):return selected_row(self.table,self.rows)
 
