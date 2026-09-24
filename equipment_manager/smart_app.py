@@ -157,6 +157,13 @@ class SmartMainWindow(QMainWindow):
         self._history_suspended=False
         self.setWindowTitle(APP_TITLE + (" · Demo" if DEMO_MODE else " · Operations Control"))
         self.resize(1600, 930)
+        geometry=self.db.get_user_preference(self.user["username"],"smart.window_geometry",{})
+        if isinstance(geometry,dict):
+            try:
+                w=max(1100,int(geometry.get("w",1600)));h=max(700,int(geometry.get("h",930)))
+                x=int(geometry.get("x",80));y=int(geometry.get("y",80))
+                self.setGeometry(x,y,w,h)
+            except Exception:pass
 
         container = QWidget()
         self.setCentralWidget(container)
@@ -256,7 +263,9 @@ class SmartMainWindow(QMainWindow):
         self.inventory.show_map_part.connect(self.show_part_map)
         self.nav.currentRowChanged.connect(self.stack.setCurrentIndex)
         self.nav.currentRowChanged.connect(self._on_nav_changed)
-        self.nav.setCurrentRow(self.page_index["Operations Overview"])
+        last_page=self.db.get_user_preference(self.user["username"],"smart.last_page","Operations Overview")
+        if last_page not in self.page_index:last_page="Operations Overview"
+        self.nav.setCurrentRow(self.page_index[last_page])
 
         refresh = QAction("Refresh", self)
         refresh.setShortcut(QKeySequence("F5"))
@@ -273,8 +282,10 @@ class SmartMainWindow(QMainWindow):
     def _on_nav_changed(self,index: int):
         self.refresh_current()
         if index<0:return
+        name=self.nav.item(index).text()
+        try:self.db.set_user_preference(self.user["username"],"smart.last_page",name)
+        except Exception:pass
         if not self._history_suspended:
-            name=self.nav.item(index).text()
             if self.nav_history_index<0 or self.nav_history[self.nav_history_index]!=name:
                 self.nav_history=self.nav_history[:self.nav_history_index+1]
                 self.nav_history.append(name)
@@ -383,6 +394,16 @@ class SmartMainWindow(QMainWindow):
         page = self.stack.currentWidget()
         if hasattr(page, "refresh"):
             page.refresh()
+
+
+    def closeEvent(self,event):
+        g=self.geometry()
+        try:
+            self.db.set_user_preference(self.user["username"],"smart.window_geometry",{
+                "x":g.x(),"y":g.y(),"w":g.width(),"h":g.height(),
+            })
+        except Exception:pass
+        super().closeEvent(event)
 
 
 def main():
