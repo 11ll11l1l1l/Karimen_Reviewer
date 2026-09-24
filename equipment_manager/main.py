@@ -619,24 +619,6 @@ class PMExecutionDialog(QDialog):
     def selected_requirement(self):
         r=self.req_table.currentRow();return self.requirements[r] if 0<=r<len(self.requirements) else None
 
-    def export_run_pptx(self):
-        run=self.selected_run()
-        if not run:return
-        path,_=QFileDialog.getSaveFileName(self,"Export Qualification PowerPoint",f"{run.run_no}_Qualification.pptx","PowerPoint (*.pptx)")
-        if not path:return
-        if not path.lower().endswith(".pptx"):path+=".pptx"
-        try:export_qualification_pptx(self.db,run.run_no,path);QMessageBox.information(self,"Qualification report",f"Editable qualification deck created.\n{path}")
-        except Exception as exc:QMessageBox.critical(self,"Qualification report",str(exc))
-
-    def export_run_xlsx(self):
-        run=self.selected_run()
-        if not run:return
-        path,_=QFileDialog.getSaveFileName(self,"Export Qualification Excel",f"{run.run_no}_Qualification.xlsx","Excel Workbook (*.xlsx)")
-        if not path:return
-        if not path.lower().endswith(".xlsx"):path+=".xlsx"
-        try:export_qualification_xlsx(self.db,run.run_no,path);QMessageBox.information(self,"Qualification report",f"Qualification workbook created.\n{path}")
-        except Exception as exc:QMessageBox.critical(self,"Qualification report",str(exc))
-
     def enter_result(self):
         spec=self.selected_spec()
         if not spec:return
@@ -1266,6 +1248,24 @@ class QualificationPage(QWidget):
         for i,row in enumerate(self.runs):
             if row.run_no==run_no:
                 self.rtable.selectRow(i);break
+
+    def export_run_pptx(self):
+        run=self.selected_run()
+        if not run:return
+        path,_=QFileDialog.getSaveFileName(self,"Export Qualification PowerPoint",f"{run.run_no}_Qualification.pptx","PowerPoint (*.pptx)")
+        if not path:return
+        if not path.lower().endswith(".pptx"):path+=".pptx"
+        try:export_qualification_pptx(self.db,run.run_no,path);QMessageBox.information(self,"Qualification report",f"Editable qualification deck created.\n{path}")
+        except Exception as exc:QMessageBox.critical(self,"Qualification report",str(exc))
+
+    def export_run_xlsx(self):
+        run=self.selected_run()
+        if not run:return
+        path,_=QFileDialog.getSaveFileName(self,"Export Qualification Excel",f"{run.run_no}_Qualification.xlsx","Excel Workbook (*.xlsx)")
+        if not path:return
+        if not path.lower().endswith(".xlsx"):path+=".xlsx"
+        try:export_qualification_xlsx(self.db,run.run_no,path);QMessageBox.information(self,"Qualification report",f"Qualification workbook created.\n{path}")
+        except Exception as exc:QMessageBox.critical(self,"Qualification report",str(exc))
 
     def new_protocol(self):
         d=QualificationProtocolDialog(parent=self)
