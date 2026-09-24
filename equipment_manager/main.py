@@ -984,7 +984,7 @@ class PMPage(QWidget):
 
 class TicketDialog(QDialog):
     """Issue content editor. Lifecycle state is controlled separately."""
-    def __init__(self,row=None,parent=None,db=None):
+    def __init__(self,row=None,parent=None,db=None,initial=None):
         super().__init__(parent);self.row=row;self.db=db;self.setWindowTitle("Issue Ticket");f=QFormLayout(self)
         self.no=QLineEdit();self.eq=QLineEdit();self.title=QLineEdit();self.desc=QTextEdit()
         self.sev=QComboBox();self.sev.addItems(config_option_values(db,"TICKET_SEVERITY",["S1","S2","S3","S4"]))
@@ -999,6 +999,10 @@ class TicketDialog(QDialog):
             self.no.setText(row.ticket_no);self.no.setReadOnly(True);self.eq.setText(row.equipment_id);self.eq.setReadOnly(True)
             self.title.setText(row.title);self.desc.setPlainText(row.description);self.sev.setCurrentText(row.severity);self.prio.setCurrentText(row.priority);self.owner.setText(row.owner)
             self.root.setPlainText(row.root_cause);self.action.setPlainText(row.corrective_action);self.verify.setPlainText(row.verification)
+        elif initial:
+            self.no.setText(str(initial.get("ticket_no","") or ""));self.eq.setText(str(initial.get("equipment_id","") or ""));self.title.setText(str(initial.get("title","") or ""));self.desc.setPlainText(str(initial.get("description","") or ""))
+            self.sev.setCurrentText(str(initial.get("severity","S3") or "S3"));self.prio.setCurrentText(str(initial.get("priority","P3") or "P3"));self.owner.setText(str(initial.get("owner","") or ""))
+            self.root.setPlainText(str(initial.get("root_cause","") or ""));self.action.setPlainText(str(initial.get("corrective_action","") or ""));self.verify.setPlainText(str(initial.get("verification","") or ""))
 
     def data(self,user):
         return {
@@ -1102,10 +1106,10 @@ class TicketPage(QWidget):
     def __init__(self,db,user):
         super().__init__();self.db=db;self.user=user;self.rows=[];self.inv=[];self.lifecycle=[];self.control=None;self.escalations=[]
         v=QVBoxLayout(self);h=QHBoxLayout()
-        add=QPushButton("New Ticket");edit=QPushButton("Edit Details");imp=QPushButton("Import Excel/CSV");paste=QPushButton("Paste from Excel");state=QPushButton("Change Status");invest=QPushButton("Add Investigation Step");control=QPushButton("Operational Control")
-        add.clicked.connect(self.add);edit.clicked.connect(self.edit);imp.clicked.connect(self.import_tickets);paste.clicked.connect(self.paste_tickets);state.clicked.connect(self.change_state);invest.clicked.connect(self.add_investigation);control.clicked.connect(self.edit_operational_control)
-        allowed=db.has_permission(user,"ticket.edit");add.setEnabled(allowed);edit.setEnabled(allowed);imp.setEnabled(allowed);paste.setEnabled(allowed);state.setEnabled(allowed);invest.setEnabled(allowed);control.setEnabled(allowed)
-        h.addWidget(add);h.addWidget(edit);h.addWidget(imp);h.addWidget(paste);h.addWidget(state);h.addWidget(invest);h.addWidget(control);h.addStretch(1);v.addLayout(h)
+        add=QPushButton("New Ticket");template=QPushButton("New from Template");edit=QPushButton("Edit Details");imp=QPushButton("Import Excel/CSV");paste=QPushButton("Paste from Excel");state=QPushButton("Change Status");invest=QPushButton("Add Investigation Step");control=QPushButton("Operational Control")
+        add.clicked.connect(self.add);template.clicked.connect(self.add_from_template);edit.clicked.connect(self.edit);imp.clicked.connect(self.import_tickets);paste.clicked.connect(self.paste_tickets);state.clicked.connect(self.change_state);invest.clicked.connect(self.add_investigation);control.clicked.connect(self.edit_operational_control)
+        allowed=db.has_permission(user,"ticket.edit");add.setEnabled(allowed);template.setEnabled(allowed);edit.setEnabled(allowed);imp.setEnabled(allowed);paste.setEnabled(allowed);state.setEnabled(allowed);invest.setEnabled(allowed);control.setEnabled(allowed)
+        h.addWidget(add);h.addWidget(template);h.addWidget(edit);h.addWidget(imp);h.addWidget(paste);h.addWidget(state);h.addWidget(invest);h.addWidget(control);h.addStretch(1);v.addLayout(h)
         self.table=make_table(["Ticket","Equipment","Title","Severity","Priority","Status","Owner","Updated","Ver"]);self.table.itemSelectionChanged.connect(self.load_details);v.addWidget(self.table,2)
 
         tabs=QTabWidget();self.tabs=tabs
@@ -1177,6 +1181,24 @@ class TicketPage(QWidget):
     def paste_tickets(self):
         try:self._ticket_import_df(read_clipboard_table(QApplication.clipboard().text()))
         except Exception as exc:QMessageBox.critical(self,"Incident paste",str(exc))
+
+    def add_from_template(self):
+        templates=self.db.list_entity_templates("TICKET")
+        if not templates:
+            QMessageBox.information(self,"Incident Template","No active incident/ticket templates are configured.");return
+        labels=[f"{x.name} ({x.template_id})" for x in templates]
+        choice,ok=QInputDialog.getItem(self,"Incident Template","Template",labels,0,False)
+        if not ok:return
+        template=templates[labels.index(choice)]
+        try:initial=self.db.apply_entity_template(template.template_id)
+        except Exception as exc:QMessageBox.critical(self,"Incident Template",str(exc));return
+        if not initial.get("ticket_no"):initial["ticket_no"]="INC-"+datetime.now().strftime("%Y%m%d-%H%M%S")
+        d=TicketDialog(parent=self,db=self.db,initial=initial)
+        if d.exec()==QDialog.DialogCode.Accepted:
+            try:
+                row=self.db.save_ticket(d.data(self.user["username"]),workstation=WORKSTATION)
+                self.db.audit(self.user["username"],"CREATE_FROM_TEMPLATE","TICKET",row.ticket_no,template.template_id,WORKSTATION);self.refresh()
+            except Exception as exc:QMessageBox.critical(self,"Ticket",str(exc))
 
     def add(self):
         d=TicketDialog(parent=self,db=self.db)
