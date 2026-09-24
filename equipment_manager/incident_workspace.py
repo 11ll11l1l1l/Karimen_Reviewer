@@ -229,7 +229,9 @@ class IncidentWorkspace(QWidget):
         path,_=QFileDialog.getSaveFileName(self,"Export Incident PowerPoint",default,"PowerPoint (*.pptx)")
         if not path:return
         if not path.lower().endswith(".pptx"):path+=".pptx"
-        try:export_incident_pptx(self.db,self.ticket.ticket_no,path);QMessageBox.information(self,"PowerPoint",f"Editable incident review deck created.\n{path}")
+        try:
+            template=self.db.resolve_report_template("INCIDENT",self.ticket.equipment_id)
+            export_incident_pptx(self.db,self.ticket.ticket_no,path,template);QMessageBox.information(self,"PowerPoint",f"Editable incident review deck created.\n{path}")
         except Exception as exc:QMessageBox.critical(self,"PowerPoint",str(exc))
 
     def export_xlsx(self):
