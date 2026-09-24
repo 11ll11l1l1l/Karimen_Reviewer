@@ -4,13 +4,14 @@ from datetime import datetime
 
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
-    QAbstractItemView,QComboBox,QHBoxLayout,QHeaderView,QInputDialog,QLabel,QLineEdit,
+    QAbstractItemView,QComboBox,QFileDialog,QHBoxLayout,QHeaderView,QInputDialog,QLabel,QLineEdit,
     QMessageBox,QPushButton,QTableWidget,QTableWidgetItem,QTabWidget,QTextEdit,QVBoxLayout,QWidget
 )
 
 from table_productivity import install_table_productivity
 from workspaces import AttachmentPanel
 from collaboration_panel import CollaborationPanel
+from reporting import export_work_order_pptx, export_work_order_xlsx
 
 
 def _item(value):
@@ -51,8 +52,10 @@ class WorkOrderWorkspace(QWidget):
         self.title=QLabel("Work Orders");self.title.setStyleSheet("font-size:20pt;font-weight:800")
         self.search=QLineEdit();self.search.setPlaceholderText("Filter work orders / equipment / owner / status…");self.search.textChanged.connect(self.refresh)
         new=QPushButton("New engineering WO");new.clicked.connect(self.new_engineering)
+        ppt=QPushButton("WO PPTX");ppt.clicked.connect(self.export_pptx)
+        xlsx=QPushButton("WO Excel");xlsx.clicked.connect(self.export_xlsx)
         refresh=QPushButton("Refresh");refresh.clicked.connect(self.refresh)
-        head.addWidget(self.title);head.addStretch(1);head.addWidget(self.search);head.addWidget(new);head.addWidget(refresh);root.addLayout(head)
+        head.addWidget(self.title);head.addStretch(1);head.addWidget(self.search);head.addWidget(new);head.addWidget(ppt);head.addWidget(xlsx);head.addWidget(refresh);root.addLayout(head)
 
         self.list_table=_table(["Work Order","Equipment","Source","Title","Priority","Status","Owner","Team","Created","Updated"])
         self.list_table.itemSelectionChanged.connect(self.load_selected);self.list_table.doubleClicked.connect(self.load_selected);root.addWidget(self.list_table,2)
@@ -140,6 +143,22 @@ class WorkOrderWorkspace(QWidget):
                 f"Blockers / next controls:\n{blockers}"
             )
         except Exception as exc:self.closeout_summary.setText(f"Closeout status unavailable: {exc}")
+
+    def export_pptx(self):
+        if not self.work_order:return
+        path,_=QFileDialog.getSaveFileName(self,"Export Work Order PowerPoint",f"{self.work_order.work_order_no}_Review.pptx","PowerPoint (*.pptx)")
+        if not path:return
+        if not path.lower().endswith(".pptx"):path+=".pptx"
+        try:export_work_order_pptx(self.db,self.work_order.work_order_no,path);QMessageBox.information(self,"Work order report",f"Editable work-order deck created.\n{path}")
+        except Exception as exc:QMessageBox.critical(self,"Work order report",str(exc))
+
+    def export_xlsx(self):
+        if not self.work_order:return
+        path,_=QFileDialog.getSaveFileName(self,"Export Work Order Excel",f"{self.work_order.work_order_no}_Review.xlsx","Excel Workbook (*.xlsx)")
+        if not path:return
+        if not path.lower().endswith(".xlsx"):path+=".xlsx"
+        try:export_work_order_xlsx(self.db,self.work_order.work_order_no,path);QMessageBox.information(self,"Work order report",f"Work-order workbook created.\n{path}")
+        except Exception as exc:QMessageBox.critical(self,"Work order report",str(exc))
 
     def start_qualification(self):
         if not self.work_order:return
