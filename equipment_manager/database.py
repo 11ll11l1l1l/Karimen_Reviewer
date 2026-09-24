@@ -4785,12 +4785,20 @@ class Database:
                 EntityAttachment.entity_type=="WORK_ORDER",EntityAttachment.entity_key==work_order_no,
                 EntityAttachment.active.is_(True),
             )))
+            qualification_keys={x.entity_key for x in links if x.entity_type=="QUALIFICATION"}
+            release_keys={x.entity_key for x in links if x.entity_type=="RELEASE"}
             qualifications=list(s.scalars(select(QualificationRun).where(
-                QualificationRun.equipment_id==wo.equipment_id
-            ).order_by(QualificationRun.started_at.desc())))
+                QualificationRun.run_no.in_(qualification_keys)
+            ).order_by(QualificationRun.started_at.desc()))) if qualification_keys else []
+            release_ids=[]
+            for key in release_keys:
+                try:
+                    release_ids.append(int(key))
+                except (TypeError,ValueError):
+                    continue
             releases=list(s.scalars(select(EquipmentRelease).where(
-                EquipmentRelease.equipment_id==wo.equipment_id
-            ).order_by(EquipmentRelease.requested_at.desc())))
+                EquipmentRelease.id.in_(release_ids)
+            ).order_by(EquipmentRelease.requested_at.desc()))) if release_ids else []
             related_ticket=""
             if wo.source_type=="TICKET" and wo.source_key:related_ticket=wo.source_key
             if not related_ticket:
@@ -4805,7 +4813,11 @@ class Database:
                 InventoryReservation.pm_task_id==source_pm_id
             ))) if source_pm_id else []
         precheck=self.release_precheck(wo.equipment_id)
-        valid_qualification=self.latest_valid_qualification(wo.equipment_id)
+        now=datetime.utcnow()
+        valid_qualification=next((
+            x for x in qualifications
+            if x.status=="Approved" and (x.expires_at is None or x.expires_at>now)
+        ),None)
         open_qualification=next((x for x in qualifications if x.status in {"In Progress","Submitted","Verified"}),None)
         active_release=next((x for x in releases if x.status!="Approved / Released"),None)
         blockers=[]
@@ -4850,9 +4862,15 @@ class Database:
         if not wo.qualification_required:raise ValueError("This work order does not require qualification.")
         if wo.status not in {"Ready for Qualification","Completed"}:
             raise ValueError("Work order must be Ready for Qualification before starting qualification.")
-        current=self.latest_valid_qualification(wo.equipment_id)
+        linked_keys={x.entity_key for x in self.list_work_order_links(work_order_no) if x.entity_type=="QUALIFICATION"}
+        linked_runs=[x for x in self.list_qualification_runs(wo.equipment_id) if x.run_no in linked_keys]
+        now=datetime.utcnow()
+        current=next((
+            x for x in linked_runs
+            if x.status=="Approved" and (x.expires_at is None or x.expires_at>now)
+        ),None)
         if current:return current
-        open_runs=[x for x in self.list_qualification_runs(wo.equipment_id) if x.status in {"In Progress","Submitted","Verified"}]
+        open_runs=[x for x in linked_runs if x.status in {"In Progress","Submitted","Verified"}]
         if open_runs:return open_runs[0]
         protocols=self.applicable_qualification_protocols(wo.equipment_id)
         if protocol_id:
