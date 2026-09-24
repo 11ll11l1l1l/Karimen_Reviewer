@@ -4789,8 +4789,18 @@ class Database:
         workstation: str = "",
     ):
         payload = dict(data)
+        equipment_id=str(payload.get("equipment_id","")).strip()
+        context={"priority":str(payload.get("priority","")).strip(),"severity":str(payload.get("severity","")).strip()}
+        if not str(payload.get("owner","")).strip() and equipment_id:
+            owner=self.resolve_default_owner("TICKET",equipment_id,context)
+            if owner:payload["owner"]=owner
+        sla=self.resolve_sla_policy(equipment_id,context) if equipment_id else {}
         with self.session() as s:
-            item = s.scalar(select(Ticket).where(Ticket.ticket_no == payload["ticket_no"]))
+            ticket_no=str(payload.get("ticket_no","")).strip()
+            if not ticket_no:
+                ticket_no=self._next_configured_number_in_session(s,"TICKET",equipment_id,context)
+                payload["ticket_no"]=ticket_no
+            item = s.scalar(select(Ticket).where(Ticket.ticket_no == ticket_no))
             if item:
                 # Lifecycle state is controlled by transition_ticket_state(), not generic editing.
                 payload.pop("status", None)
@@ -4801,10 +4811,11 @@ class Database:
                 payload["status"] = "Open"
                 if payload["status"] not in TICKET_STATES:
                     raise ValueError(f"Unknown ticket state: {payload['status']}")
+                now=datetime.utcnow()
                 item = Ticket(**payload)
                 s.add(item)
                 s.add(TicketStateEvent(
-                    ticket_no=payload["ticket_no"],
+                    ticket_no=ticket_no,
                     from_state="",
                     to_state="Open",
                     reason_code="INITIAL_STATE",
@@ -4812,7 +4823,15 @@ class Database:
                     owner=payload.get("owner", ""),
                     changed_by=payload.get("created_by", ""),
                     workstation=workstation,
+                    changed_at=now,
                 ))
+                if sla:
+                    s.add(TicketOperationalControl(
+                        ticket_no=ticket_no,
+                        response_due_at=now+timedelta(minutes=sla["response_minutes"]) if sla.get("response_minutes") else None,
+                        containment_due_at=now+timedelta(minutes=sla["containment_minutes"]) if sla.get("containment_minutes") else None,
+                        resolution_due_at=now+timedelta(minutes=sla["resolution_minutes"]) if sla.get("resolution_minutes") else None,
+                    ))
             s.flush()
             return item
 
@@ -5306,7 +5325,9 @@ class Database:
             ))
             if existing:
                 raise ValueError(f"Open qualification run already exists: {existing.run_no}")
-            run_no=run_no.strip() or f"QUAL-{equipment_id}-{datetime.utcnow():%Y%m%d%H%M%S%f}"
+            run_no=run_no.strip() or self._next_configured_number_in_session(
+                s,"QUALIFICATION",equipment_id,{"protocol_id":protocol.protocol_id,"equipment_type":eq.equipment_type},
+            )
             row=QualificationRun(
                 run_no=run_no,equipment_id=equipment_id,protocol_id=protocol.protocol_id,
                 protocol_revision=protocol.revision,protocol_name=protocol.name,
@@ -5682,16 +5703,18 @@ class Database:
         equipment_id=str(payload.get("equipment_id","")).strip()
         if not equipment_id:raise ValueError("Equipment ID is required.")
         self.assert_authorized(user,"worklog.edit",equipment_id)
+        if not str(payload.get("owner","")).strip():
+            owner=self.resolve_default_owner("WORK_ORDER",equipment_id,{"priority":str(payload.get("priority","Normal")),"source_type":str(payload.get("source_type","ENGINEERING")).upper()})
+            if owner:payload["owner"]=owner
         with self.session() as s:
             if not s.scalar(select(Equipment).where(Equipment.equipment_id==equipment_id)):
                 raise ValueError("Equipment not found")
             no=str(payload.get("work_order_no","")).strip()
             if not no:
-                prefix="".join(ch if ch.isalnum() else "-" for ch in equipment_id.upper()).strip("-")[:28]
-                base=f"WO-{prefix}-{datetime.utcnow():%y%m%d%H%M%S}"
-                no=base;suffix=1
-                while s.scalar(select(WorkOrder).where(WorkOrder.work_order_no==no)):
-                    tail=f"-{suffix}";no=base[:120-len(tail)]+tail;suffix+=1
+                no=self._next_configured_number_in_session(
+                    s,"WORK_ORDER",equipment_id,
+                    {"priority":str(payload.get("priority","Normal")),"source_type":str(payload.get("source_type","ENGINEERING")).upper()},
+                )
             if s.scalar(select(WorkOrder).where(WorkOrder.work_order_no==no)):
                 raise ValueError("Work order number already exists.")
             row=WorkOrder(
