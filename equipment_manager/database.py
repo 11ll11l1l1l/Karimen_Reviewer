@@ -2881,13 +2881,24 @@ class Database:
         recent_exec=list(s.scalars(select(WorkflowAutomationExecution).where(
             WorkflowAutomationExecution.trigger=="ALARM_BURST",
             WorkflowAutomationExecution.equipment_id==row.equipment_id,
-            WorkflowAutomationExecution.executed_at>=start,
             WorkflowAutomationExecution.status=="Completed",
-        ).order_by(WorkflowAutomationExecution.executed_at.desc())))
+        ).order_by(WorkflowAutomationExecution.id.desc()).limit(100)))
         for execution in recent_exec:
             try:ctx=json.loads(execution.context_json or "{}")
             except Exception:ctx={}
             if str(ctx.get("alarm_code",""))!=row.alarm_code:continue
+            # Use source-event time for burst continuity, not server execution time.
+            # Plant/FDC timestamps may be offset from the application host clock.
+            context_last=ctx.get("last_seen") or ctx.get("first_seen")
+            in_window=False
+            if context_last:
+                try:
+                    context_time=datetime.fromisoformat(str(context_last))
+                    in_window=start<=context_time<=occurred_at
+                except Exception:in_window=False
+            else:
+                in_window=start<=execution.executed_at<=occurred_at
+            if not in_window:continue
             try:results=json.loads(execution.result_json or "[]")
             except Exception:results=[]
             ticket_no=next((str(x.get("ticket_no")) for x in results if isinstance(x,dict) and x.get("type")=="CREATE_INCIDENT" and x.get("ticket_no")),"")
