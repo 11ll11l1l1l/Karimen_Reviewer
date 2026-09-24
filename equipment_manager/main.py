@@ -1510,7 +1510,7 @@ class QualificationPage(QWidget):
         path,_=QFileDialog.getSaveFileName(self,"Export Qualification PowerPoint",f"{run.equipment_id}_{run.run_no}_Qualification.pptx","PowerPoint (*.pptx)")
         if not path:return
         if not path.lower().endswith(".pptx"):path+=".pptx"
-        try:export_qualification_pptx(self.db,run.run_no,path);QMessageBox.information(self,"PowerPoint",f"Editable qualification deck created.\n{path}")
+        try:export_qualification_pptx(self.db,run.run_no,path,self.db.resolve_report_template("QUALIFICATION",run.equipment_id));QMessageBox.information(self,"PowerPoint",f"Editable qualification deck created.\n{path}")
         except Exception as exc:QMessageBox.critical(self,"PowerPoint",str(exc))
 
     def export_xlsx(self):
@@ -1591,7 +1591,7 @@ class ControlPage(QWidget):
         path,_=QFileDialog.getSaveFileName(self,"Export Release PowerPoint",f"{row.equipment_id}_Release_{row.id}.pptx","PowerPoint (*.pptx)")
         if not path:return
         if not path.lower().endswith(".pptx"):path+=".pptx"
-        try:export_release_pptx(self.db,row.id,path);QMessageBox.information(self,"PowerPoint",f"Editable release deck created.\n{path}")
+        try:export_release_pptx(self.db,row.id,path,self.db.resolve_report_template("RELEASE",row.equipment_id));QMessageBox.information(self,"PowerPoint",f"Editable release deck created.\n{path}")
         except Exception as exc:QMessageBox.critical(self,"PowerPoint",str(exc))
 
     def export_release_xlsx(self):
