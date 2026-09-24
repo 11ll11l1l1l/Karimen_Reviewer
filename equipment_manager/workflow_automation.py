@@ -36,6 +36,14 @@ class WorkflowRuleDialog(QDialog):
                 {"type":"CREATE_HANDOVER","pending_work":"Critical alarm requires follow-up"},
             ],
         ],
+        "Alarm burst → incident + hold":[
+            {},
+            [
+                {"type":"CREATE_INCIDENT","priority":"P2","severity":"S2","title":"Repeated equipment alarm burst"},
+                {"type":"SET_DISPOSITION","state":"Hold","reason":"Repeated alarm burst automation"},
+                {"type":"CREATE_HANDOVER","pending_work":"Repeated alarm burst requires engineering follow-up"},
+            ],
+        ],
         "PM abnormal → incident + work order":[
             {},
             [
@@ -57,7 +65,7 @@ class WorkflowRuleDialog(QDialog):
         super().__init__(parent);self.row=row;self.setWindowTitle("Workflow Automation Rule");self.resize(760,640)
         f=QFormLayout(self)
         self.rule_id=QLineEdit();self.name=QLineEdit();self.trigger=QComboBox()
-        self.trigger.addItems(["ALARM_ACTIVE","PM_ABNORMAL_RESULT","QUALIFICATION_APPROVED","RELEASE_APPROVED"])
+        self.trigger.addItems(["ALARM_ACTIVE","ALARM_BURST","PM_ABNORMAL_RESULT","QUALIFICATION_APPROVED","RELEASE_APPROVED"])
         self.priority=QSpinBox();self.priority.setRange(1,10000);self.priority.setValue(100)
         self.enabled=QCheckBox("Enabled");self.enabled.setChecked(True)
         self.template=QComboBox();self.template.addItems(["<custom>"]+list(self.TEMPLATES));self.template.currentTextChanged.connect(self.apply_template)
@@ -82,6 +90,7 @@ class WorkflowRuleDialog(QDialog):
         self.match.setPlainText(json.dumps(match,indent=2))
         self.actions.setPlainText(json.dumps(actions,indent=2))
         if name.startswith("Critical alarm"):self.trigger.setCurrentText("ALARM_ACTIVE")
+        elif name.startswith("Alarm burst"):self.trigger.setCurrentText("ALARM_BURST")
         elif name.startswith("PM abnormal"):self.trigger.setCurrentText("PM_ABNORMAL_RESULT")
         elif name.startswith("Qualification"):self.trigger.setCurrentText("QUALIFICATION_APPROVED")
         elif name.startswith("Release"):self.trigger.setCurrentText("RELEASE_APPROVED")

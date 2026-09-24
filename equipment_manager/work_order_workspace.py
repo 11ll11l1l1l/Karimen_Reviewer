@@ -11,7 +11,7 @@ from PySide6.QtWidgets import (
 from table_productivity import install_table_productivity
 from workspaces import AttachmentPanel
 from collaboration_panel import CollaborationPanel
-from reporting import export_work_order_pptx, export_work_order_xlsx
+from reporting import export_work_order_closeout_pptx, export_work_order_closeout_xlsx, export_work_order_pptx, export_work_order_xlsx
 
 
 def _item(value):
@@ -54,8 +54,10 @@ class WorkOrderWorkspace(QWidget):
         new=QPushButton("New engineering WO");new.clicked.connect(self.new_engineering)
         ppt=QPushButton("WO PPTX");ppt.clicked.connect(self.export_pptx)
         xlsx=QPushButton("WO Excel");xlsx.clicked.connect(self.export_xlsx)
+        closeppt=QPushButton("Closeout Pack PPTX");closeppt.clicked.connect(self.export_closeout_pptx)
+        closexlsx=QPushButton("Closeout Pack Excel");closexlsx.clicked.connect(self.export_closeout_xlsx)
         refresh=QPushButton("Refresh");refresh.clicked.connect(self.refresh)
-        head.addWidget(self.title);head.addStretch(1);head.addWidget(self.search);head.addWidget(new);head.addWidget(ppt);head.addWidget(xlsx);head.addWidget(refresh);root.addLayout(head)
+        head.addWidget(self.title);head.addStretch(1);head.addWidget(self.search);head.addWidget(new);head.addWidget(ppt);head.addWidget(xlsx);head.addWidget(closeppt);head.addWidget(closexlsx);head.addWidget(refresh);root.addLayout(head)
 
         self.list_table=_table(["Work Order","Equipment","Source","Title","Priority","Status","Owner","Team","Created","Updated"])
         self.list_table.itemSelectionChanged.connect(self.load_selected);self.list_table.doubleClicked.connect(self.load_selected);root.addWidget(self.list_table,2)
@@ -172,6 +174,28 @@ class WorkOrderWorkspace(QWidget):
             release=self.db.create_work_order_release_request(self.work_order.work_order_no,self.user["username"],"WORK-ORDER-WORKSPACE")
             self.load_selected();self.open_entity.emit("RELEASE",str(release.id),self.work_order.equipment_id)
         except Exception as exc:QMessageBox.critical(self,"Release closeout",str(exc))
+
+    def export_closeout_pptx(self):
+        if not self.work_order:return
+        from PySide6.QtWidgets import QFileDialog
+        path,_=QFileDialog.getSaveFileName(self,"Export Return-to-Service PowerPoint",f"{self.work_order.work_order_no}_Return_to_Service.pptx","PowerPoint (*.pptx)")
+        if not path:return
+        if not path.lower().endswith(".pptx"):path+=".pptx"
+        try:
+            export_work_order_closeout_pptx(self.db,self.work_order.work_order_no,path)
+            QMessageBox.information(self,"Closeout Pack",f"Editable return-to-service packet created.\n{path}")
+        except Exception as exc:QMessageBox.critical(self,"Closeout Pack",str(exc))
+
+    def export_closeout_xlsx(self):
+        if not self.work_order:return
+        from PySide6.QtWidgets import QFileDialog
+        path,_=QFileDialog.getSaveFileName(self,"Export Return-to-Service Excel",f"{self.work_order.work_order_no}_Return_to_Service.xlsx","Excel Workbook (*.xlsx)")
+        if not path:return
+        if not path.lower().endswith(".xlsx"):path+=".xlsx"
+        try:
+            export_work_order_closeout_xlsx(self.db,self.work_order.work_order_no,path)
+            QMessageBox.information(self,"Closeout Pack",f"Return-to-service workbook created.\n{path}")
+        except Exception as exc:QMessageBox.critical(self,"Closeout Pack",str(exc))
 
     def export_pptx(self):
         if not self.work_order:return

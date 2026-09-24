@@ -8,6 +8,8 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+import pandas as pd
+
 from PySide6.QtCore import Qt, QTimer, Signal
 from PySide6.QtGui import QAction, QBrush, QColor, QKeySequence, QPixmap
 from PySide6.QtWidgets import (
@@ -27,8 +29,15 @@ from domain import REASON_CODES, TICKET_REASON_CODES, allowed_targets, allowed_t
 from workspaces import AttachmentPanel
 from table_productivity import configure_productivity_context, install_table_productivity
 from excel_import_studio import run_mapping_studio
-from excel_reconcile import confirm_reconciliation, reconcile_equipment, reconcile_inventory, reconcile_tickets
+from excel_reconcile import (
+    apply_extended_reconciliation, confirm_reconciliation, dataframe_rows,
+    endorsement_export_rows, qualification_protocol_export_rows,
+    reconcile_endorsements, reconcile_equipment, reconcile_inventory,
+    reconcile_qualification_protocols, reconcile_tickets,
+)
 from alarm_correlation import correlate_alarm_bursts
+from integrations import dispatch_pending
+from inbound_integrations import process_inbound_endpoint, process_inbound_file
 from reporting import export_qualification_pptx, export_qualification_xlsx, export_release_pptx, export_release_xlsx
 from services import (
     auto_mapping, calculate_next_due, copy_clipboard_image, dataframe_to_equipment, dataframe_to_inventory, dataframe_to_tickets, dataframe_to_pm_backlog,
@@ -1324,10 +1333,11 @@ class QualificationPage(QWidget):
         super().__init__();self.db=db;self.user=user;self.protocols=[];self.runs=[];self.check_rows=[];self.check_results={}
         v=QVBoxLayout(self);tabs=QTabWidget();self.tabs=tabs;v.addWidget(tabs)
 
-        wp=QWidget();vp=QVBoxLayout(wp);hp=QHBoxLayout();newp=QPushButton("New Protocol");revp=QPushButton("New Revision")
-        newp.clicked.connect(self.new_protocol);revp.clicked.connect(self.revise_protocol)
-        newp.setEnabled(db.has_permission(user,"qualification.edit"));revp.setEnabled(db.has_permission(user,"qualification.edit"))
-        hp.addWidget(newp);hp.addWidget(revp);hp.addStretch(1);vp.addLayout(hp)
+        wp=QWidget();vp=QVBoxLayout(wp);hp=QHBoxLayout();newp=QPushButton("New Protocol");revp=QPushButton("New Revision");exportp=QPushButton("Export Round-trip Excel");importp=QPushButton("Import Excel/CSV");pastep=QPushButton("Paste from Excel")
+        newp.clicked.connect(self.new_protocol);revp.clicked.connect(self.revise_protocol);exportp.clicked.connect(self.export_protocols_roundtrip);importp.clicked.connect(self.import_protocols);pastep.clicked.connect(self.paste_protocols)
+        canedit=db.has_permission(user,"qualification.edit");newp.setEnabled(canedit);revp.setEnabled(canedit);importp.setEnabled(canedit);pastep.setEnabled(canedit)
+        for x in [newp,revp,exportp,importp,pastep]:hp.addWidget(x)
+        hp.addStretch(1);vp.addLayout(hp)
         self.ptable=make_table(["Protocol","Revision","Name","Equipment","Type","Active","Created By","Created","Ver"]);vp.addWidget(self.ptable);tabs.addTab(wp,"Protocols")
 
         wr=QWidget();vr=QVBoxLayout(wr);hr=QHBoxLayout()
@@ -1362,6 +1372,53 @@ class QualificationPage(QWidget):
         for i,row in enumerate(self.runs):
             if row.run_no==run_no:
                 self.rtable.selectRow(i);break
+
+    def export_protocols_roundtrip(self):
+        rows=qualification_protocol_export_rows(self.db)
+        path,_=QFileDialog.getSaveFileName(self,"Export Qualification Protocols","Qualification_Protocols_RoundTrip.xlsx","Excel Workbook (*.xlsx)")
+        if not path:return
+        if not path.lower().endswith(".xlsx"):path+=".xlsx"
+        try:
+            pd.DataFrame(rows,columns=["protocol_id","name","equipment_id","equipment_type","revision","check_id","label","acceptance"]).to_excel(path,index=False)
+            QMessageBox.information(self,"Qualification protocols",f"Round-trip workbook created.\n{path}")
+        except Exception as exc:QMessageBox.critical(self,"Qualification protocols",str(exc))
+
+    def _qualification_protocol_import_df(self,df):
+        fields=[
+            ("protocol_id","Protocol ID"),("name","Protocol name"),("equipment_id","Equipment ID"),
+            ("equipment_type","Equipment type"),("check_id","Check ID"),("label","Check / requirement"),("acceptance","Acceptance"),
+        ]
+        mapping=run_mapping_studio(
+            self,self.db,self.user["username"],"excel_mapping.qualification_protocols",df,fields,
+            auto_mapping(list(df.columns)),{"protocol_id","name","check_id","label"},"Qualification Protocol / Checklist Import Studio",
+        )
+        if mapping is None:return
+        rows=dataframe_rows(df,mapping)
+        try:actions=reconcile_qualification_protocols(self.db,rows,mapping)
+        except Exception as exc:QMessageBox.critical(self,"Qualification protocol reconciliation",str(exc));return
+        if not confirm_reconciliation(self,"Qualification Protocol Reconciliation",actions):
+            unchanged=all(x["status"]=="UNCHANGED" for x in actions)
+            if unchanged:QMessageBox.information(self,"Qualification protocols","No changes detected.")
+            return
+        try:
+            result=apply_extended_reconciliation(self.db,actions,entity="qualification_protocol",user=self.user["username"],workstation=WORKSTATION)
+            self.refresh();QMessageBox.information(self,"Qualification protocols",f"Applied {result['applied']} protocol create/revision action(s).")
+        except Exception as exc:QMessageBox.critical(self,"Qualification protocols",str(exc))
+
+    def import_protocols(self):
+        path,_=QFileDialog.getOpenFileName(self,"Import Qualification Protocols","","Excel/CSV (*.xlsx *.xlsm *.csv)")
+        if not path:return
+        try:
+            sheets=workbook_sheets(path);sheet=sheets[0]
+            if len(sheets)>1:
+                sheet,ok=QInputDialog.getItem(self,"Qualification Protocol Import","Sheet",sheets,0,False)
+                if not ok:return
+            self._qualification_protocol_import_df(read_table(path,sheet))
+        except Exception as exc:QMessageBox.critical(self,"Qualification protocol import",str(exc))
+
+    def paste_protocols(self):
+        try:self._qualification_protocol_import_df(read_clipboard_table(QApplication.clipboard().text()))
+        except Exception as exc:QMessageBox.critical(self,"Qualification protocol paste",str(exc))
 
     def new_protocol(self):
         d=QualificationProtocolDialog(parent=self)
@@ -1602,7 +1659,11 @@ class EndorsementDialog(QDialog):
 
 class EndorsementPage(QWidget):
     def __init__(self,db,user):
-        super().__init__();self.db=db;self.user=user;self.rows=[];v=QVBoxLayout(self);h=QHBoxLayout();add=QPushButton("New Endorsement");ack=QPushButton("Acknowledge Selected");add.clicked.connect(self.add);ack.clicked.connect(self.ack);allowed=db.has_permission(user,"endorsement.edit");add.setEnabled(allowed);ack.setEnabled(allowed);h.addWidget(add);h.addWidget(ack);h.addStretch(1);v.addLayout(h);self.table=make_table(["No","Equipment","Condition","Pending","Restrictions","Next Owner","Status","Created By","Ack By","Time"]);self.table.itemSelectionChanged.connect(self.load_attachments);v.addWidget(self.table,2);self.attachments=AttachmentPanel(db,user);v.addWidget(self.attachments,1);self.refresh()
+        super().__init__();self.db=db;self.user=user;self.rows=[];v=QVBoxLayout(self);h=QHBoxLayout();add=QPushButton("New Endorsement");ack=QPushButton("Acknowledge Selected");exportb=QPushButton("Export Round-trip Excel");importb=QPushButton("Import Excel/CSV");pasteb=QPushButton("Paste from Excel")
+        add.clicked.connect(self.add);ack.clicked.connect(self.ack);exportb.clicked.connect(self.export_roundtrip);importb.clicked.connect(self.import_endorsements);pasteb.clicked.connect(self.paste_endorsements)
+        allowed=db.has_permission(user,"endorsement.edit");add.setEnabled(allowed);ack.setEnabled(allowed);importb.setEnabled(allowed);pasteb.setEnabled(allowed)
+        for x in [add,ack,exportb,importb,pasteb]:h.addWidget(x)
+        h.addStretch(1);v.addLayout(h);self.table=make_table(["No","Equipment","Condition","Pending","Restrictions","Next Owner","Status","Created By","Ack By","Time"]);self.table.itemSelectionChanged.connect(self.load_attachments);v.addWidget(self.table,2);self.attachments=AttachmentPanel(db,user);v.addWidget(self.attachments,1);self.refresh()
     def refresh(self):
         current=selected_row(self.table,self.rows);key=current.endorsement_no if current else ""
         self.rows=self.db.list_endorsements();fill_table(self.table,self.rows,["endorsement_no","equipment_id","current_condition","pending_work","restrictions","next_owner","status","created_by","acknowledged_by","created_at"])
@@ -1617,6 +1678,54 @@ class EndorsementPage(QWidget):
         self.refresh()
         for i,row in enumerate(self.rows):
             if row.endorsement_no==key:self.table.selectRow(i);break
+    def export_roundtrip(self):
+        rows=endorsement_export_rows(self.db)
+        path,_=QFileDialog.getSaveFileName(self,"Export Shift Handovers","Shift_Handovers_RoundTrip.xlsx","Excel Workbook (*.xlsx)")
+        if not path:return
+        if not path.lower().endswith(".xlsx"):path+=".xlsx"
+        try:
+            pd.DataFrame(rows).to_excel(path,index=False)
+            QMessageBox.information(self,"Shift handover",f"Round-trip workbook created.\n{path}")
+        except Exception as exc:QMessageBox.critical(self,"Shift handover",str(exc))
+
+    def _endorsement_import_df(self,df):
+        fields=[
+            ("endorsement_no","Endorsement No"),("equipment_id","Equipment ID"),("current_condition","Current condition"),
+            ("work_completed","Work completed"),("pending_work","Pending work"),("restrictions","Restrictions"),
+            ("next_action","Next action"),("next_owner","Next owner"),
+        ]
+        mapping=run_mapping_studio(
+            self,self.db,self.user["username"],"excel_mapping.endorsements",df,fields,
+            auto_mapping(list(df.columns)),{"endorsement_no","equipment_id"},"Shift Handover Import Studio",
+        )
+        if mapping is None:return
+        rows=dataframe_rows(df,mapping)
+        try:actions=reconcile_endorsements(self.db,rows,mapping)
+        except Exception as exc:QMessageBox.critical(self,"Shift handover reconciliation",str(exc));return
+        if not confirm_reconciliation(self,"Shift Handover Reconciliation",actions):
+            unchanged=all(x["status"]=="UNCHANGED" for x in actions)
+            if unchanged:QMessageBox.information(self,"Shift handover","No changes detected.")
+            return
+        try:
+            result=apply_extended_reconciliation(self.db,actions,entity="endorsement",user=self.user["username"],workstation=WORKSTATION)
+            self.refresh();QMessageBox.information(self,"Shift handover",f"Applied {result['applied']} create/update action(s).")
+        except Exception as exc:QMessageBox.critical(self,"Shift handover",str(exc))
+
+    def import_endorsements(self):
+        path,_=QFileDialog.getOpenFileName(self,"Import Shift Handovers","","Excel/CSV (*.xlsx *.xlsm *.csv)")
+        if not path:return
+        try:
+            sheets=workbook_sheets(path);sheet=sheets[0]
+            if len(sheets)>1:
+                sheet,ok=QInputDialog.getItem(self,"Shift Handover Import","Sheet",sheets,0,False)
+                if not ok:return
+            self._endorsement_import_df(read_table(path,sheet))
+        except Exception as exc:QMessageBox.critical(self,"Shift handover import",str(exc))
+
+    def paste_endorsements(self):
+        try:self._endorsement_import_df(read_clipboard_table(QApplication.clipboard().text()))
+        except Exception as exc:QMessageBox.critical(self,"Shift handover paste",str(exc))
+
     def add(self):
         d=EndorsementDialog(self)
         if d.exec()==QDialog.DialogCode.Accepted:
@@ -1886,6 +1995,52 @@ class DocumentPage(QWidget):
         QMessageBox.information(self,"Integrity","PASS — SHA-256 matches." if ok else f"FAIL — {detail}")
 
 
+class InboundEndpointDialog(QDialog):
+    def __init__(self,row=None,parent=None):
+        super().__init__(parent);self.row=row;self.setWindowTitle("Inbound Integration Endpoint");self.resize(720,560)
+        f=QFormLayout(self)
+        self.endpoint=QLineEdit();self.name=QLineEdit();self.adapter=QComboBox();self.adapter.addItems(["FILE_JSON","FILE_CSV"])
+        self.entity=QComboBox();self.entity.addItems(["ALARM","METER"]);self.source=QLineEdit();self.pattern=QLineEdit()
+        self.mapping=QTextEdit();self.defaults=QTextEdit();self.archive=QLineEdit();self.quarantine=QLineEdit();self.enabled=QCheckBox("Enabled");self.enabled.setChecked(True)
+        self.mapping.setPlaceholderText('{"equipment_id":"tool","alarm_code":"code","severity":"severity","message":"message"}')
+        self.defaults.setPlaceholderText('{"state":"ACTIVE","source":"FDC"}')
+        for label,w in [
+            ("Endpoint ID",self.endpoint),("Name",self.name),("Adapter",self.adapter),("Target entity",self.entity),
+            ("Source folder",self.source),("File pattern",self.pattern),("Field mapping JSON",self.mapping),
+            ("Defaults JSON",self.defaults),("Archive folder",self.archive),("Quarantine folder",self.quarantine),
+        ]:f.addRow(label,w)
+        f.addRow("",self.enabled)
+        note=QLabel("ALARM minimum mapping: equipment_id + alarm_code. METER minimum mapping: equipment_id + meter_code + value. JSON mappings may use dotted source keys.")
+        note.setWordWrap(True);f.addRow("",note)
+        b=QDialogButtonBox(QDialogButtonBox.StandardButton.Save|QDialogButtonBox.StandardButton.Cancel);b.accepted.connect(self._accept);b.rejected.connect(self.reject);f.addRow(b)
+        if row:
+            self.endpoint.setText(row.endpoint_id);self.endpoint.setReadOnly(True);self.name.setText(row.name);self.adapter.setCurrentText(row.adapter_type)
+            self.entity.setCurrentText(row.entity_type);self.source.setText(row.source_path);self.pattern.setText(row.file_pattern)
+            self.mapping.setPlainText(row.mapping_json or "{}");self.defaults.setPlainText(row.defaults_json or "{}")
+            self.archive.setText(row.archive_path);self.quarantine.setText(row.quarantine_path);self.enabled.setChecked(row.enabled)
+        else:
+            self.pattern.setText("*.json");self.mapping.setPlainText("{}");self.defaults.setPlainText("{}")
+
+    def _accept(self):
+        try:
+            mapping=json.loads(self.mapping.toPlainText() or "{}");defaults=json.loads(self.defaults.toPlainText() or "{}")
+            if not isinstance(mapping,dict) or not isinstance(defaults,dict):raise ValueError("Mapping and defaults must be JSON objects.")
+        except Exception as exc:QMessageBox.warning(self,"Inbound Integration",str(exc));return
+        if not self.endpoint.text().strip() or not self.source.text().strip():
+            QMessageBox.warning(self,"Inbound Integration","Endpoint ID and source folder are required.");return
+        self.accept()
+
+    def data(self):
+        return {
+            "endpoint_id":self.endpoint.text().strip(),"name":self.name.text().strip(),
+            "adapter_type":self.adapter.currentText(),"entity_type":self.entity.currentText(),
+            "source_path":self.source.text().strip(),"file_pattern":self.pattern.text().strip(),
+            "mapping_json":self.mapping.toPlainText().strip() or "{}","defaults_json":self.defaults.toPlainText().strip() or "{}",
+            "archive_path":self.archive.text().strip(),"quarantine_path":self.quarantine.text().strip(),
+            "enabled":self.enabled.isChecked(),
+        }
+
+
 class IntegrationEndpointDialog(QDialog):
     def __init__(self,row=None,parent=None):
         super().__init__(parent);self.row=row;self.setWindowTitle("Integration Endpoint");f=QFormLayout(self)
@@ -1907,7 +2062,7 @@ class UserDialog(QDialog):
 
 class AdminPage(QWidget):
     def __init__(self,db,user):
-        super().__init__();self.db=db;self.user=user;self.rows=[];self.attempts=[];self.scope_rows=[];self.cert_rows=[];self.integration_endpoints=[];self.integration_deliveries=[];v=QVBoxLayout(self)
+        super().__init__();self.db=db;self.user=user;self.rows=[];self.attempts=[];self.scope_rows=[];self.cert_rows=[];self.integration_endpoints=[];self.integration_deliveries=[];self.inbound_endpoints=[];self.inbound_receipts=[];v=QVBoxLayout(self)
         h=QHBoxLayout();add=QPushButton("Add User");role=QPushButton("Change Role");toggle=QPushButton("Enable / Disable");reset=QPushButton("Reset Password");unlock=QPushButton("Unlock Login");override=QPushButton("Permission Override");scope=QPushButton("Access Scope");clearscope=QPushButton("Clear Scopes");cert=QPushButton("Certification");integration=QPushButton("Integration Endpoint");backupb=QPushButton("Create DB Backup");verifyb=QPushButton("Verify Backup")
         add.clicked.connect(self.add);role.clicked.connect(self.role);toggle.clicked.connect(self.toggle);reset.clicked.connect(self.reset);unlock.clicked.connect(self.unlock);override.clicked.connect(self.override);scope.clicked.connect(self.manage_scope);clearscope.clicked.connect(self.clear_scopes);cert.clicked.connect(self.manage_certification);integration.clicked.connect(self.manage_integration);backupb.clicked.connect(self.create_backup);verifyb.clicked.connect(self.verify_backup)
         allowed=db.has_permission(user,"user.admin") or user.get("role")=="Administrator";[x.setEnabled(allowed) for x in [add,role,toggle,reset,unlock,override,scope,clearscope,cert,integration,backupb,verifyb]];[h.addWidget(x) for x in [add,role,toggle,reset,unlock,override,scope,clearscope,cert,integration,backupb,verifyb]];h.addStretch(1);v.addLayout(h)
@@ -1915,7 +2070,24 @@ class AdminPage(QWidget):
         wu=QWidget();vu=QVBoxLayout(wu);self.table=make_table(["Username","Display Name","Role","Active","Last Login","Created"]);vu.addWidget(self.table);tabs.addTab(wu,"Users")
         ws=QWidget();vs=QVBoxLayout(ws);self.scope_table=make_table(["Username","Mode","Scope Type","Scope Key","Permission"]);vs.addWidget(self.scope_table);tabs.addTab(ws,"Access Scopes")
         wc=QWidget();vc=QVBoxLayout(wc);self.cert_table=make_table(["Username","Certification","Issuer","Issued","Expires","Active","Note","Ver"]);vc.addWidget(self.cert_table);tabs.addTab(wc,"Certifications")
-        wi=QWidget();vi=QVBoxLayout(wi);self.integration_table=make_table(["Endpoint","Name","Adapter","Target","Topics","Auth Env","Enabled","Ver"]);self.delivery_table=make_table(["ID","Event","Endpoint","Status","Attempts","Next Attempt","Last Error","Sent"]);vi.addWidget(self.integration_table,1);vi.addWidget(self.delivery_table,1);tabs.addTab(wi,"Integrations / Outbox")
+        wi=QWidget();vi=QVBoxLayout(wi);ih=QHBoxLayout()
+        dispatchb=QPushButton("Dispatch Pending Now");dispatchb.clicked.connect(self.dispatch_integrations)
+        replayb=QPushButton("Replay Selected");replayb.clicked.connect(self.replay_delivery)
+        deadb=QPushButton("Dead-letter Selected");deadb.clicked.connect(self.dead_letter_delivery)
+        requeueb=QPushButton("Requeue Dead Letters");requeueb.clicked.connect(self.requeue_dead_letters)
+        for x in [dispatchb,replayb,deadb,requeueb]:x.setEnabled(allowed);ih.addWidget(x)
+        ih.addStretch(1);vi.addLayout(ih)
+        self.integration_table=make_table(["Endpoint","Name","Adapter","Target","Topics","Auth Env","Enabled","Ver"])
+        self.delivery_table=make_table(["ID","Topic","Entity","Key","Endpoint","Adapter","Target","Status","Attempts","Next Attempt","Last Error","Sent"])
+        vi.addWidget(self.integration_table,1);vi.addWidget(self.delivery_table,2);tabs.addTab(wi,"Integrations / Outbox")
+        win=QWidget();vin=QVBoxLayout(win);inh=QHBoxLayout()
+        addin=QPushButton("New Inbound");editin=QPushButton("Edit Selected");processin=QPushButton("Process Selected Feed");replayin=QPushButton("Replay Selected Receipt")
+        addin.clicked.connect(self.add_inbound_endpoint);editin.clicked.connect(self.edit_inbound_endpoint);processin.clicked.connect(self.process_inbound);replayin.clicked.connect(self.replay_inbound_receipt)
+        for x in [addin,editin,processin,replayin]:x.setEnabled(allowed);inh.addWidget(x)
+        inh.addStretch(1);vin.addLayout(inh)
+        self.inbound_table=make_table(["Endpoint","Name","Adapter","Entity","Source","Pattern","Archive","Quarantine","Enabled","Ver"])
+        self.receipt_table=make_table(["ID","Endpoint","Source","Status","Total","Applied","Rejected","Error","Processed"])
+        vin.addWidget(self.inbound_table,1);vin.addWidget(self.receipt_table,2);tabs.addTab(win,"Inbound Integrations")
         wa=QWidget();va=QVBoxLayout(wa);self.attempt_table=make_table(["Username","Success","Reason","Workstation","Attempted"]);va.addWidget(self.attempt_table);tabs.addTab(wa,"Login Attempts")
         v.addWidget(tabs);self.refresh()
 
@@ -1936,8 +2108,92 @@ class AdminPage(QWidget):
         fill_table(self.cert_table,self.cert_rows,["username","cert_code","issuer","issued_at","expires_at","active","note","version"])
         self.integration_endpoints=self.db.list_integration_endpoints()
         fill_table(self.integration_table,self.integration_endpoints,["endpoint_id","name","adapter_type","target","topics","auth_env","enabled","version"])
-        self.integration_deliveries=self.db.integration_delivery_status()
-        fill_table(self.delivery_table,self.integration_deliveries,["id","event_id","endpoint_id","status","attempts","next_attempt_at","last_error","sent_at"])
+        self.integration_deliveries=self.db.integration_delivery_rows()
+        self.delivery_table.setRowCount(len(self.integration_deliveries))
+        fields=["id","topic","entity_type","entity_key","endpoint_id","adapter_type","target","status","attempts","next_attempt_at","last_error","sent_at"]
+        for r,row in enumerate(self.integration_deliveries):
+            for col,key in enumerate(fields):self.delivery_table.setItem(r,col,ti(row.get(key,"")))
+        self.inbound_endpoints=self.db.list_inbound_endpoints()
+        fill_table(self.inbound_table,self.inbound_endpoints,["endpoint_id","name","adapter_type","entity_type","source_path","file_pattern","archive_path","quarantine_path","enabled","version"])
+        self.inbound_receipts=self.db.list_inbound_receipts(limit=1000)
+        fill_table(self.receipt_table,self.inbound_receipts,["id","endpoint_id","source_name","status","records_total","records_applied","records_rejected","error","processed_at"])
+
+    def selected_inbound_endpoint(self):
+        return selected_row(self.inbound_table,self.inbound_endpoints)
+
+    def selected_inbound_receipt(self):
+        return selected_row(self.receipt_table,self.inbound_receipts)
+
+    def add_inbound_endpoint(self):
+        d=InboundEndpointDialog(parent=self)
+        if d.exec()==QDialog.DialogCode.Accepted:
+            try:self.db.save_inbound_endpoint(d.data());self.refresh()
+            except Exception as exc:QMessageBox.critical(self,"Inbound Integration",str(exc))
+
+    def edit_inbound_endpoint(self):
+        row=self.selected_inbound_endpoint()
+        if not row:return
+        d=InboundEndpointDialog(row,self)
+        if d.exec()==QDialog.DialogCode.Accepted:
+            try:self.db.save_inbound_endpoint(d.data(),row.version);self.refresh()
+            except Exception as exc:QMessageBox.critical(self,"Inbound Integration",str(exc))
+
+    def process_inbound(self):
+        row=self.selected_inbound_endpoint()
+        if not row:return
+        try:
+            stats=process_inbound_endpoint(self.db,row.endpoint_id,200);self.refresh()
+            QMessageBox.information(self,"Inbound Integration",f"Files: {stats['files']}\nProcessed: {stats['processed']}\nQuarantined/partial: {stats['quarantined']}\nDuplicates: {stats['duplicates']}\nRecords applied: {stats['applied']}\nRejected: {stats['rejected']}")
+        except Exception as exc:QMessageBox.critical(self,"Inbound Integration",str(exc))
+
+    def replay_inbound_receipt(self):
+        row=self.selected_inbound_receipt()
+        if not row:return
+        try:detail=json.loads(row.detail_json or "{}")
+        except Exception:detail={}
+        path=str(detail.get("final_path") or "")
+        if not path:
+            QMessageBox.warning(self,"Inbound Replay","Receipt does not contain a replayable file path.");return
+        if QMessageBox.question(self,"Inbound Replay",f"Replay receipt {row.id}?\n{path}")!=QMessageBox.StandardButton.Yes:return
+        try:
+            result=process_inbound_file(self.db,row.endpoint_id,path,replay=True);self.refresh()
+            QMessageBox.information(self,"Inbound Replay",f"Status: {result['status']}\nApplied: {result['applied']}\nRejected: {result['rejected']}\nSkipped: {result['skipped']}")
+        except Exception as exc:QMessageBox.critical(self,"Inbound Replay",str(exc))
+
+    def selected_delivery(self):
+        return selected_row(self.delivery_table,self.integration_deliveries)
+
+    def dispatch_integrations(self):
+        try:
+            stats=dispatch_pending(self.db,500)
+            self.refresh()
+            QMessageBox.information(self,"Integration dispatch",f"Pending checked: {stats['pending']}\nSent: {stats['sent']}\nFailed: {stats['failed']}")
+        except Exception as exc:QMessageBox.critical(self,"Integration dispatch",str(exc))
+
+    def replay_delivery(self):
+        row=self.selected_delivery()
+        if not row:return
+        if QMessageBox.question(self,"Replay integration",f"Requeue delivery {row['id']} to {row['endpoint_id']}?")!=QMessageBox.StandardButton.Yes:return
+        try:self.db.requeue_integration_delivery(row["id"]);self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"Replay integration",str(exc))
+
+    def dead_letter_delivery(self):
+        row=self.selected_delivery()
+        if not row:return
+        reason,ok=QInputDialog.getText(self,"Dead-letter delivery","Reason / operator note")
+        if not ok:return
+        try:self.db.dead_letter_integration_delivery(row["id"],reason);self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"Dead-letter delivery",str(exc))
+
+    def requeue_dead_letters(self):
+        endpoint=""
+        row=selected_row(self.integration_table,self.integration_endpoints)
+        if row and QMessageBox.question(self,"Requeue Dead Letters",f"Requeue only dead letters for {row.endpoint_id}?\nChoose No to requeue all endpoints.")==QMessageBox.StandardButton.Yes:
+            endpoint=row.endpoint_id
+        try:
+            count=self.db.requeue_dead_letters(endpoint);self.refresh()
+            QMessageBox.information(self,"Requeue Dead Letters",f"Requeued {count} delivery(s).")
+        except Exception as exc:QMessageBox.critical(self,"Requeue Dead Letters",str(exc))
 
     def current(self):return selected_row(self.table,self.rows)
 
@@ -2073,7 +2329,13 @@ class AlarmPage(QWidget):
     open_incident=Signal(str,str)
     def __init__(self,db,user):
         super().__init__();self.db=db;self.user=user;self.rows=[];self.pareto=[];self.bursts=[]
-        self.burst_window=QSpinBox();self.burst_window.setRange(1,3600);self.burst_window.setValue(300);self.burst_window.setSuffix(" s");self.burst_window.valueChanged.connect(self.refresh)
+        policy=db.alarm_burst_policy()
+        self.burst_window=QSpinBox();self.burst_window.setRange(1,86400);self.burst_window.setValue(int(policy["window_seconds"]));self.burst_window.setSuffix(" s");self.burst_window.valueChanged.connect(self.refresh)
+        self.burst_count=QSpinBox();self.burst_count.setRange(2,1000);self.burst_count.setValue(int(policy["threshold_count"]))
+        self.burst_severity=QComboBox();self.burst_severity.addItems(["INFO","LOW","WARNING","MEDIUM","HIGH","CRITICAL"]);self.burst_severity.setCurrentText(str(policy["min_severity"]).upper())
+        self.burst_auto=QCheckBox("Auto workflow");self.burst_auto.setChecked(bool(policy["auto_trigger"]))
+        self.save_burst=QPushButton("Save Burst Policy");self.save_burst.clicked.connect(self.save_burst_policy)
+        self.save_burst.setEnabled(db.has_permission(user,"workflow.override") or db.has_permission(user,"user.admin") or user.get("role")=="Administrator")
         v=QVBoxLayout(self);h=QHBoxLayout();title=QLabel("Equipment Alarms / Events");title.setStyleSheet("font-size:18pt;font-weight:700")
         self.eq=QLineEdit();self.eq.setPlaceholderText("Equipment filter");active=QCheckBox("Active only");active.setChecked(True);self.active_only=active
         refresh=QPushButton("Refresh");refresh.clicked.connect(self.refresh);ack=QPushButton("Acknowledge");ack.clicked.connect(self.acknowledge)
@@ -2083,7 +2345,8 @@ class AlarmPage(QWidget):
         burst_inc=QPushButton("Create Burst Incident");burst_inc.clicked.connect(self.create_burst_incident)
         manual=QPushButton("Record Manual Alarm");manual.clicked.connect(self.manual_alarm)
         can_ticket=db.has_permission(user,"ticket.edit");manual.setEnabled(can_ticket);create_inc.setEnabled(can_ticket);link_inc.setEnabled(can_ticket);burst_inc.setEnabled(can_ticket)
-        h.addWidget(title);h.addStretch(1);h.addWidget(QLabel("Burst window"));h.addWidget(self.burst_window);h.addWidget(self.eq);h.addWidget(active);h.addWidget(refresh);h.addWidget(ack);h.addWidget(create_inc);h.addWidget(link_inc);h.addWidget(open_inc);h.addWidget(burst_inc);h.addWidget(manual);v.addLayout(h)
+        h.addWidget(title);h.addStretch(1);h.addWidget(QLabel("Burst"));h.addWidget(self.burst_window);h.addWidget(QLabel("Count"));h.addWidget(self.burst_count);h.addWidget(QLabel("Min sev"));h.addWidget(self.burst_severity);h.addWidget(self.burst_auto);h.addWidget(self.save_burst);h.addWidget(self.eq);h.addWidget(active);h.addWidget(refresh);h.addWidget(ack);h.addWidget(create_inc);h.addWidget(link_inc);h.addWidget(open_inc);h.addWidget(burst_inc);h.addWidget(manual);v.addLayout(h)
+        self.burst_policy_status=QLabel();self.burst_policy_status.setStyleSheet("color:#647581");v.addWidget(self.burst_policy_status)
         tabs=QTabWidget()
         wa=QWidget();va=QVBoxLayout(wa);self.table=make_table(["Event","Equipment","Alarm Code","Severity","Message","Source","State","Occurred","Ack By","Ack At","Cleared","Ticket"]);self.table.itemSelectionChanged.connect(self.load_attachment);va.addWidget(self.table);tabs.addTab(wa,"Alarm History")
         wp=QWidget();vp=QVBoxLayout(wp);self.pareto_table=make_table(["Alarm Code","Message","Count"]);vp.addWidget(self.pareto_table);tabs.addTab(wp,"30-Day Pareto")
@@ -2104,7 +2367,19 @@ class AlarmPage(QWidget):
         self.pareto_table.setRowCount(len(self.pareto))
         for r,row in enumerate(self.pareto):
             for col,key in enumerate(["alarm_code","message","count"]):self.pareto_table.setItem(r,col,ti(row.get(key,"")))
+        qualifying=sum(1 for b in self.bursts if b.count>=self.burst_count.value() and self.db._alarm_severity_rank(b.severity)>=self.db._alarm_severity_rank(self.burst_severity.currentText()))
+        self.burst_policy_status.setText(f"Plant burst policy: {self.burst_count.value()} alarms within {self.burst_window.value()} s · min {self.burst_severity.currentText()} · auto workflow {'ON' if self.burst_auto.isChecked() else 'OFF'} · {qualifying} displayed burst(s) meet threshold")
         self.load_attachment()
+
+    def save_burst_policy(self):
+        try:
+            self.db.save_alarm_burst_policy(
+                self.burst_window.value(),self.burst_count.value(),
+                self.burst_severity.currentText(),self.burst_auto.isChecked(),
+            )
+            QMessageBox.information(self,"Alarm burst policy","Plant alarm burst policy saved.")
+            self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"Alarm burst policy",str(exc))
 
     def load_attachment(self):
         row=selected_row(self.table,self.rows)

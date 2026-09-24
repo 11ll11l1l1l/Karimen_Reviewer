@@ -182,3 +182,148 @@ def confirm_reconciliation(parent,title: str,actions) -> bool:
     dialog_class=_reconciliation_dialog_class()
     dialog=dialog_class(title,actions,parent)
     return dialog.exec()==dialog_class.DialogCode.Accepted
+
+
+QUALIFICATION_PROTOCOL_FIELDS=["name","equipment_id","equipment_type"]
+ENDORSEMENT_FIELDS=["equipment_id","current_condition","work_completed","pending_work","restrictions","next_action","next_owner"]
+
+
+def _mapped_rows(df,mapping: dict[str,str]) -> list[dict[str,Any]]:
+    rows=[]
+    for _,source in df.iterrows():
+        row={}
+        for field,column in mapping.items():
+            if column in df.columns:
+                value=source[column]
+                try:
+                    import pandas as pd
+                    if pd.isna(value):value=""
+                except Exception:pass
+                row[field]=value
+        if any(str(v).strip() for v in row.values()):rows.append(row)
+    return rows
+
+
+def dataframe_rows(df,mapping: dict[str,str]) -> list[dict[str,Any]]:
+    return _mapped_rows(df,mapping)
+
+
+def reconcile_endorsements(db,imported_rows: list[dict[str,Any]],mapping: dict[str,str]):
+    seen=set();mapped={x for x in ENDORSEMENT_FIELDS if x in mapping}
+    existing={x.endorsement_no:x for x in db.list_endorsements()};actions=[]
+    for index,source in enumerate(imported_rows,1):
+        key=str(source.get("endorsement_no","")).strip()
+        if not key:raise ValueError(f"handover row {index} is missing endorsement number")
+        if key in seen:raise ValueError(f"Duplicate handover key at row {index}: {key}")
+        seen.add(key);current=existing.get(key)
+        if current:
+            merged={"endorsement_no":key}
+            for field in ENDORSEMENT_FIELDS:
+                merged[field]=source.get(field) if field in mapped else getattr(current,field,"")
+            merged.update({
+                "status":current.status,"created_by":current.created_by,"created_at":current.created_at,
+                "acknowledged_by":current.acknowledged_by,"acknowledged_at":current.acknowledged_at,
+            })
+            changes=[{"field":field,"current":getattr(current,field,""),"incoming":merged[field]} for field in mapped if _norm(getattr(current,field,""))!=_norm(merged[field])]
+            status="UPDATE" if changes else "UNCHANGED"
+        else:
+            equipment_id=str(source.get("equipment_id","")).strip()
+            if not equipment_id:raise ValueError(f"handover row {index} is missing equipment ID")
+            merged={"endorsement_no":key}
+            for field in ENDORSEMENT_FIELDS:merged[field]=source.get(field,"") if field in mapped else ""
+            merged.update({"status":"Open","created_by":"","acknowledged_by":"","acknowledged_at":None})
+            changes=[{"field":field,"current":"","incoming":merged[field]} for field in mapped if _norm(merged[field])!=""]
+            status="CREATE"
+        actions.append({"key":key,"status":status,"current":current,"data":merged,"changes":changes})
+    return actions
+
+
+def reconcile_qualification_protocols(db,imported_rows: list[dict[str,Any]],mapping: dict[str,str]):
+    required={"protocol_id","name","check_id","label"}
+    missing=required-set(mapping)
+    if missing:raise ValueError("Qualification protocol import requires mapped fields: "+", ".join(sorted(missing)))
+    grouped={}
+    for index,source in enumerate(imported_rows,1):
+        protocol_id=str(source.get("protocol_id","")).strip()
+        if not protocol_id:raise ValueError(f"qualification row {index} is missing protocol ID")
+        group=grouped.setdefault(protocol_id,{
+            "protocol_id":protocol_id,"name":str(source.get("name","")).strip(),
+            "equipment_id":str(source.get("equipment_id","")).strip(),
+            "equipment_type":str(source.get("equipment_type","")).strip(),"checks":[],
+        })
+        if str(source.get("name","")).strip() and group["name"]!=str(source.get("name","")).strip():
+            raise ValueError(f"Protocol {protocol_id} has inconsistent names in the workbook")
+        for field in ["equipment_id","equipment_type"]:
+            incoming=str(source.get(field,"")).strip()
+            if incoming and group[field] and group[field]!=incoming:
+                raise ValueError(f"Protocol {protocol_id} has inconsistent {field} values")
+            if incoming:group[field]=incoming
+        check_id=str(source.get("check_id","")).strip();label=str(source.get("label","")).strip()
+        if not check_id or not label:raise ValueError(f"qualification row {index} needs check ID and check label")
+        if any(x["check_id"]==check_id for x in group["checks"]):raise ValueError(f"Duplicate check {check_id} in protocol {protocol_id}")
+        group["checks"].append({"check_id":check_id,"label":label,"acceptance":str(source.get("acceptance","Pass") or "Pass").strip()})
+    active={x.protocol_id:x for x in db.list_qualification_protocols()}
+    actions=[]
+    import json
+    for protocol_id,data in grouped.items():
+        current=active.get(protocol_id)
+        incoming_checks=data["checks"]
+        if current:
+            current_checks=json.loads(current.checks_json or "[]")
+            changes=[]
+            for field in QUALIFICATION_PROTOCOL_FIELDS:
+                if _norm(getattr(current,field,""))!=_norm(data[field]):
+                    changes.append({"field":field,"current":getattr(current,field,""),"incoming":data[field]})
+            if current_checks!=incoming_checks:
+                changes.append({"field":"checks","current":current_checks,"incoming":incoming_checks})
+            status="CREATE_REVISION" if changes else "UNCHANGED"
+        else:
+            changes=[{"field":"protocol","current":"","incoming":data}]
+            status="CREATE"
+        actions.append({"key":protocol_id,"status":status,"current":current,"data":data,"changes":changes})
+    return actions
+
+
+def apply_extended_reconciliation(db,actions:list[dict[str,Any]],*,entity:str,user:str,workstation:str=""):
+    actionable=[x for x in actions if x.get("status") in {"CREATE","UPDATE","CREATE_REVISION"}]
+    applied=0
+    for action in actionable:
+        data=dict(action["data"]);current=action.get("current")
+        if entity=="endorsement":
+            data["created_by"]=data.get("created_by") or (current.created_by if current else user)
+            db.save_endorsement(data,current.version if current else None)
+        elif entity=="qualification_protocol":
+            db.save_qualification_protocol(
+                protocol_id=data["protocol_id"],name=data["name"],checks=data["checks"],
+                user=user,equipment_id=data.get("equipment_id",""),equipment_type=data.get("equipment_type",""),
+                create_revision=bool(current),workstation=workstation,
+            )
+        else:
+            raise ValueError(f"Unsupported extended reconciliation entity: {entity}")
+        applied+=1
+    return {"applied":applied,"skipped":len(actions)-applied,"entity":entity}
+
+
+def qualification_protocol_export_rows(db) -> list[dict[str,Any]]:
+    import json
+    rows=[]
+    for protocol in db.list_qualification_protocols():
+        for check in json.loads(protocol.checks_json or "[]"):
+            rows.append({
+                "protocol_id":protocol.protocol_id,"name":protocol.name,
+                "equipment_id":protocol.equipment_id,"equipment_type":protocol.equipment_type,
+                "revision":protocol.revision,"check_id":check.get("check_id",""),
+                "label":check.get("label",""),"acceptance":check.get("acceptance","Pass"),
+            })
+    return rows
+
+
+def endorsement_export_rows(db) -> list[dict[str,Any]]:
+    return [{
+        "endorsement_no":x.endorsement_no,"equipment_id":x.equipment_id,
+        "current_condition":x.current_condition,"work_completed":x.work_completed,
+        "pending_work":x.pending_work,"restrictions":x.restrictions,
+        "next_action":x.next_action,"next_owner":x.next_owner,
+        "status":x.status,"created_by":x.created_by,"created_at":x.created_at,
+        "acknowledged_by":x.acknowledged_by,"acknowledged_at":x.acknowledged_at,
+    } for x in db.list_endorsements()]

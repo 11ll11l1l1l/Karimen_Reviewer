@@ -6,6 +6,7 @@ import os
 
 from backup import create_backup, default_backup_path, verify_backup
 from integrations import dispatch_pending
+from inbound_integrations import process_all_inbound, process_inbound_endpoint
 from preflight import run_preflight
 from recovery import run_restore_drill
 from database import Database
@@ -21,6 +22,7 @@ def main() -> int:
     v=sub.add_parser("verify-backup");v.add_argument("path")
     r=sub.add_parser("restore-drill");r.add_argument("path");r.add_argument("--user",default=os.getenv("USERNAME") or os.getenv("USER") or "operator")
     d=sub.add_parser("dispatch-integrations");d.add_argument("--limit",type=int,default=500)
+    inbound=sub.add_parser("process-inbound");inbound.add_argument("--endpoint",default="");inbound.add_argument("--limit",type=int,default=200)
     args=parser.parse_args()
     url=os.getenv("EMS_DATABASE_URL","sqlite:///equipment_manager.db")
 
@@ -41,6 +43,12 @@ def main() -> int:
         ok,detail=run_restore_drill(url,args.path,args.user);print(("PASS: " if ok else "FAIL: ")+detail);return 0 if ok else 2
     if args.command=="dispatch-integrations":
         result=dispatch_pending(Database(url),args.limit);print(json.dumps(result,sort_keys=True));return 0 if result["failed"]==0 else 2
+    if args.command=="process-inbound":
+        db=Database(url)
+        results=[process_inbound_endpoint(db,args.endpoint,args.limit)] if args.endpoint else process_all_inbound(db,args.limit)
+        print(json.dumps(results,indent=2,default=str,sort_keys=True))
+        rejected=sum(int(x.get("rejected",0)) for x in results)
+        return 0 if rejected==0 else 2
     return 2
 
 

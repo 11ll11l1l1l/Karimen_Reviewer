@@ -1,7 +1,11 @@
 import unittest
 
 from database import Database
-from excel_reconcile import reconcile_equipment, reconcile_inventory, reconcile_tickets, apply_reconciliation
+from excel_reconcile import (
+    apply_extended_reconciliation, apply_reconciliation, reconcile_endorsements,
+    reconcile_equipment, reconcile_inventory, reconcile_qualification_protocols,
+    reconcile_tickets,
+)
 
 
 class ExcelReconciliationTests(unittest.TestCase):
@@ -24,6 +28,17 @@ class ExcelReconciliationTests(unittest.TestCase):
             "ticket_no":"INC-XL","equipment_id":"ETCH-XL","title":"Old title",
             "description":"Original problem","severity":"S2","priority":"P2","owner":"ee",
             "root_cause":"Open","corrective_action":"","verification":"","created_by":"ee",
+        })
+        self.protocol=self.db.save_qualification_protocol(
+            protocol_id="QUAL-XL",name="Qualification XL",
+            checks=[{"check_id":"Q01","label":"Leak check","acceptance":"PASS"}],
+            user="ee",equipment_id="ETCH-XL",
+        )
+        self.endorsement=self.db.save_endorsement({
+            "endorsement_no":"HO-XL","equipment_id":"ETCH-XL","current_condition":"Under observation",
+            "work_completed":"Initial check","pending_work":"Trend review","restrictions":"Engineering only",
+            "next_action":"Review trend","next_owner":"ee","status":"Open","created_by":"ee",
+            "acknowledged_by":"","acknowledged_at":None,
         })
 
     def test_equipment_partial_mapping_preserves_unmapped_fields(self):
@@ -98,6 +113,49 @@ class ExcelReconciliationTests(unittest.TestCase):
         },current.version)
         with self.assertRaises(RuntimeError):
             apply_reconciliation(self.db,actions,entity="ticket",user="ee")
+
+    def test_qualification_reconciliation_creates_controlled_revision(self):
+        rows=[
+            {"protocol_id":"QUAL-XL","name":"Qualification XL","equipment_id":"ETCH-XL","equipment_type":"","check_id":"Q01","label":"Leak check","acceptance":"PASS"},
+            {"protocol_id":"QUAL-XL","name":"Qualification XL","equipment_id":"ETCH-XL","equipment_type":"","check_id":"Q02","label":"Particle check","acceptance":"PASS"},
+        ]
+        mapping={k:k for k in ["protocol_id","name","equipment_id","equipment_type","check_id","label","acceptance"]}
+        actions=reconcile_qualification_protocols(self.db,rows,mapping)
+        self.assertEqual(actions[0]["status"],"CREATE_REVISION")
+        result=apply_extended_reconciliation(self.db,actions,entity="qualification_protocol",user="ee")
+        self.assertEqual(result["applied"],1)
+        protocols=[x for x in self.db.list_qualification_protocols(active_only=False) if x.protocol_id=="QUAL-XL"]
+        self.assertEqual(len(protocols),2)
+        active=next(x for x in protocols if x.active)
+        self.assertEqual(active.revision,2)
+        self.assertIn('"check_id": "Q02"',active.checks_json)
+
+    def test_qualification_reconciliation_skips_unchanged_protocol(self):
+        rows=[{"protocol_id":"QUAL-XL","name":"Qualification XL","equipment_id":"ETCH-XL","equipment_type":"","check_id":"Q01","label":"Leak check","acceptance":"PASS"}]
+        mapping={k:k for k in ["protocol_id","name","equipment_id","equipment_type","check_id","label","acceptance"]}
+        action=reconcile_qualification_protocols(self.db,rows,mapping)[0]
+        self.assertEqual(action["status"],"UNCHANGED")
+        self.assertEqual(action["changes"],[])
+
+    def test_handover_reconciliation_preserves_lifecycle_fields(self):
+        self.db.acknowledge_endorsement("HO-XL","ee")
+        current=next(x for x in self.db.list_endorsements() if x.endorsement_no=="HO-XL")
+        rows=[{
+            "endorsement_no":"HO-XL","equipment_id":"ETCH-XL","current_condition":"Stable",
+            "work_completed":"","pending_work":"Morning verification","restrictions":"",
+            "next_action":"Verify","next_owner":"ee",
+        }]
+        mapping={k:k for k in ["endorsement_no","equipment_id","current_condition","pending_work","next_action","next_owner"]}
+        actions=reconcile_endorsements(self.db,rows,mapping)
+        self.assertEqual(actions[0]["status"],"UPDATE")
+        result=apply_extended_reconciliation(self.db,actions,entity="endorsement",user="ee")
+        self.assertEqual(result["applied"],1)
+        updated=next(x for x in self.db.list_endorsements() if x.endorsement_no=="HO-XL")
+        self.assertEqual(updated.current_condition,"Stable")
+        self.assertEqual(updated.pending_work,"Morning verification")
+        self.assertEqual(updated.status,current.status)
+        self.assertEqual(updated.acknowledged_by,current.acknowledged_by)
+        self.assertEqual(updated.acknowledged_at,current.acknowledged_at)
 
     def test_unchanged_mapped_values_are_skipped(self):
         rows=[{

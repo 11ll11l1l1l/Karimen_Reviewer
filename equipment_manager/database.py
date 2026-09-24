@@ -1192,6 +1192,53 @@ class IntegrationDelivery(Base):
     __table_args__ = (UniqueConstraint("event_id","endpoint_id",name="uq_integration_delivery"),)
 
 
+class IntegrationInboundEndpoint(Base):
+    __tablename__ = "integration_inbound_endpoints"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    endpoint_id: Mapped[str] = mapped_column(String(100), unique=True, index=True)
+    name: Mapped[str] = mapped_column(String(180), default="")
+    adapter_type: Mapped[str] = mapped_column(String(30), index=True)
+    entity_type: Mapped[str] = mapped_column(String(40), index=True)
+    source_path: Mapped[str] = mapped_column(Text)
+    file_pattern: Mapped[str] = mapped_column(String(180), default="*.json")
+    mapping_json: Mapped[str] = mapped_column(Text, default="{}")
+    defaults_json: Mapped[str] = mapped_column(Text, default="{}")
+    archive_path: Mapped[str] = mapped_column(Text, default="")
+    quarantine_path: Mapped[str] = mapped_column(Text, default="")
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
+class IntegrationInboundReceipt(Base):
+    __tablename__ = "integration_inbound_receipts"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    endpoint_id: Mapped[str] = mapped_column(String(100), index=True)
+    source_name: Mapped[str] = mapped_column(String(300))
+    source_sha256: Mapped[str] = mapped_column(String(64), index=True)
+    status: Mapped[str] = mapped_column(String(40), index=True)
+    records_total: Mapped[int] = mapped_column(Integer, default=0)
+    records_applied: Mapped[int] = mapped_column(Integer, default=0)
+    records_rejected: Mapped[int] = mapped_column(Integer, default=0)
+    error: Mapped[str] = mapped_column(Text, default="")
+    detail_json: Mapped[str] = mapped_column(Text, default="{}")
+    processed_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    __table_args__ = (UniqueConstraint("endpoint_id","source_sha256",name="uq_inbound_receipt_file"),)
+
+
+class IntegrationInboundRecord(Base):
+    __tablename__ = "integration_inbound_records"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    endpoint_id: Mapped[str] = mapped_column(String(100), index=True)
+    receipt_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    record_key: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    row_index: Mapped[int] = mapped_column(Integer)
+    target_entity: Mapped[str] = mapped_column(String(40), index=True)
+    status: Mapped[str] = mapped_column(String(40), index=True)
+    entity_key: Mapped[str] = mapped_column(String(180), default="")
+    error: Mapped[str] = mapped_column(Text, default="")
+    processed_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
 class RecoveryDrill(Base):
     __tablename__ = "recovery_drills"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -1309,6 +1356,9 @@ class Database:
                 table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
             ]),
             ("20260924_010","Create configuration catalog templates and custom fields",lambda: [
+                table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
+            ]),
+            ("20260924_011","Create inbound integration endpoint receipt and record tables",lambda: [
                 table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
             ]),
         ]
@@ -2172,7 +2222,7 @@ class Database:
 
     def save_workflow_rule(self, data: dict[str, Any], user: str = "", expected_version: int | None = None):
         payload=dict(data);trigger=str(payload.get("trigger","")).strip().upper()
-        allowed={"ALARM_ACTIVE","PM_ABNORMAL_RESULT","QUALIFICATION_APPROVED","RELEASE_APPROVED"}
+        allowed={"ALARM_ACTIVE","ALARM_BURST","PM_ABNORMAL_RESULT","QUALIFICATION_APPROVED","RELEASE_APPROVED"}
         if trigger not in allowed:raise ValueError(f"Unsupported workflow trigger: {trigger}")
         payload["trigger"]=trigger;rule_id=str(payload.get("rule_id","")).strip()
         if not rule_id:raise ValueError("Rule ID is required.")
@@ -2216,11 +2266,24 @@ class Database:
         if kind=="CREATE_INCIDENT":
             ticket_no=f"{str(action.get('ticket_prefix') or 'AUTO')}-{datetime.utcnow():%Y%m%d%H%M%S%f}"
             ticket=Ticket(ticket_no=ticket_no,equipment_id=equipment_id,title=str(action.get("title") or context.get("summary") or context.get("message") or "Automated incident"),description=str(action.get("description") or context.get("detail") or context.get("message") or ""),severity=str(action.get("severity") or "S2"),priority=str(action.get("priority") or "P2"),status="Open",owner=str(action.get("owner") or ""),root_cause="",corrective_action="",verification="",created_by=actor)
-            s.add(ticket);s.flush();s.add(TicketStateEvent(ticket_no=ticket_no,from_state="",to_state="Open",reason_code="INITIAL_STATE",note=f"Created by workflow rule {rule.rule_id}",owner=ticket.owner,changed_by=actor,workstation="AUTOMATION"));return {"type":kind,"ticket_no":ticket_no}
+            s.add(ticket);s.flush()
+            s.add(TicketStateEvent(ticket_no=ticket_no,from_state="",to_state="Open",reason_code="INITIAL_STATE",note=f"Created by workflow rule {rule.rule_id}",owner=ticket.owner,changed_by=actor,workstation="AUTOMATION"))
+            alarm_keys=context.get("alarm_ids") or ([context.get("entity_key")] if context.get("entity_type")=="ALARM" else [])
+            for alarm_key in alarm_keys:
+                if not alarm_key:continue
+                alarm=s.scalar(select(EquipmentAlarmEvent).where(EquipmentAlarmEvent.event_key==str(alarm_key)))
+                if alarm and (not alarm.related_ticket or alarm.related_ticket==ticket_no):alarm.related_ticket=ticket_no
+            context["ticket_no"]=ticket_no
+            return {"type":kind,"ticket_no":ticket_no}
         if kind=="CREATE_WORK_ORDER":
             work_order_no=f"AUTO-WO-{datetime.utcnow():%Y%m%d%H%M%S%f}"
-            row=WorkOrder(work_order_no=work_order_no,equipment_id=equipment_id,source_type=str(context.get("entity_type") or "AUTOMATION"),source_key=str(context.get("entity_key") or ""),title=str(action.get("title") or context.get("summary") or "Automated follow-up"),description=str(action.get("description") or context.get("detail") or ""),priority=str(action.get("priority") or "Normal"),status="Open",owner=str(action.get("owner") or ""),team=str(action.get("team") or ""),qualification_required=bool(action.get("qualification_required",False)),release_required=bool(action.get("release_required",False)),created_by=actor)
-            s.add(row);s.flush();return {"type":kind,"work_order_no":work_order_no}
+            source_type="TICKET" if context.get("ticket_no") else str(context.get("entity_type") or "AUTOMATION")
+            source_key=str(context.get("ticket_no") or context.get("entity_key") or "")
+            row=WorkOrder(work_order_no=work_order_no,equipment_id=equipment_id,source_type=source_type,source_key=source_key,title=str(action.get("title") or context.get("summary") or "Automated follow-up"),description=str(action.get("description") or context.get("detail") or ""),priority=str(action.get("priority") or "Normal"),status="Open",owner=str(action.get("owner") or ""),team=str(action.get("team") or ""),qualification_required=bool(action.get("qualification_required",False)),release_required=bool(action.get("release_required",False)),created_by=actor)
+            s.add(row);s.flush()
+            if context.get("ticket_no"):
+                s.add(WorkOrderLink(work_order_no=work_order_no,entity_type="TICKET",entity_key=str(context["ticket_no"]),relation="SOURCE",created_by=actor))
+            return {"type":kind,"work_order_no":work_order_no,"source_type":source_type,"source_key":source_key}
         if kind=="CREATE_HANDOVER":
             number=f"AUTO-HO-{datetime.utcnow():%Y%m%d%H%M%S%f}"
             row=Endorsement(endorsement_no=number,equipment_id=equipment_id,current_condition=str(action.get("condition") or context.get("summary") or context.get("message") or ""),pending_work=str(action.get("pending_work") or context.get("detail") or ""),restrictions=str(action.get("restrictions") or ""),next_action=str(action.get("next_action") or ""),next_owner=str(action.get("next_owner") or ""),status="Open",created_by=actor)
@@ -2337,6 +2400,94 @@ class Database:
             if not row or row.username!=username:raise ValueError("Mention not found")
             row.acknowledged=True;row.acknowledged_at=datetime.utcnow();s.flush();return row
 
+    def save_inbound_endpoint(self, data: dict[str, Any], expected_version: int | None = None):
+        payload=dict(data)
+        payload["endpoint_id"]=str(payload.get("endpoint_id","")).strip()
+        payload["adapter_type"]=str(payload.get("adapter_type","")).strip().upper()
+        payload["entity_type"]=str(payload.get("entity_type","")).strip().upper()
+        if payload["adapter_type"] not in {"FILE_JSON","FILE_CSV"}:
+            raise ValueError("Inbound adapter must be FILE_JSON or FILE_CSV.")
+        if payload["entity_type"] not in {"ALARM","METER"}:
+            raise ValueError("Inbound entity type must be ALARM or METER.")
+        if not payload["endpoint_id"] or not str(payload.get("source_path","")).strip():
+            raise ValueError("Inbound endpoint ID and source path are required.")
+        for key in ["mapping_json","defaults_json"]:
+            value=payload.get(key,"{}")
+            if isinstance(value,dict):value=json.dumps(value,sort_keys=True)
+            try:
+                parsed=json.loads(value or "{}")
+                if not isinstance(parsed,dict):raise ValueError(f"{key} must be a JSON object.")
+            except Exception as exc:raise ValueError(f"{key} is invalid: {exc}")
+            payload[key]=value or "{}"
+        payload["file_pattern"]=str(payload.get("file_pattern","")).strip() or ("*.json" if payload["adapter_type"]=="FILE_JSON" else "*.csv")
+        payload["source_path"]=str(payload.get("source_path","")).strip()
+        payload["archive_path"]=str(payload.get("archive_path","")).strip()
+        payload["quarantine_path"]=str(payload.get("quarantine_path","")).strip()
+        with self.session() as s:
+            row=s.scalar(select(IntegrationInboundEndpoint).where(IntegrationInboundEndpoint.endpoint_id==payload["endpoint_id"]))
+            if row:self._update_versioned(row,payload,expected_version,"Inbound integration endpoint")
+            else:row=IntegrationInboundEndpoint(**payload);s.add(row)
+            s.flush();return row
+
+    def list_inbound_endpoints(self, enabled_only: bool = False):
+        with self.session() as s:
+            stmt=select(IntegrationInboundEndpoint).order_by(IntegrationInboundEndpoint.endpoint_id)
+            if enabled_only:stmt=stmt.where(IntegrationInboundEndpoint.enabled.is_(True))
+            return list(s.scalars(stmt))
+
+    def get_inbound_endpoint(self, endpoint_id: str):
+        with self.session() as s:
+            return s.scalar(select(IntegrationInboundEndpoint).where(IntegrationInboundEndpoint.endpoint_id==endpoint_id))
+
+    def inbound_receipt_by_hash(self, endpoint_id: str, source_sha256: str):
+        with self.session() as s:
+            return s.scalar(select(IntegrationInboundReceipt).where(
+                IntegrationInboundReceipt.endpoint_id==endpoint_id,
+                IntegrationInboundReceipt.source_sha256==source_sha256,
+            ))
+
+    def save_inbound_receipt(self, data: dict[str, Any]):
+        payload=dict(data)
+        with self.session() as s:
+            row=s.scalar(select(IntegrationInboundReceipt).where(
+                IntegrationInboundReceipt.endpoint_id==payload["endpoint_id"],
+                IntegrationInboundReceipt.source_sha256==payload["source_sha256"],
+            ))
+            if row:
+                for key,value in payload.items():
+                    if key not in {"endpoint_id","source_sha256"} and hasattr(row,key):setattr(row,key,value)
+            else:
+                row=IntegrationInboundReceipt(**payload);s.add(row)
+            s.flush();return row
+
+    def list_inbound_receipts(self, endpoint_id: str = "", limit: int = 1000):
+        with self.session() as s:
+            stmt=select(IntegrationInboundReceipt).order_by(IntegrationInboundReceipt.processed_at.desc(),IntegrationInboundReceipt.id.desc())
+            if endpoint_id:stmt=stmt.where(IntegrationInboundReceipt.endpoint_id==endpoint_id)
+            return list(s.scalars(stmt.limit(max(1,min(int(limit),5000)))))
+
+    def inbound_record(self, record_key: str):
+        with self.session() as s:
+            return s.scalar(select(IntegrationInboundRecord).where(IntegrationInboundRecord.record_key==record_key))
+
+    def save_inbound_record(self, data: dict[str, Any]):
+        payload=dict(data)
+        with self.session() as s:
+            row=s.scalar(select(IntegrationInboundRecord).where(IntegrationInboundRecord.record_key==payload["record_key"]))
+            if row:
+                for key,value in payload.items():
+                    if key!="record_key" and hasattr(row,key):setattr(row,key,value)
+            else:
+                row=IntegrationInboundRecord(**payload);s.add(row)
+            s.flush();return row
+
+    def list_inbound_records(self, endpoint_id: str = "", receipt_id: int | None = None, limit: int = 2000):
+        with self.session() as s:
+            stmt=select(IntegrationInboundRecord).order_by(IntegrationInboundRecord.processed_at.desc(),IntegrationInboundRecord.id.desc())
+            if endpoint_id:stmt=stmt.where(IntegrationInboundRecord.endpoint_id==endpoint_id)
+            if receipt_id is not None:stmt=stmt.where(IntegrationInboundRecord.receipt_id==receipt_id)
+            return list(s.scalars(stmt.limit(max(1,min(int(limit),10000)))))
+
     def save_integration_endpoint(self, data: dict[str, Any], expected_version: int | None = None):
         payload=dict(data)
         adapter=str(payload.get("adapter_type","")).upper()
@@ -2400,6 +2551,61 @@ class Database:
                 delay=min(3600,30*(2**min(row.attempts,7)))
                 row.next_attempt_at=datetime.utcnow()+timedelta(seconds=delay)
             s.flush();return row
+
+    def integration_delivery_rows(self, limit: int = 1000) -> list[dict[str, Any]]:
+        with self.session() as s:
+            deliveries=list(s.scalars(
+                select(IntegrationDelivery).order_by(IntegrationDelivery.id.desc()).limit(max(1,min(int(limit),5000)))
+            ))
+            rows=[]
+            for delivery in deliveries:
+                event=s.scalar(select(IntegrationEvent).where(IntegrationEvent.event_id==delivery.event_id))
+                endpoint=s.scalar(select(IntegrationEndpoint).where(IntegrationEndpoint.endpoint_id==delivery.endpoint_id))
+                rows.append({
+                    "id":delivery.id,
+                    "event_id":delivery.event_id,
+                    "endpoint_id":delivery.endpoint_id,
+                    "endpoint_name":endpoint.name if endpoint else "",
+                    "adapter_type":endpoint.adapter_type if endpoint else "",
+                    "target":endpoint.target if endpoint else "",
+                    "topic":event.topic if event else "",
+                    "entity_type":event.entity_type if event else "",
+                    "entity_key":event.entity_key if event else "",
+                    "payload_json":event.payload_json if event else "",
+                    "created_at":event.created_at if event else None,
+                    "status":delivery.status,
+                    "attempts":delivery.attempts,
+                    "next_attempt_at":delivery.next_attempt_at,
+                    "last_error":delivery.last_error,
+                    "sent_at":delivery.sent_at,
+                })
+            return rows
+
+    def requeue_integration_delivery(self, delivery_id: int, reset_attempts: bool = False):
+        with self.session() as s:
+            row=s.get(IntegrationDelivery,int(delivery_id))
+            if not row:raise ValueError("Integration delivery not found")
+            row.status="Pending";row.next_attempt_at=None;row.sent_at=None
+            if reset_attempts:row.attempts=0
+            s.flush();return row
+
+    def dead_letter_integration_delivery(self, delivery_id: int, reason: str = ""):
+        with self.session() as s:
+            row=s.get(IntegrationDelivery,int(delivery_id))
+            if not row:raise ValueError("Integration delivery not found")
+            if row.status=="Sent":raise ValueError("Sent delivery cannot be dead-lettered.")
+            row.status="DeadLetter";row.next_attempt_at=None
+            if reason.strip():row.last_error=(reason.strip()+"\n"+(row.last_error or "")).strip()[:4000]
+            s.flush();return row
+
+    def requeue_dead_letters(self, endpoint_id: str = "") -> int:
+        with self.session() as s:
+            stmt=select(IntegrationDelivery).where(IntegrationDelivery.status=="DeadLetter")
+            if endpoint_id:stmt=stmt.where(IntegrationDelivery.endpoint_id==endpoint_id)
+            rows=list(s.scalars(stmt))
+            for row in rows:
+                row.status="Pending";row.next_attempt_at=None
+            return len(rows)
 
     def integration_delivery_status(self, limit: int = 500):
         with self.session() as s:
@@ -2751,6 +2957,104 @@ class Database:
             s.flush()
             return item
 
+    def alarm_burst_policy(self) -> dict[str, Any]:
+        defaults={"window_seconds":300,"threshold_count":3,"min_severity":"WARNING","auto_trigger":False}
+        with self.session() as s:
+            row=s.scalar(select(ConfigOption).where(
+                ConfigOption.category=="ALARM_BURST_POLICY",
+                ConfigOption.code=="DEFAULT",
+                ConfigOption.active.is_(True),
+            ))
+            if not row:return defaults
+            try:meta=json.loads(row.metadata_json or "{}")
+            except Exception:meta={}
+        result=dict(defaults);result.update({k:v for k,v in meta.items() if k in defaults})
+        try:result["window_seconds"]=max(1,min(int(result["window_seconds"]),86400))
+        except Exception:result["window_seconds"]=defaults["window_seconds"]
+        try:result["threshold_count"]=max(2,min(int(result["threshold_count"]),1000))
+        except Exception:result["threshold_count"]=defaults["threshold_count"]
+        result["min_severity"]=str(result.get("min_severity") or "WARNING").upper()
+        result["auto_trigger"]=bool(result.get("auto_trigger",False))
+        return result
+
+    def save_alarm_burst_policy(
+        self,
+        window_seconds: int,
+        threshold_count: int,
+        min_severity: str = "WARNING",
+        auto_trigger: bool = False,
+    ):
+        window=max(1,min(int(window_seconds),86400))
+        threshold=max(2,min(int(threshold_count),1000))
+        severity=str(min_severity or "WARNING").upper()
+        if severity not in {"INFO","LOW","WARNING","MEDIUM","HIGH","CRITICAL"}:
+            raise ValueError("Unsupported minimum alarm severity.")
+        existing=self.list_config_options("ALARM_BURST_POLICY",False)
+        row=next((x for x in existing if x.code=="DEFAULT"),None)
+        return self.save_config_option({
+            "category":"ALARM_BURST_POLICY","code":"DEFAULT","label":"Default alarm burst policy",
+            "sort_order":10,"active":True,"system_locked":False,
+            "metadata_json":{
+                "window_seconds":window,"threshold_count":threshold,
+                "min_severity":severity,"auto_trigger":bool(auto_trigger),
+            },
+        },row.version if row else None)
+
+    @staticmethod
+    def _alarm_severity_rank(value: str) -> int:
+        return {"INFO":0,"LOW":1,"WARNING":2,"MEDIUM":3,"HIGH":4,"CRITICAL":5}.get(str(value or "").upper(),0)
+
+    def _evaluate_alarm_burst_in_session(self, s, row: EquipmentAlarmEvent, occurred_at: datetime):
+        policy=self.alarm_burst_policy()
+        if not policy["auto_trigger"]:return []
+        if self._alarm_severity_rank(row.severity)<self._alarm_severity_rank(policy["min_severity"]):return []
+        start=occurred_at-timedelta(seconds=policy["window_seconds"])
+        alarms=list(s.scalars(select(EquipmentAlarmEvent).where(
+            EquipmentAlarmEvent.equipment_id==row.equipment_id,
+            EquipmentAlarmEvent.alarm_code==row.alarm_code,
+            EquipmentAlarmEvent.occurred_at>=start,
+            EquipmentAlarmEvent.occurred_at<=occurred_at,
+        ).order_by(EquipmentAlarmEvent.occurred_at,EquipmentAlarmEvent.id)))
+        if len(alarms)<policy["threshold_count"]:return []
+        recent_exec=list(s.scalars(select(WorkflowAutomationExecution).where(
+            WorkflowAutomationExecution.trigger=="ALARM_BURST",
+            WorkflowAutomationExecution.equipment_id==row.equipment_id,
+            WorkflowAutomationExecution.status=="Completed",
+        ).order_by(WorkflowAutomationExecution.id.desc()).limit(100)))
+        for execution in recent_exec:
+            try:ctx=json.loads(execution.context_json or "{}")
+            except Exception:ctx={}
+            if str(ctx.get("alarm_code",""))!=row.alarm_code:continue
+            # Use source-event time for burst continuity, not server execution time.
+            # Plant/FDC timestamps may be offset from the application host clock.
+            context_last=ctx.get("last_seen") or ctx.get("first_seen")
+            in_window=False
+            if context_last:
+                try:
+                    context_time=datetime.fromisoformat(str(context_last))
+                    in_window=start<=context_time<=occurred_at
+                except Exception:in_window=False
+            else:
+                in_window=start<=execution.executed_at<=occurred_at
+            if not in_window:continue
+            try:results=json.loads(execution.result_json or "[]")
+            except Exception:results=[]
+            ticket_no=next((str(x.get("ticket_no")) for x in results if isinstance(x,dict) and x.get("type")=="CREATE_INCIDENT" and x.get("ticket_no")),"")
+            if ticket_no and not row.related_ticket:row.related_ticket=ticket_no
+            return []
+        first=alarms[0];last=alarms[-1]
+        max_severity=max((x.severity for x in alarms),key=self._alarm_severity_rank)
+        burst_key=f"{row.equipment_id}:{row.alarm_code}:{first.event_key}"
+        context={
+            "entity_type":"ALARM_BURST","entity_key":burst_key,"equipment_id":row.equipment_id,
+            "alarm_code":row.alarm_code,"severity":max_severity,"message":row.message,"source":row.source,
+            "count":len(alarms),"first_seen":first.occurred_at.isoformat(),"last_seen":last.occurred_at.isoformat(),
+            "alarm_ids":[x.event_key for x in alarms],
+            "summary":f"{len(alarms)}× {row.alarm_code} alarm burst on {row.equipment_id}",
+            "detail":f"Alarm burst detected within {policy['window_seconds']} seconds; source events: "+", ".join(x.event_key for x in alarms),
+        }
+        return self._apply_workflow_automation_in_session(s,"ALARM_BURST",context)
+
     def ingest_alarm(
         self,
         equipment_id: str,
@@ -2806,6 +3110,7 @@ class Database:
                     "ticket_no":related_ticket,"summary":f"{alarm_code} — {message}",
                     "detail":json.dumps(raw_payload or {},default=str,sort_keys=True),
                 })
+                self._evaluate_alarm_burst_in_session(s,row,occurred_at)
             s.flush();return row
 
     def link_alarm_to_ticket(self, event_key: str, ticket_no: str, user: str, workstation: str = ""):
@@ -4251,6 +4556,49 @@ class Database:
                     })
             s.flush()
             return item
+
+    def pm_step_history(
+        self,
+        equipment_id: str,
+        pm_id: str,
+        step_no: int,
+        limit: int = 12,
+        exclude_execution_id: int | None = None,
+    ) -> list[dict[str, Any]]:
+        with self.session() as s:
+            tasks=list(s.scalars(select(PMTask).where(
+                PMTask.equipment_id==equipment_id,
+                PMTask.pm_id==pm_id,
+            )))
+            if not tasks:return []
+            task_by_id={x.id:x for x in tasks}
+            executions=list(s.scalars(select(PMExecution).where(
+                PMExecution.task_id.in_(list(task_by_id))
+            )))
+            execution_by_id={x.id:x for x in executions if exclude_execution_id is None or x.id!=exclude_execution_id}
+            if not execution_by_id:return []
+            results=list(s.scalars(select(PMResult).where(
+                PMResult.execution_id.in_(list(execution_by_id)),
+                PMResult.step_no==int(step_no),
+            ).order_by(PMResult.entered_at.desc(),PMResult.id.desc()).limit(max(1,min(int(limit),200)))))
+            rows=[]
+            for result in results:
+                execution=execution_by_id.get(result.execution_id)
+                if not execution:continue
+                task=task_by_id.get(execution.task_id)
+                rows.append({
+                    "entered_at":result.entered_at,
+                    "result":result.result,
+                    "value_text":result.value_text,
+                    "value_numeric":result.value_numeric,
+                    "comment":result.comment,
+                    "entered_by":result.entered_by,
+                    "task_id":task.id if task else None,
+                    "execution_id":execution.id,
+                    "scheduled_date":task.scheduled_date if task else None,
+                    "completed_at":execution.completed_at,
+                })
+            return rows
 
     def list_pm_results(self, execution_id: int):
         with self.session() as s:

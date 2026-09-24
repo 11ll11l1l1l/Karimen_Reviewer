@@ -100,6 +100,29 @@ class PMSnapshotTests(unittest.TestCase):
         completed = self.db.complete_pm_execution(ex.id, "tech_a")
         self.assertEqual(completed.status, "Completed")
 
+    def test_step_history_is_scoped_to_same_equipment_pm_and_step(self):
+        ex1=self.db.start_pm_execution(self.task.id,"tech_a")
+        self.db.save_pm_result(ex1.id,1,{"value_text":"4","value_numeric":4.0,"entered_by":"tech_a"})
+        self.db.complete_pm_execution(ex1.id,"tech_a")
+
+        task2=self.db.upsert_pm_task({
+            "equipment_id":"ETCH-01","pm_id":"PM-CHAMBER","pm_name":"Chamber PM",
+            "original_due_date":datetime(2026,10,23),"scheduled_date":datetime(2026,10,23),"status":"Scheduled",
+        })
+        ex2=self.db.start_pm_execution(task2.id,"tech_b")
+        self.db.save_pm_result(ex2.id,1,{"value_text":"6","value_numeric":6.0,"entered_by":"tech_b"})
+        self.db.complete_pm_execution(ex2.id,"tech_b")
+
+        task3=self.db.upsert_pm_task({
+            "equipment_id":"ETCH-01","pm_id":"PM-CHAMBER","pm_name":"Chamber PM",
+            "original_due_date":datetime(2026,11,23),"scheduled_date":datetime(2026,11,23),"status":"Scheduled",
+        })
+        current=self.db.start_pm_execution(task3.id,"tech_c")
+        rows=self.db.pm_step_history("ETCH-01","PM-CHAMBER",1,10,current.id)
+        self.assertEqual([x["value_numeric"] for x in rows],[6.0,4.0])
+        self.assertEqual([x["entered_by"] for x in rows],["tech_b","tech_a"])
+        self.assertTrue(all(x["execution_id"]!=current.id for x in rows))
+
     def test_unknown_execution_step_is_rejected(self):
         ex = self.db.start_pm_execution(self.task.id, "tech_a")
         with self.assertRaises(ValueError):
