@@ -52,6 +52,25 @@ class WorkOrderCloseoutTests(unittest.TestCase):
         self.assertEqual(after["active_release_id"],release.id)
         self.assertFalse(after["can_request_release"])
 
+    def test_closeout_isolates_qualification_by_work_order(self):
+        run=self.db.start_work_order_qualification(self.wo.work_order_no,"executor")
+        run=self.db.save_qualification_result(run.id,"Q01","PASS","Passed","executor",expected_version=run.version)
+        run=self.db.submit_qualification_run(run.id,"executor","All checks pass",expected_version=run.version)
+        run=self.db.verify_qualification_run(run.id,"verifier","Independent review",expected_version=run.version)
+        run=self.db.approve_qualification_run(run.id,"manager",30,"Approved",expected_version=run.version)
+
+        other=self.db.create_work_order({
+            "equipment_id":"ETCH-CLOSE","source_type":"ENGINEERING","title":"Second major repair",
+            "owner":"executor","qualification_required":True,"release_required":True,
+        },"creator")
+        other=self.db.transition_work_order(other.work_order_no,"In Progress","executor",expected_version=other.version)
+        other=self.db.transition_work_order(other.work_order_no,"Ready for Qualification","executor",expected_version=other.version)
+
+        state=self.db.work_order_closeout_status(other.work_order_no)
+        self.assertEqual(state["valid_qualification_run"],"")
+        self.assertTrue(state["can_start_qualification"])
+        self.assertIn("Approved valid qualification is required.",state["blockers"])
+
     def test_closeout_does_not_bypass_work_completion_state(self):
         other=self.db.create_work_order({
             "equipment_id":"ETCH-CLOSE","source_type":"ENGINEERING","title":"Incomplete work",
