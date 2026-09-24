@@ -9,6 +9,10 @@ from database import Database
 from reporting import (
     export_equipment_pptx,export_equipment_xlsx,
     export_incident_pptx,export_incident_xlsx,
+    export_pm_execution_pptx,export_pm_execution_xlsx,
+    export_work_order_pptx,export_work_order_xlsx,
+    export_qualification_pptx,export_qualification_xlsx,
+    export_release_pptx,export_release_xlsx,
 )
 
 
@@ -43,6 +47,34 @@ class OfficeReportingTests(unittest.TestCase):
             {"action_type":"Corrective","description":"Inspect controller","owner":"ee","due_at":None,"effectiveness_criteria":"Stable pressure"},
             "ee",
         )
+        self.db.upsert_pm_spec({
+            "pm_id":"PM-RPT","step_no":1,"activity":"Verify chamber pressure","method":"Gauge",
+            "input_type":"Numeric","unit":"Pa","spec_low":0.0,"spec_high":10.0,
+            "acceptance_text":"0–10 Pa","reaction_plan":"Stop and investigate","revision":1,"active":True,
+        })
+        self.pm_task=self.db.upsert_pm_task({
+            "equipment_id":"ETCH-RPT","pm_id":"PM-RPT","pm_name":"Reporting PM",
+            "status":"Scheduled","assigned_to":"ee","estimated_hours":1.5,"priority":"Normal",
+        })
+        self.pm_execution=self.db.start_pm_execution(self.pm_task.id,"ee")
+        self.db.save_pm_result(self.pm_execution.id,1,{
+            "value_text":"5.0","value_numeric":5.0,"result":"PASS","comment":"Stable","entered_by":"ee",
+        })
+        self.work_order=self.db.create_work_order_from_ticket(self.ticket.ticket_no,"ee")
+        self.protocol=self.db.save_qualification_protocol(
+            "QUAL-RPT","Reporting qualification",
+            [{"check_id":"Q01","label":"Monitor result","acceptance":"Pass"}],
+            "ee",equipment_id="ETCH-RPT",
+        )
+        self.qual_run=self.db.start_qualification_run("ETCH-RPT","QUAL-RPT","ee")
+        self.qual_run=self.db.save_qualification_result(
+            self.qual_run.id,"Q01","PASS","Monitor passed","ee",expected_version=self.qual_run.version,
+        )
+        checks={
+            "maintenance_complete":True,"measurements_pass":True,"calibration_valid":True,
+            "safety_check":True,"verification_run":True,"critical_tickets_cleared":True,
+        }
+        self.release=self.db.create_release_request("ETCH-RPT",self.ticket.ticket_no,checks,"Review packet","ee")
 
     def test_incident_pptx_and_xlsx_are_reopenable(self):
         with tempfile.TemporaryDirectory() as td:
@@ -55,6 +87,40 @@ class OfficeReportingTests(unittest.TestCase):
             self.assertIn("Summary",wb.sheetnames)
             self.assertIn("5-Why",wb.sheetnames)
             self.assertIn("CAPA",wb.sheetnames)
+
+    def test_pm_execution_pptx_and_xlsx_are_reopenable(self):
+        with tempfile.TemporaryDirectory() as td:
+            ppt=Path(td)/"pm.pptx";xlsx=Path(td)/"pm.xlsx"
+            export_pm_execution_pptx(self.db,self.pm_task.id,str(ppt))
+            export_pm_execution_xlsx(self.db,self.pm_task.id,str(xlsx))
+            deck=Presentation(str(ppt));self.assertGreaterEqual(len(deck.slides),3)
+            wb=load_workbook(str(xlsx),read_only=True)
+            self.assertIn("Summary",wb.sheetnames);self.assertIn("Checklist Results",wb.sheetnames)
+            self.assertIn("Requirements",wb.sheetnames)
+
+    def test_work_order_pptx_and_xlsx_are_reopenable(self):
+        with tempfile.TemporaryDirectory() as td:
+            ppt=Path(td)/"wo.pptx";xlsx=Path(td)/"wo.xlsx"
+            export_work_order_pptx(self.db,self.work_order.work_order_no,str(ppt))
+            export_work_order_xlsx(self.db,self.work_order.work_order_no,str(xlsx))
+            deck=Presentation(str(ppt));self.assertGreaterEqual(len(deck.slides),5)
+            wb=load_workbook(str(xlsx),read_only=True)
+            self.assertIn("Summary",wb.sheetnames);self.assertIn("Lifecycle",wb.sheetnames)
+            self.assertIn("Links",wb.sheetnames)
+
+    def test_qualification_and_release_report_packs_are_reopenable(self):
+        with tempfile.TemporaryDirectory() as td:
+            qp=Path(td)/"qual.pptx";qx=Path(td)/"qual.xlsx"
+            export_qualification_pptx(self.db,self.qual_run.run_no,str(qp))
+            export_qualification_xlsx(self.db,self.qual_run.run_no,str(qx))
+            self.assertGreaterEqual(len(Presentation(str(qp)).slides),3)
+            qwb=load_workbook(str(qx),read_only=True);self.assertIn("Checks",qwb.sheetnames)
+
+            rp=Path(td)/"release.pptx";rx=Path(td)/"release.xlsx"
+            export_release_pptx(self.db,self.release.id,str(rp))
+            export_release_xlsx(self.db,self.release.id,str(rx))
+            self.assertGreaterEqual(len(Presentation(str(rp)).slides),3)
+            rwb=load_workbook(str(rx),read_only=True);self.assertIn("Checklist",rwb.sheetnames)
 
     def test_equipment_pptx_and_xlsx_are_reopenable(self):
         with tempfile.TemporaryDirectory() as td:
