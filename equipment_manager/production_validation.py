@@ -71,6 +71,7 @@ def generate_uat_template(path: str | os.PathLike[str]) -> dict[str,Any]:
         "site_integrations":{"passed":False,"evidence":""},
         "training":{"complete":False,"evidence":""},
         "support_owner":"",
+        "milestone_acceptance":{f"M{i}":False for i in range(15)},
         "scenarios":[
             {"id":sid,"role":role,"scenario":scenario,"status":"NOT_RUN","tester":"","evidence":"","notes":""}
             for sid,role,scenario in REQUIRED_UAT_SCENARIOS
@@ -97,6 +98,9 @@ def evaluate_uat(payload: dict[str,Any], max_open_p2: int = 0) -> list[Check]:
     training=payload.get("training",{})
     checks.append(Check("training_complete","PASS" if training.get("complete") else "FAIL",training.get("evidence") or "training evidence not recorded"))
     checks.append(Check("support_owner","PASS" if str(payload.get("support_owner","")).strip() else "FAIL",str(payload.get("support_owner","") or "support owner not assigned")))
+    milestones=payload.get("milestone_acceptance",{})
+    missing_milestones=[f"M{i}" for i in range(15) if not milestones.get(f"M{i}")]
+    checks.append(Check("milestone_acceptance","PASS" if not missing_milestones else "FAIL","M0-M14 accepted" if not missing_milestones else "not accepted: "+", ".join(missing_milestones)))
     signoff=payload.get("signoff",{})
     checks.append(Check("uat_signoff","PASS" if signoff.get("approved") else "FAIL",", ".join(signoff.get("approved_by",[])) or "site signoff not approved"))
     return checks
@@ -106,7 +110,12 @@ def run_production_readiness(db, uat_evidence: str = "", max_open_p2: int = 0) -
     checks:list[Check]=[]
     pre=run_preflight()
     for row in pre["checks"]:
-        checks.append(Check("preflight:"+row["name"],row["status"],row["detail"]))
+        status=row["status"]
+        # Production readiness is stricter than ordinary preflight. SQLite is
+        # valid for demo/development but never for a multi-user production gate.
+        if row["name"]=="production_database_mode":
+            status="FAIL"
+        checks.append(Check("preflight:"+row["name"],status,row["detail"]))
 
     checks.extend([
         _timed("performance:dashboard_counts",PERFORMANCE_TARGETS["dashboard_counts_s"],db.dashboard_counts),
