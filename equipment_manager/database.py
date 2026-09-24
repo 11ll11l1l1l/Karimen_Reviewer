@@ -2055,6 +2055,11 @@ class Database:
                     row.next_attempt_at=datetime.utcnow()+timedelta(seconds=delay)
             s.flush();return row
 
+    def list_integration_events(self, limit: int = 500):
+        with self.session() as s:return list(s.scalars(
+            select(IntegrationEvent).order_by(IntegrationEvent.created_at.desc(),IntegrationEvent.id.desc()).limit(max(1,min(int(limit),5000)))
+        ))
+
     def integration_delivery_status(self, limit: int = 500):
         with self.session() as s:
             return list(s.scalars(select(IntegrationDelivery).order_by(IntegrationDelivery.id.desc()).limit(limit)))
