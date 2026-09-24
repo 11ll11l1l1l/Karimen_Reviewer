@@ -507,19 +507,19 @@ class Equipment360Workspace(QWidget):
         self._update_favorite()
 
         activity=self.db.equipment_activity_timeline(eq.equipment_id,700)
-        tickets=[x for x in self.db.list_tickets() if x.equipment_id==eq.equipment_id]
+        tickets=self.db.list_tickets(eq.equipment_id)
         alarms=self.db.list_alarms(eq.equipment_id,False,500)
-        pm=[x for x in self.db.list_pm_tasks() if x.equipment_id==eq.equipment_id]
+        pm=self.db.list_pm_tasks(eq.equipment_id)
         work_orders=self.db.list_work_orders(eq.equipment_id)
         work=self.db.list_work_logs(eq.equipment_id,False,500)
         qual=self.db.list_qualification_runs(eq.equipment_id)
-        releases=[x for x in self.db.list_release_requests() if x.equipment_id==eq.equipment_id]
+        releases=self.db.list_release_requests(eq.equipment_id)
         comps=self.db.list_components(eq.equipment_id,False)
         meters=self.db.list_meters(eq.equipment_id)
-        inv=[x for x in self.db.list_inventory_transactions(1000) if x.equipment_id==eq.equipment_id]
+        inv=self.db.list_inventory_transactions(1000,eq.equipment_id)
         docs=self.db.list_controlled_documents("Equipment",eq.equipment_id)
-        handovers=[x for x in self.db.list_endorsements() if x.equipment_id==eq.equipment_id]
-        dispositions=[x for x in self.db.list_dispositions() if x.equipment_id==eq.equipment_id]
+        handovers=self.db.list_endorsements(eq.equipment_id)
+        dispositions=self.db.list_dispositions(False,eq.equipment_id)
         rel=self.db.reliability_summary(eq.equipment_id)
 
         self.activity_rows=activity
@@ -574,11 +574,11 @@ class Equipment360Workspace(QWidget):
         if entity:self.open_entity.emit(entity,key,self.equipment_id)
 
     def open_qualification(self):
-        row=_selected(self.qual_table,[x for x in self.db.list_qualification_runs(self.equipment_id)])
+        row=_selected(self.qual_table,self.db.list_qualification_runs(self.equipment_id))
         if row:self.open_entity.emit("QUALIFICATION",row.run_no,self.equipment_id)
 
     def open_release(self):
-        rows=[x for x in self.db.list_release_requests() if x.equipment_id==self.equipment_id]
+        rows=self.db.list_release_requests(self.equipment_id)
         row=_selected(self.release_table,rows)
         if row:self.open_entity.emit("RELEASE",str(row.id),self.equipment_id)
 
