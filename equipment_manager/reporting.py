@@ -496,3 +496,136 @@ def export_weekly_review_xlsx(db,path: str,days: int=7) -> str:
     ws=wb.create_sheet("Priority Queue");_sheet(ws,["Severity","Type","Equipment","Key","Summary","Owner","Age h"],
         [[x.get("severity"),x.get("kind"),x.get("equipment_id"),x.get("key"),x.get("summary"),x.get("owner"),x.get("age_hours")] for x in metrics["attention"]])
     Path(path).parent.mkdir(parents=True,exist_ok=True);wb.save(path);return str(path)
+
+
+def _work_order_closeout_context(db,work_order_no: str) -> dict[str,Any]:
+    wo=db.get_work_order(work_order_no)
+    if not wo:raise ValueError("Work order not found")
+    close=db.work_order_closeout_status(work_order_no)
+    links=db.list_work_order_links(work_order_no)
+    events=db.list_work_order_events(work_order_no)
+    logs=[x for x in db.list_work_logs(wo.equipment_id,False,2000) if x.entity_type=="WORK_ORDER" and x.entity_key==work_order_no]
+    linked_ticket_keys=[x.entity_key for x in links if x.entity_type=="TICKET"]
+    if wo.source_type=="TICKET" and wo.source_key and wo.source_key not in linked_ticket_keys:linked_ticket_keys.insert(0,wo.source_key)
+    tickets=[x for x in db.list_tickets() if x.ticket_no in linked_ticket_keys]
+    linked_qual_keys={x.entity_key for x in links if x.entity_type=="QUALIFICATION"}
+    qualifications=[x for x in db.list_qualification_runs(wo.equipment_id) if x.run_no in linked_qual_keys]
+    release_ids=set()
+    for link in links:
+        if link.entity_type=="RELEASE":
+            try:release_ids.add(int(link.entity_key))
+            except Exception:pass
+    releases=[x for x in db.list_release_requests() if x.id in release_ids]
+    reservations=[x for x in db.list_reservations() if close.get("source_pm_task_id") and x.pm_task_id==close["source_pm_task_id"]]
+    attachments=list(db.list_attachments("WORK_ORDER",work_order_no))
+    for ticket in tickets:attachments.extend(db.list_attachments("TICKET",ticket.ticket_no))
+    for run in qualifications:attachments.extend(db.list_attachments("QUALIFICATION",run.run_no))
+    for release in releases:attachments.extend(db.list_attachments("RELEASE",str(release.id)))
+    seen=set();dedup=[]
+    for row in attachments:
+        key=(row.file_sha256,row.stored_path)
+        if key in seen:continue
+        seen.add(key);dedup.append(row)
+    return {
+        "work_order":wo,"closeout":close,"links":links,"events":events,"logs":logs,
+        "tickets":tickets,"qualifications":qualifications,"releases":releases,
+        "reservations":reservations,"attachments":dedup,
+    }
+
+
+def export_work_order_closeout_pptx(db,work_order_no: str,path: str) -> str:
+    ctx=_work_order_closeout_context(db,work_order_no);wo=ctx["work_order"];close=ctx["closeout"]
+    prs=Presentation()
+    slide=prs.slides.add_slide(prs.slide_layouts[0]);slide.shapes.title.text=f"Return-to-Service Packet — {wo.work_order_no}"
+    slide.placeholders[1].text=f"{wo.equipment_id} | {wo.title} | {wo.status} | Owner: {wo.owner or '—'}"
+
+    slide=prs.slides.add_slide(prs.slide_layouts[1]);_add_bullets(slide,"Work / Closeout Summary",[
+        f"Source: {wo.source_type}:{wo.source_key or '—'}",
+        f"Scope: {wo.description or '—'}",
+        f"Qualification required: {'Yes' if wo.qualification_required else 'No'} · Valid qualification: {close.get('valid_qualification_run') or 'None'}",
+        f"Release required: {'Yes' if wo.release_required else 'No'} · Active release: {close.get('active_release_status') or 'None'}",
+        f"Labor entries: {close.get('labor_entries',0)} · Evidence files: {close.get('attachment_count',0)}",
+        f"Part reservations: {close.get('part_reservations',0)} · Active reservations: {close.get('active_part_reservations',0)}",
+        f"Closeout blockers: {'; '.join(close.get('blockers',[])) or 'None'}",
+    ])
+
+    slide=prs.slides.add_slide(prs.slide_layouts[5]);_add_table(slide,"Linked Incident / Problem Context",
+        ["Ticket","Priority","Status","Owner","Title","Root Cause","Corrective Action"],
+        [[x.ticket_no,x.priority,x.status,x.owner,x.title,x.root_cause,x.corrective_action] for x in ctx["tickets"]],10)
+
+    slide=prs.slides.add_slide(prs.slide_layouts[5]);_add_table(slide,"Work Order Lifecycle / Labor",
+        ["Type","From / User","To / Start","Reason / End","Owner / Minutes","By / Status"],
+        [
+            *[["Lifecycle",x.from_state,x.to_state,x.reason,x.owner,x.changed_by] for x in ctx["events"]],
+            *[["Labor",x.username,x.started_at,x.ended_at,x.duration_minutes,x.status] for x in ctx["logs"]],
+        ],16)
+
+    qual_rows=[]
+    for run in ctx["qualifications"]:
+        qual_rows.append([run.run_no,run.protocol_id,run.protocol_revision,run.status,run.started_by,run.verified_by,run.approved_by,run.expires_at])
+    slide=prs.slides.add_slide(prs.slide_layouts[5]);_add_table(slide,"Qualification / Verification",
+        ["Run","Protocol","Rev","Status","Started By","Verified By","Approved By","Expires"],qual_rows,12)
+
+    release_rows=[]
+    for rel in ctx["releases"]:
+        checks=json.loads(rel.checks_json or "{}")
+        release_rows.append([rel.id,rel.status,rel.related_ticket,rel.requested_by,rel.verified_by,rel.approved_by,
+                             sum(1 for v in checks.values() if v),len(checks)])
+    slide=prs.slides.add_slide(prs.slide_layouts[5]);_add_table(slide,"Release Control",
+        ["Release","Status","Ticket","Requested By","Verified By","Approved By","Checks Pass","Checks Total"],release_rows,12)
+
+    slide=prs.slides.add_slide(prs.slide_layouts[5]);_add_table(slide,"Parts / Reservations",
+        ["Part","Location","Qty","Status","Reserved By","Reserved"],
+        [[x.part_number,x.location_code,x.quantity,x.status,x.reserved_by,x.reserved_at] for x in ctx["reservations"]],14)
+
+    slide=prs.slides.add_slide(prs.slide_layouts[5]);_add_table(slide,"Linked Record Traceability",
+        ["Type","Key","Relation","Created By","Created"],
+        [[x.entity_type,x.entity_key,x.relation,x.created_by,x.created_at] for x in ctx["links"]],16)
+
+    _add_evidence_slides(prs,ctx["attachments"],"Closeout")
+    Path(path).parent.mkdir(parents=True,exist_ok=True);prs.save(path);return str(path)
+
+
+def export_work_order_closeout_xlsx(db,work_order_no: str,path: str) -> str:
+    ctx=_work_order_closeout_context(db,work_order_no);wo=ctx["work_order"];close=ctx["closeout"]
+    wb=Workbook();summary=wb.active;summary.title="Closeout Summary"
+    _sheet(summary,["Field","Value"],[
+        ["Work Order",wo.work_order_no],["Equipment",wo.equipment_id],["Title",wo.title],["Status",wo.status],
+        ["Priority",wo.priority],["Owner",wo.owner],["Team",wo.team],["Source",f"{wo.source_type}:{wo.source_key}"],
+        ["Scope",wo.description],["Qualification Required",wo.qualification_required],
+        ["Valid Qualification",close.get("valid_qualification_run","")],["Open Qualification",close.get("open_qualification_run","")],
+        ["Release Required",wo.release_required],["Active Release ID",close.get("active_release_id","")],
+        ["Active Release Status",close.get("active_release_status","")],
+        ["Closeout Blockers","; ".join(close.get("blockers",[]))],
+    ])
+    ws=wb.create_sheet("Incidents");_sheet(ws,["Ticket","Priority","Status","Owner","Title","Problem","Root Cause","Corrective Action","Verification"],
+        [[x.ticket_no,x.priority,x.status,x.owner,x.title,x.description,x.root_cause,x.corrective_action,x.verification] for x in ctx["tickets"]])
+    ws=wb.create_sheet("Work Lifecycle");_sheet(ws,["From","To","Reason","Owner","Changed By","Time"],
+        [[x.from_state,x.to_state,x.reason,x.owner,x.changed_by,x.occurred_at] for x in ctx["events"]])
+    ws=wb.create_sheet("Labor");_sheet(ws,["User","Type","Start","End","Minutes","Status","Note"],
+        [[x.username,x.work_type,x.started_at,x.ended_at,x.duration_minutes,x.status,x.note] for x in ctx["logs"]])
+    qrows=[]
+    for run in ctx["qualifications"]:
+        qrows.append([run.run_no,run.protocol_id,run.protocol_revision,run.protocol_name,run.status,run.started_by,run.started_at,run.submitted_by,run.submitted_at,run.verified_by,run.verified_at,run.approved_by,run.approved_at,run.expires_at,run.conclusion])
+    ws=wb.create_sheet("Qualifications");_sheet(ws,["Run","Protocol","Rev","Name","Status","Started By","Started","Submitted By","Submitted","Verified By","Verified","Approved By","Approved","Expires","Conclusion"],qrows)
+    check_rows=[]
+    for run in ctx["qualifications"]:
+        checks=json.loads(run.frozen_checks_json or "[]");results=json.loads(run.results_json or "{}")
+        for check in checks:
+            cid=str(check.get("check_id") or check.get("id") or "")
+            result=results.get(cid,{}) if isinstance(results,dict) else {}
+            check_rows.append([run.run_no,cid,check.get("label") or check.get("name") or "",check.get("acceptance",""),result.get("result",""),result.get("comment",""),result.get("entered_by",""),result.get("entered_at","")])
+    ws=wb.create_sheet("Qualification Checks");_sheet(ws,["Run","Check","Description","Acceptance","Result","Comment","Entered By","Entered"],check_rows)
+    relrows=[];checklist=[]
+    for rel in ctx["releases"]:
+        relrows.append([rel.id,rel.status,rel.related_ticket,rel.requested_by,rel.requested_at,rel.verified_by,rel.verified_at,rel.approved_by,rel.approved_at,rel.notes])
+        for key,value in json.loads(rel.checks_json or "{}").items():checklist.append([rel.id,key,value])
+    ws=wb.create_sheet("Releases");_sheet(ws,["ID","Status","Ticket","Requested By","Requested","Verified By","Verified","Approved By","Approved","Notes"],relrows)
+    ws=wb.create_sheet("Release Checklist");_sheet(ws,["Release","Check","Pass"],checklist)
+    ws=wb.create_sheet("Parts");_sheet(ws,["Part","Location","Qty","Status","Reserved By","Reserved","Released"],
+        [[x.part_number,x.location_code,x.quantity,x.status,x.reserved_by,x.reserved_at,x.released_at] for x in ctx["reservations"]])
+    ws=wb.create_sheet("Links");_sheet(ws,["Type","Key","Relation","Created By","Created"],
+        [[x.entity_type,x.entity_key,x.relation,x.created_by,x.created_at] for x in ctx["links"]])
+    ws=wb.create_sheet("Evidence");_sheet(ws,["Entity","Name","Category","Caption","Tags","Path","SHA256","Added By","Added"],
+        [[f"{x.entity_type}:{x.entity_key}",x.original_name,x.category,x.caption,x.tags,x.stored_path,x.file_sha256,x.created_by,x.created_at] for x in ctx["attachments"]])
+    Path(path).parent.mkdir(parents=True,exist_ok=True);wb.save(path);return str(path)
