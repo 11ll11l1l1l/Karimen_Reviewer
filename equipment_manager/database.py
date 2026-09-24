@@ -2506,6 +2506,30 @@ class Database:
     def is_record_watching(self, entity_type: str, entity_key: str, username: str) -> bool:
         with self.session() as s:return bool(s.scalar(select(func.count()).select_from(RecordWatcher).where(RecordWatcher.entity_type==entity_type.strip().upper(),RecordWatcher.entity_key==str(entity_key),RecordWatcher.username==username)))
 
+    def list_watched_records(self, username: str, limit: int = 200) -> list[dict[str,Any]]:
+        with self.session() as s:
+            watches=list(s.scalars(select(RecordWatcher).where(
+                RecordWatcher.username==username
+            ).order_by(RecordWatcher.created_at.desc()).limit(max(1,min(int(limit),1000)))))
+            out=[]
+            for watch in watches:
+                last=s.scalar(select(RecordComment).where(
+                    RecordComment.entity_type==watch.entity_type,
+                    RecordComment.entity_key==watch.entity_key,
+                    RecordComment.active.is_(True),
+                ).order_by(RecordComment.created_at.desc(),RecordComment.id.desc()))
+                equipment_id=last.equipment_id if last else ""
+                if not equipment_id and watch.entity_type=="EQUIPMENT":equipment_id=watch.entity_key
+                out.append({
+                    "entity_type":watch.entity_type,"entity_key":watch.entity_key,
+                    "equipment_id":equipment_id,"watched_at":watch.created_at,
+                    "last_activity":last.created_at if last else watch.created_at,
+                    "last_by":last.created_by if last else "",
+                    "last_comment":last.body if last else "",
+                })
+            out.sort(key=lambda x:x["last_activity"],reverse=True)
+            return out
+
     def list_record_watchers(self, entity_type: str, entity_key: str):
         with self.session() as s:return list(s.scalars(select(RecordWatcher).where(RecordWatcher.entity_type==entity_type.strip().upper(),RecordWatcher.entity_key==str(entity_key)).order_by(RecordWatcher.username)))
 
