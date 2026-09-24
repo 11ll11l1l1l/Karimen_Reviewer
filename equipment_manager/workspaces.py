@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from feedback import notify
+
 import os
 from pathlib import Path
 from typing import Any
@@ -221,7 +223,7 @@ class AttachmentPanel(QWidget):
                 caption=row.caption,tags=row.tags,equipment_id=equipment_id,
                 created_by=self.user["username"],copied_from_id=row.id,
             )
-            QMessageBox.information(self,"Attachment",f"Copied to {target_type}:{target_key.strip()} with provenance retained.")
+            notify(f"Copied to {target_type}:{target_key.strip()} with provenance retained.")
         except Exception as exc:QMessageBox.critical(self,"Attachment copy",str(exc))
 
     def remove_selected(self):
@@ -446,7 +448,7 @@ class Equipment360Workspace(QWidget):
         if not path.lower().endswith(".pptx"):path+=".pptx"
         try:
             template=self.db.resolve_report_template("EQUIPMENT",self.eq.equipment_id)
-            export_equipment_pptx(self.db,self.eq.equipment_id,path,template);QMessageBox.information(self,"PowerPoint",f"Editable equipment review deck created.\n{path}")
+            export_equipment_pptx(self.db,self.eq.equipment_id,path,template);notify(f"Editable equipment review deck created: {path}")
         except Exception as exc:QMessageBox.critical(self,"PowerPoint",str(exc))
 
     def export_pdf(self):
@@ -455,7 +457,7 @@ class Equipment360Workspace(QWidget):
         path,_=QFileDialog.getSaveFileName(self,"Export Equipment Review PDF",default,"PDF (*.pdf)")
         if not path:return
         if not path.lower().endswith(".pdf"):path+=".pdf"
-        try:export_equipment_pdf(self.db,self.eq.equipment_id,path);QMessageBox.information(self,"PDF",f"Controlled equipment review PDF created.\n{path}")
+        try:export_equipment_pdf(self.db,self.eq.equipment_id,path);notify(f"Controlled equipment review PDF created: {path}")
         except Exception as exc:QMessageBox.critical(self,"PDF",str(exc))
 
     def export_xlsx(self):
@@ -464,7 +466,7 @@ class Equipment360Workspace(QWidget):
         path,_=QFileDialog.getSaveFileName(self,"Export Equipment Review Excel",default,"Excel Workbook (*.xlsx)")
         if not path:return
         if not path.lower().endswith(".xlsx"):path+=".xlsx"
-        try:export_equipment_xlsx(self.db,self.eq.equipment_id,path);QMessageBox.information(self,"Excel",f"Equipment review workbook created.\n{path}")
+        try:export_equipment_xlsx(self.db,self.eq.equipment_id,path);notify(f"Equipment review workbook created: {path}")
         except Exception as exc:QMessageBox.critical(self,"Excel",str(exc))
 
     def open_registry(self):
