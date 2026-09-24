@@ -2082,6 +2082,16 @@ class Database:
                     except Exception:pass
             return out
 
+    def resolve_report_template(self, report_type: str, equipment_id: str = "", context: dict[str,Any] | None = None) -> str:
+        with self.session() as s:
+            matches=self._matching_config_options(
+                s,"REPORT_TEMPLATE",equipment_id,
+                {"report_type":report_type.strip().upper(),**(context or {})},
+            )
+            if not matches:return ""
+            path=str(matches[0][2].get("path","")).strip()
+            return path if path and os.path.isfile(path) else ""
+
     def save_config_option(self, data: dict[str,Any], expected_version: int | None = None):
         payload=dict(data);payload["category"]=str(payload.get("category","")).strip().upper();payload["code"]=str(payload.get("code","")).strip()
         if not payload["category"] or not payload["code"] or not str(payload.get("label","")).strip():raise ValueError("Category, code and label are required.")
