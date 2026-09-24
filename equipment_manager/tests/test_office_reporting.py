@@ -13,6 +13,7 @@ from reporting import (
     export_work_order_pptx,export_work_order_xlsx,
     export_qualification_pptx,export_qualification_xlsx,
     export_release_pptx,export_release_xlsx,
+    export_weekly_review_pptx,export_weekly_review_xlsx,
 )
 
 
@@ -154,6 +155,18 @@ class OfficeReportingTests(unittest.TestCase):
             wb=load_workbook(str(xlsx),read_only=True)
             self.assertIn("Summary",wb.sheetnames)
             self.assertIn("Checklist",wb.sheetnames)
+
+    def test_weekly_review_pptx_and_xlsx_are_reopenable(self):
+        with tempfile.TemporaryDirectory() as td:
+            ppt=Path(td)/"weekly_review.pptx";xlsx=Path(td)/"weekly_review.xlsx"
+            export_weekly_review_pptx(self.db,str(ppt),30)
+            export_weekly_review_xlsx(self.db,str(xlsx),30)
+            deck=Presentation(str(ppt))
+            self.assertGreaterEqual(len(deck.slides),7)
+            self.assertIn("Equipment Engineering Weekly Review",deck.slides[0].shapes.title.text)
+            wb=load_workbook(str(xlsx),read_only=True)
+            for sheet in ["Scorecard","Chronic Tools","Alarm Pareto","Critical Incidents","PM Exceptions","Priority Queue"]:
+                self.assertIn(sheet,wb.sheetnames)
 
     def test_equipment_pptx_and_xlsx_are_reopenable(self):
         with tempfile.TemporaryDirectory() as td:
