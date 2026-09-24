@@ -4,11 +4,11 @@ This file is the persistent progress tracker for the full-production roadmap.
 
 ## Current baseline
 
-**Program state:** Internal Alpha — connected engineering workflow transformation
+**Program state:** Release Candidate — M14 software gate / M15 site validation
 
-**Canonical base main:** `19c149f9bf8a0804284987e4559dac11f51a3439`
+**Canonical base main:** `e5baaa93ba24d9dc1039db2ca0681c4c9d864988`
 
-**Active development wave:** `ems/internal-alpha-wave6`
+**Active development wave:** `ems/m14-m15-production-readiness`
 
 The production backend remains intact while the user-facing product is being rebuilt around connected operational workspaces, Office interoperability, evidence capture, maintenance execution, engineering analytics, reporting, logistics, collaboration, configurable workflows and plant-level configuration.
 
@@ -30,16 +30,16 @@ The production backend remains intact while the user-facing product is being reb
 | M11 Office reporting / PPT / Excel / PDF | **AT GATE** | Editable PPTX/XLSX packs cover core workflows and weekly reviews. Wave 5 adds centrally configured site PowerPoint templates automatically resolved by report/equipment context plus native controlled PDF packs for Equipment, Incident, PM, Work Order, Qualification, Release and Weekly Review. |
 | M12 Integration Studio / orchestration | **AT GATE** | Transactional outbound FILE/HTTP, workflow rule engine, replay/dead-letter operations and inbound FILE_JSON/FILE_CSV ingestion for ALARM/METER are implemented with validation, quarantine and idempotency. Wave 6 adds a dedicated Integration Studio with field-by-field mappings, non-mutating sample preview, feed processing, receipt/record inspection and replay. Protocol-specific MES/SECS-GEM/FDC adapters remain site integration work/enhancements. |
 | M13 Configurable forms / templates | **AT GATE** | Configuration Studio includes reference options, templates, typed custom fields, numbering/owner/SLA/report policies and configuration packages. Wave 6 adds configurable form sections, field placement/help/placeholder metadata, grouped runtime rendering, V2 package portability, PM-definition templates and qualification-protocol templates. |
-| M14 Product polish / performance / accessibility | **IN PROGRESS / RECOVERY ADDED** | Wave 5 adds Quick Create, Quick Screenshot, live My Work count and deep navigation. Wave 6 adds persistent per-user autosaved drafts with restore/discard for Incident/RCA and editable Work Order details, plus notifications and dedicated integration/logistics workspaces. Remaining primary gate: large-data model/view scaling, accessibility pass and further modal reduction. |
-| M15 UAT / pilot / production rollout | **NOT STARTED** | Requires completion of product gates followed by representative plant UAT/pilot. |
+| M14 Product polish / performance / accessibility | **AT GATE / SOFTWARE IMPLEMENTED** | Equipment 360 timeline queries are source-bounded instead of full-history scans; the timeline and Operations Overview use Qt model/view rendering; PostgreSQL dashboard loading runs off the GUI thread; semantic accessibility defaults, high-DPI scaling and responsive shell sizing are applied; high-frequency success dialogs were converted to non-blocking feedback; autosave/recovery remains active. CI includes a 100k-event history performance gate plus Windows navigation/resize/widget-leak soak. Final acceptance still requires representative plant-hardware timings. |
+| M15 UAT / pilot / production rollout | **IN PROGRESS / SITE EXECUTION READY** | Executable UAT evidence schema, role scenarios, defect thresholds, restore/rollback/integration/training/support/signoff gates and `EMSCLI production-readiness` are implemented. Software CI/packaging can be certified in-repo; real multi-workstation plant UAT, pilot timing, infrastructure recovery, site integrations and human signoff must be executed at the deployment site before Production. |
 
 ## Immediate execution order
 
-1. Run the consolidated Wave 6 EMS-only validation cycle now that feature coding is substantially complete.
-2. Fix Wave 6 unit/schema/PostgreSQL/Windows/PySide6/packaging regressions as one batch.
-3. Merge Wave 6 only when the final exact code-bearing head is green.
-4. Continue M14 large-data model/view scaling, accessibility and remaining modal reduction.
-5. Begin M15 representative plant UAT/pilot after remaining product gates are accepted.
+1. Freeze the RC3 code-bearing head and complete the consolidated EMS validation cycle: SQLite/PostgreSQL core, 100k-event stress, Windows/PySide6 smoke/soak and Windows package.
+2. Fix any exact-head regressions as one batch and merge only when the final code-bearing head is green.
+3. On the pilot site, run `EMSCLI uat-template`, execute every required role scenario and attach evidence.
+4. Run backup/restore, upgrade/rollback, DB/file-server outage recovery, site integration and two-workstation concurrency exercises.
+5. Run `EMSCLI production-readiness`; production remains blocked until the report is release-ready and site signoff is recorded.
 
 ## EMS development execution policy
 

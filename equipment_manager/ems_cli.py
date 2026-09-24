@@ -9,6 +9,7 @@ from integrations import dispatch_pending
 from inbound_integrations import process_all_inbound, process_inbound_endpoint
 from preflight import run_preflight
 from recovery import run_restore_drill
+from production_validation import generate_uat_template, run_production_readiness, write_readiness_report
 from database import Database
 from version import __version__
 
@@ -23,6 +24,11 @@ def main() -> int:
     r=sub.add_parser("restore-drill");r.add_argument("path");r.add_argument("--user",default=os.getenv("USERNAME") or os.getenv("USER") or "operator")
     d=sub.add_parser("dispatch-integrations");d.add_argument("--limit",type=int,default=500)
     inbound=sub.add_parser("process-inbound");inbound.add_argument("--endpoint",default="");inbound.add_argument("--limit",type=int,default=200)
+    uat=sub.add_parser("uat-template");uat.add_argument("path")
+    ready=sub.add_parser("production-readiness")
+    ready.add_argument("--uat-evidence",default="")
+    ready.add_argument("--report",default="production-readiness.json")
+    ready.add_argument("--max-open-p2",type=int,default=0)
     args=parser.parse_args()
     url=os.getenv("EMS_DATABASE_URL","sqlite:///equipment_manager.db")
 
@@ -49,6 +55,17 @@ def main() -> int:
         print(json.dumps(results,indent=2,default=str,sort_keys=True))
         rejected=sum(int(x.get("rejected",0)) for x in results)
         return 0 if rejected==0 else 2
+    if args.command=="uat-template":
+        payload=generate_uat_template(args.path)
+        print(f"Created {args.path} with {len(payload['scenarios'])} required UAT scenarios.")
+        return 0
+    if args.command=="production-readiness":
+        result=run_production_readiness(Database(url),args.uat_evidence,args.max_open_p2)
+        write_readiness_report(result,args.report)
+        for check in result["checks"]:
+            print(f"{check['status']:<4} {check['name']}: {check['detail']}")
+        print(f"Report: {args.report}")
+        return 0 if result["release_ready"] else 2
     return 2
 
 

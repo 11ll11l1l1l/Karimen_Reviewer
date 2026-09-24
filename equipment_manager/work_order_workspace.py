@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from feedback import notify
+
 from datetime import datetime
 
 from PySide6.QtCore import Signal, QTimer
@@ -259,10 +261,10 @@ class WorkOrderWorkspace(QWidget):
                 if QMessageBox.question(self,"Advance Closeout","All controlled closeout gates are satisfied. Complete this work order?")!=QMessageBox.StandardButton.Yes:return
                 updated=self.db.transition_work_order(wo.work_order_no,"Completed",self.user["username"],"Qualification/release closeout complete",self.owner.text().strip(),wo.version,"WORK-ORDER-WORKSPACE")
                 self.work_order_no=updated.work_order_no;self.refresh()
-                QMessageBox.information(self,"Advance Closeout","Work order completed and return-to-service closeout is satisfied.")
+                notify("Work order completed and return-to-service closeout is satisfied.")
                 return
 
-            QMessageBox.information(self,"Advance Closeout","This work order is already complete and all current closeout gates are satisfied.")
+            notify("This work order is already complete and all current closeout gates are satisfied.")
         except Exception as exc:QMessageBox.critical(self,"Advance Closeout",str(exc))
 
     def start_qualification(self):
@@ -302,7 +304,7 @@ class WorkOrderWorkspace(QWidget):
         if not path.lower().endswith(".pptx"):path+=".pptx"
         try:
             export_work_order_closeout_pptx(self.db,self.work_order.work_order_no,path,self.db.resolve_report_template("WORK_ORDER_CLOSEOUT",self.work_order.equipment_id))
-            QMessageBox.information(self,"Closeout Pack",f"Editable return-to-service packet created.\n{path}")
+            notify(f"Editable return-to-service packet created: {path}")
         except Exception as exc:QMessageBox.critical(self,"Closeout Pack",str(exc))
 
     def export_closeout_xlsx(self):
@@ -313,7 +315,7 @@ class WorkOrderWorkspace(QWidget):
         if not path.lower().endswith(".xlsx"):path+=".xlsx"
         try:
             export_work_order_closeout_xlsx(self.db,self.work_order.work_order_no,path)
-            QMessageBox.information(self,"Closeout Pack",f"Return-to-service workbook created.\n{path}")
+            notify(f"Return-to-service workbook created: {path}")
         except Exception as exc:QMessageBox.critical(self,"Closeout Pack",str(exc))
 
     def export_pptx(self):
@@ -322,7 +324,7 @@ class WorkOrderWorkspace(QWidget):
         path,_=QFileDialog.getSaveFileName(self,"Export Work Order PowerPoint",f"{self.work_order.work_order_no}_Review.pptx","PowerPoint (*.pptx)")
         if not path:return
         if not path.lower().endswith(".pptx"):path+=".pptx"
-        try:export_work_order_pptx(self.db,self.work_order.work_order_no,path,self.db.resolve_report_template("WORK_ORDER",self.work_order.equipment_id));QMessageBox.information(self,"PowerPoint",f"Editable work-order review deck created.\n{path}")
+        try:export_work_order_pptx(self.db,self.work_order.work_order_no,path,self.db.resolve_report_template("WORK_ORDER",self.work_order.equipment_id));notify(f"Editable work-order review deck created: {path}")
         except Exception as exc:QMessageBox.critical(self,"PowerPoint",str(exc))
 
     def export_pdf(self):
@@ -330,7 +332,7 @@ class WorkOrderWorkspace(QWidget):
         path,_=QFileDialog.getSaveFileName(self,"Export Work Order PDF",f"{self.work_order.work_order_no}_Work_Order.pdf","PDF (*.pdf)")
         if not path:return
         if not path.lower().endswith(".pdf"):path+=".pdf"
-        try:export_work_order_pdf(self.db,self.work_order.work_order_no,path);QMessageBox.information(self,"PDF",f"Controlled work-order PDF created.\n{path}")
+        try:export_work_order_pdf(self.db,self.work_order.work_order_no,path);notify(f"Controlled work-order PDF created: {path}")
         except Exception as exc:QMessageBox.critical(self,"PDF",str(exc))
 
     def export_xlsx(self):
@@ -339,7 +341,7 @@ class WorkOrderWorkspace(QWidget):
         path,_=QFileDialog.getSaveFileName(self,"Export Work Order Excel",f"{self.work_order.work_order_no}_Review.xlsx","Excel Workbook (*.xlsx)")
         if not path:return
         if not path.lower().endswith(".xlsx"):path+=".xlsx"
-        try:export_work_order_xlsx(self.db,self.work_order.work_order_no,path);QMessageBox.information(self,"Excel",f"Work-order review workbook created.\n{path}")
+        try:export_work_order_xlsx(self.db,self.work_order.work_order_no,path);notify(f"Work-order review workbook created: {path}")
         except Exception as exc:QMessageBox.critical(self,"Excel",str(exc))
 
     def new_engineering(self):

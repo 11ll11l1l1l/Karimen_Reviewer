@@ -316,7 +316,7 @@ class PMExecutionWorkspace(QWidget):
         path,_=QFileDialog.getSaveFileName(self,"Export PM Review PowerPoint",f"{self.task.equipment_id}_{self.task.pm_id}_PM_Review.pptx","PowerPoint (*.pptx)")
         if not path:return
         if not path.lower().endswith(".pptx"):path+=".pptx"
-        try:export_pm_execution_pptx(self.db,self.task.id,path,self.db.resolve_report_template("PM_EXECUTION",self.task.equipment_id));QMessageBox.information(self,"PowerPoint",f"Editable PM review deck created.\n{path}")
+        try:export_pm_execution_pptx(self.db,self.task.id,path,self.db.resolve_report_template("PM_EXECUTION",self.task.equipment_id));notify(f"Editable PM review deck created: {path}")
         except Exception as exc:QMessageBox.critical(self,"PowerPoint",str(exc))
 
     def export_pdf(self):
@@ -324,7 +324,7 @@ class PMExecutionWorkspace(QWidget):
         path,_=QFileDialog.getSaveFileName(self,"Export PM PDF",f"{self.task.equipment_id}_{self.task.pm_id}_{self.task.id}.pdf","PDF (*.pdf)")
         if not path:return
         if not path.lower().endswith(".pdf"):path+=".pdf"
-        try:export_pm_execution_pdf(self.db,self.task.id,path);QMessageBox.information(self,"PDF",f"Controlled PM execution PDF created.\n{path}")
+        try:export_pm_execution_pdf(self.db,self.task.id,path);notify(f"Controlled PM execution PDF created: {path}")
         except Exception as exc:QMessageBox.critical(self,"PDF",str(exc))
 
     def export_xlsx(self):
@@ -332,7 +332,7 @@ class PMExecutionWorkspace(QWidget):
         path,_=QFileDialog.getSaveFileName(self,"Export PM Review Excel",f"{self.task.equipment_id}_{self.task.pm_id}_PM_Review.xlsx","Excel Workbook (*.xlsx)")
         if not path:return
         if not path.lower().endswith(".xlsx"):path+=".xlsx"
-        try:export_pm_execution_xlsx(self.db,self.task.id,path);QMessageBox.information(self,"Excel",f"PM review workbook created.\n{path}")
+        try:export_pm_execution_xlsx(self.db,self.task.id,path);notify(f"PM review workbook created: {path}")
         except Exception as exc:QMessageBox.critical(self,"Excel",str(exc))
 
     def open_equipment(self):

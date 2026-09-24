@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from feedback import notify
+
 import os
 from pathlib import Path
 from typing import Any
@@ -18,6 +20,7 @@ from reporting import export_equipment_pptx, export_equipment_xlsx
 from pdf_reporting import export_equipment_pdf
 from image_annotator import ImageAnnotationDialog
 from table_productivity import install_table_productivity
+from ui_quality import make_model_table
 
 FILE_ROOT=os.getenv("EMS_FILE_ROOT",str(Path.cwd()/"equipment_files"))
 
@@ -46,8 +49,12 @@ def _fill_objects(table: QTableWidget, rows: list[Any], fields: list[str]):
             table.setItem(r,c,_item(value))
 
 
-def _selected(table: QTableWidget, rows: list[Any]):
-    i=table.currentRow()
+def _selected(table, rows: list[Any]):
+    if hasattr(table,"currentRow"):
+        i=table.currentRow()
+    else:
+        index=table.currentIndex()
+        i=index.row() if index.isValid() else -1
     return rows[i] if 0<=i<len(rows) else None
 
 
@@ -216,7 +223,7 @@ class AttachmentPanel(QWidget):
                 caption=row.caption,tags=row.tags,equipment_id=equipment_id,
                 created_by=self.user["username"],copied_from_id=row.id,
             )
-            QMessageBox.information(self,"Attachment",f"Copied to {target_type}:{target_key.strip()} with provenance retained.")
+            notify(f"Copied to {target_type}:{target_key.strip()} with provenance retained.")
         except Exception as exc:QMessageBox.critical(self,"Attachment copy",str(exc))
 
     def remove_selected(self):
@@ -386,7 +393,15 @@ class Equipment360Workspace(QWidget):
             card=QFrame();card.setFrameShape(QFrame.Shape.StyledPanel);box=QVBoxLayout(card);value=QLabel("—");value.setStyleSheet("font-size:18pt;font-weight:700");box.addWidget(value);box.addWidget(QLabel(key));self.metric_labels[key]=value;self.metrics.addWidget(card,i//4,i%4)
         ov.addStretch(1);self.tabs.addTab(overview,"Overview")
 
-        timeline=QWidget();tl=QVBoxLayout(timeline);self.timeline_table=_table(["Time","Type","Key","Activity","Status","User","Source"]);self.timeline_table.doubleClicked.connect(self.open_timeline_item);tl.addWidget(self.timeline_table);self.tabs.addTab(timeline,"Unified timeline")
+        timeline=QWidget();tl=QVBoxLayout(timeline)
+        self.timeline_table,self.timeline_model=make_model_table(
+            ["Time","Type","Key","Activity","Status","User","Source"],
+            ["occurred_at","kind","key","summary","status","user","source"],
+            "Equipment unified activity timeline",
+        )
+        self.timeline_table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        self.timeline_table.doubleClicked.connect(self.open_timeline_item)
+        tl.addWidget(self.timeline_table);self.tabs.addTab(timeline,"Unified timeline")
 
         issues=QWidget();iv=QVBoxLayout(issues)
         self.ticket_table=_table(["Ticket","Title","Priority","Status","Owner","Updated"]);self.ticket_table.doubleClicked.connect(self.open_ticket)
@@ -416,7 +431,8 @@ class Equipment360Workspace(QWidget):
         self._clear()
 
     def _clear(self):
-        for table in [self.timeline_table,self.ticket_table,self.alarm_table,self.pm_table,self.work_table,self.qual_table,self.release_table,self.component_table,self.meter_table,self.inventory_table,self.document_table,self.handover_table,self.disposition_table,self.related_table]:table.setRowCount(0)
+        self.timeline_model.set_rows([])
+        for table in [self.ticket_table,self.alarm_table,self.pm_table,self.work_table,self.qual_table,self.release_table,self.component_table,self.meter_table,self.inventory_table,self.document_table,self.handover_table,self.disposition_table,self.related_table]:table.setRowCount(0)
         self.relationships=[]
         for value in self.metric_labels.values():value.setText("—")
 
@@ -432,7 +448,7 @@ class Equipment360Workspace(QWidget):
         if not path.lower().endswith(".pptx"):path+=".pptx"
         try:
             template=self.db.resolve_report_template("EQUIPMENT",self.eq.equipment_id)
-            export_equipment_pptx(self.db,self.eq.equipment_id,path,template);QMessageBox.information(self,"PowerPoint",f"Editable equipment review deck created.\n{path}")
+            export_equipment_pptx(self.db,self.eq.equipment_id,path,template);notify(f"Editable equipment review deck created: {path}")
         except Exception as exc:QMessageBox.critical(self,"PowerPoint",str(exc))
 
     def export_pdf(self):
@@ -441,7 +457,7 @@ class Equipment360Workspace(QWidget):
         path,_=QFileDialog.getSaveFileName(self,"Export Equipment Review PDF",default,"PDF (*.pdf)")
         if not path:return
         if not path.lower().endswith(".pdf"):path+=".pdf"
-        try:export_equipment_pdf(self.db,self.eq.equipment_id,path);QMessageBox.information(self,"PDF",f"Controlled equipment review PDF created.\n{path}")
+        try:export_equipment_pdf(self.db,self.eq.equipment_id,path);notify(f"Controlled equipment review PDF created: {path}")
         except Exception as exc:QMessageBox.critical(self,"PDF",str(exc))
 
     def export_xlsx(self):
@@ -450,7 +466,7 @@ class Equipment360Workspace(QWidget):
         path,_=QFileDialog.getSaveFileName(self,"Export Equipment Review Excel",default,"Excel Workbook (*.xlsx)")
         if not path:return
         if not path.lower().endswith(".xlsx"):path+=".xlsx"
-        try:export_equipment_xlsx(self.db,self.eq.equipment_id,path);QMessageBox.information(self,"Excel",f"Equipment review workbook created.\n{path}")
+        try:export_equipment_xlsx(self.db,self.eq.equipment_id,path);notify(f"Equipment review workbook created: {path}")
         except Exception as exc:QMessageBox.critical(self,"Excel",str(exc))
 
     def open_registry(self):
@@ -491,23 +507,23 @@ class Equipment360Workspace(QWidget):
         self._update_favorite()
 
         activity=self.db.equipment_activity_timeline(eq.equipment_id,700)
-        tickets=[x for x in self.db.list_tickets() if x.equipment_id==eq.equipment_id]
+        tickets=self.db.list_tickets(eq.equipment_id)
         alarms=self.db.list_alarms(eq.equipment_id,False,500)
-        pm=[x for x in self.db.list_pm_tasks() if x.equipment_id==eq.equipment_id]
+        pm=self.db.list_pm_tasks(eq.equipment_id)
         work_orders=self.db.list_work_orders(eq.equipment_id)
         work=self.db.list_work_logs(eq.equipment_id,False,500)
         qual=self.db.list_qualification_runs(eq.equipment_id)
-        releases=[x for x in self.db.list_release_requests() if x.equipment_id==eq.equipment_id]
+        releases=self.db.list_release_requests(eq.equipment_id)
         comps=self.db.list_components(eq.equipment_id,False)
         meters=self.db.list_meters(eq.equipment_id)
-        inv=[x for x in self.db.list_inventory_transactions(1000) if x.equipment_id==eq.equipment_id]
+        inv=self.db.list_inventory_transactions(1000,eq.equipment_id)
         docs=self.db.list_controlled_documents("Equipment",eq.equipment_id)
-        handovers=[x for x in self.db.list_endorsements() if x.equipment_id==eq.equipment_id]
-        dispositions=[x for x in self.db.list_dispositions() if x.equipment_id==eq.equipment_id]
+        handovers=self.db.list_endorsements(eq.equipment_id)
+        dispositions=self.db.list_dispositions(False,eq.equipment_id)
         rel=self.db.reliability_summary(eq.equipment_id)
 
         self.activity_rows=activity
-        _fill_objects(self.timeline_table,activity,["occurred_at","kind","key","summary","status","user","source"])
+        self.timeline_model.set_rows(activity)
         _fill_objects(self.ticket_table,tickets,["ticket_no","title","priority","status","owner","updated_at"])
         _fill_objects(self.alarm_table,alarms,["alarm_code","severity","message","state","occurred_at","related_ticket"])
         _fill_objects(self.pm_table,pm,["id","pm_id","pm_name","scheduled_date","status","assigned_to","priority"])
@@ -558,11 +574,11 @@ class Equipment360Workspace(QWidget):
         if entity:self.open_entity.emit(entity,key,self.equipment_id)
 
     def open_qualification(self):
-        row=_selected(self.qual_table,[x for x in self.db.list_qualification_runs(self.equipment_id)])
+        row=_selected(self.qual_table,self.db.list_qualification_runs(self.equipment_id))
         if row:self.open_entity.emit("QUALIFICATION",row.run_no,self.equipment_id)
 
     def open_release(self):
-        rows=[x for x in self.db.list_release_requests() if x.equipment_id==self.equipment_id]
+        rows=self.db.list_release_requests(self.equipment_id)
         row=_selected(self.release_table,rows)
         if row:self.open_entity.emit("RELEASE",str(row.id),self.equipment_id)
 

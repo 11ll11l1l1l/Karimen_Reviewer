@@ -13,6 +13,18 @@ Local Windows desktop equipment-management system isolated under `equipment_mana
 
 ## Current build
 
+## M14/M15 production-readiness candidate
+
+RC3 adds bounded large-history loading, model/view rendering for high-volume operational surfaces, background PostgreSQL dashboard reads, responsive/high-DPI shell behavior, accessibility labeling, non-blocking success feedback, a 100k-event CI performance gate, and Windows navigation/resize soak coverage.
+
+Site validation is executable rather than a prose-only checklist:
+
+    EMSCLI.exe uat-template C:\EMS\uat-evidence.json
+    EMSCLI.exe production-readiness --uat-evidence C:\EMS\uat-evidence.json --report C:\EMS\production-readiness.json --max-open-p2 0
+
+See `M15_UAT_PILOT.md`. Production release is intentionally blocked until real-site UAT evidence, restore/rollback, integration certification, training/support ownership and signoff pass.
+
+
 ### Release-candidate controls
 
 - Formal equipment qualification protocols have controlled revisions; each run freezes the exact protocol/check set used for execution.

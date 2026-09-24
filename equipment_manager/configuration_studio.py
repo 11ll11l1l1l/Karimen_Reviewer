@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from feedback import notify
+
 import json
 from datetime import datetime
 
@@ -275,7 +277,7 @@ class CustomFieldsPanel(QWidget):
             elif isinstance(w,QComboBox):value=w.currentText()
             else:value=w.text().strip()
             values[definition.field_id]=value
-        try:self.db.save_custom_field_values(self.entity_type,self.entity_key,values,self.user["username"],self.applies_to);QMessageBox.information(self,"Custom fields","Saved.");self.refresh()
+        try:self.db.save_custom_field_values(self.entity_type,self.entity_key,values,self.user["username"],self.applies_to);notify("Custom fields saved.");self.refresh()
         except Exception as exc:QMessageBox.critical(self,"Custom fields",str(exc))
 
 
@@ -302,7 +304,7 @@ class ConfigurationStudio(QWidget):
         if not path.lower().endswith(".json"):path+=".json"
         try:
             with open(path,"w",encoding="utf-8") as handle:json.dump(self.db.export_configuration_bundle(),handle,indent=2,ensure_ascii=False)
-            QMessageBox.information(self,"Configuration",f"Configuration package exported.\n{path}")
+            notify(f"Configuration package exported: {path}")
         except Exception as exc:QMessageBox.critical(self,"Configuration export",str(exc))
 
     def import_package(self):
@@ -316,7 +318,7 @@ class ConfigurationStudio(QWidget):
                 lines.append(f"{section}: {preview['creates'][section]} create / {preview['updates'][section]} update")
             if QMessageBox.question(self,"Configuration Import Preview","Apply this validated package?\n\n"+"\n".join(lines))!=QMessageBox.StandardButton.Yes:return
             self.db.import_configuration_bundle(bundle,self.user["username"],False)
-            self.refresh();QMessageBox.information(self,"Configuration","Configuration package applied.")
+            self.refresh();notify("Configuration package applied.")
         except Exception as exc:QMessageBox.critical(self,"Configuration import",str(exc))
 
     def refresh(self):self.refresh_options();self.refresh_templates();self.refresh_fields();self.refresh_layout()
