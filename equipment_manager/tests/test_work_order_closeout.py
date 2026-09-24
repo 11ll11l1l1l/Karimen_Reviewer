@@ -1,7 +1,13 @@
 import json
+import tempfile
 import unittest
+from pathlib import Path
+
+from openpyxl import load_workbook
+from pptx import Presentation
 
 from database import Database
+from reporting import export_work_order_closeout_pptx, export_work_order_closeout_xlsx
 
 
 class WorkOrderCloseoutTests(unittest.TestCase):
@@ -51,6 +57,27 @@ class WorkOrderCloseoutTests(unittest.TestCase):
         after=self.db.work_order_closeout_status(self.wo.work_order_no)
         self.assertEqual(after["active_release_id"],release.id)
         self.assertFalse(after["can_request_release"])
+
+    def test_closeout_review_pack_contains_qualification_release_and_traceability(self):
+        run=self.db.start_work_order_qualification(self.wo.work_order_no,"executor")
+        run=self.db.save_qualification_result(run.id,"Q01","PASS","Passed","executor",expected_version=run.version)
+        run=self.db.submit_qualification_run(run.id,"executor","All checks pass",expected_version=run.version)
+        run=self.db.verify_qualification_run(run.id,"verifier","Independent review",expected_version=run.version)
+        run=self.db.approve_qualification_run(run.id,"manager",30,"Approved",expected_version=run.version)
+        release=self.db.create_work_order_release_request(self.wo.work_order_no,"release_requester")
+        with tempfile.TemporaryDirectory() as td:
+            ppt=Path(td)/"closeout.pptx";xlsx=Path(td)/"closeout.xlsx"
+            export_work_order_closeout_pptx(self.db,self.wo.work_order_no,str(ppt))
+            export_work_order_closeout_xlsx(self.db,self.wo.work_order_no,str(xlsx))
+            deck=Presentation(str(ppt))
+            self.assertGreaterEqual(len(deck.slides),7)
+            self.assertIn("Return-to-Service Packet",deck.slides[0].shapes.title.text)
+            wb=load_workbook(str(xlsx),read_only=True)
+            for sheet in ["Closeout Summary","Qualifications","Qualification Checks","Releases","Release Checklist","Links","Evidence"]:
+                self.assertIn(sheet,wb.sheetnames)
+            release_sheet=wb["Releases"]
+            values=list(release_sheet.values)
+            self.assertTrue(any(str(release.id)==str(row[0]) for row in values[1:]))
 
     def test_closeout_isolates_qualification_by_work_order(self):
         run=self.db.start_work_order_qualification(self.wo.work_order_no,"executor")
