@@ -130,6 +130,28 @@ def _move_file(source: Path, destination_root: str, default_folder: str) -> Path
     return target
 
 
+def preview_inbound_file(db: Database, endpoint_id: str, file_path: str, limit: int=50) -> dict[str,Any]:
+    endpoint=db.get_inbound_endpoint(endpoint_id)
+    if not endpoint:raise ValueError("Inbound endpoint not found.")
+    path=Path(file_path).expanduser().resolve()
+    if not path.is_file():raise FileNotFoundError(path)
+    mapping=json.loads(endpoint.mapping_json or "{}");defaults=json.loads(endpoint.defaults_json or "{}")
+    rows=_records(path,endpoint.adapter_type)
+    preview=[];errors=[]
+    for index,record in enumerate(rows[:max(1,min(int(limit),500))],1):
+        mapped=_map_record(record,mapping,defaults)
+        error=""
+        try:_validate_target(db,endpoint.entity_type,mapped,index)
+        except Exception as exc:error=str(exc);errors.append({"row":index,"error":error})
+        preview.append({"row":index,"raw":record,"mapped":mapped,"valid":not bool(error),"error":error})
+    return {
+        "endpoint_id":endpoint.endpoint_id,"entity_type":endpoint.entity_type,
+        "adapter_type":endpoint.adapter_type,"source":str(path),"records_total":len(rows),
+        "previewed":len(preview),"valid":sum(1 for x in preview if x["valid"]),
+        "invalid":sum(1 for x in preview if not x["valid"]),"rows":preview,"errors":errors,
+    }
+
+
 def process_inbound_file(db: Database, endpoint_id: str, file_path: str, *, replay: bool=False) -> dict[str,Any]:
     endpoint=db.get_inbound_endpoint(endpoint_id)
     if not endpoint:raise ValueError("Inbound endpoint not found.")
