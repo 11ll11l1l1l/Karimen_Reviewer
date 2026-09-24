@@ -130,7 +130,7 @@ class CustomFieldsPanel(QWidget):
             elif isinstance(w,QComboBox):value=w.currentText()
             else:value=w.text().strip()
             values[definition.field_id]=value
-        try:self.db.save_custom_field_values(self.entity_type,self.entity_key,values,self.user["username"]);QMessageBox.information(self,"Custom fields","Saved.");self.refresh()
+        try:self.db.save_custom_field_values(self.entity_type,self.entity_key,values,self.user["username"],self.applies_to);QMessageBox.information(self,"Custom fields","Saved.");self.refresh()
         except Exception as exc:QMessageBox.critical(self,"Custom fields",str(exc))
 
 
