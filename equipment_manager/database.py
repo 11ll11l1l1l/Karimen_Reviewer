@@ -7194,6 +7194,13 @@ class Database:
         with self.session() as s: return list(s.scalars(select(AuditLog).order_by(AuditLog.created_at.desc()).limit(limit)))
 
     def equipment_activity_timeline(self, equipment_id: str, limit: int = 500) -> list[dict[str, Any]]:
+        """Return the newest cross-domain equipment events without scanning full history.
+
+        Each source query is independently ordered and bounded before the results
+        are merged. This keeps Equipment 360 responsive even when a tool has
+        100k+ alarms/events while preserving the existing unified timeline API.
+        """
+        cap=max(1,min(int(limit),5000))
         rows=[]
         def add(when,kind,key,summary,user="",status="",source=""):
             if when is None:return
@@ -7202,53 +7209,134 @@ class Database:
                 "user":user or "","status":status or "","source":source or "",
             })
         with self.session() as s:
-            for e in s.scalars(select(EquipmentStateEvent).where(EquipmentStateEvent.equipment_id==equipment_id)):
+            state_events=list(s.scalars(
+                select(EquipmentStateEvent)
+                .where(EquipmentStateEvent.equipment_id==equipment_id)
+                .order_by(EquipmentStateEvent.changed_at.desc(),EquipmentStateEvent.id.desc())
+                .limit(cap)
+            ))
+            for e in state_events:
                 add(e.changed_at,"STATE",e.event_key,f"{e.from_state or '—'} → {e.to_state} · {e.reason_code}: {e.reason_text}",e.changed_by,e.to_state,"Equipment state")
-            tickets=list(s.scalars(select(Ticket).where(Ticket.equipment_id==equipment_id)))
-            ticket_nos=[x.ticket_no for x in tickets]
+
+            tickets=list(s.scalars(
+                select(Ticket)
+                .where(Ticket.equipment_id==equipment_id)
+                .order_by(Ticket.created_at.desc(),Ticket.id.desc())
+                .limit(cap)
+            ))
             for t in tickets:
                 add(t.created_at,"INCIDENT",t.ticket_no,f"Created {t.priority} incident — {t.title}",t.created_by,t.status,"Ticket")
-            if ticket_nos:
-                for e in s.scalars(select(TicketStateEvent).where(TicketStateEvent.ticket_no.in_(ticket_nos))):
-                    add(e.changed_at,"INCIDENT",e.ticket_no,f"{e.from_state or '—'} → {e.to_state} · {e.reason_code}: {e.note}",e.changed_by,e.to_state,"Ticket lifecycle")
-            for a in s.scalars(select(EquipmentAlarmEvent).where(EquipmentAlarmEvent.equipment_id==equipment_id)):
+            ticket_events=s.execute(
+                select(TicketStateEvent,Ticket)
+                .join(Ticket,Ticket.ticket_no==TicketStateEvent.ticket_no)
+                .where(Ticket.equipment_id==equipment_id)
+                .order_by(TicketStateEvent.changed_at.desc(),TicketStateEvent.id.desc())
+                .limit(cap)
+            ).all()
+            for e,_ticket in ticket_events:
+                add(e.changed_at,"INCIDENT",e.ticket_no,f"{e.from_state or '—'} → {e.to_state} · {e.reason_code}: {e.note}",e.changed_by,e.to_state,"Ticket lifecycle")
+
+            alarms=list(s.scalars(
+                select(EquipmentAlarmEvent)
+                .where(EquipmentAlarmEvent.equipment_id==equipment_id)
+                .order_by(EquipmentAlarmEvent.occurred_at.desc(),EquipmentAlarmEvent.id.desc())
+                .limit(cap)
+            ))
+            for a in alarms:
                 add(a.occurred_at,"ALARM",a.event_key,f"{a.alarm_code} — {a.message}",a.acknowledged_by,a.state,a.source)
                 if a.cleared_at:add(a.cleared_at,"ALARM",a.event_key,f"{a.alarm_code} cleared",a.acknowledged_by,"CLEARED",a.source)
-            tasks=list(s.scalars(select(PMTask).where(PMTask.equipment_id==equipment_id)))
-            task_by_id={x.id:x for x in tasks}
+
+            tasks=list(s.scalars(
+                select(PMTask)
+                .where(PMTask.equipment_id==equipment_id)
+                .order_by(PMTask.scheduled_date.desc(),PMTask.id.desc())
+                .limit(cap)
+            ))
             for t in tasks:
                 add(t.updated_at or t.scheduled_date or t.original_due_date,"PM",t.id,f"{t.pm_id} — {t.pm_name}",t.assigned_to,t.status,"PM task")
-            if task_by_id:
-                for ex in s.scalars(select(PMExecution).where(PMExecution.task_id.in_(list(task_by_id)))):
-                    task=task_by_id.get(ex.task_id)
-                    label=f"{task.pm_id} — {task.pm_name}" if task else f"PM task {ex.task_id}"
-                    add(ex.started_at,"PM",ex.task_id,f"Execution started: {label}",ex.started_by,ex.status,"PM execution")
-                    if ex.completed_at:add(ex.completed_at,"PM",ex.task_id,f"Execution completed: {label}",ex.completed_by,"Completed","PM execution")
-            work_orders=list(s.scalars(select(WorkOrder).where(WorkOrder.equipment_id==equipment_id)))
-            work_order_nos=[x.work_order_no for x in work_orders]
+            executions=s.execute(
+                select(PMExecution,PMTask)
+                .join(PMTask,PMTask.id==PMExecution.task_id)
+                .where(PMTask.equipment_id==equipment_id)
+                .order_by(PMExecution.started_at.desc(),PMExecution.id.desc())
+                .limit(cap)
+            ).all()
+            for ex,task in executions:
+                label=f"{task.pm_id} — {task.pm_name}"
+                add(ex.started_at,"PM",ex.task_id,f"Execution started: {label}",ex.started_by,ex.status,"PM execution")
+                if ex.completed_at:add(ex.completed_at,"PM",ex.task_id,f"Execution completed: {label}",ex.completed_by,"Completed","PM execution")
+
+            work_orders=list(s.scalars(
+                select(WorkOrder)
+                .where(WorkOrder.equipment_id==equipment_id)
+                .order_by(WorkOrder.created_at.desc(),WorkOrder.id.desc())
+                .limit(cap)
+            ))
             for wo in work_orders:
                 add(wo.created_at,"WORK_ORDER",wo.work_order_no,f"{wo.title}",wo.created_by,wo.status,"Work order")
-            if work_order_nos:
-                for ev in s.scalars(select(WorkOrderEvent).where(WorkOrderEvent.work_order_no.in_(work_order_nos))):
-                    add(ev.occurred_at,"WORK_ORDER",ev.work_order_no,f"{ev.from_state or '—'} → {ev.to_state}: {ev.reason}",ev.changed_by,ev.to_state,"Work order lifecycle")
-            for w in s.scalars(select(WorkLog).where(WorkLog.equipment_id==equipment_id)):
+            work_order_events=s.execute(
+                select(WorkOrderEvent,WorkOrder)
+                .join(WorkOrder,WorkOrder.work_order_no==WorkOrderEvent.work_order_no)
+                .where(WorkOrder.equipment_id==equipment_id)
+                .order_by(WorkOrderEvent.occurred_at.desc(),WorkOrderEvent.id.desc())
+                .limit(cap)
+            ).all()
+            for ev,_wo in work_order_events:
+                add(ev.occurred_at,"WORK_ORDER",ev.work_order_no,f"{ev.from_state or '—'} → {ev.to_state}: {ev.reason}",ev.changed_by,ev.to_state,"Work order lifecycle")
+
+            work_logs=list(s.scalars(
+                select(WorkLog)
+                .where(WorkLog.equipment_id==equipment_id)
+                .order_by(WorkLog.started_at.desc(),WorkLog.id.desc())
+                .limit(cap)
+            ))
+            for w in work_logs:
                 add(w.started_at,"WORK",w.id,f"{w.work_type} started · {w.entity_type}:{w.entity_key}",w.username,w.status,"Labor")
                 if w.ended_at:add(w.ended_at,"WORK",w.id,f"{w.work_type} completed · {w.duration_minutes:.1f} min",w.username,"Completed","Labor")
-            for q in s.scalars(select(QualificationRun).where(QualificationRun.equipment_id==equipment_id)):
+
+            qualifications=list(s.scalars(
+                select(QualificationRun)
+                .where(QualificationRun.equipment_id==equipment_id)
+                .order_by(QualificationRun.started_at.desc(),QualificationRun.id.desc())
+                .limit(cap)
+            ))
+            for q in qualifications:
                 add(q.started_at,"QUALIFICATION",q.run_no,f"{q.protocol_id} R{q.protocol_revision} qualification started",q.started_by,q.status,"Qualification")
                 if q.submitted_at:add(q.submitted_at,"QUALIFICATION",q.run_no,"Qualification submitted",q.submitted_by,"Submitted","Qualification")
                 if q.verified_at:add(q.verified_at,"QUALIFICATION",q.run_no,"Qualification verified",q.verified_by,"Verified","Qualification")
                 if q.approved_at:add(q.approved_at,"QUALIFICATION",q.run_no,"Qualification approved",q.approved_by,"Approved","Qualification")
-            for r in s.scalars(select(EquipmentRelease).where(EquipmentRelease.equipment_id==equipment_id)):
+
+            releases=list(s.scalars(
+                select(EquipmentRelease)
+                .where(EquipmentRelease.equipment_id==equipment_id)
+                .order_by(EquipmentRelease.requested_at.desc(),EquipmentRelease.id.desc())
+                .limit(cap)
+            ))
+            for r in releases:
                 add(r.requested_at,"RELEASE",r.id,"Release requested",r.requested_by,r.status,"Release")
                 if r.verified_at:add(r.verified_at,"RELEASE",r.id,"Release verified",r.verified_by,"Verified","Release")
                 if r.approved_at:add(r.approved_at,"RELEASE",r.id,"Equipment released",r.approved_by,"Approved / Released","Release")
-            for tx in s.scalars(select(InventoryTransaction).where(InventoryTransaction.equipment_id==equipment_id)):
+
+            transactions=list(s.scalars(
+                select(InventoryTransaction)
+                .where(InventoryTransaction.equipment_id==equipment_id)
+                .order_by(InventoryTransaction.created_at.desc(),InventoryTransaction.id.desc())
+                .limit(cap)
+            ))
+            for tx in transactions:
                 add(tx.created_at,"PART",tx.id,f"{tx.transaction_type} {tx.quantity:g} × {tx.part_number} @ {tx.location_code}",tx.user,tx.transaction_type,"Inventory")
-            for att in s.scalars(select(EntityAttachment).where(EntityAttachment.equipment_id==equipment_id,EntityAttachment.active.is_(True))):
+
+            attachments=list(s.scalars(
+                select(EntityAttachment)
+                .where(EntityAttachment.equipment_id==equipment_id,EntityAttachment.active.is_(True))
+                .order_by(EntityAttachment.created_at.desc(),EntityAttachment.id.desc())
+                .limit(cap)
+            ))
+            for att in attachments:
                 add(att.created_at,"EVIDENCE",att.attachment_key,f"{att.category}: {att.original_name} — {att.caption}".strip(" —"),att.created_by,"Attached",f"{att.entity_type}:{att.entity_key}")
+
         rows.sort(key=lambda x:x["occurred_at"],reverse=True)
-        return rows[:max(1,min(int(limit),5000))]
+        return rows[:cap]
 
     def reliability_summary(
         self,
