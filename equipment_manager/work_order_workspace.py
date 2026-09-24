@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
 from table_productivity import install_table_productivity
 from workspaces import AttachmentPanel
 from collaboration_panel import CollaborationPanel
+from reporting import export_work_order_pptx, export_work_order_xlsx
 
 
 def _item(value):
@@ -51,8 +52,10 @@ class WorkOrderWorkspace(QWidget):
         self.title=QLabel("Work Orders");self.title.setStyleSheet("font-size:20pt;font-weight:800")
         self.search=QLineEdit();self.search.setPlaceholderText("Filter work orders / equipment / owner / status…");self.search.textChanged.connect(self.refresh)
         new=QPushButton("New engineering WO");new.clicked.connect(self.new_engineering)
+        ppt=QPushButton("WO PPTX");ppt.clicked.connect(self.export_pptx)
+        xlsx=QPushButton("WO Excel");xlsx.clicked.connect(self.export_xlsx)
         refresh=QPushButton("Refresh");refresh.clicked.connect(self.refresh)
-        head.addWidget(self.title);head.addStretch(1);head.addWidget(self.search);head.addWidget(new);head.addWidget(refresh);root.addLayout(head)
+        head.addWidget(self.title);head.addStretch(1);head.addWidget(self.search);head.addWidget(new);head.addWidget(ppt);head.addWidget(xlsx);head.addWidget(refresh);root.addLayout(head)
 
         self.list_table=_table(["Work Order","Equipment","Source","Title","Priority","Status","Owner","Team","Created","Updated"])
         self.list_table.itemSelectionChanged.connect(self.load_selected);self.list_table.doubleClicked.connect(self.load_selected);root.addWidget(self.list_table,2)
@@ -169,6 +172,24 @@ class WorkOrderWorkspace(QWidget):
             release=self.db.create_work_order_release_request(self.work_order.work_order_no,self.user["username"],"WORK-ORDER-WORKSPACE")
             self.load_selected();self.open_entity.emit("RELEASE",str(release.id),self.work_order.equipment_id)
         except Exception as exc:QMessageBox.critical(self,"Release closeout",str(exc))
+
+    def export_pptx(self):
+        if not self.work_order:return
+        from PySide6.QtWidgets import QFileDialog
+        path,_=QFileDialog.getSaveFileName(self,"Export Work Order PowerPoint",f"{self.work_order.work_order_no}_Review.pptx","PowerPoint (*.pptx)")
+        if not path:return
+        if not path.lower().endswith(".pptx"):path+=".pptx"
+        try:export_work_order_pptx(self.db,self.work_order.work_order_no,path);QMessageBox.information(self,"PowerPoint",f"Editable work-order review deck created.\n{path}")
+        except Exception as exc:QMessageBox.critical(self,"PowerPoint",str(exc))
+
+    def export_xlsx(self):
+        if not self.work_order:return
+        from PySide6.QtWidgets import QFileDialog
+        path,_=QFileDialog.getSaveFileName(self,"Export Work Order Excel",f"{self.work_order.work_order_no}_Review.xlsx","Excel Workbook (*.xlsx)")
+        if not path:return
+        if not path.lower().endswith(".xlsx"):path+=".xlsx"
+        try:export_work_order_xlsx(self.db,self.work_order.work_order_no,path);QMessageBox.information(self,"Excel",f"Work-order review workbook created.\n{path}")
+        except Exception as exc:QMessageBox.critical(self,"Excel",str(exc))
 
     def new_engineering(self):
         equipment,ok=QInputDialog.getText(self,"New work order","Equipment ID")
