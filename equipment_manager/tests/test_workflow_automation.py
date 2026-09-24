@@ -90,7 +90,7 @@ class WorkflowAutomationTests(unittest.TestCase):
         self.assertTrue(work[0].qualification_required)
         self.assertTrue(work[0].release_required)
 
-        current=self.db.get_pm_result(execution.id,1)
+        current=next(x for x in self.db.list_pm_results(execution.id) if x.step_no==1)
         self.db.save_pm_result(execution.id,1,{
             "value_numeric":9.0,"value_text":"","result":"PASS","comment":"Still out",
             "evidence_path":"","entered_by":"ee",
