@@ -1033,6 +1033,49 @@ class ControlledDocumentRevision(Base):
     __table_args__ = (UniqueConstraint("document_id","revision",name="uq_controlled_document_revision"),)
 
 
+class NumberingScheme(Base):
+    __tablename__ = "numbering_schemes"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    entity_type: Mapped[str] = mapped_column(String(60), unique=True, index=True)
+    prefix: Mapped[str] = mapped_column(String(40), default="")
+    date_format: Mapped[str] = mapped_column(String(40), default="%Y%m%d")
+    separator: Mapped[str] = mapped_column(String(8), default="-")
+    padding: Mapped[int] = mapped_column(Integer, default=4)
+    next_value: Mapped[int] = mapped_column(Integer, default=1)
+    reset_period: Mapped[str] = mapped_column(String(20), default="DAY")
+    last_period: Mapped[str] = mapped_column(String(40), default="")
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
+class DefaultAssignmentRule(Base):
+    __tablename__ = "default_assignment_rules"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    rule_id: Mapped[str] = mapped_column(String(100), unique=True, index=True)
+    entity_type: Mapped[str] = mapped_column(String(60), index=True)
+    name: Mapped[str] = mapped_column(String(180))
+    match_json: Mapped[str] = mapped_column(Text, default="{}")
+    owner: Mapped[str] = mapped_column(String(120), default="")
+    team: Mapped[str] = mapped_column(String(120), default="")
+    priority: Mapped[int] = mapped_column(Integer, default=100)
+    active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
+class SLATemplate(Base):
+    __tablename__ = "sla_templates"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    template_id: Mapped[str] = mapped_column(String(100), unique=True, index=True)
+    name: Mapped[str] = mapped_column(String(180))
+    match_json: Mapped[str] = mapped_column(Text, default="{}")
+    response_minutes: Mapped[int] = mapped_column(Integer, default=0)
+    containment_minutes: Mapped[int] = mapped_column(Integer, default=0)
+    resolution_minutes: Mapped[int] = mapped_column(Integer, default=0)
+    priority: Mapped[int] = mapped_column(Integer, default=100)
+    active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
 class ConfigOption(Base):
     __tablename__ = "config_options"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -1309,6 +1352,9 @@ class Database:
                 table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
             ]),
             ("20260924_010","Create configuration catalog templates and custom fields",lambda: [
+                table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
+            ]),
+            ("20260924_011","Create numbering assignment and SLA configuration tables",lambda: [
                 table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
             ]),
         ]
@@ -1884,6 +1930,108 @@ class Database:
                 ApprovalDelegation.starts_at<=now,
                 ApprovalDelegation.ends_at>now,
             )) or 0)
+
+    def save_numbering_scheme(self,data: dict[str,Any],expected_version: int | None = None):
+        payload=dict(data);payload["entity_type"]=str(payload.get("entity_type","")).strip().upper()
+        if not payload["entity_type"]:raise ValueError("Entity type is required.")
+        payload["padding"]=max(1,min(int(payload.get("padding",4)),12))
+        payload["reset_period"]=str(payload.get("reset_period","DAY")).strip().upper()
+        if payload["reset_period"] not in {"NEVER","DAY","MONTH","YEAR"}:raise ValueError("Reset period must be NEVER, DAY, MONTH or YEAR.")
+        with self.session() as s:
+            row=s.scalar(select(NumberingScheme).where(NumberingScheme.entity_type==payload["entity_type"]))
+            if row:self._update_versioned(row,payload,expected_version,"Numbering scheme")
+            else:row=NumberingScheme(**payload);s.add(row)
+            s.flush();return row
+
+    def list_numbering_schemes(self):
+        with self.session() as s:return list(s.scalars(select(NumberingScheme).order_by(NumberingScheme.entity_type)))
+
+    def next_record_number(self,entity_type: str,when: datetime | None = None) -> str:
+        entity_type=entity_type.strip().upper();when=when or datetime.utcnow()
+        with self.session() as s:
+            stmt=select(NumberingScheme).where(NumberingScheme.entity_type==entity_type,NumberingScheme.active.is_(True))
+            if self.url.startswith("postgresql"):stmt=stmt.with_for_update()
+            row=s.scalar(stmt)
+            if not row:
+                return f"{entity_type[:4]}-{when:%Y%m%d%H%M%S%f}"
+            period={"DAY":when.strftime("%Y%m%d"),"MONTH":when.strftime("%Y%m"),"YEAR":when.strftime("%Y"),"NEVER":"NEVER"}[row.reset_period]
+            if row.last_period!=period:
+                row.next_value=1;row.last_period=period
+            value=row.next_value;row.next_value+=1;row.version+=1
+            date_text=when.strftime(row.date_format) if row.date_format else ""
+            parts=[x for x in [row.prefix,date_text,f"{value:0{row.padding}d}"] if x!=""]
+            result=row.separator.join(parts)
+            s.flush();return result
+
+    def save_default_assignment_rule(self,data: dict[str,Any],expected_version: int | None = None):
+        payload=dict(data);payload["rule_id"]=str(payload.get("rule_id","")).strip();payload["entity_type"]=str(payload.get("entity_type","")).strip().upper()
+        if not payload["rule_id"] or not payload["entity_type"] or not str(payload.get("name","")).strip():raise ValueError("Rule ID, entity type and name are required.")
+        match=payload.get("match_json","{}")
+        if isinstance(match,dict):match=json.dumps(match,sort_keys=True)
+        try:
+            decoded=json.loads(match or "{}")
+            if not isinstance(decoded,dict):raise ValueError("Match must be a JSON object.")
+        except Exception as exc:raise ValueError(f"Assignment match JSON is invalid: {exc}")
+        payload["match_json"]=match or "{}"
+        with self.session() as s:
+            row=s.scalar(select(DefaultAssignmentRule).where(DefaultAssignmentRule.rule_id==payload["rule_id"]))
+            if row:self._update_versioned(row,payload,expected_version,"Default assignment rule")
+            else:row=DefaultAssignmentRule(**payload);s.add(row)
+            s.flush();return row
+
+    def list_default_assignment_rules(self,entity_type: str = ""):
+        with self.session() as s:
+            stmt=select(DefaultAssignmentRule).order_by(DefaultAssignmentRule.priority,DefaultAssignmentRule.rule_id)
+            if entity_type:stmt=stmt.where(DefaultAssignmentRule.entity_type==entity_type.strip().upper())
+            return list(s.scalars(stmt))
+
+    def save_sla_template(self,data: dict[str,Any],expected_version: int | None = None):
+        payload=dict(data);payload["template_id"]=str(payload.get("template_id","")).strip()
+        if not payload["template_id"] or not str(payload.get("name","")).strip():raise ValueError("SLA template ID and name are required.")
+        match=payload.get("match_json","{}")
+        if isinstance(match,dict):match=json.dumps(match,sort_keys=True)
+        try:
+            decoded=json.loads(match or "{}")
+            if not isinstance(decoded,dict):raise ValueError("Match must be a JSON object.")
+        except Exception as exc:raise ValueError(f"SLA match JSON is invalid: {exc}")
+        payload["match_json"]=match or "{}"
+        for key in ["response_minutes","containment_minutes","resolution_minutes"]:payload[key]=max(0,int(payload.get(key,0)))
+        with self.session() as s:
+            row=s.scalar(select(SLATemplate).where(SLATemplate.template_id==payload["template_id"]))
+            if row:self._update_versioned(row,payload,expected_version,"SLA template")
+            else:row=SLATemplate(**payload);s.add(row)
+            s.flush();return row
+
+    def list_sla_templates(self):
+        with self.session() as s:return list(s.scalars(select(SLATemplate).order_by(SLATemplate.priority,SLATemplate.template_id)))
+
+    @staticmethod
+    def _runtime_rule_matches(match: dict[str,Any],context: dict[str,Any]) -> bool:
+        for key,expected in match.items():
+            actual=context.get(key)
+            if isinstance(expected,list):
+                if actual not in expected:return False
+            elif isinstance(expected,str) and expected.startswith("contains:"):
+                if expected.split(":",1)[1].lower() not in str(actual or "").lower():return False
+            elif str(actual or "").lower()!=str(expected or "").lower():return False
+        return True
+
+    def _ticket_runtime_context(self,s,payload: dict[str,Any]) -> dict[str,Any]:
+        equipment_id=str(payload.get("equipment_id","") or "");eq=s.scalar(select(Equipment).where(Equipment.equipment_id==equipment_id)) if equipment_id else None
+        return {
+            "equipment_id":equipment_id,"equipment_type":eq.equipment_type if eq else "",
+            "site":eq.site if eq else "","area":eq.area if eq else "","line_cell":eq.line_cell if eq else "",
+            "severity":str(payload.get("severity","") or ""),"priority":str(payload.get("priority","") or ""),
+            "title":str(payload.get("title","") or ""),
+        }
+
+    def _resolve_assignment_in_session(self,s,entity_type: str,context: dict[str,Any]):
+        rules=list(s.scalars(select(DefaultAssignmentRule).where(DefaultAssignmentRule.entity_type==entity_type,DefaultAssignmentRule.active.is_(True)).order_by(DefaultAssignmentRule.priority,DefaultAssignmentRule.id)))
+        return next((r for r in rules if self._runtime_rule_matches(json.loads(r.match_json or "{}"),context)),None)
+
+    def _resolve_sla_in_session(self,s,context: dict[str,Any]):
+        rows=list(s.scalars(select(SLATemplate).where(SLATemplate.active.is_(True)).order_by(SLATemplate.priority,SLATemplate.id)))
+        return next((r for r in rows if self._runtime_rule_matches(json.loads(r.match_json or "{}"),context)),None)
 
     def _bootstrap_configuration_catalog(self):
         defaults={
