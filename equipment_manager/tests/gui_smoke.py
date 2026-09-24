@@ -4,7 +4,7 @@ import os
 
 os.environ.setdefault("QT_QPA_PLATFORM","offscreen")
 
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QTableView
 
 from database import Database
 from main import MainWindow
@@ -28,6 +28,10 @@ def run() -> None:
     smart=SmartMainWindow(db,user)
     assert smart.nav.count()>=10
     assert smart.stack.count()==smart.nav.count()
+    assert isinstance(smart.dashboard.table,QTableView)
+    assert smart.dashboard.table.accessibleName()
+    assert smart.global_search.accessibleName()
+    assert smart.nav.accessibleName()
     smart.refresh_current()
     app.processEvents()
     smart.close()
