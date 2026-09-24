@@ -2414,6 +2414,61 @@ class Database:
                 row.next_attempt_at=datetime.utcnow()+timedelta(seconds=delay)
             s.flush();return row
 
+    def integration_delivery_rows(self, limit: int = 1000) -> list[dict[str, Any]]:
+        with self.session() as s:
+            deliveries=list(s.scalars(
+                select(IntegrationDelivery).order_by(IntegrationDelivery.id.desc()).limit(max(1,min(int(limit),5000)))
+            ))
+            rows=[]
+            for delivery in deliveries:
+                event=s.scalar(select(IntegrationEvent).where(IntegrationEvent.event_id==delivery.event_id))
+                endpoint=s.scalar(select(IntegrationEndpoint).where(IntegrationEndpoint.endpoint_id==delivery.endpoint_id))
+                rows.append({
+                    "id":delivery.id,
+                    "event_id":delivery.event_id,
+                    "endpoint_id":delivery.endpoint_id,
+                    "endpoint_name":endpoint.name if endpoint else "",
+                    "adapter_type":endpoint.adapter_type if endpoint else "",
+                    "target":endpoint.target if endpoint else "",
+                    "topic":event.topic if event else "",
+                    "entity_type":event.entity_type if event else "",
+                    "entity_key":event.entity_key if event else "",
+                    "payload_json":event.payload_json if event else "",
+                    "created_at":event.created_at if event else None,
+                    "status":delivery.status,
+                    "attempts":delivery.attempts,
+                    "next_attempt_at":delivery.next_attempt_at,
+                    "last_error":delivery.last_error,
+                    "sent_at":delivery.sent_at,
+                })
+            return rows
+
+    def requeue_integration_delivery(self, delivery_id: int, reset_attempts: bool = False):
+        with self.session() as s:
+            row=s.get(IntegrationDelivery,int(delivery_id))
+            if not row:raise ValueError("Integration delivery not found")
+            row.status="Pending";row.next_attempt_at=None;row.sent_at=None
+            if reset_attempts:row.attempts=0
+            s.flush();return row
+
+    def dead_letter_integration_delivery(self, delivery_id: int, reason: str = ""):
+        with self.session() as s:
+            row=s.get(IntegrationDelivery,int(delivery_id))
+            if not row:raise ValueError("Integration delivery not found")
+            if row.status=="Sent":raise ValueError("Sent delivery cannot be dead-lettered.")
+            row.status="DeadLetter";row.next_attempt_at=None
+            if reason.strip():row.last_error=(reason.strip()+"\n"+(row.last_error or "")).strip()[:4000]
+            s.flush();return row
+
+    def requeue_dead_letters(self, endpoint_id: str = "") -> int:
+        with self.session() as s:
+            stmt=select(IntegrationDelivery).where(IntegrationDelivery.status=="DeadLetter")
+            if endpoint_id:stmt=stmt.where(IntegrationDelivery.endpoint_id==endpoint_id)
+            rows=list(s.scalars(stmt))
+            for row in rows:
+                row.status="Pending";row.next_attempt_at=None
+            return len(rows)
+
     def integration_delivery_status(self, limit: int = 500):
         with self.session() as s:
             return list(s.scalars(select(IntegrationDelivery).order_by(IntegrationDelivery.id.desc()).limit(limit)))
