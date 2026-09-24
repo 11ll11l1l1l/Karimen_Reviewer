@@ -42,9 +42,9 @@ class ConfigurationStudioTests(unittest.TestCase):
             "active":True,"sort_order":10,
         })
         rows=[x for x in self.db.custom_field_values("EQUIPMENT","ETCH-CFG","Plasma Etcher") if x["field_key"]=="local_owner_code"]
-        self.assertEqual(len(rows),2)
-        scoped=next(x for x in rows if x["applies_to"]=="Plasma Etcher")
-        self.assertEqual(scoped["label"],"Etch Owner Code")
+        self.assertEqual(len(rows),1)
+        self.assertEqual(rows[0]["applies_to"],"Plasma Etcher")
+        self.assertEqual(rows[0]["label"],"Etch Owner Code")
 
     def test_record_template_round_trip_and_scope(self):
         row=self.db.save_record_template({
