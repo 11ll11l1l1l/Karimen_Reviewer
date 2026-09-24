@@ -5936,6 +5936,7 @@ class Database:
         ),None)
         open_qualification=next((x for x in qualifications if x.status in {"In Progress","Submitted","Verified"}),None)
         active_release=next((x for x in releases if x.status!="Approved / Released"),None)
+        approved_release=next((x for x in releases if x.status=="Approved / Released"),None)
         blockers=[]
         if wo.status not in {"Ready for Qualification","Completed"} and (wo.qualification_required or wo.release_required):
             blockers.append(f"Work order is still {wo.status}; finish repair/work before controlled closeout.")
@@ -5943,6 +5944,8 @@ class Database:
             blockers.append(f"{precheck['critical_tickets_open']} open P1/P2 incident(s) remain.")
         if wo.qualification_required and not valid_qualification:
             blockers.append("Approved valid qualification is required.")
+        if wo.release_required and not approved_release:
+            blockers.append("Approved equipment release is required." if active_release else "Equipment release request is required.")
         if any(x.status=="Reserved" for x in reservations):
             blockers.append("PM part reservations remain active; consume or release them before closeout.")
         return {
@@ -5957,6 +5960,8 @@ class Database:
             "open_qualification_run":open_qualification.run_no if open_qualification else "",
             "active_release_id":active_release.id if active_release else None,
             "active_release_status":active_release.status if active_release else "",
+            "approved_release_id":approved_release.id if approved_release else None,
+            "release_approved":bool(approved_release),
             "blockers":blockers,
             "can_start_qualification":bool(
                 wo.qualification_required and wo.status in {"Ready for Qualification","Completed"}
@@ -5966,7 +5971,7 @@ class Database:
                 wo.release_required and wo.status in {"Ready for Qualification","Completed"}
                 and precheck["critical_tickets_open"]==0
                 and (not wo.qualification_required or bool(valid_qualification))
-                and not active_release
+                and not active_release and not approved_release
             ),
         }
 
