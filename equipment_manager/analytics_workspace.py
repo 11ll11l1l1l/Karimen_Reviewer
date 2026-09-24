@@ -256,10 +256,7 @@ class EngineeringAnalyticsWorkspace(QWidget):
         path,_=QFileDialog.getSaveFileName(self,"Export Weekly Engineering Review","Equipment_Engineering_Weekly_Review.pptx","PowerPoint (*.pptx)")
         if not path:return
         if not path.lower().endswith(".pptx"):path+=".pptx"
-        template=""
-        if QMessageBox.question(self,"PowerPoint template","Use a site PowerPoint template?")==QMessageBox.StandardButton.Yes:
-            template,_=QFileDialog.getOpenFileName(self,"Select PowerPoint Template","","PowerPoint (*.pptx *.potx)")
-            if not template:return
+        template=self.db.resolve_report_template("WEEKLY_ENGINEERING")
         try:
             export_weekly_review_pptx(self.db,path,self.days.value(),template)
             QMessageBox.information(self,"Weekly Review",f"Editable PowerPoint review pack created.\n{path}")
