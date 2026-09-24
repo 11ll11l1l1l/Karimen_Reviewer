@@ -386,7 +386,7 @@ class Equipment360Workspace(QWidget):
             card=QFrame();card.setFrameShape(QFrame.Shape.StyledPanel);box=QVBoxLayout(card);value=QLabel("—");value.setStyleSheet("font-size:18pt;font-weight:700");box.addWidget(value);box.addWidget(QLabel(key));self.metric_labels[key]=value;self.metrics.addWidget(card,i//4,i%4)
         ov.addStretch(1);self.tabs.addTab(overview,"Overview")
 
-        timeline=QWidget();tl=QVBoxLayout(timeline);self.timeline_table=_table(["Time","Type","Key","Activity","Status","User","Source"]);tl.addWidget(self.timeline_table);self.tabs.addTab(timeline,"Unified timeline")
+        timeline=QWidget();tl=QVBoxLayout(timeline);self.timeline_table=_table(["Time","Type","Key","Activity","Status","User","Source"]);self.timeline_table.doubleClicked.connect(self.open_timeline_item);tl.addWidget(self.timeline_table);self.tabs.addTab(timeline,"Unified timeline")
 
         issues=QWidget();iv=QVBoxLayout(issues)
         self.ticket_table=_table(["Ticket","Title","Priority","Status","Owner","Updated"]);self.ticket_table.doubleClicked.connect(self.open_ticket)
@@ -397,7 +397,9 @@ class Equipment360Workspace(QWidget):
         self.work_table=_table(["ID","Type","Reference","User","Start","End","Minutes","Note"]);mv.addWidget(QLabel("Maintenance / PM"));mv.addWidget(self.pm_table,1);mv.addWidget(QLabel("Labor / work logs"));mv.addWidget(self.work_table,1);self.tabs.addTab(maintenance,"Maintenance / Work")
 
         qr=QWidget();qv=QVBoxLayout(qr)
-        self.qual_table=_table(["Run","Protocol","Revision","Status","Started","Verified","Approved","Expires"]);self.release_table=_table(["ID","Status","Requested By","Verified By","Approved By","Requested","Approved"]);qv.addWidget(QLabel("Qualification"));qv.addWidget(self.qual_table,1);qv.addWidget(QLabel("Release"));qv.addWidget(self.release_table,1);self.tabs.addTab(qr,"Qualification / Release")
+        self.qual_table=_table(["Run","Protocol","Revision","Status","Started","Verified","Approved","Expires"]);self.qual_table.doubleClicked.connect(self.open_qualification)
+        self.release_table=_table(["ID","Status","Requested By","Verified By","Approved By","Requested","Approved"]);self.release_table.doubleClicked.connect(self.open_release)
+        qv.addWidget(QLabel("Qualification"));qv.addWidget(self.qual_table,1);qv.addWidget(QLabel("Release"));qv.addWidget(self.release_table,1);self.tabs.addTab(qr,"Qualification / Release")
 
         cp=QWidget();cv=QVBoxLayout(cp)
         self.component_table=_table(["Component","Parent","Name","Type","Part","Serial","Status","Usage"]);self.meter_table=_table(["Meter","Name","Unit","Current","Last reading","Active"]);self.inventory_table=_table(["Part","Location","Type","Qty","Ticket","User","Time"]);cv.addWidget(QLabel("Installed components"));cv.addWidget(self.component_table,1);cv.addWidget(QLabel("Meters / counters"));cv.addWidget(self.meter_table,1);cv.addWidget(QLabel("Part transactions"));cv.addWidget(self.inventory_table,1);self.tabs.addTab(cp,"Components / Usage / Parts")
@@ -504,6 +506,7 @@ class Equipment360Workspace(QWidget):
         dispositions=[x for x in self.db.list_dispositions() if x.equipment_id==eq.equipment_id]
         rel=self.db.reliability_summary(eq.equipment_id)
 
+        self.activity_rows=activity
         _fill_objects(self.timeline_table,activity,["occurred_at","kind","key","summary","status","user","source"])
         _fill_objects(self.ticket_table,tickets,["ticket_no","title","priority","status","owner","updated_at"])
         _fill_objects(self.alarm_table,alarms,["alarm_code","severity","message","state","occurred_at","related_ticket"])
@@ -545,6 +548,23 @@ class Equipment360Workspace(QWidget):
         self.metric_labels["Availability 30d"].setText(f"{rel['availability_pct']:.1f}%")
         self.metric_labels["MTBF 30d"].setText(f"{rel['mtbf_hours']:.1f} h")
         self.metric_labels["MTTR 30d"].setText(f"{rel['mttr_hours']:.1f} h")
+
+    def open_timeline_item(self):
+        row=_selected(self.timeline_table,getattr(self,"activity_rows",[]))
+        if not row:return
+        kind=str(row.get("kind",""));key=str(row.get("key",""))
+        mapping={"INCIDENT":"TICKET","PM":"PM_TASK","QUALIFICATION":"QUALIFICATION","RELEASE":"RELEASE","ALARM":"ALARM","WORK_ORDER":"WORK_ORDER"}
+        entity=mapping.get(kind)
+        if entity:self.open_entity.emit(entity,key,self.equipment_id)
+
+    def open_qualification(self):
+        row=_selected(self.qual_table,[x for x in self.db.list_qualification_runs(self.equipment_id)])
+        if row:self.open_entity.emit("QUALIFICATION",row.run_no,self.equipment_id)
+
+    def open_release(self):
+        rows=[x for x in self.db.list_release_requests() if x.equipment_id==self.equipment_id]
+        row=_selected(self.release_table,rows)
+        if row:self.open_entity.emit("RELEASE",str(row.id),self.equipment_id)
 
     def open_related(self):
         row=_selected(self.related_table,self.relationships)
