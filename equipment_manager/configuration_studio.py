@@ -6,7 +6,7 @@ from datetime import datetime
 from PySide6.QtCore import QDate
 from PySide6.QtWidgets import (
     QAbstractItemView,QCheckBox,QComboBox,QDateEdit,QDialog,QDialogButtonBox,
-    QDoubleSpinBox,QFormLayout,QHBoxLayout,QHeaderView,QInputDialog,QLabel,QLineEdit,
+    QDoubleSpinBox,QFileDialog,QFormLayout,QHBoxLayout,QHeaderView,QInputDialog,QLabel,QLineEdit,
     QMessageBox,QPushButton,QTableWidget,QTableWidgetItem,QTabWidget,QTextEdit,
     QVBoxLayout,QWidget,
 )
@@ -137,7 +137,7 @@ class CustomFieldsPanel(QWidget):
 class ConfigurationStudio(QWidget):
     def __init__(self,db,user,parent=None):
         super().__init__(parent);self.db=db;self.user=user;self.options=[];self.templates=[];self.fields=[]
-        root=QVBoxLayout(self);head=QHBoxLayout();title=QLabel("Configuration Studio");title.setStyleSheet("font-size:20pt;font-weight:800");note=QLabel("Adapt plant-facing lists, templates and custom fields without editing Python.");note.setStyleSheet("color:#647581");head.addWidget(title);head.addWidget(note);head.addStretch(1);root.addLayout(head)
+        root=QVBoxLayout(self);head=QHBoxLayout();title=QLabel("Configuration Studio");title.setStyleSheet("font-size:20pt;font-weight:800");note=QLabel("Adapt plant-facing lists, templates and custom fields without editing Python.");note.setStyleSheet("color:#647581");exportb=QPushButton("Export package");importb=QPushButton("Import package");exportb.clicked.connect(self.export_package);importb.clicked.connect(self.import_package);head.addWidget(title);head.addWidget(note);head.addStretch(1);head.addWidget(exportb);head.addWidget(importb);root.addLayout(head)
         tabs=QTabWidget();root.addWidget(tabs,1)
 
         ow=QWidget();ov=QVBoxLayout(ow);oh=QHBoxLayout();self.category=QComboBox();self.category.addItems(["EQUIPMENT_CRITICALITY","TICKET_SEVERITY","TICKET_PRIORITY","DISPOSITION_STATE","INVENTORY_CONDITION","WORK_TYPE","EQUIPMENT_REASON_LABEL","TICKET_REASON_LABEL"]);self.category.currentTextChanged.connect(self.refresh_options);add=QPushButton("Add option");edit=QPushButton("Edit selected");add.clicked.connect(self.add_option);edit.clicked.connect(self.edit_option);oh.addWidget(QLabel("Category"));oh.addWidget(self.category);oh.addWidget(add);oh.addWidget(edit);oh.addStretch(1);ov.addLayout(oh);self.option_table=_table(["Code","Label","Order","Active","System","Metadata","Ver"]);ov.addWidget(self.option_table);tabs.addTab(ow,"Reference Options")
@@ -146,6 +146,29 @@ class ConfigurationStudio(QWidget):
 
         fw=QWidget();fv=QVBoxLayout(fw);fh=QHBoxLayout();addf=QPushButton("New custom field");editf=QPushButton("Edit selected");addf.clicked.connect(self.add_field);editf.clicked.connect(self.edit_field);fh.addWidget(addf);fh.addWidget(editf);fh.addStretch(1);fv.addLayout(fh);self.field_table=_table(["Field","Entity","Applies To","Label","Type","Required","Order","Active","Ver"]);fv.addWidget(self.field_table);tabs.addTab(fw,"Custom Fields")
         self.refresh()
+
+    def export_package(self):
+        path,_=QFileDialog.getSaveFileName(self,"Export EMS Configuration","EMS_Configuration.json","JSON (*.json)")
+        if not path:return
+        if not path.lower().endswith(".json"):path+=".json"
+        try:
+            with open(path,"w",encoding="utf-8") as handle:json.dump(self.db.export_configuration_bundle(),handle,indent=2,ensure_ascii=False)
+            QMessageBox.information(self,"Configuration",f"Configuration package exported.\n{path}")
+        except Exception as exc:QMessageBox.critical(self,"Configuration export",str(exc))
+
+    def import_package(self):
+        path,_=QFileDialog.getOpenFileName(self,"Import EMS Configuration","","JSON (*.json)")
+        if not path:return
+        try:
+            with open(path,"r",encoding="utf-8") as handle:bundle=json.load(handle)
+            preview=self.db.import_configuration_bundle(bundle,self.user["username"],True)
+            lines=[]
+            for section in ["config_options","entity_templates","custom_fields","workflow_rules"]:
+                lines.append(f"{section}: {preview['creates'][section]} create / {preview['updates'][section]} update")
+            if QMessageBox.question(self,"Configuration Import Preview","Apply this validated package?\n\n"+"\n".join(lines))!=QMessageBox.StandardButton.Yes:return
+            self.db.import_configuration_bundle(bundle,self.user["username"],False)
+            self.refresh();QMessageBox.information(self,"Configuration","Configuration package applied.")
+        except Exception as exc:QMessageBox.critical(self,"Configuration import",str(exc))
 
     def refresh(self):self.refresh_options();self.refresh_templates();self.refresh_fields()
     def refresh_options(self):
