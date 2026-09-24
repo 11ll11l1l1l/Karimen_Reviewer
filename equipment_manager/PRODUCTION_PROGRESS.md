@@ -6,9 +6,9 @@ This file is the persistent progress tracker for the full-production roadmap.
 
 **Program state:** Internal Alpha — connected engineering workflow transformation
 
-**Canonical base main:** `623550a18bb3a4e1db532c21c8f39bbd4348d5ea`
+**Canonical base main:** `19c149f9bf8a0804284987e4559dac11f51a3439`
 
-**Active development wave:** `ems/internal-alpha-wave5`
+**Active development wave:** `ems/internal-alpha-wave6`
 
 The production backend remains intact while the user-facing product is being rebuilt around connected operational workspaces, Office interoperability, evidence capture, maintenance execution, engineering analytics, reporting, logistics, collaboration, configurable workflows and plant-level configuration.
 
@@ -22,26 +22,24 @@ The production backend remains intact while the user-facing product is being reb
 | M3 Universal evidence / attachments | **COMPLETE** | Shared evidence supports multi-file attach, drag/drop, Ctrl+V screenshots, preview, metadata/tags, annotation, copy-to-record provenance and integrity hashes. Wave 5 adds global Ctrl+Shift+V quick screenshot capture into the active Equipment/Incident/PM/Work Order/Return-to-Service context. |
 | M4 Excel-first / bulk operations | **AT GATE / ROUND-TRIP CORE COVERED** | Shared tables support copy/XLSX export/saved views. Equipment, inventory and incident/ticket round-trip reconciliation use preview/diff + optimistic conflict protection. PM backlog/spec imports exist. Wave 4 adds controlled qualification protocol/checklist round-trip with revision creation and shift-handover round-trip while protecting lifecycle/acknowledgment fields. Remaining richer per-row conflict resolution and broader optional datasets are enhancement work. |
 | M5 PM planning / execution redesign | **AT GATE** | Maintenance Planner provides schedule/calendar/capacity, bulk assignment/rescheduling, due-window and parts/cert readiness. Wave 5 adds a draggable planning timeline/Gantt-like view with controlled rescheduling. Technician Runner keeps SOP, evidence, work timing, requirements, inline parts and abnormal-result workflow in one task surface. |
-| M6 Alarm / incident / RCA / CAPA | **IN PROGRESS / CONNECTED FOUNDATION** | Incident workspace includes containment/SLA, lifecycle, troubleshooting, 5-Why, causal factors, CAPA, recurrence and evidence. Alarm console supports incident linking and deterministic burst correlation. Wave 4 adds persisted plant burst policy, count/window/min-severity thresholds, automatic `ALARM_BURST` workflow trigger, cooldown and continued-alarm linkage to the existing incident. Remaining richer notification/escalation channels and advanced correlation patterns. |
+| M6 Alarm / incident / RCA / CAPA | **AT GATE** | Incident workspace includes containment/SLA, lifecycle, troubleshooting, 5-Why, causal factors, CAPA, recurrence and evidence. Alarm burst correlation and workflow triggering are configurable. Wave 6 adds persistent user notifications for escalation with direct record navigation and autosaved/recoverable incident drafts. Advanced statistical/alarm-pattern correlation remains enhancement work. |
 | M7 Work order / qualification / release | **AT GATE** | Work orders link source incident/PM, labor, evidence, qualification and release. Wave 5 adds guided Advance Closeout sequencing, approved-release closeout gating, and a unified Return-to-Service workspace with inline qualification checks/evidence plus release precheck/checklist/verification/approval and PPTX/XLSX/PDF reporting. |
-| M8 Inventory / components / logistics | **IN PROGRESS / LOGISTICS FOUNDATION** | Inventory Logistics workspace supports keyboard/barcode scan lookup, receiving, transfer, cycle count, reorder queue, supplier/barcode catalog, approved substitutes, PM kits and reservations. PM execution consumes/reserves parts inline. Remaining rotable/repairable lifecycle, supplier order workflow and richer kit staging. |
-| M9 Shift / My Work / collaboration | **AT GATE** | My Work, automatic handover, comments, @mentions and watchers are integrated. Wave 5 upgrades My Work into a filtered action center with explicit mention acknowledgment, watchlist activity and a live header badge. Remaining notification preferences/team-channel refinements are enhancements. |
+| M8 Inventory / components / logistics | **AT GATE** | Inventory Logistics supports scan lookup, receiving, transfer, cycle count, reorder, catalog/substitutes, PM reservations and inline PM consumption. Wave 6 adds governed supplier purchase orders with line-level partial receipt, serialized rotable/repairable lifecycle and vendor repair history, plus PM kit staging/issue/completion states. |
+| M9 Shift / My Work / collaboration | **AT GATE** | My Work, automatic handover, comments, @mentions and watchers are integrated. Wave 5 added the action center and live badge. Wave 6 adds a persistent Notification Center, unread badge, read/dismiss state and direct deep links for escalations/work-order ownership events. Team-channel/external notification preferences remain optional enhancements. |
 | M10 Analytics / engineering intelligence | **AT GATE** | Engineering Analytics includes chronic-tool/fleet reliability, downtime/alarm/incident Pareto, PM compliance, Wave 5 fleet time-series trends, selected-tool comparison and meter/condition trends with drill-down/exportable tables. Advanced statistical reliability models remain enhancement work. |
 | M11 Office reporting / PPT / Excel / PDF | **AT GATE** | Editable PPTX/XLSX packs cover core workflows and weekly reviews. Wave 5 adds centrally configured site PowerPoint templates automatically resolved by report/equipment context plus native controlled PDF packs for Equipment, Incident, PM, Work Order, Qualification, Release and Weekly Review. |
-| M12 Integration Studio / orchestration | **IN PROGRESS / OUTBOUND OPS + RULE ENGINE** | Transactional outbox, FILE/HTTP adapters and Workflow Automation Studio are implemented. Configurable triggers include ALARM_ACTIVE, PM_ABNORMAL_RESULT, QUALIFICATION_APPROVED, RELEASE_APPROVED and Wave 4 ALARM_BURST. Actions include CREATE_INCIDENT, CREATE_WORK_ORDER, CREATE_HANDOVER and SET_DISPOSITION with linked-context propagation. Wave 4 adds integration delivery operations: detailed status, manual dispatch, replay/requeue and dead-letter controls. Remaining inbound connectors, visual mapping/transforms and broader connector/action catalog. |
-| M13 Configurable forms / templates | **IN PROGRESS / POLICY ENGINE ADDED** | Configuration Studio, reference options, entity templates, typed custom fields and configuration packages remain. Wave 5 adds concurrent-safe configurable numbering schemes, default-owner rules, SLA policies and guided policy administration; these policies now drive new tickets/work orders/qualification runs. Richer form sections and additional PM/qualification template UX remain. |
-| M14 Product polish / performance / accessibility | **IN PROGRESS** | Wave 5 adds non-blocking success feedback, global Quick Create (Ctrl+N), global screenshot capture (Ctrl+Shift+V), live My Work count, direct deep navigation and replacement of legacy qualification/release routing with Return-to-Service. Large-data model/view scaling, accessibility and autosave/recovery remain. |
+| M12 Integration Studio / orchestration | **AT GATE** | Transactional outbound FILE/HTTP, workflow rule engine, replay/dead-letter operations and inbound FILE_JSON/FILE_CSV ingestion for ALARM/METER are implemented with validation, quarantine and idempotency. Wave 6 adds a dedicated Integration Studio with field-by-field mappings, non-mutating sample preview, feed processing, receipt/record inspection and replay. Protocol-specific MES/SECS-GEM/FDC adapters remain site integration work/enhancements. |
+| M13 Configurable forms / templates | **AT GATE** | Configuration Studio includes reference options, templates, typed custom fields, numbering/owner/SLA/report policies and configuration packages. Wave 6 adds configurable form sections, field placement/help/placeholder metadata, grouped runtime rendering, V2 package portability, PM-definition templates and qualification-protocol templates. |
+| M14 Product polish / performance / accessibility | **IN PROGRESS / RECOVERY ADDED** | Wave 5 adds Quick Create, Quick Screenshot, live My Work count and deep navigation. Wave 6 adds persistent per-user autosaved drafts with restore/discard for Incident/RCA and editable Work Order details, plus notifications and dedicated integration/logistics workspaces. Remaining primary gate: large-data model/view scaling, accessibility pass and further modal reduction. |
 | M15 UAT / pilot / production rollout | **NOT STARTED** | Requires completion of product gates followed by representative plant UAT/pilot. |
 
 ## Immediate execution order
 
-1. Freeze Wave 5 code and run the consolidated EMS-only validation cycle.
-2. Fix any unit/PostgreSQL/Windows/PySide6/packaging regressions found on the exact Wave 5 head.
-3. Merge Wave 5 only when the final exact code-bearing head is green.
-4. Continue M8 rotable/repairable lifecycle and supplier/order workflow.
-5. Continue M13 configurable form sections and PM/qualification template UX.
-6. Continue M14 large-data model/view scaling, accessibility, draft recovery and remaining modal reduction.
-7. Begin M15 representative plant UAT/pilot only after the remaining product gates are closed.
+1. Run the consolidated Wave 6 EMS-only validation cycle now that feature coding is substantially complete.
+2. Fix Wave 6 unit/schema/PostgreSQL/Windows/PySide6/packaging regressions as one batch.
+3. Merge Wave 6 only when the final exact code-bearing head is green.
+4. Continue M14 large-data model/view scaling, accessibility and remaining modal reduction.
+5. Begin M15 representative plant UAT/pilot after remaining product gates are accepted.
 
 ## EMS development execution policy
 

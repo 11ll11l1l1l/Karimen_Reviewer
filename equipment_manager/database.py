@@ -75,6 +75,36 @@ class UserFavorite(Base):
     __table_args__ = (UniqueConstraint("username","entity_type","entity_key",name="uq_user_favorite"),)
 
 
+class UserNotification(Base):
+    __tablename__ = "user_notifications"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    username: Mapped[str] = mapped_column(String(80), index=True)
+    category: Mapped[str] = mapped_column(String(60), index=True)
+    severity: Mapped[str] = mapped_column(String(30), default="INFO", index=True)
+    title: Mapped[str] = mapped_column(String(250))
+    body: Mapped[str] = mapped_column(Text, default="")
+    entity_type: Mapped[str] = mapped_column(String(60), default="", index=True)
+    entity_key: Mapped[str] = mapped_column(String(180), default="", index=True)
+    equipment_id: Mapped[str] = mapped_column(String(100), default="", index=True)
+    dedupe_key: Mapped[str] = mapped_column(String(250), default="", index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    read_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    dismissed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+
+
+class UserDraft(Base):
+    __tablename__ = "user_drafts"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    username: Mapped[str] = mapped_column(String(80), index=True)
+    entity_type: Mapped[str] = mapped_column(String(60), index=True)
+    entity_key: Mapped[str] = mapped_column(String(180), index=True)
+    draft_key: Mapped[str] = mapped_column(String(120), default="main")
+    payload_json: Mapped[str] = mapped_column(Text, default="{}")
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, index=True)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    __table_args__ = (UniqueConstraint("username","entity_type","entity_key","draft_key",name="uq_user_draft"),)
+
+
 class UserPreference(Base):
     __tablename__ = "user_preferences"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -924,6 +954,93 @@ class PartAlternate(Base):
     __table_args__ = (UniqueConstraint("part_number","alternate_part_number",name="uq_part_alternate"),)
 
 
+
+class SupplierOrder(Base):
+    __tablename__ = "supplier_orders"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    order_no: Mapped[str] = mapped_column(String(120), unique=True, index=True)
+    supplier: Mapped[str] = mapped_column(String(180), index=True)
+    status: Mapped[str] = mapped_column(String(40), default="Draft", index=True)
+    order_date: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    expected_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    external_reference: Mapped[str] = mapped_column(String(180), default="")
+    notes: Mapped[str] = mapped_column(Text, default="")
+    created_by: Mapped[str] = mapped_column(String(120), default="")
+    submitted_by: Mapped[str] = mapped_column(String(120), default="")
+    submitted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
+class SupplierOrderLine(Base):
+    __tablename__ = "supplier_order_lines"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    order_no: Mapped[str] = mapped_column(String(120), index=True)
+    line_no: Mapped[int] = mapped_column(Integer)
+    part_number: Mapped[str] = mapped_column(String(120), index=True)
+    supplier_part_number: Mapped[str] = mapped_column(String(160), default="")
+    ordered_qty: Mapped[float] = mapped_column(Float)
+    received_qty: Mapped[float] = mapped_column(Float, default=0.0)
+    unit_cost: Mapped[float] = mapped_column(Float, default=0.0)
+    currency: Mapped[str] = mapped_column(String(12), default="JPY")
+    destination_location: Mapped[str] = mapped_column(String(100), default="", index=True)
+    status: Mapped[str] = mapped_column(String(40), default="Open", index=True)
+    note: Mapped[str] = mapped_column(Text, default="")
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    __table_args__ = (UniqueConstraint("order_no","line_no",name="uq_supplier_order_line"),)
+
+
+class RotableAsset(Base):
+    __tablename__ = "rotable_assets"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    asset_id: Mapped[str] = mapped_column(String(120), unique=True, index=True)
+    part_number: Mapped[str] = mapped_column(String(120), index=True)
+    serial_number: Mapped[str] = mapped_column(String(160), default="", index=True)
+    description: Mapped[str] = mapped_column(String(300), default="")
+    status: Mapped[str] = mapped_column(String(40), default="Stock", index=True)
+    condition: Mapped[str] = mapped_column(String(60), default="Serviceable", index=True)
+    current_location: Mapped[str] = mapped_column(String(100), default="", index=True)
+    equipment_id: Mapped[str] = mapped_column(String(100), default="", index=True)
+    component_id: Mapped[str] = mapped_column(String(120), default="", index=True)
+    vendor: Mapped[str] = mapped_column(String(180), default="")
+    repair_reference: Mapped[str] = mapped_column(String(180), default="")
+    repair_count: Mapped[int] = mapped_column(Integer, default=0)
+    installed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    removed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    sent_for_repair_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    returned_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    notes: Mapped[str] = mapped_column(Text, default="")
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
+class RotableEvent(Base):
+    __tablename__ = "rotable_events"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    asset_id: Mapped[str] = mapped_column(String(120), index=True)
+    event_type: Mapped[str] = mapped_column(String(50), index=True)
+    from_status: Mapped[str] = mapped_column(String(40), default="")
+    to_status: Mapped[str] = mapped_column(String(40), default="")
+    location_code: Mapped[str] = mapped_column(String(100), default="")
+    equipment_id: Mapped[str] = mapped_column(String(100), default="")
+    reference: Mapped[str] = mapped_column(String(180), default="")
+    note: Mapped[str] = mapped_column(Text, default="")
+    user: Mapped[str] = mapped_column(String(120), default="")
+    occurred_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
+class PMKitStage(Base):
+    __tablename__ = "pm_kit_stages"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    task_id: Mapped[int] = mapped_column(Integer, unique=True, index=True)
+    staging_location: Mapped[str] = mapped_column(String(100), default="", index=True)
+    status: Mapped[str] = mapped_column(String(40), default="Reserved", index=True)
+    staged_by: Mapped[str] = mapped_column(String(120), default="")
+    staged_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    issued_by: Mapped[str] = mapped_column(String(120), default="")
+    issued_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    note: Mapped[str] = mapped_column(Text, default="")
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
 class InventoryItem(Base):
     __tablename__ = "inventory_items"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -1098,6 +1215,33 @@ class CustomFieldValue(Base):
     version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     __table_args__ = (UniqueConstraint("entity_type","entity_key","field_id",name="uq_custom_field_value"),)
 
+
+
+class FormSectionDefinition(Base):
+    __tablename__ = "form_section_definitions"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    section_id: Mapped[str] = mapped_column(String(120), unique=True, index=True)
+    entity_type: Mapped[str] = mapped_column(String(60), index=True)
+    applies_to: Mapped[str] = mapped_column(String(180), default="", index=True)
+    title: Mapped[str] = mapped_column(String(180))
+    description: Mapped[str] = mapped_column(Text, default="")
+    sort_order: Mapped[int] = mapped_column(Integer, default=100)
+    columns: Mapped[int] = mapped_column(Integer, default=1)
+    collapsible: Mapped[bool] = mapped_column(Boolean, default=False)
+    active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
+class CustomFieldLayout(Base):
+    __tablename__ = "custom_field_layouts"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    field_id: Mapped[str] = mapped_column(String(120), unique=True, index=True)
+    section_id: Mapped[str] = mapped_column(String(120), default="", index=True)
+    column_index: Mapped[int] = mapped_column(Integer, default=0)
+    width_span: Mapped[int] = mapped_column(Integer, default=1)
+    placeholder: Mapped[str] = mapped_column(String(250), default="")
+    help_text: Mapped[str] = mapped_column(Text, default="")
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
 
 class WorkflowAutomationRule(Base):
     __tablename__ = "workflow_automation_rules"
@@ -1372,6 +1516,18 @@ class Database:
                 table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
             ]),
             ("20260924_012","Create configurable numbering sequences",lambda: [
+                table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
+            ]),
+            ("20260924_013","Create supplier-order rotable and PM-kit staging lifecycle tables",lambda: [
+                table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
+            ]),
+            ("20260924_014","Create configurable form-section and custom-field layout tables",lambda: [
+                table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
+            ]),
+            ("20260924_015","Create persistent per-user record drafts",lambda: [
+                table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
+            ]),
+            ("20260924_016","Create persistent user notification center",lambda: [
                 table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
             ]),
         ]
@@ -2151,6 +2307,53 @@ class Database:
             if applies_to:rows=[x for x in rows if not x.applies_to or x.applies_to==applies_to]
             return rows
 
+    def save_form_section(self, data: dict[str,Any], expected_version: int | None = None):
+        payload=dict(data)
+        payload["section_id"]=str(payload.get("section_id","")).strip()
+        payload["entity_type"]=str(payload.get("entity_type","")).strip().upper()
+        payload["applies_to"]=str(payload.get("applies_to","")).strip()
+        payload["title"]=str(payload.get("title","")).strip()
+        payload["columns"]=max(1,min(3,int(payload.get("columns",1) or 1)))
+        if not payload["section_id"] or not payload["entity_type"] or not payload["title"]:
+            raise ValueError("Section ID, entity type and title are required.")
+        with self.session() as s:
+            row=s.scalar(select(FormSectionDefinition).where(FormSectionDefinition.section_id==payload["section_id"]))
+            if row:self._update_versioned(row,payload,expected_version,"Form section")
+            else:row=FormSectionDefinition(**payload);s.add(row)
+            s.flush();return row
+
+    def list_form_sections(self, entity_type: str = "", applies_to: str = "", active_only: bool = True):
+        with self.session() as s:
+            stmt=select(FormSectionDefinition).order_by(FormSectionDefinition.entity_type,FormSectionDefinition.sort_order,FormSectionDefinition.title)
+            if entity_type:stmt=stmt.where(FormSectionDefinition.entity_type==entity_type.strip().upper())
+            if active_only:stmt=stmt.where(FormSectionDefinition.active.is_(True))
+            rows=list(s.scalars(stmt))
+            if applies_to:rows=[x for x in rows if not x.applies_to or x.applies_to==applies_to]
+            return rows
+
+    def save_custom_field_layout(self, field_id: str, data: dict[str,Any], expected_version: int | None = None):
+        field_id=field_id.strip()
+        if not field_id:raise ValueError("Field ID is required.")
+        payload=dict(data);payload["field_id"]=field_id
+        payload["section_id"]=str(payload.get("section_id","")).strip()
+        payload["column_index"]=max(0,min(2,int(payload.get("column_index",0) or 0)))
+        payload["width_span"]=max(1,min(3,int(payload.get("width_span",1) or 1)))
+        with self.session() as s:
+            if not s.scalar(select(CustomFieldDefinition).where(CustomFieldDefinition.field_id==field_id)):
+                raise ValueError("Custom field definition not found.")
+            if payload["section_id"] and not s.scalar(select(FormSectionDefinition).where(FormSectionDefinition.section_id==payload["section_id"])):
+                raise ValueError("Form section not found.")
+            row=s.scalar(select(CustomFieldLayout).where(CustomFieldLayout.field_id==field_id))
+            if row:self._update_versioned(row,payload,expected_version,"Custom field layout")
+            else:row=CustomFieldLayout(**payload);s.add(row)
+            s.flush();return row
+
+    def custom_field_layouts(self, field_ids: list[str] | None = None) -> dict[str,CustomFieldLayout]:
+        with self.session() as s:
+            stmt=select(CustomFieldLayout)
+            if field_ids:stmt=stmt.where(CustomFieldLayout.field_id.in_(field_ids))
+            return {x.field_id:x for x in s.scalars(stmt)}
+
     def save_custom_field_definition(self, data: dict[str,Any], expected_version: int | None = None):
         payload=dict(data);payload["field_id"]=str(payload.get("field_id","")).strip();payload["entity_type"]=str(payload.get("entity_type","")).strip().upper();payload["field_type"]=str(payload.get("field_type","TEXT")).strip().upper()
         if payload["field_type"] not in {"TEXT","MULTILINE","NUMBER","BOOLEAN","DATE","CHOICE"}:raise ValueError("Unsupported custom field type.")
@@ -2220,9 +2423,11 @@ class Database:
             options=list(s.scalars(select(ConfigOption).order_by(ConfigOption.category,ConfigOption.sort_order,ConfigOption.code)))
             templates=list(s.scalars(select(EntityTemplate).order_by(EntityTemplate.entity_type,EntityTemplate.template_id)))
             fields=list(s.scalars(select(CustomFieldDefinition).order_by(CustomFieldDefinition.entity_type,CustomFieldDefinition.sort_order,CustomFieldDefinition.field_id)))
+            form_sections=list(s.scalars(select(FormSectionDefinition).order_by(FormSectionDefinition.entity_type,FormSectionDefinition.sort_order,FormSectionDefinition.section_id)))
+            layouts=list(s.scalars(select(CustomFieldLayout).order_by(CustomFieldLayout.field_id)))
             rules=list(s.scalars(select(WorkflowAutomationRule).order_by(WorkflowAutomationRule.priority,WorkflowAutomationRule.rule_id)))
         return {
-            "schema":"EMS_CONFIGURATION_V1",
+            "schema":"EMS_CONFIGURATION_V2",
             "exported_at":datetime.utcnow().isoformat(),
             "config_options":[{
                 "category":x.category,"code":x.code,"label":x.label,"sort_order":x.sort_order,
@@ -2237,6 +2442,14 @@ class Database:
                 "field_type":x.field_type,"options_json":x.options_json,"required":x.required,
                 "sort_order":x.sort_order,"active":x.active,
             } for x in fields],
+            "form_sections":[{
+                "section_id":x.section_id,"entity_type":x.entity_type,"applies_to":x.applies_to,"title":x.title,
+                "description":x.description,"sort_order":x.sort_order,"columns":x.columns,"collapsible":x.collapsible,"active":x.active,
+            } for x in form_sections],
+            "custom_field_layouts":[{
+                "field_id":x.field_id,"section_id":x.section_id,"column_index":x.column_index,"width_span":x.width_span,
+                "placeholder":x.placeholder,"help_text":x.help_text,
+            } for x in layouts],
             "workflow_rules":[{
                 "rule_id":x.rule_id,"name":x.name,"trigger":x.trigger,"match_json":x.match_json,
                 "actions_json":x.actions_json,"enabled":x.enabled,"priority":x.priority,
@@ -2244,12 +2457,14 @@ class Database:
         }
 
     def _validate_configuration_bundle(self,bundle: dict[str,Any]) -> dict[str,int]:
-        if not isinstance(bundle,dict) or bundle.get("schema")!="EMS_CONFIGURATION_V1":
+        if not isinstance(bundle,dict) or bundle.get("schema") not in {"EMS_CONFIGURATION_V1","EMS_CONFIGURATION_V2"}:
             raise ValueError("Unsupported configuration package schema.")
         sections={
             "config_options":bundle.get("config_options",[]),
             "entity_templates":bundle.get("entity_templates",[]),
             "custom_fields":bundle.get("custom_fields",[]),
+            "form_sections":bundle.get("form_sections",[]),
+            "custom_field_layouts":bundle.get("custom_field_layouts",[]),
             "workflow_rules":bundle.get("workflow_rules",[]),
         }
         for name,rows in sections.items():
@@ -2276,7 +2491,18 @@ class Database:
             if field_type not in {"TEXT","MULTILINE","NUMBER","BOOLEAN","DATE","CHOICE"}:raise ValueError(f"Unsupported field type for {key}: {field_type}")
             options=json.loads(row.get("options_json","[]") or "[]")
             if not isinstance(options,list):raise ValueError(f"Custom field {key} options must be an array.")
-        seen=set();allowed_triggers={"ALARM_ACTIVE","PM_ABNORMAL_RESULT","QUALIFICATION_APPROVED","RELEASE_APPROVED"};allowed_actions={"CREATE_INCIDENT","CREATE_WORK_ORDER","CREATE_HANDOVER","SET_DISPOSITION"}
+        seen=set()
+        for row in sections["form_sections"]:
+            key=str(row.get("section_id","")).strip()
+            if not key or key in seen:raise ValueError(f"Invalid or duplicate form section ID: {key or '<blank>'}")
+            seen.add(key)
+            if not str(row.get("entity_type","")).strip() or not str(row.get("title","")).strip():raise ValueError(f"Form section {key} requires entity type and title.")
+        seen=set()
+        for row in sections["custom_field_layouts"]:
+            key=str(row.get("field_id","")).strip()
+            if not key or key in seen:raise ValueError(f"Invalid or duplicate custom-field layout: {key or '<blank>'}")
+            seen.add(key)
+        seen=set();allowed_triggers={"ALARM_ACTIVE","ALARM_BURST","PM_ABNORMAL_RESULT","QUALIFICATION_APPROVED","RELEASE_APPROVED"};allowed_actions={"CREATE_INCIDENT","CREATE_WORK_ORDER","CREATE_HANDOVER","SET_DISPOSITION"}
         for row in sections["workflow_rules"]:
             key=str(row.get("rule_id","")).strip();trigger=str(row.get("trigger","")).strip().upper()
             if not key or key in seen:raise ValueError(f"Invalid or duplicate workflow rule ID: {key or '<blank>'}")
@@ -2295,12 +2521,16 @@ class Database:
                 "config_options":{(x.category,x.code) for x in s.scalars(select(ConfigOption))},
                 "entity_templates":{x.template_id for x in s.scalars(select(EntityTemplate))},
                 "custom_fields":{x.field_id for x in s.scalars(select(CustomFieldDefinition))},
+                "form_sections":{x.section_id for x in s.scalars(select(FormSectionDefinition))},
+                "custom_field_layouts":{x.field_id for x in s.scalars(select(CustomFieldLayout))},
                 "workflow_rules":{x.rule_id for x in s.scalars(select(WorkflowAutomationRule))},
             }
         creates={
             "config_options":sum(1 for x in bundle.get("config_options",[]) if (str(x.get("category","")).strip().upper(),str(x.get("code","")).strip()) not in existing["config_options"]),
             "entity_templates":sum(1 for x in bundle.get("entity_templates",[]) if str(x.get("template_id","")).strip() not in existing["entity_templates"]),
             "custom_fields":sum(1 for x in bundle.get("custom_fields",[]) if str(x.get("field_id","")).strip() not in existing["custom_fields"]),
+            "form_sections":sum(1 for x in bundle.get("form_sections",[]) if str(x.get("section_id","")).strip() not in existing["form_sections"]),
+            "custom_field_layouts":sum(1 for x in bundle.get("custom_field_layouts",[]) if str(x.get("field_id","")).strip() not in existing["custom_field_layouts"]),
             "workflow_rules":sum(1 for x in bundle.get("workflow_rules",[]) if str(x.get("rule_id","")).strip() not in existing["workflow_rules"]),
         }
         preview={"counts":counts,"creates":creates,"updates":{k:counts[k]-creates[k] for k in counts},"dry_run":dry_run}
@@ -2332,6 +2562,20 @@ class Database:
                     for k,v in payload.items():setattr(row,k,v)
                     row.version+=1
                 else:s.add(CustomFieldDefinition(field_id=key,**payload))
+            for data in bundle.get("form_sections",[]):
+                key=str(data["section_id"]).strip();row=s.scalar(select(FormSectionDefinition).where(FormSectionDefinition.section_id==key))
+                payload={"entity_type":str(data["entity_type"]).strip().upper(),"applies_to":str(data.get("applies_to","")).strip(),"title":str(data["title"]).strip(),"description":str(data.get("description","")).strip(),"sort_order":int(data.get("sort_order",100)),"columns":max(1,min(3,int(data.get("columns",1) or 1))),"collapsible":bool(data.get("collapsible",False)),"active":bool(data.get("active",True))}
+                if row:
+                    for k,v in payload.items():setattr(row,k,v)
+                    row.version+=1
+                else:s.add(FormSectionDefinition(section_id=key,**payload))
+            for data in bundle.get("custom_field_layouts",[]):
+                key=str(data["field_id"]).strip();row=s.scalar(select(CustomFieldLayout).where(CustomFieldLayout.field_id==key))
+                payload={"section_id":str(data.get("section_id","")).strip(),"column_index":max(0,min(2,int(data.get("column_index",0) or 0))),"width_span":max(1,min(3,int(data.get("width_span",1) or 1))),"placeholder":str(data.get("placeholder","")),"help_text":str(data.get("help_text",""))}
+                if row:
+                    for k,v in payload.items():setattr(row,k,v)
+                    row.version+=1
+                else:s.add(CustomFieldLayout(field_id=key,**payload))
             for data in bundle.get("workflow_rules",[]):
                 key=str(data["rule_id"]).strip();row=s.scalar(select(WorkflowAutomationRule).where(WorkflowAutomationRule.rule_id==key))
                 payload={"name":str(data["name"]).strip(),"trigger":str(data["trigger"]).strip().upper(),"match_json":data.get("match_json","{}") or "{}","actions_json":data.get("actions_json","[]") or "[]","enabled":bool(data.get("enabled",True)),"priority":int(data.get("priority",100)),"created_by":user}
@@ -2339,7 +2583,7 @@ class Database:
                     for k,v in payload.items():setattr(row,k,v)
                     row.version+=1
                 else:s.add(WorkflowAutomationRule(rule_id=key,**payload))
-            s.add(AuditLog(user=user,action="CONFIGURATION_IMPORT",entity_type="SYSTEM_CONFIGURATION",entity_key="EMS_CONFIGURATION_V1",detail=json.dumps(preview,sort_keys=True)))
+            s.add(AuditLog(user=user,action="CONFIGURATION_IMPORT",entity_type="SYSTEM_CONFIGURATION",entity_key=str(bundle.get("schema","EMS_CONFIGURATION_V1")),detail=json.dumps(preview,sort_keys=True)))
             s.flush()
         preview["dry_run"]=False
         return preview
@@ -2784,6 +3028,93 @@ class Database:
             if row:row.value_json=encoded;row.updated_at=datetime.utcnow()
             else:row=UserPreference(username=username,preference_key=key,value_json=encoded);s.add(row)
             s.flush();return row
+
+    def _add_notification_in_session(
+        self,s,username: str,category: str,title: str,body: str="",
+        severity: str="INFO",entity_type: str="",entity_key: str="",equipment_id: str="",dedupe_key: str="",
+    ):
+        username=(username or "").strip()
+        if not username:return None
+        if not s.scalar(select(User).where(User.username==username,User.active.is_(True))):return None
+        dedupe_key=(dedupe_key or "").strip()
+        if dedupe_key:
+            existing=s.scalar(select(UserNotification).where(
+                UserNotification.username==username,UserNotification.dedupe_key==dedupe_key,
+                UserNotification.dismissed_at.is_(None),UserNotification.read_at.is_(None),
+            ).order_by(UserNotification.id.desc()))
+            if existing:
+                existing.title=title;existing.body=body;existing.severity=severity;existing.created_at=datetime.utcnow()
+                return existing
+        row=UserNotification(
+            username=username,category=category.strip().upper() or "GENERAL",severity=severity.strip().upper() or "INFO",
+            title=title.strip(),body=body.strip(),entity_type=entity_type.strip().upper(),entity_key=str(entity_key or ""),
+            equipment_id=equipment_id.strip(),dedupe_key=dedupe_key,
+        )
+        s.add(row);s.flush();return row
+
+    def create_notification(self,username: str,category: str,title: str,body: str="",severity: str="INFO",entity_type: str="",entity_key: str="",equipment_id: str="",dedupe_key: str=""):
+        with self.session() as s:
+            return self._add_notification_in_session(s,username,category,title,body,severity,entity_type,entity_key,equipment_id,dedupe_key)
+
+    def list_notifications(self,username: str,unread_only: bool=False,include_dismissed: bool=False,limit: int=500):
+        with self.session() as s:
+            stmt=select(UserNotification).where(UserNotification.username==username)
+            if unread_only:stmt=stmt.where(UserNotification.read_at.is_(None),UserNotification.dismissed_at.is_(None))
+            elif not include_dismissed:stmt=stmt.where(UserNotification.dismissed_at.is_(None))
+            return list(s.scalars(stmt.order_by(UserNotification.created_at.desc(),UserNotification.id.desc()).limit(max(1,min(int(limit),5000)))))
+
+    def unread_notification_count(self,username: str) -> int:
+        with self.session() as s:
+            return int(s.scalar(select(func.count()).select_from(UserNotification).where(
+                UserNotification.username==username,UserNotification.read_at.is_(None),UserNotification.dismissed_at.is_(None),
+            )) or 0)
+
+    def mark_notification_read(self,notification_id: int,username: str,read: bool=True):
+        with self.session() as s:
+            row=s.get(UserNotification,int(notification_id))
+            if not row or row.username!=username:raise ValueError("Notification not found.")
+            row.read_at=datetime.utcnow() if read else None;s.flush();return row
+
+    def dismiss_notification(self,notification_id: int,username: str):
+        with self.session() as s:
+            row=s.get(UserNotification,int(notification_id))
+            if not row or row.username!=username:raise ValueError("Notification not found.")
+            row.dismissed_at=datetime.utcnow();s.flush();return row
+
+    def mark_all_notifications_read(self,username: str) -> int:
+        with self.session() as s:
+            rows=list(s.scalars(select(UserNotification).where(UserNotification.username==username,UserNotification.read_at.is_(None),UserNotification.dismissed_at.is_(None))))
+            now=datetime.utcnow()
+            for row in rows:row.read_at=now
+            return len(rows)
+
+    def save_user_draft(self, username: str, entity_type: str, entity_key: str, payload: dict[str,Any], draft_key: str = "main"):
+        username=username.strip();entity_type=entity_type.strip().upper();entity_key=str(entity_key);draft_key=draft_key.strip() or "main"
+        if not username or not entity_type or not entity_key:raise ValueError("Draft username, entity type and key are required.")
+        encoded=json.dumps(payload,default=str,sort_keys=True)
+        with self.session() as s:
+            row=s.scalar(select(UserDraft).where(UserDraft.username==username,UserDraft.entity_type==entity_type,UserDraft.entity_key==entity_key,UserDraft.draft_key==draft_key))
+            if row:row.payload_json=encoded;row.updated_at=datetime.utcnow();row.version+=1
+            else:row=UserDraft(username=username,entity_type=entity_type,entity_key=entity_key,draft_key=draft_key,payload_json=encoded);s.add(row)
+            s.flush();return row
+
+    def get_user_draft(self, username: str, entity_type: str, entity_key: str, draft_key: str = "main"):
+        with self.session() as s:
+            row=s.scalar(select(UserDraft).where(UserDraft.username==username,UserDraft.entity_type==entity_type.strip().upper(),UserDraft.entity_key==str(entity_key),UserDraft.draft_key==(draft_key.strip() or "main")))
+            if not row:return None
+            try:payload=json.loads(row.payload_json or "{}")
+            except Exception:payload={}
+            return {"payload":payload,"updated_at":row.updated_at,"version":row.version}
+
+    def clear_user_draft(self, username: str, entity_type: str, entity_key: str, draft_key: str = "main"):
+        with self.session() as s:
+            row=s.scalar(select(UserDraft).where(UserDraft.username==username,UserDraft.entity_type==entity_type.strip().upper(),UserDraft.entity_key==str(entity_key),UserDraft.draft_key==(draft_key.strip() or "main")))
+            if row:s.delete(row);return True
+            return False
+
+    def list_user_drafts(self, username: str, limit: int = 100):
+        with self.session() as s:
+            return list(s.scalars(select(UserDraft).where(UserDraft.username==username).order_by(UserDraft.updated_at.desc()).limit(max(1,min(int(limit),1000)))))
 
     def get_user_preference(self, username: str, key: str, default: Any = None):
         with self.session() as s:
@@ -5062,6 +5393,15 @@ class Database:
                         ticket_no=ticket.ticket_no,from_level=old,to_level=target,
                         reason=control.escalation_reason,user="system",occurred_at=now,
                     ))
+                    if ticket.owner:
+                        self._add_notification_in_session(
+                            s,ticket.owner,"INCIDENT_ESCALATION",
+                            f"{ticket.ticket_no} escalated to L{target}",
+                            f"{ticket.title}\n{control.escalation_reason}",
+                            "CRITICAL" if target>=3 or ticket.priority=="P1" else "HIGH",
+                            "TICKET",ticket.ticket_no,ticket.equipment_id,
+                            f"incident-escalation:{ticket.ticket_no}:L{target}",
+                        )
                     escalated.append(ticket.ticket_no)
             s.flush()
         return escalated
@@ -5859,6 +6199,45 @@ class Database:
             .order_by(WorkOrderLink.created_at,WorkOrderLink.id)
         ))
 
+    def update_work_order_details(
+        self,
+        work_order_no: str,
+        user: str,
+        *,
+        description: str | None = None,
+        owner: str | None = None,
+        team: str | None = None,
+        expected_version: int | None = None,
+        workstation: str = "",
+    ):
+        with self.session() as s:
+            stmt=select(WorkOrder).where(WorkOrder.work_order_no==work_order_no)
+            if self.url.startswith("postgresql"):stmt=stmt.with_for_update()
+            row=s.scalar(stmt)
+            if not row:raise ValueError("Work order not found")
+            self.assert_authorized(user,"worklog.edit",row.equipment_id)
+            if expected_version is not None and row.version!=expected_version:
+                raise RuntimeError("CONFLICT: Work order changed by another user.")
+            if row.status=="Cancelled":raise ValueError("Cancelled work order details cannot be edited.")
+            changes={}
+            if description is not None and description!=row.description:
+                changes["description"]={"old":row.description,"new":description};row.description=description
+            if owner is not None and owner.strip()!=row.owner:
+                changes["owner"]={"old":row.owner,"new":owner.strip()};row.owner=owner.strip()
+            if team is not None and team.strip()!=row.team:
+                changes["team"]={"old":row.team,"new":team.strip()};row.team=team.strip()
+            if not changes:return row
+            row.updated_at=datetime.utcnow();row.version+=1
+            s.add(AuditLog(
+                user=user,action="WORK_ORDER_DETAILS_UPDATE",entity_type="WORK_ORDER",entity_key=row.work_order_no,
+                detail=json.dumps(changes,sort_keys=True),workstation=workstation,
+            ))
+            self._queue_integration_event(s,"work_order.details.changed","WORK_ORDER",row.work_order_no,{
+                "work_order_no":row.work_order_no,"equipment_id":row.equipment_id,
+                "changes":changes,"changed_by":user,
+            })
+            s.flush();return row
+
     def transition_work_order(
         self,work_order_no: str,target_state: str,user: str,reason: str="",
         owner: str="",expected_version: int | None=None,workstation: str="",
@@ -5894,6 +6273,14 @@ class Database:
                 "work_order_no":row.work_order_no,"equipment_id":row.equipment_id,
                 "from_state":previous,"to_state":target_state,"owner":row.owner,"changed_by":user,
             })
+            if row.owner and row.owner!=user:
+                self._add_notification_in_session(
+                    s,row.owner,"WORK_ORDER",f"{row.work_order_no} · {target_state}",
+                    f"{row.title}\nEquipment: {row.equipment_id}"+(f"\n{reason.strip()}" if reason.strip() else ""),
+                    "HIGH" if target_state in {"Assigned","Waiting Parts","Ready for Qualification"} else "INFO",
+                    "WORK_ORDER",row.work_order_no,row.equipment_id,
+                    f"work-order:{row.work_order_no}:{target_state}:{row.version}",
+                )
             s.flush();return row
 
     def applicable_qualification_protocols(self, equipment_id: str):
@@ -6222,6 +6609,207 @@ class Database:
 
     def list_storage_locations(self):
         with self.session() as s: return list(s.scalars(select(StorageLocation).order_by(StorageLocation.location_code)))
+
+    def save_supplier_order(self, data: dict[str, Any], user: str, expected_version: int | None = None):
+        payload=dict(data);order_no=str(payload.get("order_no","")).strip();supplier=str(payload.get("supplier","")).strip()
+        if not order_no or not supplier:raise ValueError("Order number and supplier are required.")
+        payload["order_no"]=order_no;payload["supplier"]=supplier;payload.setdefault("created_by",user)
+        with self.session() as s:
+            row=s.scalar(select(SupplierOrder).where(SupplierOrder.order_no==order_no))
+            if row:
+                if row.status not in {"Draft","Submitted","Partially Received"}:raise ValueError(f"Cannot edit supplier order in {row.status} status.")
+                for key in ["status","submitted_by","submitted_at","closed_at","created_by"]:payload.pop(key,None)
+                self._update_versioned(row,payload,expected_version,"Supplier order")
+            else:
+                for key in ["status","submitted_by","submitted_at","closed_at"]:payload.pop(key,None)
+                row=SupplierOrder(**payload);s.add(row)
+            s.add(AuditLog(user=user,action="SUPPLIER_ORDER_SAVE",entity_type="SUPPLIER_ORDER",entity_key=order_no,detail=supplier))
+            s.flush();return row
+
+    def list_supplier_orders(self, status: str = ""):
+        with self.session() as s:
+            stmt=select(SupplierOrder).order_by(SupplierOrder.order_date.desc(),SupplierOrder.order_no.desc())
+            if status:stmt=stmt.where(SupplierOrder.status==status)
+            return list(s.scalars(stmt))
+
+    def add_supplier_order_line(self, order_no: str, data: dict[str, Any], user: str, expected_version: int | None = None):
+        payload=dict(data);part=str(payload.get("part_number","")).strip();qty=float(payload.get("ordered_qty") or 0)
+        if not part or qty<=0:raise ValueError("Part number and positive ordered quantity are required.")
+        with self.session() as s:
+            order=s.scalar(select(SupplierOrder).where(SupplierOrder.order_no==order_no))
+            if not order:raise ValueError("Supplier order not found")
+            if order.status not in {"Draft","Submitted","Partially Received"}:raise ValueError(f"Cannot edit lines in {order.status} order.")
+            line_no=int(payload.get("line_no") or 0)
+            row=s.scalar(select(SupplierOrderLine).where(SupplierOrderLine.order_no==order_no,SupplierOrderLine.line_no==line_no)) if line_no else None
+            if row:
+                if float(row.received_qty or 0)>qty:raise ValueError("Ordered quantity cannot be reduced below received quantity.")
+                self._update_versioned(row,payload,expected_version,"Supplier order line")
+            else:
+                line_no=int(s.scalar(select(func.max(SupplierOrderLine.line_no)).where(SupplierOrderLine.order_no==order_no)) or 0)+1
+                payload["line_no"]=line_no;payload["order_no"]=order_no
+                catalog=s.scalar(select(PartCatalog).where(PartCatalog.part_number==part))
+                if catalog and not payload.get("supplier_part_number"):payload["supplier_part_number"]=catalog.supplier_part_number
+                row=SupplierOrderLine(**payload);s.add(row)
+            s.flush();return row
+
+    def list_supplier_order_lines(self, order_no: str):
+        with self.session() as s:
+            return list(s.scalars(select(SupplierOrderLine).where(SupplierOrderLine.order_no==order_no).order_by(SupplierOrderLine.line_no)))
+
+    def submit_supplier_order(self, order_no: str, user: str, expected_version: int | None = None):
+        with self.session() as s:
+            stmt=select(SupplierOrder).where(SupplierOrder.order_no==order_no)
+            if self.url.startswith("postgresql"):stmt=stmt.with_for_update()
+            order=s.scalar(stmt)
+            if not order:raise ValueError("Supplier order not found")
+            if expected_version is not None and order.version!=expected_version:raise RuntimeError("CONFLICT: Supplier order changed.")
+            if order.status!="Draft":raise ValueError("Only Draft supplier orders can be submitted.")
+            count=int(s.scalar(select(func.count()).select_from(SupplierOrderLine).where(SupplierOrderLine.order_no==order_no)) or 0)
+            if not count:raise ValueError("Supplier order requires at least one line.")
+            order.status="Submitted";order.submitted_by=user;order.submitted_at=datetime.utcnow();order.version+=1
+            s.add(AuditLog(user=user,action="SUPPLIER_ORDER_SUBMIT",entity_type="SUPPLIER_ORDER",entity_key=order_no,detail=f"{count} line(s)"))
+            s.flush();return order
+
+    def receive_supplier_order_line(self, line_id: int, qty: float, user: str, reference: str = "", note: str = ""):
+        if qty<=0:raise ValueError("Receipt quantity must be positive.")
+        self.assert_authorized(user,"inventory.edit")
+        with self.session() as s:
+            stmt=select(SupplierOrderLine).where(SupplierOrderLine.id==line_id)
+            if self.url.startswith("postgresql"):stmt=stmt.with_for_update()
+            line=s.scalar(stmt)
+            if not line:raise ValueError("Supplier order line not found")
+            order_stmt=select(SupplierOrder).where(SupplierOrder.order_no==line.order_no)
+            if self.url.startswith("postgresql"):order_stmt=order_stmt.with_for_update()
+            order=s.scalar(order_stmt)
+            if not order or order.status not in {"Submitted","Partially Received"}:raise ValueError("Order must be Submitted before receipt.")
+            remaining=float(line.ordered_qty or 0)-float(line.received_qty or 0)
+            if qty>remaining+1e-9:raise ValueError(f"Receipt exceeds remaining ordered quantity ({remaining:g}).")
+            location=(line.destination_location or "").strip()
+            if not location:raise ValueError("Destination location is required before receipt.")
+            item_stmt=select(InventoryItem).where(InventoryItem.part_number==line.part_number,InventoryItem.location_code==location)
+            if self.url.startswith("postgresql"):item_stmt=item_stmt.with_for_update()
+            item=s.scalar(item_stmt)
+            if not item:
+                catalog=s.scalar(select(PartCatalog).where(PartCatalog.part_number==line.part_number))
+                item=InventoryItem(part_number=line.part_number,description=catalog.description if catalog else "",category=catalog.category if catalog else "",manufacturer=catalog.manufacturer if catalog else "",quantity=0.0,min_quantity=0.0,unit="ea",condition="Available",location_code=location)
+                s.add(item);s.flush()
+            item.quantity=float(item.quantity or 0)+qty;item.version+=1
+            line.received_qty=float(line.received_qty or 0)+qty
+            line.status="Received" if line.received_qty>=float(line.ordered_qty or 0)-1e-9 else "Partial";line.version+=1
+            tx=InventoryTransaction(part_number=line.part_number,location_code=location,transaction_type="PO Receive",quantity=qty,user=user,note=" | ".join(x for x in [line.order_no,reference.strip(),note.strip()] if x))
+            s.add(tx)
+            lines=list(s.scalars(select(SupplierOrderLine).where(SupplierOrderLine.order_no==order.order_no)))
+            statuses=[("Received" if x.id==line.id and line.status=="Received" else x.status) for x in lines]
+            if all(x=="Received" for x in statuses):
+                order.status="Received";order.closed_at=datetime.utcnow()
+            else:order.status="Partially Received"
+            order.version+=1
+            s.add(AuditLog(user=user,action="SUPPLIER_ORDER_RECEIVE",entity_type="SUPPLIER_ORDER",entity_key=order.order_no,detail=json.dumps({"line_id":line.id,"part_number":line.part_number,"qty":qty,"location":location,"reference":reference},sort_keys=True)))
+            s.flush();return line,order,tx
+
+    def cancel_supplier_order(self, order_no: str, user: str, reason: str = ""):
+        with self.session() as s:
+            order=s.scalar(select(SupplierOrder).where(SupplierOrder.order_no==order_no))
+            if not order:raise ValueError("Supplier order not found")
+            if order.status=="Received":raise ValueError("Received supplier order cannot be cancelled.")
+            if s.scalar(select(func.count()).select_from(SupplierOrderLine).where(SupplierOrderLine.order_no==order_no,SupplierOrderLine.received_qty>0)):
+                raise ValueError("Order with received quantity cannot be cancelled.")
+            order.status="Cancelled";order.closed_at=datetime.utcnow();order.version+=1
+            for line in s.scalars(select(SupplierOrderLine).where(SupplierOrderLine.order_no==order_no)):line.status="Cancelled";line.version+=1
+            s.add(AuditLog(user=user,action="SUPPLIER_ORDER_CANCEL",entity_type="SUPPLIER_ORDER",entity_key=order_no,detail=reason.strip()))
+            s.flush();return order
+
+    def register_rotable(self, data: dict[str, Any], user: str, expected_version: int | None = None):
+        payload=dict(data);asset_id=str(payload.get("asset_id","")).strip();part=str(payload.get("part_number","")).strip()
+        if not asset_id or not part:raise ValueError("Rotable asset ID and part number are required.")
+        with self.session() as s:
+            row=s.scalar(select(RotableAsset).where(RotableAsset.asset_id==asset_id))
+            lifecycle_fields={"status","condition","equipment_id","component_id","vendor","repair_reference","repair_count","installed_at","removed_at","sent_for_repair_at","returned_at"}
+            if row:
+                for key in lifecycle_fields:payload.pop(key,None)
+                self._update_versioned(row,payload,expected_version,"Rotable asset")
+            else:
+                for key in lifecycle_fields:payload.pop(key,None)
+                row=RotableAsset(**payload);s.add(row);s.flush()
+                s.add(RotableEvent(asset_id=asset_id,event_type="REGISTER",from_status="",to_status=row.status,location_code=row.current_location,user=user,note=row.notes))
+            s.flush();return row
+
+    def list_rotables(self, search_text: str = "", status: str = ""):
+        with self.session() as s:
+            stmt=select(RotableAsset).order_by(RotableAsset.part_number,RotableAsset.asset_id)
+            if search_text:
+                q=f"%{search_text}%";stmt=stmt.where(or_(RotableAsset.asset_id.ilike(q),RotableAsset.part_number.ilike(q),RotableAsset.serial_number.ilike(q),RotableAsset.equipment_id.ilike(q),RotableAsset.vendor.ilike(q)))
+            if status:stmt=stmt.where(RotableAsset.status==status)
+            return list(s.scalars(stmt))
+
+    def list_rotable_events(self, asset_id: str):
+        with self.session() as s:
+            return list(s.scalars(select(RotableEvent).where(RotableEvent.asset_id==asset_id).order_by(RotableEvent.occurred_at.desc(),RotableEvent.id.desc())))
+
+    def transition_rotable(self, asset_id: str, target_status: str, user: str, *, location_code: str = "", equipment_id: str = "", component_id: str = "", vendor: str = "", reference: str = "", note: str = "", expected_version: int | None = None):
+        target_status=target_status.strip()
+        allowed={
+            "Stock":{"Installed","In Repair","Quarantine","Scrapped"},
+            "Installed":{"Stock","In Repair","Quarantine","Scrapped"},
+            "In Repair":{"Stock","Quarantine","Scrapped"},
+            "Quarantine":{"Stock","In Repair","Scrapped"},
+            "Scrapped":set(),
+        }
+        if target_status not in {"Stock","Installed","In Repair","Quarantine","Scrapped"}:raise ValueError("Invalid rotable lifecycle status.")
+        with self.session() as s:
+            stmt=select(RotableAsset).where(RotableAsset.asset_id==asset_id)
+            if self.url.startswith("postgresql"):stmt=stmt.with_for_update()
+            row=s.scalar(stmt)
+            if not row:raise ValueError("Rotable asset not found")
+            if expected_version is not None and row.version!=expected_version:raise RuntimeError("CONFLICT: Rotable asset changed.")
+            if target_status==row.status:return row
+            if target_status not in allowed.get(row.status,set()):raise ValueError(f"Invalid rotable transition {row.status} → {target_status}.")
+            if target_status=="Installed" and not equipment_id.strip():raise ValueError("Equipment ID is required when installing a rotable.")
+            if target_status=="In Repair" and not vendor.strip():raise ValueError("Vendor is required when sending a rotable for repair.")
+            previous=row.status;now=datetime.utcnow()
+            row.status=target_status;row.version+=1
+            if target_status=="Installed":
+                row.equipment_id=equipment_id.strip();row.component_id=component_id.strip();row.current_location="";row.installed_at=now
+            elif target_status=="In Repair":
+                row.vendor=vendor.strip();row.repair_reference=reference.strip();row.sent_for_repair_at=now;row.equipment_id="";row.component_id=""
+            elif target_status=="Stock":
+                row.current_location=location_code.strip() or row.current_location;row.equipment_id="";row.component_id="";row.condition="Serviceable"
+                if previous=="Installed":row.removed_at=now
+                if previous=="In Repair":row.returned_at=now;row.repair_count+=1
+            elif target_status=="Quarantine":
+                row.current_location=location_code.strip() or row.current_location;row.equipment_id="";row.component_id="";row.condition="Quarantine"
+            elif target_status=="Scrapped":
+                row.equipment_id="";row.component_id="";row.condition="Scrapped"
+            row.notes=note.strip() or row.notes
+            s.add(RotableEvent(asset_id=asset_id,event_type="STATUS",from_status=previous,to_status=target_status,location_code=row.current_location,equipment_id=row.equipment_id,reference=reference.strip(),note=note.strip(),user=user,occurred_at=now))
+            s.add(AuditLog(user=user,action="ROTABLE_TRANSITION",entity_type="ROTABLE",entity_key=asset_id,detail=json.dumps({"from":previous,"to":target_status,"equipment_id":equipment_id,"vendor":vendor,"reference":reference},sort_keys=True)))
+            s.flush();return row
+
+    def pm_kit_stage(self, task_id: int):
+        with self.session() as s:return s.scalar(select(PMKitStage).where(PMKitStage.task_id==task_id))
+
+    def set_pm_kit_stage(self, task_id: int, status: str, user: str, staging_location: str = "", note: str = "", expected_version: int | None = None):
+        status=status.strip()
+        if status not in {"Reserved","Staged","Issued","Returned","Completed"}:raise ValueError("Invalid PM kit stage status.")
+        with self.session() as s:
+            task=s.get(PMTask,task_id)
+            if not task:raise ValueError("PM task not found")
+            row=s.scalar(select(PMKitStage).where(PMKitStage.task_id==task_id))
+            if row and expected_version is not None and row.version!=expected_version:raise RuntimeError("CONFLICT: PM kit stage changed.")
+            if status in {"Staged","Issued"}:
+                reservations=list(s.scalars(select(InventoryReservation).where(InventoryReservation.pm_task_id==task_id,InventoryReservation.status=="Reserved")))
+                readiness=self.pm_task_readiness(task_id)
+                if readiness["parts_status"]!="READY":raise ValueError("PM kit cannot be staged while required parts are short.")
+                if not reservations and readiness["parts"]:raise ValueError("Reserve required parts before staging the PM kit.")
+            now=datetime.utcnow()
+            if not row:
+                row=PMKitStage(task_id=task_id,status=status,staging_location=staging_location.strip(),note=note.strip());s.add(row)
+            else:
+                row.status=status;row.staging_location=staging_location.strip() or row.staging_location;row.note=note.strip() or row.note;row.version+=1
+            if status=="Staged":row.staged_by=user;row.staged_at=now
+            if status=="Issued":row.issued_by=user;row.issued_at=now
+            s.add(AuditLog(user=user,action="PM_KIT_STAGE",entity_type="PM_TASK",entity_key=str(task_id),detail=json.dumps({"status":status,"location":row.staging_location,"note":note},sort_keys=True)))
+            s.flush();return row
 
     def save_part_catalog(self, data: dict[str, Any], expected_version: int | None = None):
         payload=dict(data);part=str(payload.get("part_number","")).strip()
