@@ -400,3 +400,99 @@ def export_release_xlsx(db,release_id: int,path: str) -> str:
     ws=wb.create_sheet("Checklist");_sheet(ws,["Check","Pass"],[[key,bool(value)] for key,value in checks.items()])
     ws=wb.create_sheet("Attachments");_sheet(ws,["Name","Category","Caption","Tags","Path","Added By","Added"],[[x.original_name,x.category,x.caption,x.tags,x.stored_path,x.created_by,x.created_at] for x in db.list_attachments("RELEASE",str(rel.id))])
     Path(path).parent.mkdir(parents=True,exist_ok=True);wb.save(path);return str(path)
+
+
+def _review_metrics(db,days: int):
+    data=db.engineering_analytics(days)
+    tools=data["tool_matrix"];pm=data["pm"]
+    fleet=(sum(float(x["availability_pct"]) for x in tools)/len(tools)) if tools else 100.0
+    total_unplanned=sum(float(x["unplanned_downtime_hours"]) for x in tools)
+    failures=sum(int(x["failure_count"]) for x in tools)
+    critical=[x for x in db.list_tickets() if x.status not in {"Closed","Cancelled"} and x.priority in {"P1","P2"}]
+    overdue=[x for x in db.list_pm_tasks() if x.status=="Overdue" or (x.status not in {"Completed","Cancelled"} and x.original_due_date and x.original_due_date<data["end"])]
+    attention=db.operations_attention_queue(200)
+    return data,{
+        "fleet_availability":fleet,"unplanned_hours":total_unplanned,"failures":failures,
+        "critical_incidents":critical,"overdue_pm":overdue,"attention":attention,"pm":pm,
+    }
+
+
+def _weekly_presentation(template_path: str=""):
+    template=Path(template_path) if template_path else None
+    if template and template.is_file():
+        prs=Presentation(str(template))
+        if len(prs.slide_layouts)<6:
+            raise ValueError("PowerPoint template must provide standard title, content and blank layouts.")
+        return prs
+    return Presentation()
+
+
+def export_weekly_review_pptx(db,path: str,days: int=7,template_path: str="") -> str:
+    data,metrics=_review_metrics(db,days)
+    prs=_weekly_presentation(template_path)
+    slide=prs.slides.add_slide(prs.slide_layouts[0])
+    slide.shapes.title.text="Equipment Engineering Weekly Review"
+    slide.placeholders[1].text=f"{data['start']:%Y-%m-%d} to {data['end']:%Y-%m-%d} | Generated {datetime.now():%Y-%m-%d %H:%M}"
+
+    slide=prs.slides.add_slide(prs.slide_layouts[1])
+    pm=metrics["pm"]
+    _add_bullets(slide,"Fleet / Maintenance Scorecard",[
+        f"Fleet availability: {metrics['fleet_availability']:.1f}%",
+        f"Unplanned downtime: {metrics['unplanned_hours']:.1f} h",
+        f"Failure entries: {metrics['failures']}",
+        f"Open P1/P2 incidents: {len(metrics['critical_incidents'])}",
+        f"PM compliance: {pm['compliance_pct']:.1f}% ({pm['completed']}/{pm['due']} due tasks completed)",
+        f"PM overdue: {pm['overdue']} · Deferred: {pm['deferred']}",
+    ])
+
+    slide=prs.slides.add_slide(prs.slide_layouts[5])
+    _add_table(slide,"Chronic / High-Downtime Tools",
+        ["Equipment","Avail %","Failures","Unplanned h","MTTR h","MTBF h","Open Inc","Alarms","State"],
+        [[x["equipment_id"],f"{x['availability_pct']:.1f}",x["failure_count"],f"{x['unplanned_downtime_hours']:.1f}",
+          f"{x['mttr_hours']:.1f}",f"{x['mtbf_hours']:.1f}",x["open_incidents"],x["active_alarms"],x["current_state"]]
+         for x in data["tool_matrix"][:12]],12)
+
+    slide=prs.slides.add_slide(prs.slide_layouts[5])
+    _add_table(slide,"Alarm Pareto",["Alarm Code","Message","Count"],
+               [[x["alarm_code"],x["message"],x["count"]] for x in data["alarm_pareto"][:15]],15)
+
+    critical=sorted(metrics["critical_incidents"],key=lambda x:(0 if x.priority=="P1" else 1,x.created_at))
+    slide=prs.slides.add_slide(prs.slide_layouts[5])
+    _add_table(slide,"Open Critical Incidents",["Ticket","Equipment","Priority","Status","Owner","Title","Updated"],
+               [[x.ticket_no,x.equipment_id,x.priority,x.status,x.owner,x.title,x.updated_at] for x in critical],14)
+
+    overdue=sorted(metrics["overdue_pm"],key=lambda x:(x.original_due_date or datetime.max,x.equipment_id,x.pm_id))
+    slide=prs.slides.add_slide(prs.slide_layouts[5])
+    _add_table(slide,"PM Exceptions / Overdue",["Task","Equipment","PM","Due","Planned","Status","Assigned","Priority"],
+               [[x.id,x.equipment_id,x.pm_id,x.original_due_date,x.scheduled_date,x.status,x.assigned_to,x.priority] for x in overdue],14)
+
+    slide=prs.slides.add_slide(prs.slide_layouts[5])
+    _add_table(slide,"Current Operational Priorities",["Severity","Type","Equipment","Key","Condition / Action","Owner","Age h"],
+               [[x.get("severity"),x.get("kind"),x.get("equipment_id"),x.get("key"),x.get("summary"),x.get("owner"),f"{float(x.get('age_hours') or 0):.1f}"] for x in metrics["attention"][:16]],16)
+
+    Path(path).parent.mkdir(parents=True,exist_ok=True);prs.save(path);return str(path)
+
+
+def export_weekly_review_xlsx(db,path: str,days: int=7) -> str:
+    data,metrics=_review_metrics(db,days);pm=metrics["pm"]
+    wb=Workbook();summary=wb.active;summary.title="Scorecard"
+    _sheet(summary,["Metric","Value"],[
+        ["Period start",data["start"]],["Period end",data["end"]],
+        ["Fleet availability %",f"{metrics['fleet_availability']:.2f}"],
+        ["Unplanned downtime h",f"{metrics['unplanned_hours']:.2f}"],["Failures",metrics["failures"]],
+        ["Open P1/P2 incidents",len(metrics["critical_incidents"])],["PM compliance %",f"{pm['compliance_pct']:.2f}"],
+        ["PM due",pm["due"]],["PM completed",pm["completed"]],["PM overdue",pm["overdue"]],["PM deferred",pm["deferred"]],
+    ])
+    ws=wb.create_sheet("Chronic Tools");_sheet(ws,
+        ["Equipment","Availability %","Failures","Unplanned h","Planned h","MTTR h","MTBF h","Incidents","Open","P1/P2 Open","Active Alarms","State"],
+        [[x["equipment_id"],x["availability_pct"],x["failure_count"],x["unplanned_downtime_hours"],x["planned_downtime_hours"],x["mttr_hours"],x["mtbf_hours"],
+          x["incidents_period"],x["open_incidents"],x["critical_open"],x["active_alarms"],x["current_state"]] for x in data["tool_matrix"]])
+    ws=wb.create_sheet("Alarm Pareto");_sheet(ws,["Alarm Code","Message","Count"],[[x["alarm_code"],x["message"],x["count"]] for x in data["alarm_pareto"]])
+    ws=wb.create_sheet("Incident Pareto");_sheet(ws,["Equipment","Incidents"],[[x["equipment_id"],x["count"]] for x in data["incident_pareto"]])
+    ws=wb.create_sheet("Critical Incidents");_sheet(ws,["Ticket","Equipment","Priority","Status","Owner","Title","Description","Created","Updated"],
+        [[x.ticket_no,x.equipment_id,x.priority,x.status,x.owner,x.title,x.description,x.created_at,x.updated_at] for x in metrics["critical_incidents"]])
+    ws=wb.create_sheet("PM Exceptions");_sheet(ws,["Task","Equipment","PM","Name","Due","Planned","Status","Assigned","Hours","Priority"],
+        [[x.id,x.equipment_id,x.pm_id,x.pm_name,x.original_due_date,x.scheduled_date,x.status,x.assigned_to,x.estimated_hours,x.priority] for x in metrics["overdue_pm"]])
+    ws=wb.create_sheet("Priority Queue");_sheet(ws,["Severity","Type","Equipment","Key","Summary","Owner","Age h"],
+        [[x.get("severity"),x.get("kind"),x.get("equipment_id"),x.get("key"),x.get("summary"),x.get("owner"),x.get("age_hours")] for x in metrics["attention"]])
+    Path(path).parent.mkdir(parents=True,exist_ok=True);wb.save(path);return str(path)
