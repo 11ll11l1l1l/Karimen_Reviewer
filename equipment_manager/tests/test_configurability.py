@@ -29,6 +29,17 @@ class ConfigurabilityTests(unittest.TestCase):
         self.assertEqual(updated.label,"S1 — Critical")
         self.assertTrue(updated.system_locked)
 
+    def test_canonical_reason_code_can_be_relabelled_but_not_deactivated(self):
+        row=next(x for x in self.db.list_config_options("TICKET_REASON_LABEL") if x.code=="WAIT_PARTS")
+        updated=self.db.save_config_option({
+            "category":"TICKET_REASON_LABEL","code":"WAIT_PARTS",
+            "label":"Awaiting spare-part arrival","sort_order":row.sort_order,
+            "active":False,"metadata_json":"{}",
+        },row.version)
+        self.assertEqual(updated.code,"WAIT_PARTS")
+        self.assertEqual(updated.label,"Awaiting spare-part arrival")
+        self.assertTrue(updated.active)
+
     def test_site_can_add_reference_option_without_code_change(self):
         row=self.db.save_config_option({
             "category":"WORK_TYPE","code":"Vendor Calibration","label":"Vendor Calibration",
