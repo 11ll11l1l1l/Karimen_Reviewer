@@ -4,7 +4,7 @@ import csv
 import hashlib
 import json
 import shutil
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -53,7 +53,7 @@ def _parse_datetime(value):
     dt=datetime.fromisoformat(text)
     if dt.tzinfo is not None:
         # Existing EMS storage is naive UTC; normalize offset-aware source timestamps.
-        dt=dt.astimezone().replace(tzinfo=None)
+        dt=dt.astimezone(timezone.utc).replace(tzinfo=None)
     return dt
 
 
@@ -196,7 +196,7 @@ def process_inbound_file(db: Database, endpoint_id: str, file_path: str, *, repl
     status="Processed" if rejected==0 else ("Partial" if applied else "Quarantined")
     final=_move_file(path,endpoint.archive_path if status=="Processed" else endpoint.quarantine_path,"_archive" if status=="Processed" else "_quarantine")
     receipt=db.save_inbound_receipt({
-        "endpoint_id":endpoint.endpoint_id,"source_name:path.name" if False else "source_name":path.name,
+        "endpoint_id":endpoint.endpoint_id,"source_name":path.name,
         "source_sha256":digest,"status":status,"records_total":len(rows),
         "records_applied":applied,"records_rejected":rejected,
         "error":"" if rejected==0 else f"{rejected} record(s) rejected",
