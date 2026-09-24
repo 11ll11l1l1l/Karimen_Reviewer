@@ -2832,7 +2832,12 @@ class Database:
         for execution in recent_exec:
             try:ctx=json.loads(execution.context_json or "{}")
             except Exception:ctx={}
-            if str(ctx.get("alarm_code",""))==row.alarm_code:return []
+            if str(ctx.get("alarm_code",""))!=row.alarm_code:continue
+            try:results=json.loads(execution.result_json or "[]")
+            except Exception:results=[]
+            ticket_no=next((str(x.get("ticket_no")) for x in results if isinstance(x,dict) and x.get("type")=="CREATE_INCIDENT" and x.get("ticket_no")),"")
+            if ticket_no and not row.related_ticket:row.related_ticket=ticket_no
+            return []
         first=alarms[0];last=alarms[-1]
         max_severity=max((x.severity for x in alarms),key=self._alarm_severity_rank)
         burst_key=f"{row.equipment_id}:{row.alarm_code}:{first.event_key}"
