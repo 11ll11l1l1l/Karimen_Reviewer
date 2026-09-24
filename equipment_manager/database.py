@@ -1992,7 +1992,7 @@ class Database:
 
     @staticmethod
     def _validate_custom_field_value(definition: CustomFieldDefinition, value: Any):
-        if value in {None,""}:
+        if value is None or value=="":
             if definition.required:raise ValueError(f"{definition.label} is required.")
             return None
         if definition.field_type=="NUMBER":
@@ -2006,10 +2006,12 @@ class Database:
             if value not in options:raise ValueError(f"{definition.label} must be one of: {', '.join(map(str,options))}")
         return value
 
-    def save_custom_field_values(self, entity_type: str, entity_key: str, values: dict[str,Any], user: str = ""):
-        entity_type=entity_type.strip().upper();entity_key=str(entity_key)
+    def save_custom_field_values(self, entity_type: str, entity_key: str, values: dict[str,Any], user: str = "", applies_to: str = ""):
+        entity_type=entity_type.strip().upper();entity_key=str(entity_key);applies_to=(applies_to or "").strip()
         with self.session() as s:
-            defs={x.field_id:x for x in s.scalars(select(CustomFieldDefinition).where(CustomFieldDefinition.entity_type==entity_type,CustomFieldDefinition.active.is_(True)))}
+            definitions=list(s.scalars(select(CustomFieldDefinition).where(CustomFieldDefinition.entity_type==entity_type,CustomFieldDefinition.active.is_(True))))
+            if applies_to:definitions=[x for x in definitions if not x.applies_to or x.applies_to==applies_to]
+            defs={x.field_id:x for x in definitions}
             unknown=set(values)-set(defs)
             if unknown:raise ValueError("Unknown custom field(s): "+", ".join(sorted(unknown)))
             for field_id,definition in defs.items():
