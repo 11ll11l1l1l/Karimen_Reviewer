@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
 
 from table_productivity import install_table_productivity
 from reporting import export_weekly_review_pptx, export_weekly_review_xlsx
+from pdf_reporting import export_weekly_review_pdf
 
 
 def _item(value):
@@ -134,7 +135,8 @@ class EngineeringAnalyticsWorkspace(QWidget):
         refresh=QPushButton("Refresh");refresh.clicked.connect(self.refresh)
         weekly_ppt=QPushButton("Weekly Review PPTX");weekly_ppt.clicked.connect(self.export_weekly_pptx)
         weekly_xlsx=QPushButton("Weekly Review Excel");weekly_xlsx.clicked.connect(self.export_weekly_xlsx)
-        head.addWidget(title);head.addStretch(1);head.addWidget(QLabel("Period"));head.addWidget(self.days);head.addWidget(weekly_ppt);head.addWidget(weekly_xlsx);head.addWidget(refresh);root.addLayout(head)
+        weekly_pdf=QPushButton("Weekly Review PDF");weekly_pdf.clicked.connect(self.export_weekly_pdf)
+        head.addWidget(title);head.addStretch(1);head.addWidget(QLabel("Period"));head.addWidget(self.days);head.addWidget(weekly_ppt);head.addWidget(weekly_xlsx);head.addWidget(weekly_pdf);head.addWidget(refresh);root.addLayout(head)
         self.period=QLabel();self.period.setStyleSheet("color:#647581");root.addWidget(self.period)
 
         cards=QGridLayout();root.addLayout(cards);self.cards={}
@@ -260,6 +262,15 @@ class EngineeringAnalyticsWorkspace(QWidget):
         try:
             export_weekly_review_pptx(self.db,path,self.days.value(),template)
             QMessageBox.information(self,"Weekly Review",f"Editable PowerPoint review pack created.\n{path}")
+        except Exception as exc:QMessageBox.critical(self,"Weekly Review",str(exc))
+
+    def export_weekly_pdf(self):
+        path,_=QFileDialog.getSaveFileName(self,"Export Weekly Engineering Review","Equipment_Engineering_Weekly_Review.pdf","PDF (*.pdf)")
+        if not path:return
+        if not path.lower().endswith(".pdf"):path+=".pdf"
+        try:
+            export_weekly_review_pdf(self.db,path,self.days.value())
+            QMessageBox.information(self,"Weekly Review",f"Controlled weekly review PDF created.\n{path}")
         except Exception as exc:QMessageBox.critical(self,"Weekly Review",str(exc))
 
     def export_weekly_xlsx(self):
