@@ -46,6 +46,56 @@ class ConfigOptionDialog(QDialog):
         return {"category":self.category.text().strip(),"code":self.code.text().strip(),"label":self.label.text().strip(),"sort_order":int(self.order.value()),"active":self.active.isChecked(),"metadata_json":self.meta.toPlainText().strip() or "{}"}
 
 
+class PolicyOptionDialog(QDialog):
+    def __init__(self,category: str,row=None,parent=None):
+        super().__init__(parent);self.category=category;self.row=row;self.setWindowTitle(category.replace("_"," ").title());self.resize(620,520)
+        f=QFormLayout(self)
+        self.code=QLineEdit();self.label=QLineEdit();self.entity=QComboBox();self.entity.addItems(["TICKET","WORK_ORDER","QUALIFICATION"])
+        self.equipment_type=QLineEdit();self.area=QLineEdit();self.priority=QLineEdit();self.severity=QLineEdit()
+        f.addRow("Policy code",self.code);f.addRow("Label",self.label);f.addRow("Entity type",self.entity)
+        f.addRow("Match equipment type",self.equipment_type);f.addRow("Match area",self.area);f.addRow("Match priority",self.priority);f.addRow("Match severity",self.severity)
+        self.extra={}
+        if category=="NUMBERING_SCHEME":
+            prefix=QLineEdit();datefmt=QLineEdit("%Y%m%d");width=QSpinBox();width.setRange(1,12);width.setValue(5);reset=QComboBox();reset.addItems(["DAILY","MONTHLY","YEARLY","NEVER"]);sep=QLineEdit("-")
+            for label,w in [("Prefix",prefix),("Date format",datefmt),("Sequence width",width),("Reset",reset),("Separator",sep)]:f.addRow(label,w)
+            self.extra={"prefix":prefix,"date_format":datefmt,"width":width,"reset":reset,"separator":sep}
+        elif category=="DEFAULT_OWNER_RULE":
+            owner=QLineEdit();f.addRow("Default owner / username",owner);self.extra={"owner":owner}
+        elif category=="SLA_POLICY":
+            response=QSpinBox();response.setRange(0,1_000_000);containment=QSpinBox();containment.setRange(0,1_000_000);resolution=QSpinBox();resolution.setRange(0,1_000_000)
+            for label,w in [("Response minutes",response),("Containment minutes",containment),("Resolution minutes",resolution)]:f.addRow(label,w)
+            self.extra={"response_minutes":response,"containment_minutes":containment,"resolution_minutes":resolution}
+        self.order=QSpinBox();self.order.setRange(0,99999);self.order.setValue(100);self.active=QCheckBox("Active");self.active.setChecked(True)
+        f.addRow("Priority order",self.order);f.addRow("",self.active)
+        note=QLabel("Blank match fields mean this policy applies broadly. More specific matching policies take precedence over broad policies.");note.setWordWrap(True);note.setStyleSheet("color:#647581");f.addRow("",note)
+        b=QDialogButtonBox(QDialogButtonBox.StandardButton.Save|QDialogButtonBox.StandardButton.Cancel);b.accepted.connect(self.accept);b.rejected.connect(self.reject);f.addRow(b)
+        if row:
+            self.code.setText(row.code);self.code.setReadOnly(True);self.label.setText(row.label);self.order.setValue(row.sort_order);self.active.setChecked(row.active)
+            try:meta=json.loads(row.metadata_json or "{}")
+            except Exception:meta={}
+            match=meta.get("match",{}) if isinstance(meta,dict) else {}
+            self.entity.setCurrentText(str(match.get("entity_type",meta.get("entity_type","TICKET"))))
+            self.equipment_type.setText(str(match.get("equipment_type","")));self.area.setText(str(match.get("area","")));self.priority.setText(str(match.get("priority","")));self.severity.setText(str(match.get("severity","")))
+            for key,w in self.extra.items():
+                value=meta.get(key)
+                if value is None:continue
+                if isinstance(w,QLineEdit):w.setText(str(value))
+                elif isinstance(w,QSpinBox):w.setValue(int(value))
+                elif isinstance(w,QComboBox):w.setCurrentText(str(value))
+
+    def data(self):
+        match={"entity_type":self.entity.currentText()}
+        for key,w in [("equipment_type",self.equipment_type),("area",self.area),("priority",self.priority),("severity",self.severity)]:
+            value=w.text().strip()
+            if value:match[key]=value
+        meta={"match":match}
+        for key,w in self.extra.items():
+            if isinstance(w,QLineEdit):meta[key]=w.text().strip()
+            elif isinstance(w,QSpinBox):meta[key]=w.value()
+            elif isinstance(w,QComboBox):meta[key]=w.currentText()
+        return {"category":self.category,"code":self.code.text().strip(),"label":self.label.text().strip(),"sort_order":self.order.value(),"active":self.active.isChecked(),"metadata_json":json.dumps(meta,sort_keys=True)}
+
+
 class EntityTemplateDialog(QDialog):
     def __init__(self,row=None,parent=None):
         super().__init__(parent);self.row=row;self.setWindowTitle("Entity Template");self.resize(650,520)
@@ -140,7 +190,7 @@ class ConfigurationStudio(QWidget):
         root=QVBoxLayout(self);head=QHBoxLayout();title=QLabel("Configuration Studio");title.setStyleSheet("font-size:20pt;font-weight:800");note=QLabel("Adapt plant-facing lists, templates and custom fields without editing Python.");note.setStyleSheet("color:#647581");exportb=QPushButton("Export package");importb=QPushButton("Import package");exportb.clicked.connect(self.export_package);importb.clicked.connect(self.import_package);head.addWidget(title);head.addWidget(note);head.addStretch(1);head.addWidget(exportb);head.addWidget(importb);root.addLayout(head)
         tabs=QTabWidget();root.addWidget(tabs,1)
 
-        ow=QWidget();ov=QVBoxLayout(ow);oh=QHBoxLayout();self.category=QComboBox();self.category.addItems(["EQUIPMENT_CRITICALITY","TICKET_SEVERITY","TICKET_PRIORITY","DISPOSITION_STATE","INVENTORY_CONDITION","WORK_TYPE","ALARM_BURST_POLICY","EQUIPMENT_REASON_LABEL","TICKET_REASON_LABEL"]);self.category.currentTextChanged.connect(self.refresh_options);add=QPushButton("Add option");edit=QPushButton("Edit selected");add.clicked.connect(self.add_option);edit.clicked.connect(self.edit_option);oh.addWidget(QLabel("Category"));oh.addWidget(self.category);oh.addWidget(add);oh.addWidget(edit);oh.addStretch(1);ov.addLayout(oh);self.option_table=_table(["Code","Label","Order","Active","System","Metadata","Ver"]);ov.addWidget(self.option_table);tabs.addTab(ow,"Reference Options")
+        ow=QWidget();ov=QVBoxLayout(ow);oh=QHBoxLayout();self.category=QComboBox();self.category.addItems(["EQUIPMENT_CRITICALITY","TICKET_SEVERITY","TICKET_PRIORITY","DISPOSITION_STATE","INVENTORY_CONDITION","WORK_TYPE","ALARM_BURST_POLICY","NUMBERING_SCHEME","DEFAULT_OWNER_RULE","SLA_POLICY","EQUIPMENT_REASON_LABEL","TICKET_REASON_LABEL"]);self.category.currentTextChanged.connect(self.refresh_options);add=QPushButton("Add option");edit=QPushButton("Edit selected");add.clicked.connect(self.add_option);edit.clicked.connect(self.edit_option);oh.addWidget(QLabel("Category"));oh.addWidget(self.category);oh.addWidget(add);oh.addWidget(edit);oh.addStretch(1);ov.addLayout(oh);self.option_table=_table(["Code","Label","Order","Active","System","Metadata","Ver"]);ov.addWidget(self.option_table);tabs.addTab(ow,"Reference Options")
 
         tw=QWidget();tv=QVBoxLayout(tw);th=QHBoxLayout();addt=QPushButton("New template");editt=QPushButton("Edit selected");addt.clicked.connect(self.add_template);editt.clicked.connect(self.edit_template);th.addWidget(addt);th.addWidget(editt);th.addStretch(1);tv.addLayout(th);self.template_table=_table(["Template","Entity","Name","Applies To","Active","Created By","Ver"]);tv.addWidget(self.template_table);tabs.addTab(tw,"Entity Templates")
 
@@ -186,14 +236,19 @@ class ConfigurationStudio(QWidget):
         for r,row in enumerate(self.fields):
             for c,val in enumerate([row.field_id,row.entity_type,row.applies_to,row.label,row.field_type,row.required,row.sort_order,row.active,row.version]):self.field_table.setItem(r,c,_item(val))
     def add_option(self):
-        d=ConfigOptionDialog(parent=self);d.category.setText(self.category.currentText())
+        category=self.category.currentText()
+        if category in {"NUMBERING_SCHEME","DEFAULT_OWNER_RULE","SLA_POLICY"}:
+            d=PolicyOptionDialog(category,parent=self)
+        else:
+            d=ConfigOptionDialog(parent=self);d.category.setText(category)
         if d.exec()==QDialog.DialogCode.Accepted:
             try:self.db.save_config_option(d.data());self.refresh_options()
             except Exception as exc:QMessageBox.critical(self,"Configuration",str(exc))
     def edit_option(self):
         row=_selected(self.option_table,self.options)
         if not row:return
-        d=ConfigOptionDialog(row,self)
+        if row.category in {"NUMBERING_SCHEME","DEFAULT_OWNER_RULE","SLA_POLICY"}:d=PolicyOptionDialog(row.category,row,self)
+        else:d=ConfigOptionDialog(row,self)
         if d.exec()==QDialog.DialogCode.Accepted:
             try:self.db.save_config_option(d.data(),row.version);self.refresh_options()
             except Exception as exc:QMessageBox.critical(self,"Configuration",str(exc))
