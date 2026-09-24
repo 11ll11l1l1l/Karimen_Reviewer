@@ -75,6 +75,19 @@ class UserFavorite(Base):
     __table_args__ = (UniqueConstraint("username","entity_type","entity_key",name="uq_user_favorite"),)
 
 
+class UserDraft(Base):
+    __tablename__ = "user_drafts"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    username: Mapped[str] = mapped_column(String(80), index=True)
+    entity_type: Mapped[str] = mapped_column(String(60), index=True)
+    entity_key: Mapped[str] = mapped_column(String(180), index=True)
+    draft_key: Mapped[str] = mapped_column(String(120), default="main")
+    payload_json: Mapped[str] = mapped_column(Text, default="{}")
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, index=True)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    __table_args__ = (UniqueConstraint("username","entity_type","entity_key","draft_key",name="uq_user_draft"),)
+
+
 class UserPreference(Base):
     __tablename__ = "user_preferences"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -1492,6 +1505,9 @@ class Database:
                 table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
             ]),
             ("20260924_014","Create configurable form-section and custom-field layout tables",lambda: [
+                table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
+            ]),
+            ("20260924_015","Create persistent per-user record drafts",lambda: [
                 table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
             ]),
         ]
@@ -2992,6 +3008,34 @@ class Database:
             if row:row.value_json=encoded;row.updated_at=datetime.utcnow()
             else:row=UserPreference(username=username,preference_key=key,value_json=encoded);s.add(row)
             s.flush();return row
+
+    def save_user_draft(self, username: str, entity_type: str, entity_key: str, payload: dict[str,Any], draft_key: str = "main"):
+        username=username.strip();entity_type=entity_type.strip().upper();entity_key=str(entity_key);draft_key=draft_key.strip() or "main"
+        if not username or not entity_type or not entity_key:raise ValueError("Draft username, entity type and key are required.")
+        encoded=json.dumps(payload,default=str,sort_keys=True)
+        with self.session() as s:
+            row=s.scalar(select(UserDraft).where(UserDraft.username==username,UserDraft.entity_type==entity_type,UserDraft.entity_key==entity_key,UserDraft.draft_key==draft_key))
+            if row:row.payload_json=encoded;row.updated_at=datetime.utcnow();row.version+=1
+            else:row=UserDraft(username=username,entity_type=entity_type,entity_key=entity_key,draft_key=draft_key,payload_json=encoded);s.add(row)
+            s.flush();return row
+
+    def get_user_draft(self, username: str, entity_type: str, entity_key: str, draft_key: str = "main"):
+        with self.session() as s:
+            row=s.scalar(select(UserDraft).where(UserDraft.username==username,UserDraft.entity_type==entity_type.strip().upper(),UserDraft.entity_key==str(entity_key),UserDraft.draft_key==(draft_key.strip() or "main")))
+            if not row:return None
+            try:payload=json.loads(row.payload_json or "{}")
+            except Exception:payload={}
+            return {"payload":payload,"updated_at":row.updated_at,"version":row.version}
+
+    def clear_user_draft(self, username: str, entity_type: str, entity_key: str, draft_key: str = "main"):
+        with self.session() as s:
+            row=s.scalar(select(UserDraft).where(UserDraft.username==username,UserDraft.entity_type==entity_type.strip().upper(),UserDraft.entity_key==str(entity_key),UserDraft.draft_key==(draft_key.strip() or "main")))
+            if row:s.delete(row);return True
+            return False
+
+    def list_user_drafts(self, username: str, limit: int = 100):
+        with self.session() as s:
+            return list(s.scalars(select(UserDraft).where(UserDraft.username==username).order_by(UserDraft.updated_at.desc()).limit(max(1,min(int(limit),1000)))))
 
     def get_user_preference(self, username: str, key: str, default: Any = None):
         with self.session() as s:
