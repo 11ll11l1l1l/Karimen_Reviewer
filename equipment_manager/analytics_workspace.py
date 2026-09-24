@@ -5,11 +5,12 @@ from datetime import datetime
 from PySide6.QtCore import QRectF, Qt, Signal
 from PySide6.QtGui import QColor, QFont, QPainter, QPen
 from PySide6.QtWidgets import (
-    QAbstractItemView,QFrame,QGridLayout,QHBoxLayout,QHeaderView,QLabel,
-    QPushButton,QSpinBox,QTableWidget,QTableWidgetItem,QTabWidget,QVBoxLayout,QWidget
+    QAbstractItemView,QFileDialog,QFrame,QGridLayout,QHBoxLayout,QHeaderView,QLabel,
+    QMessageBox,QPushButton,QSpinBox,QTableWidget,QTableWidgetItem,QTabWidget,QVBoxLayout,QWidget
 )
 
 from table_productivity import install_table_productivity
+from reporting import export_weekly_review_pptx, export_weekly_review_xlsx
 
 
 def _item(value):
@@ -90,7 +91,9 @@ class EngineeringAnalyticsWorkspace(QWidget):
         title=QLabel("Engineering Analytics");title.setStyleSheet("font-size:20pt;font-weight:800")
         self.days=QSpinBox();self.days.setRange(7,3650);self.days.setValue(30);self.days.setSuffix(" days")
         refresh=QPushButton("Refresh");refresh.clicked.connect(self.refresh)
-        head.addWidget(title);head.addStretch(1);head.addWidget(QLabel("Period"));head.addWidget(self.days);head.addWidget(refresh);root.addLayout(head)
+        weekly_ppt=QPushButton("Weekly Review PPTX");weekly_ppt.clicked.connect(self.export_weekly_pptx)
+        weekly_xlsx=QPushButton("Weekly Review Excel");weekly_xlsx.clicked.connect(self.export_weekly_xlsx)
+        head.addWidget(title);head.addStretch(1);head.addWidget(QLabel("Period"));head.addWidget(self.days);head.addWidget(weekly_ppt);head.addWidget(weekly_xlsx);head.addWidget(refresh);root.addLayout(head)
         self.period=QLabel();self.period.setStyleSheet("color:#647581");root.addWidget(self.period)
 
         cards=QGridLayout();root.addLayout(cards);self.cards={}
@@ -143,6 +146,28 @@ class EngineeringAnalyticsWorkspace(QWidget):
             "PM compliance":f"{pm['compliance_pct']:.1f}%","PM overdue":str(pm["overdue"]),"Tools analyzed":str(len(self.tool_rows)),
         }
         for key,val in vals.items():self.cards[key].value.setText(val)
+
+    def export_weekly_pptx(self):
+        path,_=QFileDialog.getSaveFileName(self,"Export Weekly Engineering Review","Equipment_Engineering_Weekly_Review.pptx","PowerPoint (*.pptx)")
+        if not path:return
+        if not path.lower().endswith(".pptx"):path+=".pptx"
+        template=""
+        if QMessageBox.question(self,"PowerPoint template","Use a site PowerPoint template?")==QMessageBox.StandardButton.Yes:
+            template,_=QFileDialog.getOpenFileName(self,"Select PowerPoint Template","","PowerPoint (*.pptx *.potx)")
+            if not template:return
+        try:
+            export_weekly_review_pptx(self.db,path,self.days.value(),template)
+            QMessageBox.information(self,"Weekly Review",f"Editable PowerPoint review pack created.\n{path}")
+        except Exception as exc:QMessageBox.critical(self,"Weekly Review",str(exc))
+
+    def export_weekly_xlsx(self):
+        path,_=QFileDialog.getSaveFileName(self,"Export Weekly Engineering Review","Equipment_Engineering_Weekly_Review.xlsx","Excel Workbook (*.xlsx)")
+        if not path:return
+        if not path.lower().endswith(".xlsx"):path+=".xlsx"
+        try:
+            export_weekly_review_xlsx(self.db,path,self.days.value())
+            QMessageBox.information(self,"Weekly Review",f"Engineering review workbook created.\n{path}")
+        except Exception as exc:QMessageBox.critical(self,"Weekly Review",str(exc))
 
     def open_equipment(self,equipment_id: str):
         if equipment_id:self.open_entity.emit("EQUIPMENT",equipment_id,equipment_id)
