@@ -29,6 +29,7 @@ from table_productivity import configure_productivity_context, install_table_pro
 from excel_import_studio import run_mapping_studio
 from excel_reconcile import confirm_reconciliation, reconcile_equipment, reconcile_inventory
 from alarm_correlation import correlate_alarm_bursts
+from reporting import export_qualification_pptx, export_qualification_xlsx, export_release_pptx, export_release_xlsx
 from services import (
     auto_mapping, calculate_next_due, copy_clipboard_image, dataframe_to_equipment, dataframe_to_inventory, dataframe_to_pm_backlog,
     dataframe_to_pm_specs, evaluate_measurement, pm_parts_readiness, read_clipboard_table,
@@ -617,6 +618,24 @@ class PMExecutionDialog(QDialog):
 
     def selected_requirement(self):
         r=self.req_table.currentRow();return self.requirements[r] if 0<=r<len(self.requirements) else None
+
+    def export_run_pptx(self):
+        run=self.selected_run()
+        if not run:return
+        path,_=QFileDialog.getSaveFileName(self,"Export Qualification PowerPoint",f"{run.run_no}_Qualification.pptx","PowerPoint (*.pptx)")
+        if not path:return
+        if not path.lower().endswith(".pptx"):path+=".pptx"
+        try:export_qualification_pptx(self.db,run.run_no,path);QMessageBox.information(self,"Qualification report",f"Editable qualification deck created.\n{path}")
+        except Exception as exc:QMessageBox.critical(self,"Qualification report",str(exc))
+
+    def export_run_xlsx(self):
+        run=self.selected_run()
+        if not run:return
+        path,_=QFileDialog.getSaveFileName(self,"Export Qualification Excel",f"{run.run_no}_Qualification.xlsx","Excel Workbook (*.xlsx)")
+        if not path:return
+        if not path.lower().endswith(".xlsx"):path+=".xlsx"
+        try:export_qualification_xlsx(self.db,run.run_no,path);QMessageBox.information(self,"Qualification report",f"Qualification workbook created.\n{path}")
+        except Exception as exc:QMessageBox.critical(self,"Qualification report",str(exc))
 
     def enter_result(self):
         spec=self.selected_spec()
@@ -1216,11 +1235,11 @@ class QualificationPage(QWidget):
         self.ptable=make_table(["Protocol","Revision","Name","Equipment","Type","Active","Created By","Created","Ver"]);vp.addWidget(self.ptable);tabs.addTab(wp,"Protocols")
 
         wr=QWidget();vr=QVBoxLayout(wr);hr=QHBoxLayout()
-        start=QPushButton("Start Run");result=QPushButton("Enter Result");submit=QPushButton("Submit");verify=QPushButton("Verify");approve=QPushButton("Approve");reject=QPushButton("Reject")
-        start.clicked.connect(self.start_run);result.clicked.connect(self.enter_result);submit.clicked.connect(self.submit_run);verify.clicked.connect(self.verify_run);approve.clicked.connect(self.approve_run);reject.clicked.connect(self.reject_run)
+        start=QPushButton("Start Run");result=QPushButton("Enter Result");submit=QPushButton("Submit");verify=QPushButton("Verify");approve=QPushButton("Approve");reject=QPushButton("Reject");ppt=QPushButton("Report PPTX");xlsx=QPushButton("Report Excel")
+        start.clicked.connect(self.start_run);result.clicked.connect(self.enter_result);submit.clicked.connect(self.submit_run);verify.clicked.connect(self.verify_run);approve.clicked.connect(self.approve_run);reject.clicked.connect(self.reject_run);ppt.clicked.connect(self.export_run_pptx);xlsx.clicked.connect(self.export_run_xlsx)
         start.setEnabled(db.has_permission(user,"qualification.execute"));result.setEnabled(db.has_permission(user,"qualification.execute"));submit.setEnabled(db.has_permission(user,"qualification.execute"))
         verify.setEnabled(db.has_permission(user,"qualification.verify"));approve.setEnabled(db.has_permission(user,"qualification.approve"));reject.setEnabled(db.has_permission(user,"qualification.verify") or db.has_permission(user,"qualification.approve"))
-        for x in [start,result,submit,verify,approve,reject]:hr.addWidget(x)
+        for x in [start,result,submit,verify,approve,reject,ppt,xlsx]:hr.addWidget(x)
         hr.addStretch(1);vr.addLayout(hr)
         self.rtable=make_table(["Run","Equipment","Protocol","Rev","Status","Started By","Submitted By","Verified By","Approved By","Expires","Ver"]);self.rtable.itemSelectionChanged.connect(self.load_checks);vr.addWidget(self.rtable,2)
         self.ctable=make_table(["Check ID","Check","Acceptance","Result","Comment","Evidence","Entered By"]);vr.addWidget(self.ctable,1)
@@ -1366,7 +1385,7 @@ class ControlPage(QWidget):
     def __init__(self,db,user):
         super().__init__();self.db=db;self.user=user;self.disp=[];self.rel=[];v=QVBoxLayout(self);tabs=QTabWidget();v.addWidget(tabs)
         wd=QWidget();vd=QVBoxLayout(wd);bd=QPushButton("New Disposition");bd.clicked.connect(self.new_disp);bd.setEnabled(db.has_permission(user,"disposition.edit"));vd.addWidget(bd);self.dtable=make_table(["Equipment","State","Reason","Restrictions","Criteria","Ticket","Created By","Approved By","Effective"]);vd.addWidget(self.dtable);tabs.addTab(wd,"Disposition")
-        wr=QWidget();vr=QVBoxLayout(wr);hr=QHBoxLayout();new=QPushButton("New Release Request");verify=QPushButton("Verify Selected");approve=QPushButton("Approve / Release");new.clicked.connect(self.new_release);verify.clicked.connect(self.verify_release);approve.clicked.connect(self.approve_release);new.setEnabled(db.has_permission(user,"release.verify") or db.has_permission(user,"disposition.edit"));verify.setEnabled(db.has_permission(user,"release.verify"));approve.setEnabled(db.has_permission(user,"release.approve"));hr.addWidget(new);hr.addWidget(verify);hr.addWidget(approve);hr.addStretch(1);vr.addLayout(hr);self.rtable=make_table(["ID","Equipment","Ticket","Status","Requested By","Verified By","Approved By","Requested","Ver"]);self.rtable.itemSelectionChanged.connect(self.load_release_attachment);vr.addWidget(self.rtable,2);self.release_attachments=AttachmentPanel(db,user);vr.addWidget(self.release_attachments,1);tabs.addTab(wr,"Release Verification");self.refresh()
+        wr=QWidget();vr=QVBoxLayout(wr);hr=QHBoxLayout();new=QPushButton("New Release Request");verify=QPushButton("Verify Selected");approve=QPushButton("Approve / Release");ppt=QPushButton("Report PPTX");xlsx=QPushButton("Report Excel");new.clicked.connect(self.new_release);verify.clicked.connect(self.verify_release);approve.clicked.connect(self.approve_release);ppt.clicked.connect(self.export_release_pptx);xlsx.clicked.connect(self.export_release_xlsx);new.setEnabled(db.has_permission(user,"release.verify") or db.has_permission(user,"disposition.edit"));verify.setEnabled(db.has_permission(user,"release.verify"));approve.setEnabled(db.has_permission(user,"release.approve"));hr.addWidget(new);hr.addWidget(verify);hr.addWidget(approve);hr.addWidget(ppt);hr.addWidget(xlsx);hr.addStretch(1);vr.addLayout(hr);self.rtable=make_table(["ID","Equipment","Ticket","Status","Requested By","Verified By","Approved By","Requested","Ver"]);self.rtable.itemSelectionChanged.connect(self.load_release_attachment);vr.addWidget(self.rtable,2);self.release_attachments=AttachmentPanel(db,user);vr.addWidget(self.release_attachments,1);tabs.addTab(wr,"Release Verification");self.refresh()
     def refresh(self):
         self.disp=self.db.list_dispositions();fill_table(self.dtable,self.disp,["equipment_id","state","reason","restrictions","release_criteria","related_ticket","created_by","approved_by","effective_at"])
         current=selected_row(self.rtable,self.rel);rid=current.id if current else None
@@ -1378,6 +1397,24 @@ class ControlPage(QWidget):
     def load_release_attachment(self):
         row=selected_row(self.rtable,self.rel)
         self.release_attachments.set_entity("RELEASE",str(row.id),row.equipment_id) if row else self.release_attachments.set_entity("","")
+    def export_release_pptx(self):
+        row=selected_row(self.rtable,self.rel)
+        if not row:return
+        path,_=QFileDialog.getSaveFileName(self,"Export Release PowerPoint",f"{row.equipment_id}_Release_{row.id}.pptx","PowerPoint (*.pptx)")
+        if not path:return
+        if not path.lower().endswith(".pptx"):path+=".pptx"
+        try:export_release_pptx(self.db,row.id,path);QMessageBox.information(self,"Release report",f"Editable release deck created.\n{path}")
+        except Exception as exc:QMessageBox.critical(self,"Release report",str(exc))
+
+    def export_release_xlsx(self):
+        row=selected_row(self.rtable,self.rel)
+        if not row:return
+        path,_=QFileDialog.getSaveFileName(self,"Export Release Excel",f"{row.equipment_id}_Release_{row.id}.xlsx","Excel Workbook (*.xlsx)")
+        if not path:return
+        if not path.lower().endswith(".xlsx"):path+=".xlsx"
+        try:export_release_xlsx(self.db,row.id,path);QMessageBox.information(self,"Release report",f"Release workbook created.\n{path}")
+        except Exception as exc:QMessageBox.critical(self,"Release report",str(exc))
+
     def new_disp(self):
         d=DispositionDialog(self)
         if d.exec()==QDialog.DialogCode.Accepted:
