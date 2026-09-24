@@ -30,6 +30,7 @@ from logging_config import configure_logging, install_exception_hook
 from incident_workspace import IncidentWorkspace
 from maintenance_planner import MaintenancePlanningWorkspace
 from pm_execution_workspace import PMExecutionWorkspace
+from workflow_automation import WorkflowAutomationStudio
 from work_order_workspace import WorkOrderWorkspace
 from shift_handover_workspace import ShiftHandoverWorkspace
 from analytics_workspace import EngineeringAnalyticsWorkspace
@@ -236,6 +237,7 @@ class SmartMainWindow(QMainWindow):
         self.inventory_logistics=add("Parts / Inventory Logistics",InventoryLogisticsWorkspace(db,user))
         self.inventory=add("Parts / Inventory (Legacy)",InventoryPage(db,user))
         self.document_page=add("SOPs / Documents",DocumentPage(db,user))
+        self.automation_studio=add("Workflow Automation",WorkflowAutomationStudio(db,user))
         self.admin_page=add("Users / Administration",AdminPage(db,user))
 
         self.search_workspace.open_entity.connect(self.open_entity)
