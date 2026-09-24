@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+import json
 from pathlib import Path
 from typing import Any
 
@@ -319,4 +320,83 @@ def export_work_order_xlsx(db,work_order_no: str,path: str) -> str:
     ws=wb.create_sheet("Links");_sheet(ws,["Type","Key","Relation","Created By","Created"],[[x.entity_type,x.entity_key,x.relation,x.created_by,x.created_at] for x in links])
     ws=wb.create_sheet("Labor");_sheet(ws,["User","Type","Start","End","Minutes","Status","Note"],[[x.username,x.work_type,x.started_at,x.ended_at,x.duration_minutes,x.status,x.note] for x in logs])
     ws=wb.create_sheet("Attachments");_sheet(ws,["Name","Category","Caption","Tags","Path","Added By","Added"],[[x.original_name,x.category,x.caption,x.tags,x.stored_path,x.created_by,x.created_at] for x in attachments])
+    Path(path).parent.mkdir(parents=True,exist_ok=True);wb.save(path);return str(path)
+
+
+def _qualification_run(db,run_no: str):
+    row=next((x for x in db.list_qualification_runs() if x.run_no==run_no),None)
+    if not row:raise ValueError("Qualification run not found")
+    return row
+
+
+def _release_request(db,release_id: int):
+    row=next((x for x in db.list_release_requests() if x.id==int(release_id)),None)
+    if not row:raise ValueError("Release request not found")
+    return row
+
+
+def export_qualification_pptx(db,run_no: str,path: str) -> str:
+    run=_qualification_run(db,run_no)
+    checks=json.loads(run.frozen_checks_json or "[]");results=json.loads(run.results_json or "{}")
+    attachments=db.list_attachments("QUALIFICATION",run.run_no)
+    prs=Presentation()
+    slide=prs.slides.add_slide(prs.slide_layouts[0]);slide.shapes.title.text=f"Qualification — {run.run_no}";slide.placeholders[1].text=f"{run.equipment_id} | {run.protocol_id} R{run.protocol_revision} | {run.status}"
+    slide=prs.slides.add_slide(prs.slide_layouts[1]);_add_bullets(slide,"Qualification Summary",[
+        f"Protocol: {run.protocol_name}",f"Started: {_text(run.started_at)} by {run.started_by}",
+        f"Submitted: {_text(run.submitted_at)} by {run.submitted_by or '—'}",f"Verified: {_text(run.verified_at)} by {run.verified_by or '—'}",
+        f"Approved: {_text(run.approved_at)} by {run.approved_by or '—'}",f"Expires: {_text(run.expires_at) or 'No expiry'}",
+        f"Conclusion: {run.conclusion or '—'}",
+    ])
+    rows=[]
+    for check in checks:
+        cid=str(check.get("check_id") or check.get("id") or check.get("name") or "")
+        result=results.get(cid,{}) if isinstance(results,dict) else {}
+        rows.append([cid,check.get("name") or check.get("description") or "",check.get("acceptance") or "",result.get("result",""),result.get("value",""),result.get("comment","")])
+    slide=prs.slides.add_slide(prs.slide_layouts[5]);_add_table(slide,"Qualification Checks",["Check","Description","Acceptance","Result","Value","Comment"],rows,16)
+    _add_evidence_slides(prs,attachments,"Qualification")
+    Path(path).parent.mkdir(parents=True,exist_ok=True);prs.save(path);return str(path)
+
+
+def export_qualification_xlsx(db,run_no: str,path: str) -> str:
+    run=_qualification_run(db,run_no)
+    checks=json.loads(run.frozen_checks_json or "[]");results=json.loads(run.results_json or "{}")
+    wb=Workbook();summary=wb.active;summary.title="Summary"
+    _sheet(summary,["Field","Value"],[
+        ["Run",run.run_no],["Equipment",run.equipment_id],["Protocol",run.protocol_id],["Protocol Revision",run.protocol_revision],["Protocol Name",run.protocol_name],
+        ["Status",run.status],["Started By",run.started_by],["Started",run.started_at],["Submitted By",run.submitted_by],["Submitted",run.submitted_at],
+        ["Verified By",run.verified_by],["Verified",run.verified_at],["Approved By",run.approved_by],["Approved",run.approved_at],["Expires",run.expires_at],["Conclusion",run.conclusion],
+    ])
+    rows=[]
+    for check in checks:
+        cid=str(check.get("check_id") or check.get("id") or check.get("name") or "")
+        result=results.get(cid,{}) if isinstance(results,dict) else {}
+        rows.append([cid,check.get("name") or check.get("description") or "",check.get("acceptance") or "",result.get("result",""),result.get("value",""),result.get("comment",""),result.get("entered_by",""),result.get("entered_at","")])
+    ws=wb.create_sheet("Checks");_sheet(ws,["Check","Description","Acceptance","Result","Value","Comment","Entered By","Entered"],rows)
+    ws=wb.create_sheet("Attachments");_sheet(ws,["Name","Category","Caption","Tags","Path","Added By","Added"],[[x.original_name,x.category,x.caption,x.tags,x.stored_path,x.created_by,x.created_at] for x in db.list_attachments("QUALIFICATION",run.run_no)])
+    Path(path).parent.mkdir(parents=True,exist_ok=True);wb.save(path);return str(path)
+
+
+def export_release_pptx(db,release_id: int,path: str) -> str:
+    rel=_release_request(db,release_id);checks=json.loads(rel.checks_json or "{}")
+    attachments=db.list_attachments("RELEASE",str(rel.id))
+    prs=Presentation()
+    slide=prs.slides.add_slide(prs.slide_layouts[0]);slide.shapes.title.text=f"Equipment Release — {rel.equipment_id}";slide.placeholders[1].text=f"Release #{rel.id} | {rel.status} | Ticket: {rel.related_ticket or '—'}"
+    slide=prs.slides.add_slide(prs.slide_layouts[1]);_add_bullets(slide,"Release Summary",[
+        f"Requested: {_text(rel.requested_at)} by {rel.requested_by}",f"Verified: {_text(rel.verified_at)} by {rel.verified_by or '—'}",
+        f"Approved: {_text(rel.approved_at)} by {rel.approved_by or '—'}",f"Notes: {rel.notes or '—'}",
+    ])
+    slide=prs.slides.add_slide(prs.slide_layouts[5]);_add_table(slide,"Release Checklist",["Check","Pass"],[[key,"PASS" if value else "FAIL"] for key,value in checks.items()],20)
+    _add_evidence_slides(prs,attachments,"Release")
+    Path(path).parent.mkdir(parents=True,exist_ok=True);prs.save(path);return str(path)
+
+
+def export_release_xlsx(db,release_id: int,path: str) -> str:
+    rel=_release_request(db,release_id);checks=json.loads(rel.checks_json or "{}")
+    wb=Workbook();summary=wb.active;summary.title="Summary"
+    _sheet(summary,["Field","Value"],[
+        ["Release ID",rel.id],["Equipment",rel.equipment_id],["Related Ticket",rel.related_ticket],["Status",rel.status],["Notes",rel.notes],
+        ["Requested By",rel.requested_by],["Requested",rel.requested_at],["Verified By",rel.verified_by],["Verified",rel.verified_at],["Approved By",rel.approved_by],["Approved",rel.approved_at],
+    ])
+    ws=wb.create_sheet("Checklist");_sheet(ws,["Check","Pass"],[[key,bool(value)] for key,value in checks.items()])
+    ws=wb.create_sheet("Attachments");_sheet(ws,["Name","Category","Caption","Tags","Path","Added By","Added"],[[x.original_name,x.category,x.caption,x.tags,x.stored_path,x.created_by,x.created_at] for x in db.list_attachments("RELEASE",str(rel.id))])
     Path(path).parent.mkdir(parents=True,exist_ok=True);wb.save(path);return str(path)
