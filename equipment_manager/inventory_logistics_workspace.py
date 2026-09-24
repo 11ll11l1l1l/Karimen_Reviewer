@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from feedback import notify
+
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
     QAbstractItemView,QCheckBox,QComboBox,QDateTimeEdit,QDialog,QDialogButtonBox,QDoubleSpinBox,
@@ -307,7 +309,7 @@ class InventoryLogisticsWorkspace(QWidget):
         if not self.task.value():return
         try:
             rows=self.db.reserve_pm_required_parts(self.task.value(),self.user["username"],"INVENTORY-LOGISTICS")
-            QMessageBox.information(self,"PM Kit",f"Created {len(rows)} reservation(s)." if rows else "Kit already reserved or no required parts.")
+            notify(f"Created {len(rows)} reservation(s)." if rows else "Kit already reserved or no required parts.")
             self.refresh()
         except Exception as exc:QMessageBox.critical(self,"PM Kit",str(exc))
 
