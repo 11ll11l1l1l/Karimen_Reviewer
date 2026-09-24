@@ -1071,6 +1071,59 @@ class IntegrationDelivery(Base):
     __table_args__ = (UniqueConstraint("event_id","endpoint_id",name="uq_integration_delivery"),)
 
 
+class IntegrationMapping(Base):
+    __tablename__ = "integration_mappings"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    endpoint_id: Mapped[str] = mapped_column(String(100), index=True)
+    revision: Mapped[int] = mapped_column(Integer, default=1)
+    mapping_json: Mapped[str] = mapped_column(Text, default="{}")
+    defaults_json: Mapped[str] = mapped_column(Text, default="{}")
+    active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    created_by: Mapped[str] = mapped_column(String(80), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    __table_args__ = (UniqueConstraint("endpoint_id","revision",name="uq_integration_mapping_revision"),)
+
+
+class InboundIntegrationReceipt(Base):
+    __tablename__ = "inbound_integration_receipts"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    source_id: Mapped[str] = mapped_column(String(100), index=True)
+    external_event_id: Mapped[str] = mapped_column(String(180), index=True)
+    topic: Mapped[str] = mapped_column(String(100), index=True)
+    entity_type: Mapped[str] = mapped_column(String(60), default="")
+    entity_key: Mapped[str] = mapped_column(String(160), default="")
+    payload_json: Mapped[str] = mapped_column(Text, default="{}")
+    received_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    internal_event_id: Mapped[str] = mapped_column(String(40), default="", index=True)
+    __table_args__ = (UniqueConstraint("source_id","external_event_id",name="uq_inbound_source_event"),)
+
+
+class OrchestrationRule(Base):
+    __tablename__ = "orchestration_rules"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    rule_id: Mapped[str] = mapped_column(String(100), unique=True, index=True)
+    name: Mapped[str] = mapped_column(String(200))
+    topic_pattern: Mapped[str] = mapped_column(String(120), index=True)
+    condition_json: Mapped[str] = mapped_column(Text, default="{}")
+    action_type: Mapped[str] = mapped_column(String(60), index=True)
+    action_json: Mapped[str] = mapped_column(Text, default="{}")
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    priority: Mapped[int] = mapped_column(Integer, default=100)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
+class OrchestrationExecution(Base):
+    __tablename__ = "orchestration_executions"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    event_id: Mapped[str] = mapped_column(String(40), index=True)
+    rule_id: Mapped[str] = mapped_column(String(100), index=True)
+    status: Mapped[str] = mapped_column(String(30), index=True)
+    detail: Mapped[str] = mapped_column(Text, default="")
+    executed_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    __table_args__ = (UniqueConstraint("event_id","rule_id",name="uq_orchestration_event_rule"),)
+
+
 class RecoveryDrill(Base):
     __tablename__ = "recovery_drills"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -1219,6 +1272,9 @@ class Database:
                 table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
             ]),
             ("20260924_008","Create collaboration comments watchers and record inbox",lambda: [
+                table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
+            ]),
+            ("20260924_009","Create integration mappings inbound receipts and orchestration rules",lambda: [
                 table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
             ]),
         ]
@@ -1827,6 +1883,142 @@ class Database:
                 s.add(IntegrationDelivery(event_id=event.event_id,endpoint_id=endpoint.endpoint_id))
         return event
 
+    def save_integration_mapping(
+        self, endpoint_id: str, mapping: dict[str,str], defaults: dict[str,Any],
+        user: str, create_revision: bool = True,
+    ):
+        endpoint_id=endpoint_id.strip()
+        if not endpoint_id:raise ValueError("Endpoint ID is required.")
+        if not isinstance(mapping,dict) or not isinstance(defaults,dict):raise ValueError("Mapping and defaults must be objects.")
+        with self.session() as s:
+            if not s.scalar(select(IntegrationEndpoint).where(IntegrationEndpoint.endpoint_id==endpoint_id)):
+                raise ValueError("Integration endpoint not found.")
+            current=s.scalar(select(IntegrationMapping).where(
+                IntegrationMapping.endpoint_id==endpoint_id,IntegrationMapping.active.is_(True)
+            ).order_by(IntegrationMapping.revision.desc()))
+            if current and not create_revision:
+                raise ValueError("Active mapping exists. Create a controlled mapping revision.")
+            revision=1
+            if current:
+                current.active=False;current.version+=1;revision=current.revision+1
+            row=IntegrationMapping(
+                endpoint_id=endpoint_id,revision=revision,
+                mapping_json=json.dumps(mapping,sort_keys=True),
+                defaults_json=json.dumps(defaults,default=str,sort_keys=True),
+                active=True,created_by=user,
+            )
+            s.add(row);s.flush();return row
+
+    def list_integration_mappings(self, endpoint_id: str = "", active_only: bool = False):
+        with self.session() as s:
+            stmt=select(IntegrationMapping).order_by(IntegrationMapping.endpoint_id,IntegrationMapping.revision.desc())
+            if endpoint_id:stmt=stmt.where(IntegrationMapping.endpoint_id==endpoint_id)
+            if active_only:stmt=stmt.where(IntegrationMapping.active.is_(True))
+            return list(s.scalars(stmt))
+
+    def active_integration_mapping(self, endpoint_id: str):
+        with self.session() as s:return s.scalar(select(IntegrationMapping).where(
+            IntegrationMapping.endpoint_id==endpoint_id,IntegrationMapping.active.is_(True)
+        ).order_by(IntegrationMapping.revision.desc()))
+
+    def receive_integration_event(
+        self, source_id: str, external_event_id: str, topic: str,
+        entity_type: str, entity_key: str, payload: dict[str,Any],
+    ) -> tuple[InboundIntegrationReceipt,bool]:
+        source_id=source_id.strip();external_event_id=external_event_id.strip();topic=topic.strip()
+        if not source_id or not external_event_id or not topic:raise ValueError("Source ID, external event ID, and topic are required.")
+        with self.session() as s:
+            existing=s.scalar(select(InboundIntegrationReceipt).where(
+                InboundIntegrationReceipt.source_id==source_id,
+                InboundIntegrationReceipt.external_event_id==external_event_id,
+            ))
+            if existing:return existing,False
+            event=self._queue_integration_event(s,topic,entity_type.strip().upper() or "EXTERNAL",str(entity_key),{
+                **dict(payload or {}),"_inbound_source":source_id,"_external_event_id":external_event_id,
+            })
+            row=InboundIntegrationReceipt(
+                source_id=source_id,external_event_id=external_event_id,topic=topic,
+                entity_type=entity_type.strip().upper(),entity_key=str(entity_key),
+                payload_json=json.dumps(payload or {},default=str,sort_keys=True),
+                internal_event_id=event.event_id,
+            )
+            s.add(row);s.flush();return row,True
+
+    def list_inbound_receipts(self, limit: int = 500):
+        with self.session() as s:return list(s.scalars(
+            select(InboundIntegrationReceipt).order_by(InboundIntegrationReceipt.received_at.desc()).limit(max(1,min(int(limit),5000)))
+        ))
+
+    def save_orchestration_rule(self, data: dict[str,Any], expected_version: int | None = None):
+        payload=dict(data)
+        rule_id=str(payload.get("rule_id","")).strip()
+        topic=str(payload.get("topic_pattern","")).strip()
+        action=str(payload.get("action_type","")).strip().upper()
+        if not rule_id or not topic:raise ValueError("Rule ID and topic pattern are required.")
+        if action not in {"CREATE_INCIDENT_FROM_ALARM"}:raise ValueError("Unsupported orchestration action.")
+        for key in ["condition_json","action_json"]:
+            value=payload.get(key,{})
+            if isinstance(value,str):
+                try:value=json.loads(value or "{}")
+                except Exception as exc:raise ValueError(f"{key} must contain valid JSON.") from exc
+            if not isinstance(value,dict):raise ValueError(f"{key} must be a JSON object.")
+            payload[key]=json.dumps(value,default=str,sort_keys=True)
+        payload["rule_id"]=rule_id;payload["topic_pattern"]=topic;payload["action_type"]=action
+        with self.session() as s:
+            row=s.scalar(select(OrchestrationRule).where(OrchestrationRule.rule_id==rule_id))
+            if row:self._update_versioned(row,payload,expected_version,"Orchestration rule")
+            else:row=OrchestrationRule(**payload);s.add(row)
+            s.flush();return row
+
+    def list_orchestration_rules(self, enabled_only: bool = False):
+        with self.session() as s:
+            stmt=select(OrchestrationRule).order_by(OrchestrationRule.priority,OrchestrationRule.rule_id)
+            if enabled_only:stmt=stmt.where(OrchestrationRule.enabled.is_(True))
+            return list(s.scalars(stmt))
+
+    def orchestration_candidates(self, limit: int = 250):
+        with self.session() as s:
+            rules=list(s.scalars(select(OrchestrationRule).where(OrchestrationRule.enabled.is_(True)).order_by(OrchestrationRule.priority,OrchestrationRule.rule_id)))
+            events=list(s.scalars(select(IntegrationEvent).order_by(IntegrationEvent.created_at.desc()).limit(max(1,min(int(limit),5000)))))
+            done={(x.event_id,x.rule_id) for x in s.scalars(select(OrchestrationExecution))}
+            return [(event,rule) for event in reversed(events) for rule in rules if (event.event_id,rule.rule_id) not in done]
+
+    def mark_orchestration_execution(self, event_id: str, rule_id: str, status: str, detail: str = ""):
+        with self.session() as s:
+            row=s.scalar(select(OrchestrationExecution).where(
+                OrchestrationExecution.event_id==event_id,OrchestrationExecution.rule_id==rule_id
+            ))
+            if row:return row
+            row=OrchestrationExecution(event_id=event_id,rule_id=rule_id,status=status,detail=detail[:4000])
+            s.add(row);s.flush();return row
+
+    def list_orchestration_executions(self, limit: int = 500):
+        with self.session() as s:return list(s.scalars(
+            select(OrchestrationExecution).order_by(OrchestrationExecution.executed_at.desc()).limit(max(1,min(int(limit),5000)))
+        ))
+
+    def replay_integration_delivery(self, delivery_id: int):
+        with self.session() as s:
+            row=s.get(IntegrationDelivery,delivery_id)
+            if not row:raise ValueError("Integration delivery not found")
+            row.status="Pending";row.next_attempt_at=None;row.last_error="";row.sent_at=None
+            s.flush();return row
+
+    def integration_delivery_details(self, limit: int = 500) -> list[dict[str,Any]]:
+        with self.session() as s:
+            deliveries=list(s.scalars(select(IntegrationDelivery).order_by(IntegrationDelivery.id.desc()).limit(max(1,min(int(limit),5000)))))
+            events={x.event_id:x for x in s.scalars(select(IntegrationEvent).where(
+                IntegrationEvent.event_id.in_([x.event_id for x in deliveries])
+            ))} if deliveries else {}
+            return [{
+                "id":d.id,"event_id":d.event_id,"endpoint_id":d.endpoint_id,"status":d.status,
+                "attempts":d.attempts,"next_attempt_at":d.next_attempt_at,"last_error":d.last_error,"sent_at":d.sent_at,
+                "topic":events[d.event_id].topic if d.event_id in events else "",
+                "entity_type":events[d.event_id].entity_type if d.event_id in events else "",
+                "entity_key":events[d.event_id].entity_key if d.event_id in events else "",
+                "created_at":events[d.event_id].created_at if d.event_id in events else None,
+            } for d in deliveries]
+
     def pending_integration_deliveries(self, limit: int = 100):
         now=datetime.utcnow()
         with self.session() as s:
@@ -1854,9 +2046,13 @@ class Database:
             if success:
                 row.status="Sent";row.sent_at=datetime.utcnow();row.last_error="";row.next_attempt_at=None
             else:
-                row.status="Retry";row.last_error=error[:4000]
-                delay=min(3600,30*(2**min(row.attempts,7)))
-                row.next_attempt_at=datetime.utcnow()+timedelta(seconds=delay)
+                row.last_error=error[:4000]
+                if row.attempts>=5:
+                    row.status="Dead Letter";row.next_attempt_at=None
+                else:
+                    row.status="Retry"
+                    delay=min(3600,30*(2**min(row.attempts,7)))
+                    row.next_attempt_at=datetime.utcnow()+timedelta(seconds=delay)
             s.flush();return row
 
     def integration_delivery_status(self, limit: int = 500):
