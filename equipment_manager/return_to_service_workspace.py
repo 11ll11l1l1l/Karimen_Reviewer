@@ -65,7 +65,7 @@ class ReturnToServiceWorkspace(QWidget):
         head.addWidget(title);head.addStretch(1);head.addWidget(self.equipment);head.addWidget(open_eq);head.addWidget(refresh);root.addLayout(head)
         self.status=QLabel("Select equipment or open a qualification/release from My Work, Work Orders or Equipment 360.")
         self.status.setWordWrap(True);self.status.setStyleSheet("color:#647581");root.addWidget(self.status)
-        tabs=QTabWidget();root.addWidget(tabs,1)
+        tabs=QTabWidget();self.tabs=tabs;root.addWidget(tabs,1)
 
         # Qualification
         qw=QWidget();qv=QVBoxLayout(qw)
