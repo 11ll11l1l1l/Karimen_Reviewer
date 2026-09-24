@@ -32,6 +32,7 @@ from feedback import notify
 from logging_config import configure_logging, install_exception_hook
 from incident_workspace import IncidentWorkspace
 from integration_studio import IntegrationStudio
+from notification_center import NotificationCenter
 from maintenance_planner import MaintenancePlanningWorkspace
 from pm_execution_workspace import PMExecutionWorkspace
 from return_to_service_workspace import ReturnToServiceWorkspace
@@ -202,6 +203,10 @@ class SmartMainWindow(QMainWindow):
         self.my_work_badge.setToolTip("Open personal action center")
         self.my_work_badge.clicked.connect(lambda:self.open_page("My Work"))
         top_layout.addWidget(self.my_work_badge)
+        self.notification_badge=QPushButton("Alerts")
+        self.notification_badge.setToolTip("Open notifications and escalations")
+        self.notification_badge.clicked.connect(lambda:self.open_page("Notifications"))
+        top_layout.addWidget(self.notification_badge)
         self.quick_create=QPushButton("+ Create")
         self.quick_create.setToolTip("Quick create incident or work order (Ctrl+N)")
         self.quick_create.clicked.connect(self.open_quick_create)
@@ -235,6 +240,7 @@ class SmartMainWindow(QMainWindow):
 
         self.search_workspace=add("Global Search",SearchWorkspace(db,user))
         self.my_work=add("My Work",MyWorkWorkspace(db,user))
+        self.notification_center=add("Notifications",NotificationCenter(db,user))
         self.dashboard=add("Operations Overview",SmartDashboardPage(db,lambda:self.open_page("Live FAB Map")))
         self.equipment360=add("Equipment Workspaces",EquipmentWorkspaceTabs(db,user))
         self.equipment_page=add("Equipment Registry",EquipmentPage(db,user))
@@ -264,6 +270,7 @@ class SmartMainWindow(QMainWindow):
 
         self.search_workspace.open_entity.connect(self.open_entity)
         self.my_work.open_entity.connect(self.open_entity)
+        self.notification_center.open_entity.connect(self.open_entity)
         self.equipment360.open_entity.connect(self.open_entity)
         self.maintenance_planner.open_entity.connect(self.open_entity)
         self.pm_execution.open_entity.connect(self.open_entity)
@@ -292,8 +299,9 @@ class SmartMainWindow(QMainWindow):
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.dashboard.refresh)
         self.timer.timeout.connect(self.refresh_my_work_badge)
+        self.timer.timeout.connect(self.refresh_notification_badge)
         self.timer.start(30000)
-        self.refresh_my_work_badge()
+        self.refresh_my_work_badge();self.refresh_notification_badge()
 
     def current_evidence_context(self):
         page=self.stack.currentWidget()
@@ -347,6 +355,12 @@ class SmartMainWindow(QMainWindow):
             notify(f"Screenshot attached to {entity_type}:{entity_key}.")
         except Exception as exc:
             notify(f"Quick Screenshot failed: {exc}",8000)
+
+    def refresh_notification_badge(self):
+        try:
+            unread=self.db.unread_notification_count(self.user["username"])
+            self.notification_badge.setText(f"Alerts {unread}" if unread else "Alerts")
+        except Exception:self.notification_badge.setText("Alerts")
 
     def refresh_my_work_badge(self):
         try:
