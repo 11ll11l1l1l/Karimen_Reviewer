@@ -6618,8 +6618,10 @@ class Database:
             row=s.scalar(select(SupplierOrder).where(SupplierOrder.order_no==order_no))
             if row:
                 if row.status not in {"Draft","Submitted","Partially Received"}:raise ValueError(f"Cannot edit supplier order in {row.status} status.")
+                for key in ["status","submitted_by","submitted_at","closed_at","created_by"]:payload.pop(key,None)
                 self._update_versioned(row,payload,expected_version,"Supplier order")
             else:
+                for key in ["status","submitted_by","submitted_at","closed_at"]:payload.pop(key,None)
                 row=SupplierOrder(**payload);s.add(row)
             s.add(AuditLog(user=user,action="SUPPLIER_ORDER_SAVE",entity_type="SUPPLIER_ORDER",entity_key=order_no,detail=supplier))
             s.flush();return row
@@ -6722,8 +6724,12 @@ class Database:
         if not asset_id or not part:raise ValueError("Rotable asset ID and part number are required.")
         with self.session() as s:
             row=s.scalar(select(RotableAsset).where(RotableAsset.asset_id==asset_id))
-            if row:self._update_versioned(row,payload,expected_version,"Rotable asset")
+            lifecycle_fields={"status","condition","equipment_id","component_id","vendor","repair_reference","repair_count","installed_at","removed_at","sent_for_repair_at","returned_at"}
+            if row:
+                for key in lifecycle_fields:payload.pop(key,None)
+                self._update_versioned(row,payload,expected_version,"Rotable asset")
             else:
+                for key in lifecycle_fields:payload.pop(key,None)
                 row=RotableAsset(**payload);s.add(row);s.flush()
                 s.add(RotableEvent(asset_id=asset_id,event_type="REGISTER",from_status="",to_status=row.status,location_code=row.current_location,user=user,note=row.notes))
             s.flush();return row
@@ -6767,9 +6773,9 @@ class Database:
             elif target_status=="In Repair":
                 row.vendor=vendor.strip();row.repair_reference=reference.strip();row.sent_for_repair_at=now;row.equipment_id="";row.component_id=""
             elif target_status=="Stock":
-                row.current_location=location_code.strip() or row.current_location;row.equipment_id="";row.component_id=""
+                row.current_location=location_code.strip() or row.current_location;row.equipment_id="";row.component_id="";row.condition="Serviceable"
                 if previous=="Installed":row.removed_at=now
-                if previous=="In Repair":row.returned_at=now;row.repair_count+=1;row.condition="Serviceable"
+                if previous=="In Repair":row.returned_at=now;row.repair_count+=1
             elif target_status=="Quarantine":
                 row.current_location=location_code.strip() or row.current_location;row.equipment_id="";row.component_id="";row.condition="Quarantine"
             elif target_status=="Scrapped":
