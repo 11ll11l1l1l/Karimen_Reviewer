@@ -2041,6 +2041,135 @@ class Database:
                 except Exception:out[row.field_id]=row.value_json
             return out
 
+    def export_configuration_bundle(self) -> dict[str,Any]:
+        with self.session() as s:
+            options=list(s.scalars(select(ConfigOption).order_by(ConfigOption.category,ConfigOption.sort_order,ConfigOption.code)))
+            templates=list(s.scalars(select(EntityTemplate).order_by(EntityTemplate.entity_type,EntityTemplate.template_id)))
+            fields=list(s.scalars(select(CustomFieldDefinition).order_by(CustomFieldDefinition.entity_type,CustomFieldDefinition.sort_order,CustomFieldDefinition.field_id)))
+            rules=list(s.scalars(select(WorkflowAutomationRule).order_by(WorkflowAutomationRule.priority,WorkflowAutomationRule.rule_id)))
+        return {
+            "schema":"EMS_CONFIGURATION_V1",
+            "exported_at":datetime.utcnow().isoformat(),
+            "config_options":[{
+                "category":x.category,"code":x.code,"label":x.label,"sort_order":x.sort_order,
+                "active":x.active,"system_locked":x.system_locked,"metadata_json":x.metadata_json,
+            } for x in options],
+            "entity_templates":[{
+                "template_id":x.template_id,"entity_type":x.entity_type,"name":x.name,"applies_to":x.applies_to,
+                "defaults_json":x.defaults_json,"active":x.active,
+            } for x in templates],
+            "custom_fields":[{
+                "field_id":x.field_id,"entity_type":x.entity_type,"applies_to":x.applies_to,"label":x.label,
+                "field_type":x.field_type,"options_json":x.options_json,"required":x.required,
+                "sort_order":x.sort_order,"active":x.active,
+            } for x in fields],
+            "workflow_rules":[{
+                "rule_id":x.rule_id,"name":x.name,"trigger":x.trigger,"match_json":x.match_json,
+                "actions_json":x.actions_json,"enabled":x.enabled,"priority":x.priority,
+            } for x in rules],
+        }
+
+    def _validate_configuration_bundle(self,bundle: dict[str,Any]) -> dict[str,int]:
+        if not isinstance(bundle,dict) or bundle.get("schema")!="EMS_CONFIGURATION_V1":
+            raise ValueError("Unsupported configuration package schema.")
+        sections={
+            "config_options":bundle.get("config_options",[]),
+            "entity_templates":bundle.get("entity_templates",[]),
+            "custom_fields":bundle.get("custom_fields",[]),
+            "workflow_rules":bundle.get("workflow_rules",[]),
+        }
+        for name,rows in sections.items():
+            if not isinstance(rows,list):raise ValueError(f"{name} must be an array.")
+            if not all(isinstance(row,dict) for row in rows):raise ValueError(f"{name} contains an invalid record.")
+        seen=set()
+        for row in sections["config_options"]:
+            key=(str(row.get("category","")).strip().upper(),str(row.get("code","")).strip())
+            if not all(key):raise ValueError("Configuration option category/code is required.")
+            if key in seen:raise ValueError(f"Duplicate configuration option: {key[0]} / {key[1]}")
+            seen.add(key)
+            json.loads(row.get("metadata_json","{}") or "{}")
+        seen=set()
+        for row in sections["entity_templates"]:
+            key=str(row.get("template_id","")).strip()
+            if not key or key in seen:raise ValueError(f"Invalid or duplicate template ID: {key or '<blank>'}")
+            seen.add(key);defaults=json.loads(row.get("defaults_json","{}") or "{}")
+            if not isinstance(defaults,dict):raise ValueError(f"Template {key} defaults must be a JSON object.")
+        seen=set()
+        for row in sections["custom_fields"]:
+            key=str(row.get("field_id","")).strip()
+            if not key or key in seen:raise ValueError(f"Invalid or duplicate custom field ID: {key or '<blank>'}")
+            seen.add(key);field_type=str(row.get("field_type","TEXT")).upper()
+            if field_type not in {"TEXT","MULTILINE","NUMBER","BOOLEAN","DATE","CHOICE"}:raise ValueError(f"Unsupported field type for {key}: {field_type}")
+            options=json.loads(row.get("options_json","[]") or "[]")
+            if not isinstance(options,list):raise ValueError(f"Custom field {key} options must be an array.")
+        seen=set();allowed_triggers={"ALARM_ACTIVE","PM_ABNORMAL_RESULT","QUALIFICATION_APPROVED","RELEASE_APPROVED"};allowed_actions={"CREATE_INCIDENT","CREATE_WORK_ORDER","CREATE_HANDOVER","SET_DISPOSITION"}
+        for row in sections["workflow_rules"]:
+            key=str(row.get("rule_id","")).strip();trigger=str(row.get("trigger","")).strip().upper()
+            if not key or key in seen:raise ValueError(f"Invalid or duplicate workflow rule ID: {key or '<blank>'}")
+            seen.add(key)
+            if trigger not in allowed_triggers:raise ValueError(f"Unsupported trigger for {key}: {trigger}")
+            match=json.loads(row.get("match_json","{}") or "{}");actions=json.loads(row.get("actions_json","[]") or "[]")
+            if not isinstance(match,dict) or not isinstance(actions,list) or not actions:raise ValueError(f"Invalid workflow rule JSON for {key}.")
+            for action in actions:
+                if not isinstance(action,dict) or str(action.get("type","")).upper() not in allowed_actions:raise ValueError(f"Unsupported action in workflow rule {key}.")
+        return {name:len(rows) for name,rows in sections.items()}
+
+    def import_configuration_bundle(self,bundle: dict[str,Any],user: str,dry_run: bool = True) -> dict[str,Any]:
+        counts=self._validate_configuration_bundle(bundle)
+        with self.session() as s:
+            existing={
+                "config_options":{(x.category,x.code) for x in s.scalars(select(ConfigOption))},
+                "entity_templates":{x.template_id for x in s.scalars(select(EntityTemplate))},
+                "custom_fields":{x.field_id for x in s.scalars(select(CustomFieldDefinition))},
+                "workflow_rules":{x.rule_id for x in s.scalars(select(WorkflowAutomationRule))},
+            }
+        creates={
+            "config_options":sum(1 for x in bundle.get("config_options",[]) if (str(x.get("category","")).strip().upper(),str(x.get("code","")).strip()) not in existing["config_options"]),
+            "entity_templates":sum(1 for x in bundle.get("entity_templates",[]) if str(x.get("template_id","")).strip() not in existing["entity_templates"]),
+            "custom_fields":sum(1 for x in bundle.get("custom_fields",[]) if str(x.get("field_id","")).strip() not in existing["custom_fields"]),
+            "workflow_rules":sum(1 for x in bundle.get("workflow_rules",[]) if str(x.get("rule_id","")).strip() not in existing["workflow_rules"]),
+        }
+        preview={"counts":counts,"creates":creates,"updates":{k:counts[k]-creates[k] for k in counts},"dry_run":dry_run}
+        if dry_run:return preview
+        with self.session() as s:
+            for data in bundle.get("config_options",[]):
+                category=str(data["category"]).strip().upper();code=str(data["code"]).strip()
+                row=s.scalar(select(ConfigOption).where(ConfigOption.category==category,ConfigOption.code==code))
+                payload={
+                    "label":str(data.get("label") or code),"sort_order":int(data.get("sort_order",100)),
+                    "active":bool(data.get("active",True)),"metadata_json":data.get("metadata_json","{}") or "{}",
+                }
+                if row:
+                    if row.category in {"EQUIPMENT_REASON_LABEL","TICKET_REASON_LABEL"}:payload["active"]=True
+                    for k,v in payload.items():setattr(row,k,v)
+                    row.version+=1
+                else:s.add(ConfigOption(category=category,code=code,system_locked=bool(data.get("system_locked",False)),**payload))
+            for data in bundle.get("entity_templates",[]):
+                key=str(data["template_id"]).strip();row=s.scalar(select(EntityTemplate).where(EntityTemplate.template_id==key))
+                payload={"entity_type":str(data["entity_type"]).strip().upper(),"name":str(data["name"]).strip(),"applies_to":str(data.get("applies_to","")).strip(),"defaults_json":data.get("defaults_json","{}") or "{}","active":bool(data.get("active",True)),"created_by":user}
+                if row:
+                    for k,v in payload.items():setattr(row,k,v)
+                    row.version+=1
+                else:s.add(EntityTemplate(template_id=key,**payload))
+            for data in bundle.get("custom_fields",[]):
+                key=str(data["field_id"]).strip();row=s.scalar(select(CustomFieldDefinition).where(CustomFieldDefinition.field_id==key))
+                payload={"entity_type":str(data["entity_type"]).strip().upper(),"applies_to":str(data.get("applies_to","")).strip(),"label":str(data["label"]).strip(),"field_type":str(data.get("field_type","TEXT")).upper(),"options_json":data.get("options_json","[]") or "[]","required":bool(data.get("required",False)),"sort_order":int(data.get("sort_order",100)),"active":bool(data.get("active",True))}
+                if row:
+                    for k,v in payload.items():setattr(row,k,v)
+                    row.version+=1
+                else:s.add(CustomFieldDefinition(field_id=key,**payload))
+            for data in bundle.get("workflow_rules",[]):
+                key=str(data["rule_id"]).strip();row=s.scalar(select(WorkflowAutomationRule).where(WorkflowAutomationRule.rule_id==key))
+                payload={"name":str(data["name"]).strip(),"trigger":str(data["trigger"]).strip().upper(),"match_json":data.get("match_json","{}") or "{}","actions_json":data.get("actions_json","[]") or "[]","enabled":bool(data.get("enabled",True)),"priority":int(data.get("priority",100)),"created_by":user}
+                if row:
+                    for k,v in payload.items():setattr(row,k,v)
+                    row.version+=1
+                else:s.add(WorkflowAutomationRule(rule_id=key,**payload))
+            s.add(AuditLog(user=user,action="CONFIGURATION_IMPORT",entity_type="SYSTEM_CONFIGURATION",entity_key="EMS_CONFIGURATION_V1",detail=json.dumps(preview,sort_keys=True)))
+            s.flush()
+        preview["dry_run"]=False
+        return preview
+
     def save_workflow_rule(self, data: dict[str, Any], user: str = "", expected_version: int | None = None):
         payload=dict(data);trigger=str(payload.get("trigger","")).strip().upper()
         allowed={"ALARM_ACTIVE","PM_ABNORMAL_RESULT","QUALIFICATION_APPROVED","RELEASE_APPROVED"}
