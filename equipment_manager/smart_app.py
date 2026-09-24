@@ -34,6 +34,7 @@ from work_order_workspace import WorkOrderWorkspace
 from shift_handover_workspace import ShiftHandoverWorkspace
 from analytics_workspace import EngineeringAnalyticsWorkspace
 from inventory_logistics_workspace import InventoryLogisticsWorkspace
+from integration_studio import IntegrationStudioWorkspace
 from version import __version__
 from demo_data import active_tickets, seed_demo_data
 from main import (
@@ -236,6 +237,7 @@ class SmartMainWindow(QMainWindow):
         self.inventory_logistics=add("Parts / Inventory Logistics",InventoryLogisticsWorkspace(db,user))
         self.inventory=add("Parts / Inventory (Legacy)",InventoryPage(db,user))
         self.document_page=add("SOPs / Documents",DocumentPage(db,user))
+        self.integration_studio=add("Integration Studio",IntegrationStudioWorkspace(db,user))
         self.admin_page=add("Users / Administration",AdminPage(db,user))
 
         self.search_workspace.open_entity.connect(self.open_entity)
