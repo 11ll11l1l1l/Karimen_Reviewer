@@ -12,6 +12,7 @@ from table_productivity import install_table_productivity
 from workspaces import AttachmentPanel
 from collaboration_panel import CollaborationPanel
 from reporting import export_work_order_closeout_pptx, export_work_order_closeout_xlsx, export_work_order_pptx, export_work_order_xlsx
+from pdf_reporting import export_work_order_pdf
 
 
 def _item(value):
@@ -54,10 +55,11 @@ class WorkOrderWorkspace(QWidget):
         new=QPushButton("New engineering WO");new.clicked.connect(self.new_engineering)
         ppt=QPushButton("WO PPTX");ppt.clicked.connect(self.export_pptx)
         xlsx=QPushButton("WO Excel");xlsx.clicked.connect(self.export_xlsx)
+        pdf=QPushButton("WO PDF");pdf.clicked.connect(self.export_pdf)
         closeppt=QPushButton("Closeout Pack PPTX");closeppt.clicked.connect(self.export_closeout_pptx)
         closexlsx=QPushButton("Closeout Pack Excel");closexlsx.clicked.connect(self.export_closeout_xlsx)
         refresh=QPushButton("Refresh");refresh.clicked.connect(self.refresh)
-        head.addWidget(self.title);head.addStretch(1);head.addWidget(self.search);head.addWidget(new);head.addWidget(ppt);head.addWidget(xlsx);head.addWidget(closeppt);head.addWidget(closexlsx);head.addWidget(refresh);root.addLayout(head)
+        head.addWidget(self.title);head.addStretch(1);head.addWidget(self.search);head.addWidget(new);head.addWidget(ppt);head.addWidget(xlsx);head.addWidget(pdf);head.addWidget(closeppt);head.addWidget(closexlsx);head.addWidget(refresh);root.addLayout(head)
 
         self.list_table=_table(["Work Order","Equipment","Source","Title","Priority","Status","Owner","Team","Created","Updated"])
         self.list_table.itemSelectionChanged.connect(self.load_selected);self.list_table.doubleClicked.connect(self.load_selected);root.addWidget(self.list_table,2)
@@ -205,6 +207,14 @@ class WorkOrderWorkspace(QWidget):
         if not path.lower().endswith(".pptx"):path+=".pptx"
         try:export_work_order_pptx(self.db,self.work_order.work_order_no,path,self.db.resolve_report_template("WORK_ORDER",self.work_order.equipment_id));QMessageBox.information(self,"PowerPoint",f"Editable work-order review deck created.\n{path}")
         except Exception as exc:QMessageBox.critical(self,"PowerPoint",str(exc))
+
+    def export_pdf(self):
+        if not self.work_order:return
+        path,_=QFileDialog.getSaveFileName(self,"Export Work Order PDF",f"{self.work_order.work_order_no}_Work_Order.pdf","PDF (*.pdf)")
+        if not path:return
+        if not path.lower().endswith(".pdf"):path+=".pdf"
+        try:export_work_order_pdf(self.db,self.work_order.work_order_no,path);QMessageBox.information(self,"PDF",f"Controlled work-order PDF created.\n{path}")
+        except Exception as exc:QMessageBox.critical(self,"PDF",str(exc))
 
     def export_xlsx(self):
         if not self.work_order:return
