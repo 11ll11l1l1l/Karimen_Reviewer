@@ -5011,6 +5011,7 @@ class Database:
         user: str,
         expected_version: int | None=None,
         workstation: str = "",
+        notes: str | None = None,
     ):
         with self.session() as s:
             stmt=select(EquipmentRelease).where(EquipmentRelease.id==release_id)
@@ -5024,6 +5025,7 @@ class Database:
             if r.status=="Approved / Released":
                 raise ValueError("Release request is already approved and cannot be re-verified.")
             r.checks_json=json.dumps(checks, sort_keys=True)
+            if notes is not None:r.notes=notes.strip()
             r.verified_by=user
             r.verified_at=datetime.utcnow()
             r.status="Verified" if checks and all(checks.values()) else "Verification Failed"
