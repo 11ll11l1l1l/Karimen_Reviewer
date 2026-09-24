@@ -2000,7 +2000,7 @@ class Database:
         topic=str(payload.get("topic_pattern","")).strip()
         action=str(payload.get("action_type","")).strip().upper()
         if not rule_id or not topic:raise ValueError("Rule ID and topic pattern are required.")
-        if action not in {"CREATE_INCIDENT_FROM_ALARM"}:raise ValueError("Unsupported orchestration action.")
+        if action not in {"CREATE_INCIDENT_FROM_ALARM","CREATE_WORK_ORDER_FROM_TICKET","SET_DISPOSITION"}:raise ValueError("Unsupported orchestration action.")
         for key in ["condition_json","action_json"]:
             value=payload.get(key,{})
             if isinstance(value,str):
