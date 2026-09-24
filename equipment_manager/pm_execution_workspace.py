@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
 from attachment_store import store_attachment_file, store_clipboard_image
 from services import readonly_open_copy
 from table_productivity import install_table_productivity
+from feedback import notify
 from workspaces import AttachmentPanel
 from collaboration_panel import CollaborationPanel
 from reporting import export_pm_execution_pptx, export_pm_execution_xlsx
@@ -271,7 +272,7 @@ class PMExecutionWorkspace(QWidget):
         if not self.task:return
         try:
             created=self.db.reserve_pm_required_parts(self.task.id,self.user["username"],"PM-RUNNER")
-            QMessageBox.information(self,"PM parts",f"Created {len(created)} reservation(s)." if created else "Required parts are already fully reserved or no parts are required.")
+            notify(f"PM parts: created {len(created)} reservation(s)." if created else "PM parts: already fully reserved or no required parts.")
             self.refresh()
         except Exception as exc:QMessageBox.critical(self,"PM parts",str(exc))
 
@@ -280,7 +281,7 @@ class PMExecutionWorkspace(QWidget):
         if QMessageBox.question(self,"Consume PM parts","Consume all active part reservations for this PM execution from inventory?")!=QMessageBox.StandardButton.Yes:return
         try:
             tx=self.db.consume_pm_reserved_parts(self.execution.id,self.user["username"],"PM-RUNNER")
-            QMessageBox.information(self,"PM parts",f"Consumed {len(tx)} inventory line(s)." if tx else "No active PM part reservations to consume.")
+            notify(f"PM parts: consumed {len(tx)} inventory line(s)." if tx else "PM parts: no active reservations to consume.")
             self.refresh()
         except Exception as exc:QMessageBox.critical(self,"PM parts",str(exc))
 
@@ -300,7 +301,7 @@ class PMExecutionWorkspace(QWidget):
                 if log.username==self.user["username"] and log.entity_type=="PM_EXECUTION" and log.entity_key==str(self.execution.id):
                     try:self.db.stop_work_log(log.id,self.user["username"],"PM execution completed")
                     except Exception:pass
-            QMessageBox.information(self,"PM","PM completed successfully.");self.execution.status="Completed";self.refresh()
+            notify("PM completed successfully.");self.execution.status="Completed";self.refresh()
         except Exception as exc:QMessageBox.critical(self,"Complete PM",str(exc))
 
     def open_work_order(self):
