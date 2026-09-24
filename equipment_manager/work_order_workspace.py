@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from PySide6.QtCore import Signal
+from PySide6.QtCore import Signal, QTimer
 from PySide6.QtWidgets import (
     QAbstractItemView,QComboBox,QHBoxLayout,QHeaderView,QInputDialog,QLabel,QLineEdit,
     QMessageBox,QPushButton,QTableWidget,QTableWidgetItem,QTabWidget,QTextEdit,QVBoxLayout,QWidget
@@ -48,6 +48,8 @@ class WorkOrderWorkspace(QWidget):
 
     def __init__(self,db,user,parent=None):
         super().__init__(parent);self.db=db;self.user=user;self.rows=[];self.work_order_no="";self.work_order=None;self.links=[];self.events=[];self.logs=[]
+        self._draft_loading=False
+        self.draft_timer=QTimer(self);self.draft_timer.setSingleShot(True);self.draft_timer.setInterval(1500);self.draft_timer.timeout.connect(self.save_draft)
         root=QVBoxLayout(self)
         head=QHBoxLayout()
         self.title=QLabel("Work Orders");self.title.setStyleSheet("font-size:20pt;font-weight:800")
@@ -77,9 +79,13 @@ class WorkOrderWorkspace(QWidget):
         actions.addStretch(1);root.addLayout(actions)
 
         self.context=QLabel("Select or create a work order.");self.context.setWordWrap(True);self.context.setStyleSheet("color:#647581;");root.addWidget(self.context)
+        self.draft_bar=QWidget();dbh=QHBoxLayout(self.draft_bar);dbh.setContentsMargins(8,4,8,4);self.draft_label=QLabel();self.draft_label.setStyleSheet("color:#7a4b00;font-weight:600");restore=QPushButton("Restore Draft");discard=QPushButton("Discard Draft");restore.clicked.connect(self.restore_draft);discard.clicked.connect(self.discard_draft);dbh.addWidget(self.draft_label);dbh.addStretch(1);dbh.addWidget(restore);dbh.addWidget(discard);self.draft_bar.setVisible(False);root.addWidget(self.draft_bar)
 
         tabs=QTabWidget();root.addWidget(tabs,3)
-        overview=QWidget();ov=QVBoxLayout(overview);self.description=QTextEdit();self.description.setReadOnly(True);ov.addWidget(QLabel("Work scope / description"));ov.addWidget(self.description);tabs.addTab(overview,"Overview")
+        overview=QWidget();ov=QVBoxLayout(overview);self.description=QTextEdit();self.team=QLineEdit();self.team.setPlaceholderText("Responsible team / group")
+        self.description.textChanged.connect(self.schedule_draft);self.owner.textChanged.connect(self.schedule_draft);self.team.textChanged.connect(self.schedule_draft)
+        ov.addWidget(QLabel("Work scope / description"));ov.addWidget(self.description);ov.addWidget(QLabel("Responsible team"));ov.addWidget(self.team)
+        save_details=QPushButton("Save Work Order Details");save_details.clicked.connect(self.save_details);ov.addWidget(save_details);tabs.addTab(overview,"Overview")
 
         events=QWidget();ev=QVBoxLayout(events);self.event_table=_table(["From","To","Reason","Owner","Changed by","Time"]);ev.addWidget(self.event_table);tabs.addTab(events,"Lifecycle")
 
@@ -120,11 +126,17 @@ class WorkOrderWorkspace(QWidget):
         if row:self.work_order_no=row.work_order_no
         self.work_order=self.db.get_work_order(self.work_order_no) if self.work_order_no else None
         if not self.work_order:
-            self.context.setText("Select or create a work order.");self.description.clear();self.owner.clear();self.closeout_summary.setText("Select a work order.");self.attachments.set_entity("","");self.collaboration.set_entity("","");return
+            self.context.setText("Select or create a work order.");self._draft_loading=True
+            try:self.description.clear();self.owner.clear();self.team.clear()
+            finally:self._draft_loading=False
+            self.draft_bar.setVisible(False);self.closeout_summary.setText("Select a work order.");self.attachments.set_entity("","");self.collaboration.set_entity("","");return
         wo=self.work_order
         self.title.setText(f"{wo.work_order_no} · {wo.title}")
         self.context.setText(f"{wo.equipment_id}    {wo.priority}    {wo.status}    Source: {wo.source_type}:{wo.source_key or '—'}    Qualification required: {'Yes' if wo.qualification_required else 'No'}    Release required: {'Yes' if wo.release_required else 'No'}")
-        self.owner.setText(wo.owner or "");self.description.setPlainText(wo.description or "")
+        self._draft_loading=True
+        try:
+            self.owner.setText(wo.owner or "");self.team.setText(wo.team or "");self.description.setPlainText(wo.description or "")
+        finally:self._draft_loading=False
         self.events=self.db.list_work_order_events(wo.work_order_no);_fill(self.event_table,self.events,["from_state","to_state","reason","owner","changed_by","occurred_at"])
         self.links=self.db.list_work_order_links(wo.work_order_no);_fill(self.link_table,self.links,["entity_type","entity_key","relation","created_by","created_at"])
         self.logs=[x for x in self.db.list_work_logs(wo.equipment_id,False,1000) if x.entity_type=="WORK_ORDER" and x.entity_key==wo.work_order_no]
@@ -149,6 +161,68 @@ class WorkOrderWorkspace(QWidget):
                 f"Blockers / next controls:\n{blockers}"
             )
         except Exception as exc:self.closeout_summary.setText(f"Closeout status unavailable: {exc}")
+        self.check_draft()
+
+    def _draft_payload(self):
+        return {"description":self.description.toPlainText(),"owner":self.owner.text(),"team":self.team.text()}
+
+    def _canonical_payload(self):
+        if not self.work_order:return {}
+        return {"description":self.work_order.description or "","owner":self.work_order.owner or "","team":self.work_order.team or ""}
+
+    def schedule_draft(self):
+        if self.work_order and not self._draft_loading:self.draft_timer.start()
+
+    def save_draft(self):
+        if not self.work_order or self._draft_loading:return
+        payload=self._draft_payload()
+        if payload==self._canonical_payload():
+            self.db.clear_user_draft(self.user["username"],"WORK_ORDER",self.work_order.work_order_no,"details")
+            self.draft_bar.setVisible(False);return
+        self.db.save_user_draft(self.user["username"],"WORK_ORDER",self.work_order.work_order_no,payload,"details")
+        self.draft_label.setText("Unsaved work-order draft autosaved just now.")
+        self.draft_bar.setVisible(True)
+
+    def check_draft(self):
+        if not self.work_order:return
+        draft=self.db.get_user_draft(self.user["username"],"WORK_ORDER",self.work_order.work_order_no,"details")
+        if not draft or draft.get("payload")==self._canonical_payload():
+            if draft:self.db.clear_user_draft(self.user["username"],"WORK_ORDER",self.work_order.work_order_no,"details")
+            self.draft_bar.setVisible(False);return
+        when=draft.get("updated_at");label=when.strftime("%Y-%m-%d %H:%M") if hasattr(when,"strftime") else str(when or "")
+        self.draft_label.setText(f"Unsaved work-order draft available from {label}.")
+        self.draft_bar.setVisible(True)
+
+    def restore_draft(self):
+        if not self.work_order:return
+        draft=self.db.get_user_draft(self.user["username"],"WORK_ORDER",self.work_order.work_order_no,"details")
+        if not draft:return
+        p=draft.get("payload") or {};self._draft_loading=True
+        try:
+            self.description.setPlainText(str(p.get("description","")));self.owner.setText(str(p.get("owner","")));self.team.setText(str(p.get("team","")))
+        finally:self._draft_loading=False
+        self.draft_label.setText("Draft restored. Save Work Order Details to commit these changes.");self.draft_bar.setVisible(True)
+
+    def discard_draft(self):
+        if not self.work_order:return
+        self.db.clear_user_draft(self.user["username"],"WORK_ORDER",self.work_order.work_order_no,"details")
+        p=self._canonical_payload();self._draft_loading=True
+        try:
+            self.description.setPlainText(p.get("description",""));self.owner.setText(p.get("owner",""));self.team.setText(p.get("team",""))
+        finally:self._draft_loading=False
+        self.draft_bar.setVisible(False)
+
+    def save_details(self):
+        if not self.work_order:return
+        try:
+            row=self.db.update_work_order_details(
+                self.work_order.work_order_no,self.user["username"],
+                description=self.description.toPlainText().strip(),owner=self.owner.text().strip(),team=self.team.text().strip(),
+                expected_version=self.work_order.version,workstation="WORK-ORDER-WORKSPACE",
+            )
+            self.db.clear_user_draft(self.user["username"],"WORK_ORDER",row.work_order_no,"details")
+            self.work_order_no=row.work_order_no;self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"Work Order Details",str(exc))
 
     def advance_closeout(self):
         if not self.work_order:return
