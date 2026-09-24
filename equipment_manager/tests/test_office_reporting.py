@@ -11,6 +11,8 @@ from reporting import (
     export_incident_pptx,export_incident_xlsx,
     export_pm_execution_pptx,export_pm_execution_xlsx,
     export_work_order_pptx,export_work_order_xlsx,
+    export_qualification_pptx,export_qualification_xlsx,
+    export_release_pptx,export_release_xlsx,
 )
 
 
@@ -72,6 +74,28 @@ class OfficeReportingTests(unittest.TestCase):
             "title":"Inspect pressure controller","description":"Investigate and repair pressure instability",
             "priority":"High","owner":"ee","team":"Equipment","qualification_required":False,"release_required":False,
         },"ee","TEST")
+        self.db.save_qualification_protocol(
+            "QUAL-RPT","Reporting qualification",
+            [{"check_id":"Q1","label":"Vacuum stable","acceptance":"PASS"}],
+            "author",equipment_id="ETCH-RPT",
+        )
+        self.qual_run=self.db.start_qualification_run("ETCH-RPT","QUAL-RPT","executor")
+        self.qual_run=self.db.save_qualification_result(
+            self.qual_run.id,"Q1","PASS","Stable","executor",
+            expected_version=self.qual_run.version,
+        )
+        self.qual_run=self.db.submit_qualification_run(
+            self.qual_run.id,"executor","Qualification passed",
+            expected_version=self.qual_run.version,
+        )
+        self.release=self.db.create_release_request(
+            "ETCH-RPT","INC-RPT-1",
+            {
+                "maintenance_complete":True,"measurements_pass":True,"calibration_valid":True,
+                "safety_check":True,"verification_run":True,"critical_tickets_cleared":True,
+            },
+            "Release review packet","ee",
+        )
 
     def test_incident_pptx_and_xlsx_are_reopenable(self):
         with tempfile.TemporaryDirectory() as td:
@@ -108,6 +132,28 @@ class OfficeReportingTests(unittest.TestCase):
             self.assertIn("Summary",wb.sheetnames)
             self.assertIn("Lifecycle",wb.sheetnames)
             self.assertIn("Links",wb.sheetnames)
+
+    def test_qualification_pptx_and_xlsx_are_reopenable(self):
+        with tempfile.TemporaryDirectory() as td:
+            ppt=Path(td)/"qualification.pptx";xlsx=Path(td)/"qualification.xlsx"
+            export_qualification_pptx(self.db,self.qual_run.run_no,str(ppt))
+            export_qualification_xlsx(self.db,self.qual_run.run_no,str(xlsx))
+            deck=Presentation(str(ppt))
+            self.assertGreaterEqual(len(deck.slides),3)
+            wb=load_workbook(str(xlsx),read_only=True)
+            self.assertIn("Summary",wb.sheetnames)
+            self.assertIn("Checks",wb.sheetnames)
+
+    def test_release_pptx_and_xlsx_are_reopenable(self):
+        with tempfile.TemporaryDirectory() as td:
+            ppt=Path(td)/"release.pptx";xlsx=Path(td)/"release.xlsx"
+            export_release_pptx(self.db,self.release.id,str(ppt))
+            export_release_xlsx(self.db,self.release.id,str(xlsx))
+            deck=Presentation(str(ppt))
+            self.assertGreaterEqual(len(deck.slides),3)
+            wb=load_workbook(str(xlsx),read_only=True)
+            self.assertIn("Summary",wb.sheetnames)
+            self.assertIn("Checklist",wb.sheetnames)
 
     def test_equipment_pptx_and_xlsx_are_reopenable(self):
         with tempfile.TemporaryDirectory() as td:
