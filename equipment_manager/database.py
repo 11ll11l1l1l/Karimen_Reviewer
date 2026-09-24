@@ -4382,8 +4382,12 @@ class Database:
             else: item = PMTask(**data); s.add(item)
             s.flush(); return item
 
-    def list_pm_tasks(self):
-        with self.session() as s: return list(s.scalars(select(PMTask).order_by(PMTask.original_due_date.asc().nullslast(), PMTask.equipment_id)))
+    def list_pm_tasks(self, equipment_id: str = ""):
+        with self.session() as s:
+            stmt=select(PMTask)
+            if equipment_id:stmt=stmt.where(PMTask.equipment_id==equipment_id)
+            stmt=stmt.order_by(PMTask.original_due_date.asc().nullslast(),PMTask.equipment_id)
+            return list(s.scalars(stmt))
 
     def get_pm_task(self, task_id: int):
         with self.session() as s: return s.get(PMTask, task_id)
@@ -5144,8 +5148,11 @@ class Database:
             s.flush()
             return ex
 
-    def list_tickets(self):
-        with self.session() as s: return list(s.scalars(select(Ticket).order_by(Ticket.created_at.desc())))
+    def list_tickets(self, equipment_id: str = ""):
+        with self.session() as s:
+            stmt=select(Ticket)
+            if equipment_id:stmt=stmt.where(Ticket.equipment_id==equipment_id)
+            return list(s.scalars(stmt.order_by(Ticket.created_at.desc())))
 
     def save_ticket(
         self,
@@ -5585,11 +5592,12 @@ class Database:
             for d in s.scalars(select(Disposition).where(Disposition.equipment_id==data["equipment_id"],Disposition.active.is_(True))): d.active=False
             d=Disposition(**data); s.add(d); eq.disposition=d.state; eq.version += 1; s.flush(); return d
 
-    def list_dispositions(self, active_only: bool = False):
+    def list_dispositions(self, active_only: bool = False, equipment_id: str = ""):
         with self.session() as s:
-            stmt=select(Disposition).order_by(Disposition.effective_at.desc())
-            if active_only: stmt=stmt.where(Disposition.active.is_(True))
-            return list(s.scalars(stmt))
+            stmt=select(Disposition)
+            if active_only:stmt=stmt.where(Disposition.active.is_(True))
+            if equipment_id:stmt=stmt.where(Disposition.equipment_id==equipment_id)
+            return list(s.scalars(stmt.order_by(Disposition.effective_at.desc())))
 
     @staticmethod
     def _normalize_qualification_checks(checks: list[Any]) -> list[dict[str, Any]]:
@@ -5933,8 +5941,11 @@ class Database:
             ))
             return r
 
-    def list_release_requests(self):
-        with self.session() as s: return list(s.scalars(select(EquipmentRelease).order_by(EquipmentRelease.requested_at.desc())))
+    def list_release_requests(self, equipment_id: str = ""):
+        with self.session() as s:
+            stmt=select(EquipmentRelease)
+            if equipment_id:stmt=stmt.where(EquipmentRelease.equipment_id==equipment_id)
+            return list(s.scalars(stmt.order_by(EquipmentRelease.requested_at.desc())))
 
     def verify_release(
         self,
@@ -6597,8 +6608,11 @@ class Database:
             if item.status == "Open": item.status="Acknowledged"; item.acknowledged_by=user; item.acknowledged_at=datetime.utcnow(); item.version += 1
             s.flush(); return item
 
-    def list_endorsements(self):
-        with self.session() as s: return list(s.scalars(select(Endorsement).order_by(Endorsement.created_at.desc())))
+    def list_endorsements(self, equipment_id: str = ""):
+        with self.session() as s:
+            stmt=select(Endorsement)
+            if equipment_id:stmt=stmt.where(Endorsement.equipment_id==equipment_id)
+            return list(s.scalars(stmt.order_by(Endorsement.created_at.desc())))
 
     def save_storage_location(self, data: dict[str, Any], expected_version: int | None = None):
         with self.session() as s:
@@ -7030,8 +7044,11 @@ class Database:
             s.add(InventoryTransaction(part_number=part_number,location_code=location_code,transaction_type="Consume",quantity=-qty,equipment_id=equipment_id,related_ticket=related_ticket,user=user))
             s.flush(); return True,item.quantity
 
-    def list_inventory_transactions(self, limit: int=500):
-        with self.session() as s: return list(s.scalars(select(InventoryTransaction).order_by(InventoryTransaction.created_at.desc()).limit(limit)))
+    def list_inventory_transactions(self, limit: int=500, equipment_id: str = ""):
+        with self.session() as s:
+            stmt=select(InventoryTransaction)
+            if equipment_id:stmt=stmt.where(InventoryTransaction.equipment_id==equipment_id)
+            return list(s.scalars(stmt.order_by(InventoryTransaction.created_at.desc()).limit(limit)))
 
     @staticmethod
     def _file_sha256(path: str) -> str:
