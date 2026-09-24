@@ -72,6 +72,48 @@ class IntegrationStudioTests(unittest.TestCase):
         self.assertEqual(first.id,again.id)
         self.assertEqual(len(self.db.list_inbound_receipts()),1)
 
+    def test_alarm_incident_can_chain_to_work_order(self):
+        self.db.save_orchestration_rule({
+            "rule_id":"CRIT-ALARM-INCIDENT-CHAIN","name":"Critical alarm incident",
+            "topic_pattern":"equipment.alarm.active",
+            "condition_json":{"payload.severity":"Critical"},
+            "action_type":"CREATE_INCIDENT_FROM_ALARM",
+            "action_json":{"actor":"ee","owner":"ee"},"enabled":True,"priority":10,
+        })
+        self.db.save_orchestration_rule({
+            "rule_id":"ALARM-INCIDENT-WO","name":"Alarm incident work order",
+            "topic_pattern":"incident.created.from_alarm","condition_json":{},
+            "action_type":"CREATE_WORK_ORDER_FROM_TICKET",
+            "action_json":{"actor":"ee"},"enabled":True,"priority":20,
+        })
+        alarm=self.db.ingest_alarm("ETCH-INT","TEMP-HIGH",severity="Critical",message="Temperature high")
+        first=process_pending_rules(self.db,500)
+        self.assertEqual(first["executed"],1)
+        linked=next(x for x in self.db.list_alarms("ETCH-INT") if x.event_key==alarm.event_key)
+        self.assertTrue(linked.related_ticket)
+        second=process_pending_rules(self.db,500)
+        self.assertEqual(second["executed"],1)
+        work_orders=self.db.list_work_orders("ETCH-INT")
+        self.assertEqual(len(work_orders),1)
+        links=self.db.list_work_order_links(work_orders[0].work_order_no)
+        self.assertTrue(any(x.entity_type=="TICKET" and x.entity_key==linked.related_ticket for x in links))
+        third=process_pending_rules(self.db,500)
+        self.assertEqual(third["executed"],0)
+
+    def test_rule_can_apply_controlled_disposition(self):
+        self.db.save_orchestration_rule({
+            "rule_id":"CRIT-ALARM-HOLD","name":"Critical alarm hold",
+            "topic_pattern":"equipment.alarm.active",
+            "condition_json":{"payload.severity":"Critical"},
+            "action_type":"SET_DISPOSITION",
+            "action_json":{"actor":"ee","state":"Hold","reason":"Critical alarm","release_criteria":"Engineering review"},
+            "enabled":True,"priority":5,
+        })
+        self.db.ingest_alarm("ETCH-INT","VAC-CRIT",severity="Critical")
+        result=process_pending_rules(self.db,200)
+        self.assertEqual(result["executed"],1)
+        self.assertEqual(self.db.get_equipment("ETCH-INT").disposition,"Hold")
+
     def test_critical_alarm_rule_creates_incident_exactly_once(self):
         self.db.save_orchestration_rule({
             "rule_id":"CRIT-ALARM-INCIDENT","name":"Critical alarm incident",
