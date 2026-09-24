@@ -2524,9 +2524,18 @@ class Database:
             if entity_type:stmt=stmt.where(CustomFieldDefinition.entity_type==entity_type.strip().upper())
             if active_only:stmt=stmt.where(CustomFieldDefinition.active.is_(True))
             rows=list(s.scalars(stmt))
-            if applies_to:
-                rows=[x for x in rows if not x.applies_to or x.applies_to==applies_to]
-            return rows
+        if applies_to:
+            # A scoped definition intentionally overrides the global definition
+            # with the same field key. This keeps one logical field/value per
+            # record while allowing local labels/type/requirements to differ.
+            chosen={}
+            for row in rows:
+                if row.applies_to not in {"",applies_to}:continue
+                current=chosen.get(row.field_key)
+                if current is None or (not current.applies_to and row.applies_to==applies_to):
+                    chosen[row.field_key]=row
+            rows=sorted(chosen.values(),key=lambda x:(x.sort_order,x.label,x.field_key))
+        return rows
 
     def _normalize_custom_field_value(self, definition: CustomFieldDefinition, value: Any):
         dtype=definition.data_type
