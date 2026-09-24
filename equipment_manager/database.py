@@ -1174,6 +1174,48 @@ class RecordNotification(Base):
     __table_args__ = (UniqueConstraint("comment_id","username",name="uq_comment_notification"),)
 
 
+class CustomFieldDefinition(Base):
+    __tablename__ = "custom_field_definitions"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    field_key: Mapped[str] = mapped_column(String(100), index=True)
+    entity_type: Mapped[str] = mapped_column(String(60), index=True)
+    applies_to: Mapped[str] = mapped_column(String(160), default="", index=True)
+    label: Mapped[str] = mapped_column(String(180))
+    data_type: Mapped[str] = mapped_column(String(30), default="TEXT")
+    choices_json: Mapped[str] = mapped_column(Text, default="[]")
+    required: Mapped[bool] = mapped_column(Boolean, default=False)
+    active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    sort_order: Mapped[int] = mapped_column(Integer, default=100)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    __table_args__ = (UniqueConstraint("entity_type","field_key","applies_to",name="uq_custom_field_scope"),)
+
+
+class CustomFieldValue(Base):
+    __tablename__ = "custom_field_values"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    entity_type: Mapped[str] = mapped_column(String(60), index=True)
+    entity_key: Mapped[str] = mapped_column(String(180), index=True)
+    field_key: Mapped[str] = mapped_column(String(100), index=True)
+    value_json: Mapped[str] = mapped_column(Text, default="null")
+    updated_by: Mapped[str] = mapped_column(String(80), default="")
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    __table_args__ = (UniqueConstraint("entity_type","entity_key","field_key",name="uq_custom_field_value"),)
+
+
+class RecordTemplate(Base):
+    __tablename__ = "record_templates"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    template_id: Mapped[str] = mapped_column(String(100), unique=True, index=True)
+    entity_type: Mapped[str] = mapped_column(String(60), index=True)
+    name: Mapped[str] = mapped_column(String(180))
+    applies_to: Mapped[str] = mapped_column(String(160), default="", index=True)
+    payload_json: Mapped[str] = mapped_column(Text, default="{}")
+    active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    created_by: Mapped[str] = mapped_column(String(80), default="")
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
 class AuditLog(Base):
     __tablename__ = "audit_log"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -1275,6 +1317,9 @@ class Database:
                 table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
             ]),
             ("20260924_009","Create integration mappings inbound receipts and orchestration rules",lambda: [
+                table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
+            ]),
+            ("20260924_010","Create configurable custom fields and record templates",lambda: [
                 table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
             ]),
         ]
@@ -2439,6 +2484,140 @@ class Database:
             if not row or row.username!=username:raise ValueError("Record notification not found.")
             if row.read_at is None:row.read_at=datetime.utcnow()
             s.flush();return row
+
+    def save_custom_field_definition(self, data: dict[str,Any], expected_version: int | None = None):
+        payload=dict(data)
+        payload["entity_type"]=str(payload.get("entity_type","")).strip().upper()
+        payload["field_key"]=str(payload.get("field_key","")).strip().lower()
+        payload["applies_to"]=str(payload.get("applies_to","")).strip()
+        payload["label"]=str(payload.get("label","")).strip()
+        payload["data_type"]=str(payload.get("data_type","TEXT")).strip().upper()
+        if not payload["entity_type"] or not payload["field_key"] or not payload["label"]:
+            raise ValueError("Entity type, field key, and label are required.")
+        if payload["data_type"] not in {"TEXT","NUMBER","BOOLEAN","CHOICE","DATE"}:
+            raise ValueError("Unsupported custom field data type.")
+        choices=payload.get("choices_json",[])
+        if isinstance(choices,str):
+            try:choices=json.loads(choices or "[]")
+            except Exception as exc:raise ValueError("Choices must be valid JSON.") from exc
+        if not isinstance(choices,list):raise ValueError("Choices must be a JSON array.")
+        if payload["data_type"]=="CHOICE" and not choices:raise ValueError("Choice fields require at least one option.")
+        payload["choices_json"]=json.dumps([str(x) for x in choices],ensure_ascii=False)
+        with self.session() as s:
+            row=s.scalar(select(CustomFieldDefinition).where(
+                CustomFieldDefinition.entity_type==payload["entity_type"],
+                CustomFieldDefinition.field_key==payload["field_key"],
+                CustomFieldDefinition.applies_to==payload["applies_to"],
+            ))
+            if row:self._update_versioned(row,payload,expected_version,"Custom field definition")
+            else:row=CustomFieldDefinition(**payload);s.add(row)
+            s.flush();return row
+
+    def list_custom_field_definitions(self, entity_type: str = "", applies_to: str = "", active_only: bool = False):
+        with self.session() as s:
+            stmt=select(CustomFieldDefinition).order_by(CustomFieldDefinition.entity_type,CustomFieldDefinition.sort_order,CustomFieldDefinition.label)
+            if entity_type:stmt=stmt.where(CustomFieldDefinition.entity_type==entity_type.strip().upper())
+            if active_only:stmt=stmt.where(CustomFieldDefinition.active.is_(True))
+            rows=list(s.scalars(stmt))
+            if applies_to:
+                rows=[x for x in rows if not x.applies_to or x.applies_to==applies_to]
+            return rows
+
+    def _normalize_custom_field_value(self, definition: CustomFieldDefinition, value: Any):
+        dtype=definition.data_type
+        if value is None or value=="":
+            if definition.required:raise ValueError(f"{definition.label} is required.")
+            return None
+        if dtype=="NUMBER":
+            try:return float(value)
+            except Exception as exc:raise ValueError(f"{definition.label} requires a number.") from exc
+        if dtype=="BOOLEAN":
+            if isinstance(value,bool):return value
+            text=str(value).strip().lower()
+            if text in {"1","true","yes","y","on"}:return True
+            if text in {"0","false","no","n","off"}:return False
+            raise ValueError(f"{definition.label} requires true/false.")
+        if dtype=="CHOICE":
+            choices=json.loads(definition.choices_json or "[]")
+            if str(value) not in choices:raise ValueError(f"{definition.label} must be one of: {', '.join(choices)}")
+            return str(value)
+        if dtype=="DATE":
+            text=str(value).strip()
+            try:datetime.fromisoformat(text)
+            except Exception as exc:raise ValueError(f"{definition.label} requires an ISO date/time.") from exc
+            return text
+        return str(value)
+
+    def set_custom_field_value(self, entity_type: str, entity_key: str, field_key: str, value: Any, user: str, applies_to: str = ""):
+        et=entity_type.strip().upper();fk=field_key.strip().lower()
+        with self.session() as s:
+            defs=list(s.scalars(select(CustomFieldDefinition).where(
+                CustomFieldDefinition.entity_type==et,CustomFieldDefinition.field_key==fk,
+                CustomFieldDefinition.active.is_(True),
+            )))
+            definition=next((x for x in defs if x.applies_to==applies_to),None) or next((x for x in defs if not x.applies_to),None)
+            if not definition:raise ValueError("Active custom field definition not found for this record.")
+            normalized=self._normalize_custom_field_value(definition,value)
+            row=s.scalar(select(CustomFieldValue).where(
+                CustomFieldValue.entity_type==et,CustomFieldValue.entity_key==str(entity_key),CustomFieldValue.field_key==fk,
+            ))
+            if row:
+                row.value_json=json.dumps(normalized,ensure_ascii=False,default=str);row.updated_by=user;row.updated_at=datetime.utcnow();row.version+=1
+            else:
+                row=CustomFieldValue(
+                    entity_type=et,entity_key=str(entity_key),field_key=fk,
+                    value_json=json.dumps(normalized,ensure_ascii=False,default=str),updated_by=user,
+                );s.add(row)
+            s.add(AuditLog(user=user,action="CUSTOM_FIELD_SET",entity_type=et,entity_key=str(entity_key),detail=json.dumps({"field_key":fk,"value":normalized},default=str,sort_keys=True)))
+            s.flush();return row
+
+    def custom_field_values(self, entity_type: str, entity_key: str, applies_to: str = "") -> list[dict[str,Any]]:
+        definitions=self.list_custom_field_definitions(entity_type,applies_to,True)
+        with self.session() as s:
+            values={x.field_key:x for x in s.scalars(select(CustomFieldValue).where(
+                CustomFieldValue.entity_type==entity_type.strip().upper(),CustomFieldValue.entity_key==str(entity_key)
+            ))}
+        result=[]
+        for definition in definitions:
+            row=values.get(definition.field_key)
+            try:value=json.loads(row.value_json) if row else None
+            except Exception:value=row.value_json if row else None
+            result.append({
+                "field_key":definition.field_key,"label":definition.label,"data_type":definition.data_type,
+                "choices":json.loads(definition.choices_json or "[]"),"required":definition.required,
+                "value":value,"updated_by":row.updated_by if row else "","updated_at":row.updated_at if row else None,
+                "applies_to":definition.applies_to,
+            })
+        return result
+
+    def save_record_template(self, data: dict[str,Any], expected_version: int | None = None):
+        payload=dict(data)
+        payload["template_id"]=str(payload.get("template_id","")).strip()
+        payload["entity_type"]=str(payload.get("entity_type","")).strip().upper()
+        payload["name"]=str(payload.get("name","")).strip()
+        payload["applies_to"]=str(payload.get("applies_to","")).strip()
+        body=payload.get("payload_json",{})
+        if isinstance(body,str):
+            try:body=json.loads(body or "{}")
+            except Exception as exc:raise ValueError("Template payload must be valid JSON.") from exc
+        if not isinstance(body,dict):raise ValueError("Template payload must be a JSON object.")
+        payload["payload_json"]=json.dumps(body,ensure_ascii=False,default=str,sort_keys=True)
+        if not payload["template_id"] or not payload["entity_type"] or not payload["name"]:
+            raise ValueError("Template ID, entity type, and name are required.")
+        with self.session() as s:
+            row=s.scalar(select(RecordTemplate).where(RecordTemplate.template_id==payload["template_id"]))
+            if row:self._update_versioned(row,payload,expected_version,"Record template")
+            else:row=RecordTemplate(**payload);s.add(row)
+            s.flush();return row
+
+    def list_record_templates(self, entity_type: str = "", applies_to: str = "", active_only: bool = True):
+        with self.session() as s:
+            stmt=select(RecordTemplate).order_by(RecordTemplate.entity_type,RecordTemplate.name)
+            if entity_type:stmt=stmt.where(RecordTemplate.entity_type==entity_type.strip().upper())
+            if active_only:stmt=stmt.where(RecordTemplate.active.is_(True))
+            rows=list(s.scalars(stmt))
+            if applies_to:rows=[x for x in rows if not x.applies_to or x.applies_to==applies_to]
+            return rows
 
     def audit(self, user: str, action: str, entity_type: str, entity_key: str = "", detail: str = "", workstation: str = ""):
         with self.session() as s:
