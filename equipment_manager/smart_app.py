@@ -34,6 +34,7 @@ from incident_workspace import IncidentWorkspace
 from maintenance_planner import MaintenancePlanningWorkspace
 from pm_execution_workspace import PMExecutionWorkspace
 from return_to_service_workspace import ReturnToServiceWorkspace
+from quick_create import QuickCreateDialog
 from workflow_automation import WorkflowAutomationStudio
 from configuration_studio import ConfigurationStudio
 from work_order_workspace import WorkOrderWorkspace
@@ -200,6 +201,10 @@ class SmartMainWindow(QMainWindow):
         self.my_work_badge.setToolTip("Open personal action center")
         self.my_work_badge.clicked.connect(lambda:self.open_page("My Work"))
         top_layout.addWidget(self.my_work_badge)
+        self.quick_create=QPushButton("+ Create")
+        self.quick_create.setToolTip("Quick create incident or work order (Ctrl+N)")
+        self.quick_create.clicked.connect(self.open_quick_create)
+        top_layout.addWidget(self.quick_create)
         self.quick_capture=QPushButton("Quick Screenshot")
         self.quick_capture.setToolTip("Attach clipboard image to the current record (Ctrl+Shift+V)")
         self.quick_capture.clicked.connect(self.capture_clipboard_image)
@@ -280,6 +285,7 @@ class SmartMainWindow(QMainWindow):
         back_action=QAction("Back",self);back_action.setShortcut(QKeySequence("Alt+Left"));back_action.triggered.connect(self.go_back);self.addAction(back_action)
         forward_action=QAction("Forward",self);forward_action.setShortcut(QKeySequence("Alt+Right"));forward_action.triggered.connect(self.go_forward);self.addAction(forward_action)
         capture_action=QAction("Quick Screenshot",self);capture_action.setShortcut(QKeySequence("Ctrl+Shift+V"));capture_action.triggered.connect(self.capture_clipboard_image);self.addAction(capture_action)
+        create_action=QAction("Quick Create",self);create_action.setShortcut(QKeySequence("Ctrl+N"));create_action.triggered.connect(self.open_quick_create);self.addAction(create_action)
         self._update_history_buttons()
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.dashboard.refresh)
@@ -310,6 +316,14 @@ class SmartMainWindow(QMainWindow):
                 return "RELEASE",str(self.return_to_service.release.id),self.return_to_service.release.equipment_id
             return "EQUIPMENT",self.return_to_service.equipment_id,self.return_to_service.equipment_id
         return "","",""
+
+    def open_quick_create(self):
+        _,_,equipment_id=self.current_evidence_context()
+        dialog=QuickCreateDialog(self.db,self.user,self,equipment_id)
+        if dialog.exec()==QDialog.DialogCode.Accepted and dialog.created_entity:
+            entity_type,entity_key,equipment_id=dialog.created_entity
+            notify(f"Created {entity_type}: {entity_key}")
+            self.open_entity(entity_type,entity_key,equipment_id)
 
     def capture_clipboard_image(self):
         entity_type,entity_key,equipment_id=self.current_evidence_context()
