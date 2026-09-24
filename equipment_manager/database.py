@@ -2320,6 +2320,13 @@ class Database:
                 "message":message,"source":source,"state":state,"occurred_at":occurred_at.isoformat(),
                 "related_ticket":related_ticket,
             })
+            if state=="ACTIVE":
+                self._apply_workflow_automation_in_session(s,"ALARM_ACTIVE",{
+                    "entity_type":"ALARM","entity_key":event_key,"equipment_id":equipment_id,
+                    "alarm_code":alarm_code,"severity":severity,"message":message,"source":source,
+                    "ticket_no":related_ticket,"summary":f"{alarm_code} — {message}",
+                    "detail":json.dumps(raw_payload or {},default=str,sort_keys=True),
+                })
             s.flush();return row
 
     def link_alarm_to_ticket(self, event_key: str, ticket_no: str, user: str, workstation: str = ""):
@@ -3753,6 +3760,17 @@ class Database:
                 item = PMResult(**payload)
                 s.add(item)
             s.flush()
+            if item.result in {"SPECIFICATION FAILURE","CONTROL FAILURE","FAIL","INVALID"}:
+                task=s.get(PMTask,ex.task_id)
+                if task:
+                    self._apply_workflow_automation_in_session(s,"PM_ABNORMAL_RESULT",{
+                        "entity_type":"PM_RESULT","entity_key":f"{execution_id}:{step_no}",
+                        "equipment_id":task.equipment_id,"pm_task_id":task.id,"pm_id":task.pm_id,
+                        "step_no":step_no,"result":item.result,
+                        "summary":f"{task.pm_id} step {step_no} — {item.result}",
+                        "detail":f"{spec.activity}; value={item.value_text or item.value_numeric}; reaction={spec.reaction_plan}",
+                    })
+            s.flush()
             return item
 
     def list_pm_results(self, execution_id: int):
@@ -4476,6 +4494,12 @@ class Database:
                 "protocol_revision":row.protocol_revision,"approved_by":user,
                 "approved_at":now.isoformat(),"expires_at":row.expires_at.isoformat() if row.expires_at else None,
             })
+            self._apply_workflow_automation_in_session(s,"QUALIFICATION_APPROVED",{
+                "entity_type":"QUALIFICATION","entity_key":row.run_no,"equipment_id":row.equipment_id,
+                "protocol_id":row.protocol_id,"protocol_revision":row.protocol_revision,
+                "approved_by":user,"summary":f"Qualification approved — {row.protocol_name}",
+                "detail":note.strip(),
+            })
             s.add(AuditLog(
                 user=user,action="QUALIFICATION_APPROVE",entity_type="QUALIFICATION_RUN",entity_key=row.run_no,
                 detail=json.dumps({"equipment_id":row.equipment_id,"protocol_id":row.protocol_id,"protocol_revision":row.protocol_revision,"expires_at":row.expires_at.isoformat() if row.expires_at else None},sort_keys=True),
@@ -4679,6 +4703,11 @@ class Database:
             self._queue_integration_event(s,"equipment.released","EQUIPMENT",r.equipment_id,{
                 "equipment_id":r.equipment_id,"release_id":r.id,"approved_by":user,
                 "approved_at":r.approved_at.isoformat(),"related_ticket":r.related_ticket,
+            })
+            self._apply_workflow_automation_in_session(s,"RELEASE_APPROVED",{
+                "entity_type":"RELEASE","entity_key":str(r.id),"equipment_id":r.equipment_id,
+                "ticket_no":r.related_ticket,"approved_by":user,
+                "summary":"Equipment release approved","detail":r.notes or "",
             })
             s.add(AuditLog(
                 user=user,
