@@ -138,7 +138,8 @@ def process_inbound_file(db: Database, endpoint_id: str, file_path: str, *, repl
     digest=_sha256(path)
     previous=db.inbound_receipt_by_hash(endpoint.endpoint_id,digest)
     if previous and previous.status=="Processed" and not replay:
-        return {"status":"Duplicate","receipt_id":previous.id,"applied":0,"rejected":0,"skipped":0,"path":str(path)}
+        final=_move_file(path,endpoint.archive_path,"_archive")
+        return {"status":"Duplicate","receipt_id":previous.id,"applied":0,"rejected":0,"skipped":0,"path":str(final)}
     mapping=json.loads(endpoint.mapping_json or "{}");defaults=json.loads(endpoint.defaults_json or "{}")
     rows=_records(path,endpoint.adapter_type)
     # Validate the whole payload before applying any row to reduce partial-file writes.
