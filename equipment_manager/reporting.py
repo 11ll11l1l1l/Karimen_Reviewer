@@ -214,3 +214,109 @@ def export_equipment_xlsx(db,equipment_id: str,path: str) -> str:
     ws=wb.create_sheet("Alarms");_sheet(ws,["Code","Severity","Message","State","Occurred","Cleared","Ticket"],[[x.alarm_code,x.severity,x.message,x.state,x.occurred_at,x.cleared_at,x.related_ticket] for x in alarms])
     ws=wb.create_sheet("Attachments");_sheet(ws,["Name","Category","Caption","Tags","Path","Added By","Added"],[[x.original_name,x.category,x.caption,x.tags,x.stored_path,x.created_by,x.created_at] for x in db.list_attachments("EQUIPMENT",equipment_id)])
     Path(path).parent.mkdir(parents=True,exist_ok=True);wb.save(path);return str(path)
+
+
+def export_pm_execution_pptx(db,task_id: int,path: str) -> str:
+    task=db.get_pm_task(int(task_id))
+    if not task:raise ValueError("PM task not found")
+    execution=db.get_pm_execution_for_task(task.id)
+    if not execution:raise ValueError("PM execution has not started.")
+    specs=db.list_pm_execution_specs(execution.id);results={x.step_no:x for x in db.list_pm_results(execution.id)}
+    requirements=db.list_pm_execution_requirements(execution.id);acks={x.requirement_id:x for x in db.list_pm_requirement_acks(execution.id)}
+    reservations=[x for x in db.list_reservations() if x.pm_task_id==task.id]
+    logs=[x for x in db.list_work_logs(task.equipment_id,False,1000) if x.entity_type=="PM_EXECUTION" and x.entity_key==str(execution.id)]
+    attachments=db.list_attachments("PM_EXECUTION",str(execution.id))
+    prs=Presentation()
+    slide=prs.slides.add_slide(prs.slide_layouts[0]);slide.shapes.title.text=f"{task.pm_id} — {task.pm_name}";slide.placeholders[1].text=f"{task.equipment_id} | {task.status} | Assigned: {task.assigned_to or '—'}"
+    slide=prs.slides.add_slide(prs.slide_layouts[1]);_add_bullets(slide,"PM Execution Summary",[
+        f"Task ID: {task.id}",f"Equipment: {task.equipment_id}",f"Scheduled: {_text(task.scheduled_date or task.original_due_date)}",
+        f"Execution status: {execution.status}",f"Started: {_text(execution.started_at)} by {execution.started_by or '—'}",
+        f"Completed: {_text(execution.completed_at)} by {execution.completed_by or '—'}",
+    ])
+    rows=[]
+    for spec in specs:
+        result=results.get(spec.step_no)
+        value=(result.value_text if result and result.value_text else (result.value_numeric if result else ""))
+        rows.append([spec.step_no,spec.activity,spec.method,spec.unit,result.result if result else "OPEN",value,result.comment if result else ""])
+    slide=prs.slides.add_slide(prs.slide_layouts[5]);_add_table(slide,"Checklist / Measurements",["Step","Activity","Method","Unit","Result","Value","Comment"],rows,16)
+    req_rows=[]
+    for req in requirements:
+        ack=acks.get(req.requirement_id)
+        req_rows.append([req.requirement_type,req.requirement_key,req.description,req.quantity,req.mandatory,ack.acknowledged_by if ack else ""])
+    slide=prs.slides.add_slide(prs.slide_layouts[5]);_add_table(slide,"Requirements / Readiness",["Type","Key","Description","Qty","Mandatory","Acknowledged"],req_rows,14)
+    slide=prs.slides.add_slide(prs.slide_layouts[5]);_add_table(slide,"Parts / Reservations",["Part","Location","Qty","Status","Reserved By","Time"],[[x.part_number,x.location_code,x.quantity,x.status,x.reserved_by,x.reserved_at] for x in reservations],14)
+    slide=prs.slides.add_slide(prs.slide_layouts[5]);_add_table(slide,"Labor / Work Log",["User","Type","Start","End","Minutes","Status","Note"],[[x.username,x.work_type,x.started_at,x.ended_at,x.duration_minutes,x.status,x.note] for x in logs],14)
+    _add_evidence_slides(prs,attachments,"PM")
+    Path(path).parent.mkdir(parents=True,exist_ok=True);prs.save(path);return str(path)
+
+
+def export_pm_execution_xlsx(db,task_id: int,path: str) -> str:
+    task=db.get_pm_task(int(task_id))
+    if not task:raise ValueError("PM task not found")
+    execution=db.get_pm_execution_for_task(task.id)
+    if not execution:raise ValueError("PM execution has not started.")
+    specs=db.list_pm_execution_specs(execution.id);results={x.step_no:x for x in db.list_pm_results(execution.id)}
+    requirements=db.list_pm_execution_requirements(execution.id);acks={x.requirement_id:x for x in db.list_pm_requirement_acks(execution.id)}
+    reservations=[x for x in db.list_reservations() if x.pm_task_id==task.id]
+    logs=[x for x in db.list_work_logs(task.equipment_id,False,1000) if x.entity_type=="PM_EXECUTION" and x.entity_key==str(execution.id)]
+    attachments=db.list_attachments("PM_EXECUTION",str(execution.id))
+    wb=Workbook();summary=wb.active;summary.title="Summary"
+    _sheet(summary,["Field","Value"],[
+        ["Task ID",task.id],["Equipment",task.equipment_id],["PM ID",task.pm_id],["PM Name",task.pm_name],["Task Status",task.status],
+        ["Scheduled",task.scheduled_date or task.original_due_date],["Execution",execution.status],["Started By",execution.started_by],["Started",execution.started_at],
+        ["Completed By",execution.completed_by],["Completed",execution.completed_at],
+    ])
+    ws=wb.create_sheet("Checklist");_sheet(ws,["Step","Activity","Method","Unit","Result","Value Text","Value Numeric","Comment","Entered By","Entered"],[
+        [s.step_no,s.activity,s.method,s.unit,(results.get(s.step_no).result if results.get(s.step_no) else "OPEN"),
+         (results.get(s.step_no).value_text if results.get(s.step_no) else ""),(results.get(s.step_no).value_numeric if results.get(s.step_no) else ""),
+         (results.get(s.step_no).comment if results.get(s.step_no) else ""),(results.get(s.step_no).entered_by if results.get(s.step_no) else ""),
+         (results.get(s.step_no).entered_at if results.get(s.step_no) else "")] for s in specs
+    ])
+    ws=wb.create_sheet("Requirements");_sheet(ws,["ID","Type","Key","Description","Qty","Mandatory","Acknowledged By","Acknowledged"],[
+        [r.requirement_id,r.requirement_type,r.requirement_key,r.description,r.quantity,r.mandatory,(acks.get(r.requirement_id).acknowledged_by if acks.get(r.requirement_id) else ""),(acks.get(r.requirement_id).acknowledged_at if acks.get(r.requirement_id) else "")] for r in requirements
+    ])
+    ws=wb.create_sheet("Parts");_sheet(ws,["Part","Location","Qty","Status","Reserved By","Reserved"],[[x.part_number,x.location_code,x.quantity,x.status,x.reserved_by,x.reserved_at] for x in reservations])
+    ws=wb.create_sheet("Labor");_sheet(ws,["User","Type","Start","End","Minutes","Status","Note"],[[x.username,x.work_type,x.started_at,x.ended_at,x.duration_minutes,x.status,x.note] for x in logs])
+    ws=wb.create_sheet("Attachments");_sheet(ws,["Name","Category","Caption","Tags","Path","Added By","Added"],[[x.original_name,x.category,x.caption,x.tags,x.stored_path,x.created_by,x.created_at] for x in attachments])
+    Path(path).parent.mkdir(parents=True,exist_ok=True);wb.save(path);return str(path)
+
+
+def export_work_order_pptx(db,work_order_no: str,path: str) -> str:
+    wo=db.get_work_order(work_order_no)
+    if not wo:raise ValueError("Work order not found")
+    events=db.list_work_order_events(work_order_no);links=db.list_work_order_links(work_order_no)
+    logs=[x for x in db.list_work_logs(wo.equipment_id,False,1000) if x.entity_type=="WORK_ORDER" and x.entity_key==work_order_no]
+    attachments=db.list_attachments("WORK_ORDER",work_order_no)
+    close=db.work_order_closeout_status(work_order_no)
+    prs=Presentation()
+    slide=prs.slides.add_slide(prs.slide_layouts[0]);slide.shapes.title.text=f"{wo.work_order_no} — {wo.title}";slide.placeholders[1].text=f"{wo.equipment_id} | {wo.priority} | {wo.status} | Owner: {wo.owner or '—'}"
+    slide=prs.slides.add_slide(prs.slide_layouts[1]);_add_bullets(slide,"Work Scope / Closeout",[
+        f"Source: {wo.source_type}:{wo.source_key or '—'}",f"Description: {wo.description}",f"Team: {wo.team or '—'}",
+        f"Qualification required: {'Yes' if wo.qualification_required else 'No'}",f"Release required: {'Yes' if wo.release_required else 'No'}",
+        f"Labor entries: {close.get('labor_entries',0)}",f"Evidence attachments: {close.get('attachment_count',0)}",
+        f"Blockers: {'; '.join(close.get('blockers',[])) or 'None'}",
+    ])
+    slide=prs.slides.add_slide(prs.slide_layouts[5]);_add_table(slide,"Linked Records",["Type","Key","Relation","Created By","Created"],[[x.entity_type,x.entity_key,x.relation,x.created_by,x.created_at] for x in links],14)
+    slide=prs.slides.add_slide(prs.slide_layouts[5]);_add_table(slide,"Lifecycle",["From","To","Reason","Owner","Changed By","Time"],[[x.from_state,x.to_state,x.reason,x.owner,x.changed_by,x.occurred_at] for x in events],16)
+    slide=prs.slides.add_slide(prs.slide_layouts[5]);_add_table(slide,"Labor",["User","Type","Start","End","Minutes","Status","Note"],[[x.username,x.work_type,x.started_at,x.ended_at,x.duration_minutes,x.status,x.note] for x in logs],14)
+    _add_evidence_slides(prs,attachments,"Work Order")
+    Path(path).parent.mkdir(parents=True,exist_ok=True);prs.save(path);return str(path)
+
+
+def export_work_order_xlsx(db,work_order_no: str,path: str) -> str:
+    wo=db.get_work_order(work_order_no)
+    if not wo:raise ValueError("Work order not found")
+    events=db.list_work_order_events(work_order_no);links=db.list_work_order_links(work_order_no)
+    logs=[x for x in db.list_work_logs(wo.equipment_id,False,1000) if x.entity_type=="WORK_ORDER" and x.entity_key==work_order_no]
+    attachments=db.list_attachments("WORK_ORDER",work_order_no);close=db.work_order_closeout_status(work_order_no)
+    wb=Workbook();summary=wb.active;summary.title="Summary"
+    _sheet(summary,["Field","Value"],[
+        ["Work Order",wo.work_order_no],["Equipment",wo.equipment_id],["Title",wo.title],["Status",wo.status],["Priority",wo.priority],["Owner",wo.owner],["Team",wo.team],
+        ["Source",f"{wo.source_type}:{wo.source_key}"],["Description",wo.description],["Qualification Required",wo.qualification_required],["Release Required",wo.release_required],
+        ["Closeout Blockers","; ".join(close.get("blockers",[]))],
+    ])
+    ws=wb.create_sheet("Lifecycle");_sheet(ws,["From","To","Reason","Owner","Changed By","Time"],[[x.from_state,x.to_state,x.reason,x.owner,x.changed_by,x.occurred_at] for x in events])
+    ws=wb.create_sheet("Links");_sheet(ws,["Type","Key","Relation","Created By","Created"],[[x.entity_type,x.entity_key,x.relation,x.created_by,x.created_at] for x in links])
+    ws=wb.create_sheet("Labor");_sheet(ws,["User","Type","Start","End","Minutes","Status","Note"],[[x.username,x.work_type,x.started_at,x.ended_at,x.duration_minutes,x.status,x.note] for x in logs])
+    ws=wb.create_sheet("Attachments");_sheet(ws,["Name","Category","Caption","Tags","Path","Added By","Added"],[[x.original_name,x.category,x.caption,x.tags,x.stored_path,x.created_by,x.created_at] for x in attachments])
+    Path(path).parent.mkdir(parents=True,exist_ok=True);wb.save(path);return str(path)
