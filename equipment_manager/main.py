@@ -37,6 +37,7 @@ from excel_reconcile import (
 )
 from alarm_correlation import correlate_alarm_bursts
 from integrations import dispatch_pending
+from inbound_integrations import process_inbound_endpoint, process_inbound_file
 from reporting import export_qualification_pptx, export_qualification_xlsx, export_release_pptx, export_release_xlsx
 from services import (
     auto_mapping, calculate_next_due, copy_clipboard_image, dataframe_to_equipment, dataframe_to_inventory, dataframe_to_tickets, dataframe_to_pm_backlog,
@@ -1994,6 +1995,52 @@ class DocumentPage(QWidget):
         QMessageBox.information(self,"Integrity","PASS — SHA-256 matches." if ok else f"FAIL — {detail}")
 
 
+class InboundEndpointDialog(QDialog):
+    def __init__(self,row=None,parent=None):
+        super().__init__(parent);self.row=row;self.setWindowTitle("Inbound Integration Endpoint");self.resize(720,560)
+        f=QFormLayout(self)
+        self.endpoint=QLineEdit();self.name=QLineEdit();self.adapter=QComboBox();self.adapter.addItems(["FILE_JSON","FILE_CSV"])
+        self.entity=QComboBox();self.entity.addItems(["ALARM","METER"]);self.source=QLineEdit();self.pattern=QLineEdit()
+        self.mapping=QTextEdit();self.defaults=QTextEdit();self.archive=QLineEdit();self.quarantine=QLineEdit();self.enabled=QCheckBox("Enabled");self.enabled.setChecked(True)
+        self.mapping.setPlaceholderText('{"equipment_id":"tool","alarm_code":"code","severity":"severity","message":"message"}')
+        self.defaults.setPlaceholderText('{"state":"ACTIVE","source":"FDC"}')
+        for label,w in [
+            ("Endpoint ID",self.endpoint),("Name",self.name),("Adapter",self.adapter),("Target entity",self.entity),
+            ("Source folder",self.source),("File pattern",self.pattern),("Field mapping JSON",self.mapping),
+            ("Defaults JSON",self.defaults),("Archive folder",self.archive),("Quarantine folder",self.quarantine),
+        ]:f.addRow(label,w)
+        f.addRow("",self.enabled)
+        note=QLabel("ALARM minimum mapping: equipment_id + alarm_code. METER minimum mapping: equipment_id + meter_code + value. JSON mappings may use dotted source keys.")
+        note.setWordWrap(True);f.addRow("",note)
+        b=QDialogButtonBox(QDialogButtonBox.StandardButton.Save|QDialogButtonBox.StandardButton.Cancel);b.accepted.connect(self._accept);b.rejected.connect(self.reject);f.addRow(b)
+        if row:
+            self.endpoint.setText(row.endpoint_id);self.endpoint.setReadOnly(True);self.name.setText(row.name);self.adapter.setCurrentText(row.adapter_type)
+            self.entity.setCurrentText(row.entity_type);self.source.setText(row.source_path);self.pattern.setText(row.file_pattern)
+            self.mapping.setPlainText(row.mapping_json or "{}");self.defaults.setPlainText(row.defaults_json or "{}")
+            self.archive.setText(row.archive_path);self.quarantine.setText(row.quarantine_path);self.enabled.setChecked(row.enabled)
+        else:
+            self.pattern.setText("*.json");self.mapping.setPlainText("{}");self.defaults.setPlainText("{}")
+
+    def _accept(self):
+        try:
+            mapping=json.loads(self.mapping.toPlainText() or "{}");defaults=json.loads(self.defaults.toPlainText() or "{}")
+            if not isinstance(mapping,dict) or not isinstance(defaults,dict):raise ValueError("Mapping and defaults must be JSON objects.")
+        except Exception as exc:QMessageBox.warning(self,"Inbound Integration",str(exc));return
+        if not self.endpoint.text().strip() or not self.source.text().strip():
+            QMessageBox.warning(self,"Inbound Integration","Endpoint ID and source folder are required.");return
+        self.accept()
+
+    def data(self):
+        return {
+            "endpoint_id":self.endpoint.text().strip(),"name":self.name.text().strip(),
+            "adapter_type":self.adapter.currentText(),"entity_type":self.entity.currentText(),
+            "source_path":self.source.text().strip(),"file_pattern":self.pattern.text().strip(),
+            "mapping_json":self.mapping.toPlainText().strip() or "{}","defaults_json":self.defaults.toPlainText().strip() or "{}",
+            "archive_path":self.archive.text().strip(),"quarantine_path":self.quarantine.text().strip(),
+            "enabled":self.enabled.isChecked(),
+        }
+
+
 class IntegrationEndpointDialog(QDialog):
     def __init__(self,row=None,parent=None):
         super().__init__(parent);self.row=row;self.setWindowTitle("Integration Endpoint");f=QFormLayout(self)
@@ -2015,7 +2062,7 @@ class UserDialog(QDialog):
 
 class AdminPage(QWidget):
     def __init__(self,db,user):
-        super().__init__();self.db=db;self.user=user;self.rows=[];self.attempts=[];self.scope_rows=[];self.cert_rows=[];self.integration_endpoints=[];self.integration_deliveries=[];v=QVBoxLayout(self)
+        super().__init__();self.db=db;self.user=user;self.rows=[];self.attempts=[];self.scope_rows=[];self.cert_rows=[];self.integration_endpoints=[];self.integration_deliveries=[];self.inbound_endpoints=[];self.inbound_receipts=[];v=QVBoxLayout(self)
         h=QHBoxLayout();add=QPushButton("Add User");role=QPushButton("Change Role");toggle=QPushButton("Enable / Disable");reset=QPushButton("Reset Password");unlock=QPushButton("Unlock Login");override=QPushButton("Permission Override");scope=QPushButton("Access Scope");clearscope=QPushButton("Clear Scopes");cert=QPushButton("Certification");integration=QPushButton("Integration Endpoint");backupb=QPushButton("Create DB Backup");verifyb=QPushButton("Verify Backup")
         add.clicked.connect(self.add);role.clicked.connect(self.role);toggle.clicked.connect(self.toggle);reset.clicked.connect(self.reset);unlock.clicked.connect(self.unlock);override.clicked.connect(self.override);scope.clicked.connect(self.manage_scope);clearscope.clicked.connect(self.clear_scopes);cert.clicked.connect(self.manage_certification);integration.clicked.connect(self.manage_integration);backupb.clicked.connect(self.create_backup);verifyb.clicked.connect(self.verify_backup)
         allowed=db.has_permission(user,"user.admin") or user.get("role")=="Administrator";[x.setEnabled(allowed) for x in [add,role,toggle,reset,unlock,override,scope,clearscope,cert,integration,backupb,verifyb]];[h.addWidget(x) for x in [add,role,toggle,reset,unlock,override,scope,clearscope,cert,integration,backupb,verifyb]];h.addStretch(1);v.addLayout(h)
@@ -2033,6 +2080,14 @@ class AdminPage(QWidget):
         self.integration_table=make_table(["Endpoint","Name","Adapter","Target","Topics","Auth Env","Enabled","Ver"])
         self.delivery_table=make_table(["ID","Topic","Entity","Key","Endpoint","Adapter","Target","Status","Attempts","Next Attempt","Last Error","Sent"])
         vi.addWidget(self.integration_table,1);vi.addWidget(self.delivery_table,2);tabs.addTab(wi,"Integrations / Outbox")
+        win=QWidget();vin=QVBoxLayout(win);inh=QHBoxLayout()
+        addin=QPushButton("New Inbound");editin=QPushButton("Edit Selected");processin=QPushButton("Process Selected Feed");replayin=QPushButton("Replay Selected Receipt")
+        addin.clicked.connect(self.add_inbound_endpoint);editin.clicked.connect(self.edit_inbound_endpoint);processin.clicked.connect(self.process_inbound);replayin.clicked.connect(self.replay_inbound_receipt)
+        for x in [addin,editin,processin,replayin]:x.setEnabled(allowed);inh.addWidget(x)
+        inh.addStretch(1);vin.addLayout(inh)
+        self.inbound_table=make_table(["Endpoint","Name","Adapter","Entity","Source","Pattern","Archive","Quarantine","Enabled","Ver"])
+        self.receipt_table=make_table(["ID","Endpoint","Source","Status","Total","Applied","Rejected","Error","Processed"])
+        vin.addWidget(self.inbound_table,1);vin.addWidget(self.receipt_table,2);tabs.addTab(win,"Inbound Integrations")
         wa=QWidget();va=QVBoxLayout(wa);self.attempt_table=make_table(["Username","Success","Reason","Workstation","Attempted"]);va.addWidget(self.attempt_table);tabs.addTab(wa,"Login Attempts")
         v.addWidget(tabs);self.refresh()
 
@@ -2058,6 +2113,52 @@ class AdminPage(QWidget):
         fields=["id","topic","entity_type","entity_key","endpoint_id","adapter_type","target","status","attempts","next_attempt_at","last_error","sent_at"]
         for r,row in enumerate(self.integration_deliveries):
             for col,key in enumerate(fields):self.delivery_table.setItem(r,col,ti(row.get(key,"")))
+        self.inbound_endpoints=self.db.list_inbound_endpoints()
+        fill_table(self.inbound_table,self.inbound_endpoints,["endpoint_id","name","adapter_type","entity_type","source_path","file_pattern","archive_path","quarantine_path","enabled","version"])
+        self.inbound_receipts=self.db.list_inbound_receipts(limit=1000)
+        fill_table(self.receipt_table,self.inbound_receipts,["id","endpoint_id","source_name","status","records_total","records_applied","records_rejected","error","processed_at"])
+
+    def selected_inbound_endpoint(self):
+        return selected_row(self.inbound_table,self.inbound_endpoints)
+
+    def selected_inbound_receipt(self):
+        return selected_row(self.receipt_table,self.inbound_receipts)
+
+    def add_inbound_endpoint(self):
+        d=InboundEndpointDialog(parent=self)
+        if d.exec()==QDialog.DialogCode.Accepted:
+            try:self.db.save_inbound_endpoint(d.data());self.refresh()
+            except Exception as exc:QMessageBox.critical(self,"Inbound Integration",str(exc))
+
+    def edit_inbound_endpoint(self):
+        row=self.selected_inbound_endpoint()
+        if not row:return
+        d=InboundEndpointDialog(row,self)
+        if d.exec()==QDialog.DialogCode.Accepted:
+            try:self.db.save_inbound_endpoint(d.data(),row.version);self.refresh()
+            except Exception as exc:QMessageBox.critical(self,"Inbound Integration",str(exc))
+
+    def process_inbound(self):
+        row=self.selected_inbound_endpoint()
+        if not row:return
+        try:
+            stats=process_inbound_endpoint(self.db,row.endpoint_id,200);self.refresh()
+            QMessageBox.information(self,"Inbound Integration",f"Files: {stats['files']}\nProcessed: {stats['processed']}\nQuarantined/partial: {stats['quarantined']}\nDuplicates: {stats['duplicates']}\nRecords applied: {stats['applied']}\nRejected: {stats['rejected']}")
+        except Exception as exc:QMessageBox.critical(self,"Inbound Integration",str(exc))
+
+    def replay_inbound_receipt(self):
+        row=self.selected_inbound_receipt()
+        if not row:return
+        try:detail=json.loads(row.detail_json or "{}")
+        except Exception:detail={}
+        path=str(detail.get("final_path") or "")
+        if not path:
+            QMessageBox.warning(self,"Inbound Replay","Receipt does not contain a replayable file path.");return
+        if QMessageBox.question(self,"Inbound Replay",f"Replay receipt {row.id}?\n{path}")!=QMessageBox.StandardButton.Yes:return
+        try:
+            result=process_inbound_file(self.db,row.endpoint_id,path,replay=True);self.refresh()
+            QMessageBox.information(self,"Inbound Replay",f"Status: {result['status']}\nApplied: {result['applied']}\nRejected: {result['rejected']}\nSkipped: {result['skipped']}")
+        except Exception as exc:QMessageBox.critical(self,"Inbound Replay",str(exc))
 
     def selected_delivery(self):
         return selected_row(self.delivery_table,self.integration_deliveries)
