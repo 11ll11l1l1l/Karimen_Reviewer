@@ -75,6 +75,23 @@ class UserFavorite(Base):
     __table_args__ = (UniqueConstraint("username","entity_type","entity_key",name="uq_user_favorite"),)
 
 
+class UserNotification(Base):
+    __tablename__ = "user_notifications"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    username: Mapped[str] = mapped_column(String(80), index=True)
+    category: Mapped[str] = mapped_column(String(60), index=True)
+    severity: Mapped[str] = mapped_column(String(30), default="INFO", index=True)
+    title: Mapped[str] = mapped_column(String(250))
+    body: Mapped[str] = mapped_column(Text, default="")
+    entity_type: Mapped[str] = mapped_column(String(60), default="", index=True)
+    entity_key: Mapped[str] = mapped_column(String(180), default="", index=True)
+    equipment_id: Mapped[str] = mapped_column(String(100), default="", index=True)
+    dedupe_key: Mapped[str] = mapped_column(String(250), default="", index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    read_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    dismissed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+
+
 class UserDraft(Base):
     __tablename__ = "user_drafts"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -1508,6 +1525,9 @@ class Database:
                 table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
             ]),
             ("20260924_015","Create persistent per-user record drafts",lambda: [
+                table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
+            ]),
+            ("20260924_016","Create persistent user notification center",lambda: [
                 table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
             ]),
         ]
@@ -3008,6 +3028,65 @@ class Database:
             if row:row.value_json=encoded;row.updated_at=datetime.utcnow()
             else:row=UserPreference(username=username,preference_key=key,value_json=encoded);s.add(row)
             s.flush();return row
+
+    def _add_notification_in_session(
+        self,s,username: str,category: str,title: str,body: str="",
+        severity: str="INFO",entity_type: str="",entity_key: str="",equipment_id: str="",dedupe_key: str="",
+    ):
+        username=(username or "").strip()
+        if not username:return None
+        if not s.scalar(select(User).where(User.username==username,User.active.is_(True))):return None
+        dedupe_key=(dedupe_key or "").strip()
+        if dedupe_key:
+            existing=s.scalar(select(UserNotification).where(
+                UserNotification.username==username,UserNotification.dedupe_key==dedupe_key,
+                UserNotification.dismissed_at.is_(None),UserNotification.read_at.is_(None),
+            ).order_by(UserNotification.id.desc()))
+            if existing:
+                existing.title=title;existing.body=body;existing.severity=severity;existing.created_at=datetime.utcnow()
+                return existing
+        row=UserNotification(
+            username=username,category=category.strip().upper() or "GENERAL",severity=severity.strip().upper() or "INFO",
+            title=title.strip(),body=body.strip(),entity_type=entity_type.strip().upper(),entity_key=str(entity_key or ""),
+            equipment_id=equipment_id.strip(),dedupe_key=dedupe_key,
+        )
+        s.add(row);s.flush();return row
+
+    def create_notification(self,username: str,category: str,title: str,body: str="",severity: str="INFO",entity_type: str="",entity_key: str="",equipment_id: str="",dedupe_key: str=""):
+        with self.session() as s:
+            return self._add_notification_in_session(s,username,category,title,body,severity,entity_type,entity_key,equipment_id,dedupe_key)
+
+    def list_notifications(self,username: str,unread_only: bool=False,include_dismissed: bool=False,limit: int=500):
+        with self.session() as s:
+            stmt=select(UserNotification).where(UserNotification.username==username)
+            if unread_only:stmt=stmt.where(UserNotification.read_at.is_(None),UserNotification.dismissed_at.is_(None))
+            elif not include_dismissed:stmt=stmt.where(UserNotification.dismissed_at.is_(None))
+            return list(s.scalars(stmt.order_by(UserNotification.created_at.desc(),UserNotification.id.desc()).limit(max(1,min(int(limit),5000)))))
+
+    def unread_notification_count(self,username: str) -> int:
+        with self.session() as s:
+            return int(s.scalar(select(func.count()).select_from(UserNotification).where(
+                UserNotification.username==username,UserNotification.read_at.is_(None),UserNotification.dismissed_at.is_(None),
+            )) or 0)
+
+    def mark_notification_read(self,notification_id: int,username: str,read: bool=True):
+        with self.session() as s:
+            row=s.get(UserNotification,int(notification_id))
+            if not row or row.username!=username:raise ValueError("Notification not found.")
+            row.read_at=datetime.utcnow() if read else None;s.flush();return row
+
+    def dismiss_notification(self,notification_id: int,username: str):
+        with self.session() as s:
+            row=s.get(UserNotification,int(notification_id))
+            if not row or row.username!=username:raise ValueError("Notification not found.")
+            row.dismissed_at=datetime.utcnow();s.flush();return row
+
+    def mark_all_notifications_read(self,username: str) -> int:
+        with self.session() as s:
+            rows=list(s.scalars(select(UserNotification).where(UserNotification.username==username,UserNotification.read_at.is_(None),UserNotification.dismissed_at.is_(None))))
+            now=datetime.utcnow()
+            for row in rows:row.read_at=now
+            return len(rows)
 
     def save_user_draft(self, username: str, entity_type: str, entity_key: str, payload: dict[str,Any], draft_key: str = "main"):
         username=username.strip();entity_type=entity_type.strip().upper();entity_key=str(entity_key);draft_key=draft_key.strip() or "main"
@@ -5314,6 +5393,15 @@ class Database:
                         ticket_no=ticket.ticket_no,from_level=old,to_level=target,
                         reason=control.escalation_reason,user="system",occurred_at=now,
                     ))
+                    if ticket.owner:
+                        self._add_notification_in_session(
+                            s,ticket.owner,"INCIDENT_ESCALATION",
+                            f"{ticket.ticket_no} escalated to L{target}",
+                            f"{ticket.title}\n{control.escalation_reason}",
+                            "CRITICAL" if target>=3 or ticket.priority=="P1" else "HIGH",
+                            "TICKET",ticket.ticket_no,ticket.equipment_id,
+                            f"incident-escalation:{ticket.ticket_no}:L{target}",
+                        )
                     escalated.append(ticket.ticket_no)
             s.flush()
         return escalated
@@ -6185,6 +6273,14 @@ class Database:
                 "work_order_no":row.work_order_no,"equipment_id":row.equipment_id,
                 "from_state":previous,"to_state":target_state,"owner":row.owner,"changed_by":user,
             })
+            if row.owner and row.owner!=user:
+                self._add_notification_in_session(
+                    s,row.owner,"WORK_ORDER",f"{row.work_order_no} · {target_state}",
+                    f"{row.title}\nEquipment: {row.equipment_id}"+(f"\n{reason.strip()}" if reason.strip() else ""),
+                    "HIGH" if target_state in {"Assigned","Waiting Parts","Ready for Qualification"} else "INFO",
+                    "WORK_ORDER",row.work_order_no,row.equipment_id,
+                    f"work-order:{row.work_order_no}:{target_state}:{row.version}",
+                )
             s.flush();return row
 
     def applicable_qualification_protocols(self, equipment_id: str):
