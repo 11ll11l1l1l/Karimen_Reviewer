@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+import json
 
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
@@ -11,6 +12,7 @@ from PySide6.QtWidgets import (
 from table_productivity import install_table_productivity
 from workspaces import AttachmentPanel
 from collaboration_panel import CollaborationPanel
+from custom_field_panel import CustomFieldPanel
 from reporting import export_work_order_pptx, export_work_order_xlsx
 
 
@@ -93,6 +95,7 @@ class WorkOrderWorkspace(QWidget):
         cov.addWidget(self.closeout_summary);cov.addStretch(1);tabs.addTab(closeout,"Qualification / Release Closeout")
         self.attachments=AttachmentPanel(db,user);tabs.addTab(self.attachments,"Evidence / Attachments")
         self.collaboration=CollaborationPanel(db,user);tabs.addTab(self.collaboration,"Discussion / Team")
+        self.custom_fields=CustomFieldPanel(db,user);tabs.addTab(self.custom_fields,"Configured Fields")
         self.refresh()
 
     def refresh(self):
@@ -115,7 +118,7 @@ class WorkOrderWorkspace(QWidget):
         if row:self.work_order_no=row.work_order_no
         self.work_order=self.db.get_work_order(self.work_order_no) if self.work_order_no else None
         if not self.work_order:
-            self.context.setText("Select or create a work order.");self.description.clear();self.owner.clear();self.closeout_summary.setText("Select a work order.");self.attachments.set_entity("","");self.collaboration.set_entity("","");return
+            self.context.setText("Select or create a work order.");self.description.clear();self.owner.clear();self.closeout_summary.setText("Select a work order.");self.attachments.set_entity("","");self.collaboration.set_entity("","");self.custom_fields.set_entity("","");return
         wo=self.work_order
         self.title.setText(f"{wo.work_order_no} · {wo.title}")
         self.context.setText(f"{wo.equipment_id}    {wo.priority}    {wo.status}    Source: {wo.source_type}:{wo.source_key or '—'}    Qualification required: {'Yes' if wo.qualification_required else 'No'}    Release required: {'Yes' if wo.release_required else 'No'}")
@@ -126,6 +129,8 @@ class WorkOrderWorkspace(QWidget):
         _fill(self.labor_table,self.logs,["id","username","work_type","started_at","ended_at","duration_minutes","status","note"])
         self.attachments.set_entity("WORK_ORDER",wo.work_order_no,wo.equipment_id)
         self.collaboration.set_entity("WORK_ORDER",wo.work_order_no,wo.equipment_id)
+        eq=self.db.get_equipment(wo.equipment_id)
+        self.custom_fields.set_entity("WORK_ORDER",wo.work_order_no,eq.equipment_type if eq else "")
         try:
             close=self.db.work_order_closeout_status(wo.work_order_no)
             blockers="\n".join(f"• {x}" for x in close["blockers"]) or "• No current closeout blockers detected."
@@ -192,12 +197,28 @@ class WorkOrderWorkspace(QWidget):
     def new_engineering(self):
         equipment,ok=QInputDialog.getText(self,"New work order","Equipment ID")
         if not ok or not equipment.strip():return
-        title,ok=QInputDialog.getText(self,"New work order","Work title")
+        eq=self.db.get_equipment(equipment.strip())
+        if not eq:QMessageBox.warning(self,"Work order","Equipment not found.");return
+        templates=self.db.list_record_templates("WORK_ORDER",eq.equipment_type,True)
+        payload={}
+        if templates:
+            labels=["<Blank>"]+[f"{x.template_id} — {x.name}" for x in templates]
+            choice,ok=QInputDialog.getItem(self,"New work order","Template",labels,0,False)
+            if not ok:return
+            if choice!="<Blank>":payload=json.loads(templates[labels.index(choice)-1].payload_json or "{}")
+        title,ok=QInputDialog.getText(self,"New work order","Work title",text=str(payload.get("title","")))
         if not ok or not title.strip():return
-        desc,ok=QInputDialog.getMultiLineText(self,"New work order","Work scope / description")
+        desc,ok=QInputDialog.getMultiLineText(self,"New work order","Work scope / description",str(payload.get("description","")))
         if not ok:return
+        data={
+            "equipment_id":equipment.strip(),"source_type":"ENGINEERING","title":title.strip(),"description":desc,
+            "owner":str(payload.get("owner") or self.user["username"]),"team":str(payload.get("team","")),
+            "priority":str(payload.get("priority","Normal")),
+            "qualification_required":bool(payload.get("qualification_required",False)),
+            "release_required":bool(payload.get("release_required",False)),
+        }
         try:
-            row=self.db.create_work_order({"equipment_id":equipment.strip(),"source_type":"ENGINEERING","title":title.strip(),"description":desc,"owner":self.user["username"]},self.user["username"],"WORK-ORDER-WORKSPACE")
+            row=self.db.create_work_order(data,self.user["username"],"WORK-ORDER-WORKSPACE")
             self.set_work_order(row.work_order_no)
         except Exception as exc:QMessageBox.critical(self,"Work order",str(exc))
 
