@@ -50,6 +50,20 @@ jobs:
 
   ems-large-data:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: ems_stress
+          POSTGRES_USER: ems_stress
+          POSTGRES_PASSWORD: ems_stress
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ems_stress -d ems_stress"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -63,6 +77,7 @@ jobs:
         env:
           PYTHONPATH: equipment_manager
           EMS_RUN_STRESS: '1'
+          EMS_TEST_POSTGRES_URL: postgresql+psycopg://ems_stress:ems_stress@127.0.0.1:5432/ems_stress
         run: python equipment_manager/tests/test_m14_stress.py
 
   windows-gui-smoke:
