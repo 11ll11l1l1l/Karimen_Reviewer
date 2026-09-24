@@ -14,6 +14,7 @@ from table_productivity import install_table_productivity
 from workspaces import AttachmentPanel
 from reporting import export_incident_pptx, export_incident_xlsx
 from collaboration_panel import CollaborationPanel
+from custom_field_panel import CustomFieldPanel
 
 
 def _item(value):
@@ -117,6 +118,7 @@ class IncidentWorkspace(QWidget):
 
         self.attachments=AttachmentPanel(db,user);self.tabs.addTab(self.attachments,"Evidence / Attachments")
         self.collaboration=CollaborationPanel(db,user);self.tabs.addTab(self.collaboration,"Discussion / Team")
+        self.custom_fields=CustomFieldPanel(db,user);self.tabs.addTab(self.custom_fields,"Configured Fields")
         self._set_enabled(False)
 
     def _set_enabled(self,enabled):
@@ -128,7 +130,7 @@ class IncidentWorkspace(QWidget):
 
     def refresh(self):
         if not self.ticket_no:
-            self.ticket=None;self._set_enabled(False);self.attachments.set_entity("","");self.collaboration.set_entity("","");return
+            self.ticket=None;self._set_enabled(False);self.attachments.set_entity("","");self.collaboration.set_entity("","");self.custom_fields.set_entity("","");return
         self.ticket=next((x for x in self.db.list_tickets() if x.ticket_no==self.ticket_no),None)
         if not self.ticket:
             self.title.setText("Incident not found");self._set_enabled(False);return
@@ -147,6 +149,8 @@ class IncidentWorkspace(QWidget):
         self.similar=self.db.incident_similar_history(t.ticket_no);_fill(self.similar_table,self.similar,["ticket_no","title","priority","status","owner","created_at","updated_at"])
         self.attachments.set_entity("TICKET",t.ticket_no,t.equipment_id)
         self.collaboration.set_entity("TICKET",t.ticket_no,t.equipment_id)
+        eq=self.db.get_equipment(t.equipment_id)
+        self.custom_fields.set_entity("TICKET",t.ticket_no,eq.equipment_type if eq else "")
 
     def save_summary(self):
         if not self.ticket:return
