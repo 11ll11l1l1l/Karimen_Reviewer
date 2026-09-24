@@ -18,6 +18,7 @@ from reporting import export_equipment_pptx, export_equipment_xlsx
 from image_annotator import ImageAnnotationDialog
 from table_productivity import install_table_productivity
 from collaboration_panel import CollaborationPanel
+from configuration_studio import CustomFieldsPanel
 
 FILE_ROOT=os.getenv("EMS_FILE_ROOT",str(Path.cwd()/"equipment_files"))
 
@@ -361,6 +362,7 @@ class Equipment360Workspace(QWidget):
 
         ops=QWidget();opv=QVBoxLayout(ops);self.handover_table=_table(["No","Condition","Pending","Restrictions","Next owner","Status","Created"]);self.disposition_table=_table(["State","Reason","Restrictions","Release criteria","Ticket","Created by","Approved by","Effective"]);opv.addWidget(QLabel("Shift handovers"));opv.addWidget(self.handover_table,1);opv.addWidget(QLabel("Disposition history"));opv.addWidget(self.disposition_table,1);self.tabs.addTab(ops,"Handover / Disposition")
         related=QWidget();rv=QVBoxLayout(related);self.relationships=[];self.related_table=_table(["Type","Key","Title / Context","Status"]);self.related_table.doubleClicked.connect(self.open_related);rv.addWidget(self.related_table);self.tabs.addTab(related,"Related Records")
+        self.custom_fields=CustomFieldsPanel(db,user);self.tabs.addTab(self.custom_fields,"Custom Fields")
         self.attachments=AttachmentPanel(db,user);self.tabs.addTab(self.attachments,"Evidence / Attachments")
         self.collaboration=CollaborationPanel(db,user);self.tabs.addTab(self.collaboration,"Discussion / Updates")
 
@@ -471,6 +473,7 @@ class Equipment360Workspace(QWidget):
         for x in docs:self.relationships.append({"entity_type":"DOCUMENT","entity_key":x.document_id,"title":x.title,"status":x.status})
         for x in handovers:self.relationships.append({"entity_type":"ENDORSEMENT","entity_key":x.endorsement_no,"title":x.pending_work or x.current_condition,"status":x.status})
         _fill_objects(self.related_table,self.relationships,["entity_type","entity_key","title","status"])
+        self.custom_fields.set_entity("EQUIPMENT",eq.equipment_id,eq.equipment_id)
         self.attachments.set_entity("EQUIPMENT",eq.equipment_id,eq.equipment_id)
         self.collaboration.set_entity("EQUIPMENT",eq.equipment_id,eq.equipment_id)
 
