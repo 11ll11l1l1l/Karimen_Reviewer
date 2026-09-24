@@ -55,16 +55,36 @@ def process_pending_rules(db: Database, limit: int = 250) -> dict[str,int]:
         stats["matched"]+=1
         try:
             action=json.loads(rule.action_json or "{}")
+            actor=str(action.get("actor","")).strip()
+            if not actor:raise ValueError("Rule action requires an active EMS actor username.")
             if rule.action_type=="CREATE_INCIDENT_FROM_ALARM":
                 if event.entity_type!="ALARM":
                     raise ValueError("CREATE_INCIDENT_FROM_ALARM requires an ALARM event.")
-                actor=str(action.get("actor","")).strip()
-                if not actor:raise ValueError("Rule action requires an active EMS actor username.")
                 owner=str(action.get("owner") or actor).strip()
                 ticket=db.create_incident_from_alarm(
                     event.entity_key,actor,owner=owner,workstation="ORCHESTRATION"
                 )
                 detail=f"Created/linked incident {ticket.ticket_no}"
+            elif rule.action_type=="CREATE_WORK_ORDER_FROM_TICKET":
+                if event.entity_type!="TICKET":
+                    raise ValueError("CREATE_WORK_ORDER_FROM_TICKET requires a TICKET event.")
+                work_order=db.create_work_order_from_ticket(event.entity_key,actor,"ORCHESTRATION")
+                detail=f"Created/reused work order {work_order.work_order_no}"
+            elif rule.action_type=="SET_DISPOSITION":
+                equipment_id=str(action.get("equipment_id") or payload.get("equipment_id") or "").strip()
+                if not equipment_id:raise ValueError("SET_DISPOSITION requires equipment_id in action or event payload.")
+                state=str(action.get("state","")).strip()
+                if not state:raise ValueError("SET_DISPOSITION requires state.")
+                row=db.set_disposition({
+                    "equipment_id":equipment_id,"state":state,
+                    "reason":str(action.get("reason") or f"Orchestration rule {rule.rule_id}"),
+                    "restrictions":str(action.get("restrictions","")),
+                    "release_criteria":str(action.get("release_criteria","")),
+                    "related_ticket":str(action.get("related_ticket") or payload.get("ticket_no") or payload.get("related_ticket") or ""),
+                    "created_by":actor,"approved_by":str(action.get("approved_by","")),
+                    "active":True,
+                })
+                detail=f"Set disposition {row.state} on {equipment_id}"
             else:
                 raise ValueError(f"Unsupported orchestration action: {rule.action_type}")
             db.mark_orchestration_execution(event.event_id,rule.rule_id,"EXECUTED",detail)
