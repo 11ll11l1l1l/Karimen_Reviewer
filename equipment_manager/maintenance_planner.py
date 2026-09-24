@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
 )
 
 from table_productivity import install_table_productivity
+from feedback import notify
 
 
 def _item(value):
@@ -241,8 +242,9 @@ class MaintenancePlanningWorkspace(QWidget):
 
     def _result(self,title,done,total,failures):
         text=f"Updated {done}/{total} task(s)."
-        if failures:text+="\n\n"+"\n".join(failures[:15])
-        QMessageBox.information(self,title,text)
+        if failures:
+            text+="\n\n"+"\n".join(failures[:15]);QMessageBox.warning(self,title,text)
+        else:notify(f"{title}: {text}")
 
     def open_selected(self):
         rows=self._selected_board_rows()
