@@ -34,6 +34,7 @@ class M14M15ReadinessTests(unittest.TestCase):
             payload["site_integrations"]={"passed":True,"evidence":"integration certification"}
             payload["training"]={"complete":True,"evidence":"training roster"}
             payload["support_owner"]="EMS Support"
+            payload["milestone_acceptance"]={f"M{i}":True for i in range(15)}
             payload["signoff"]={"approved":True,"approved_by":["Site Owner"],"date":"2026-09-25","notes":""}
             checks=evaluate_uat(payload,max_open_p2=0)
             self.assertTrue(checks)
