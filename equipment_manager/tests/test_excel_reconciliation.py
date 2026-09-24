@@ -1,7 +1,7 @@
 import unittest
 
 from database import Database
-from excel_reconcile import reconcile_equipment, reconcile_inventory
+from excel_reconcile import reconcile_equipment, reconcile_inventory, reconcile_tickets, apply_reconciliation
 
 
 class ExcelReconciliationTests(unittest.TestCase):
@@ -19,6 +19,11 @@ class ExcelReconciliationTests(unittest.TestCase):
             "manufacturer":"Vendor B","model":"F-100","compatible_equipment":"ETCH-XL",
             "quantity":5.0,"min_quantity":2.0,"unit":"pcs","condition":"Available",
             "location_code":"STOCK-1","image_path":"original.png","notes":"Preserve me",
+        })
+        self.ticket=self.db.save_ticket({
+            "ticket_no":"INC-XL","equipment_id":"ETCH-XL","title":"Old title",
+            "description":"Original problem","severity":"S2","priority":"P2","owner":"ee",
+            "root_cause":"Open","corrective_action":"","verification":"","created_by":"ee",
         })
 
     def test_equipment_partial_mapping_preserves_unmapped_fields(self):
@@ -52,6 +57,47 @@ class ExcelReconciliationTests(unittest.TestCase):
         self.assertEqual(action["data"]["manufacturer"],"Vendor B")
         self.assertEqual(action["data"]["unit"],"pcs")
         self.assertEqual(action["data"]["notes"],"Preserve me")
+
+    def test_ticket_partial_mapping_preserves_lifecycle_and_unmapped_fields(self):
+        rows=[{
+            "ticket_no":"INC-XL","equipment_id":"ETCH-XL","title":"Updated title",
+            "description":"","severity":"","priority":"","owner":"","root_cause":"",
+            "corrective_action":"","verification":"",
+        }]
+        actions=reconcile_tickets(self.db,rows,{
+            "ticket_no":"Ticket","equipment_id":"Equipment","title":"Title",
+        })
+        action=actions[0]
+        self.assertEqual(action["status"],"UPDATE")
+        self.assertEqual(action["data"]["title"],"Updated title")
+        self.assertEqual(action["data"]["description"],"Original problem")
+        self.assertEqual(action["data"]["priority"],"P2")
+        self.assertNotIn("status",action["data"])
+
+        result=apply_reconciliation(self.db,actions,entity="ticket",user="ee")
+        self.assertEqual(result["applied"],1)
+        updated=next(x for x in self.db.list_tickets() if x.ticket_no=="INC-XL")
+        self.assertEqual(updated.title,"Updated title")
+        self.assertEqual(updated.status,"Open")
+
+    def test_ticket_reconciliation_uses_version_conflict_protection(self):
+        rows=[{
+            "ticket_no":"INC-XL","equipment_id":"ETCH-XL","title":"Workbook title",
+            "description":"","severity":"","priority":"","owner":"","root_cause":"",
+            "corrective_action":"","verification":"",
+        }]
+        actions=reconcile_tickets(self.db,rows,{
+            "ticket_no":"Ticket","equipment_id":"Equipment","title":"Title",
+        })
+        current=next(x for x in self.db.list_tickets() if x.ticket_no=="INC-XL")
+        self.db.save_ticket({
+            "ticket_no":current.ticket_no,"equipment_id":current.equipment_id,"title":"Concurrent edit",
+            "description":current.description,"severity":current.severity,"priority":current.priority,
+            "owner":current.owner,"root_cause":current.root_cause,"corrective_action":current.corrective_action,
+            "verification":current.verification,"created_by":current.created_by,
+        },current.version)
+        with self.assertRaises(RuntimeError):
+            apply_reconciliation(self.db,actions,entity="ticket",user="ee")
 
     def test_unchanged_mapped_values_are_skipped(self):
         rows=[{

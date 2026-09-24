@@ -1033,6 +1033,72 @@ class ControlledDocumentRevision(Base):
     __table_args__ = (UniqueConstraint("document_id","revision",name="uq_controlled_document_revision"),)
 
 
+class WorkflowAutomationRule(Base):
+    __tablename__ = "workflow_automation_rules"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    rule_id: Mapped[str] = mapped_column(String(100), unique=True, index=True)
+    name: Mapped[str] = mapped_column(String(180))
+    trigger: Mapped[str] = mapped_column(String(80), index=True)
+    match_json: Mapped[str] = mapped_column(Text, default="{}")
+    actions_json: Mapped[str] = mapped_column(Text, default="[]")
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    priority: Mapped[int] = mapped_column(Integer, default=100, index=True)
+    created_by: Mapped[str] = mapped_column(String(120), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
+class WorkflowAutomationExecution(Base):
+    __tablename__ = "workflow_automation_executions"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    execution_key: Mapped[str] = mapped_column(String(48), unique=True, index=True, default=lambda: secrets.token_hex(20))
+    rule_id: Mapped[str] = mapped_column(String(100), index=True)
+    trigger: Mapped[str] = mapped_column(String(80), index=True)
+    entity_type: Mapped[str] = mapped_column(String(60), default="", index=True)
+    entity_key: Mapped[str] = mapped_column(String(180), default="", index=True)
+    equipment_id: Mapped[str] = mapped_column(String(100), default="", index=True)
+    context_json: Mapped[str] = mapped_column(Text, default="{}")
+    result_json: Mapped[str] = mapped_column(Text, default="{}")
+    status: Mapped[str] = mapped_column(String(30), default="Completed", index=True)
+    error: Mapped[str] = mapped_column(Text, default="")
+    executed_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
+class RecordComment(Base):
+    __tablename__ = "record_comments"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    entity_type: Mapped[str] = mapped_column(String(60), index=True)
+    entity_key: Mapped[str] = mapped_column(String(180), index=True)
+    equipment_id: Mapped[str] = mapped_column(String(100), default="", index=True)
+    body: Mapped[str] = mapped_column(Text)
+    created_by: Mapped[str] = mapped_column(String(120), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    edited_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
+class RecordWatcher(Base):
+    __tablename__ = "record_watchers"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    entity_type: Mapped[str] = mapped_column(String(60), index=True)
+    entity_key: Mapped[str] = mapped_column(String(180), index=True)
+    username: Mapped[str] = mapped_column(String(80), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    __table_args__ = (UniqueConstraint("entity_type","entity_key","username",name="uq_record_watcher"),)
+
+
+class RecordMention(Base):
+    __tablename__ = "record_mentions"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    comment_id: Mapped[int] = mapped_column(Integer, index=True)
+    username: Mapped[str] = mapped_column(String(80), index=True)
+    acknowledged: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    __table_args__ = (UniqueConstraint("comment_id","username",name="uq_comment_mention"),)
+
+
 class IntegrationEndpoint(Base):
     __tablename__ = "integration_endpoints"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -1177,6 +1243,12 @@ class Database:
                 table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
             ]),
             ("20260923_007","Create part catalog and approved-alternate logistics tables",lambda: [
+                table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
+            ]),
+            ("20260924_008","Create configurable workflow orchestration tables",lambda: [
+                table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
+            ]),
+            ("20260924_009","Create record comments watchers and mentions",lambda: [
                 table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
             ]),
         ]
@@ -1753,6 +1825,173 @@ class Database:
                 ApprovalDelegation.ends_at>now,
             )) or 0)
 
+    def save_workflow_rule(self, data: dict[str, Any], user: str = "", expected_version: int | None = None):
+        payload=dict(data);trigger=str(payload.get("trigger","")).strip().upper()
+        allowed={"ALARM_ACTIVE","PM_ABNORMAL_RESULT","QUALIFICATION_APPROVED","RELEASE_APPROVED"}
+        if trigger not in allowed:raise ValueError(f"Unsupported workflow trigger: {trigger}")
+        payload["trigger"]=trigger;rule_id=str(payload.get("rule_id","")).strip()
+        if not rule_id:raise ValueError("Rule ID is required.")
+        try:
+            match=json.loads(payload.get("match_json","{}") or "{}");actions=json.loads(payload.get("actions_json","[]") or "[]")
+        except Exception as exc:raise ValueError(f"Rule JSON is invalid: {exc}")
+        if not isinstance(match,dict):raise ValueError("match_json must be an object.")
+        if not isinstance(actions,list) or not actions:raise ValueError("actions_json must be a non-empty list.")
+        supported={"CREATE_INCIDENT","CREATE_WORK_ORDER","CREATE_HANDOVER","SET_DISPOSITION"}
+        for action in actions:
+            if not isinstance(action,dict) or str(action.get("type","")).upper() not in supported:raise ValueError("Unsupported or invalid workflow action.")
+        payload["match_json"]=json.dumps(match,sort_keys=True);payload["actions_json"]=json.dumps(actions,sort_keys=True);payload["created_by"]=payload.get("created_by") or user
+        with self.session() as s:
+            row=s.scalar(select(WorkflowAutomationRule).where(WorkflowAutomationRule.rule_id==rule_id))
+            if row:self._update_versioned(row,payload,expected_version,"Workflow automation rule")
+            else:row=WorkflowAutomationRule(**payload);s.add(row)
+            s.flush();return row
+
+    def list_workflow_rules(self, enabled_only: bool = False):
+        with self.session() as s:
+            stmt=select(WorkflowAutomationRule).order_by(WorkflowAutomationRule.priority,WorkflowAutomationRule.rule_id)
+            if enabled_only:stmt=stmt.where(WorkflowAutomationRule.enabled.is_(True))
+            return list(s.scalars(stmt))
+
+    def list_workflow_automation_executions(self, limit: int = 500):
+        with self.session() as s:return list(s.scalars(select(WorkflowAutomationExecution).order_by(WorkflowAutomationExecution.executed_at.desc(),WorkflowAutomationExecution.id.desc()).limit(max(1,min(int(limit),5000)))))
+
+    @staticmethod
+    def _automation_matches(match: dict[str, Any], context: dict[str, Any]) -> bool:
+        for key,expected in match.items():
+            actual=context.get(key)
+            if isinstance(expected,list):
+                if actual not in expected:return False
+            elif isinstance(expected,str) and expected.startswith("contains:"):
+                if expected.split(":",1)[1].lower() not in str(actual or "").lower():return False
+            elif str(actual or "").lower()!=str(expected or "").lower():return False
+        return True
+
+    def _execute_workflow_action(self,s,action: dict[str,Any],context: dict[str,Any],rule: WorkflowAutomationRule):
+        kind=str(action.get("type","")).upper();equipment_id=str(context.get("equipment_id","") or "");actor=f"automation:{rule.rule_id}"
+        if kind=="CREATE_INCIDENT":
+            ticket_no=f"{str(action.get('ticket_prefix') or 'AUTO')}-{datetime.utcnow():%Y%m%d%H%M%S%f}"
+            ticket=Ticket(ticket_no=ticket_no,equipment_id=equipment_id,title=str(action.get("title") or context.get("summary") or context.get("message") or "Automated incident"),description=str(action.get("description") or context.get("detail") or context.get("message") or ""),severity=str(action.get("severity") or "S2"),priority=str(action.get("priority") or "P2"),status="Open",owner=str(action.get("owner") or ""),root_cause="",corrective_action="",verification="",created_by=actor)
+            s.add(ticket);s.flush();s.add(TicketStateEvent(ticket_no=ticket_no,from_state="",to_state="Open",reason_code="INITIAL_STATE",note=f"Created by workflow rule {rule.rule_id}",owner=ticket.owner,changed_by=actor,workstation="AUTOMATION"));return {"type":kind,"ticket_no":ticket_no}
+        if kind=="CREATE_WORK_ORDER":
+            work_order_no=f"AUTO-WO-{datetime.utcnow():%Y%m%d%H%M%S%f}"
+            row=WorkOrder(work_order_no=work_order_no,equipment_id=equipment_id,source_type=str(context.get("entity_type") or "AUTOMATION"),source_key=str(context.get("entity_key") or ""),title=str(action.get("title") or context.get("summary") or "Automated follow-up"),description=str(action.get("description") or context.get("detail") or ""),priority=str(action.get("priority") or "Normal"),status="Open",owner=str(action.get("owner") or ""),team=str(action.get("team") or ""),qualification_required=bool(action.get("qualification_required",False)),release_required=bool(action.get("release_required",False)),created_by=actor)
+            s.add(row);s.flush();return {"type":kind,"work_order_no":work_order_no}
+        if kind=="CREATE_HANDOVER":
+            number=f"AUTO-HO-{datetime.utcnow():%Y%m%d%H%M%S%f}"
+            row=Endorsement(endorsement_no=number,equipment_id=equipment_id,current_condition=str(action.get("condition") or context.get("summary") or context.get("message") or ""),pending_work=str(action.get("pending_work") or context.get("detail") or ""),restrictions=str(action.get("restrictions") or ""),next_action=str(action.get("next_action") or ""),next_owner=str(action.get("next_owner") or ""),status="Open",created_by=actor)
+            s.add(row);s.flush();return {"type":kind,"endorsement_no":number}
+        if kind=="SET_DISPOSITION":
+            state=str(action.get("state") or "Hold");eq=s.scalar(select(Equipment).where(Equipment.equipment_id==equipment_id))
+            if not eq:raise ValueError("Automation disposition requires valid equipment.")
+            for current in s.scalars(select(Disposition).where(Disposition.equipment_id==equipment_id,Disposition.active.is_(True))):current.active=False
+            row=Disposition(equipment_id=equipment_id,state=state,reason=str(action.get("reason") or context.get("summary") or context.get("message") or f"Workflow rule {rule.rule_id}"),restrictions=str(action.get("restrictions") or ""),release_criteria=str(action.get("release_criteria") or ""),related_ticket=str(context.get("ticket_no") or ""),created_by=actor,active=True)
+            s.add(row);eq.disposition=state;eq.version+=1;s.flush();return {"type":kind,"disposition":state}
+        raise ValueError(f"Unsupported workflow action {kind}")
+
+    def _apply_workflow_automation_in_session(self,s,trigger: str,context: dict[str,Any]):
+        trigger=trigger.upper();context=dict(context);context["trigger"]=trigger
+        rules=list(s.scalars(select(WorkflowAutomationRule).where(WorkflowAutomationRule.enabled.is_(True),WorkflowAutomationRule.trigger==trigger).order_by(WorkflowAutomationRule.priority,WorkflowAutomationRule.rule_id)));results=[]
+        for rule in rules:
+            if not self._automation_matches(json.loads(rule.match_json or "{}"),context):continue
+            entity_type=str(context.get("entity_type",""));entity_key=str(context.get("entity_key",""))
+            prior=s.scalar(select(WorkflowAutomationExecution).where(WorkflowAutomationExecution.rule_id==rule.rule_id,WorkflowAutomationExecution.trigger==trigger,WorkflowAutomationExecution.entity_type==entity_type,WorkflowAutomationExecution.entity_key==entity_key,WorkflowAutomationExecution.status=="Completed").order_by(WorkflowAutomationExecution.id.desc()))
+            if prior:continue
+            execution=WorkflowAutomationExecution(rule_id=rule.rule_id,trigger=trigger,entity_type=entity_type,entity_key=entity_key,equipment_id=str(context.get("equipment_id","")),context_json=json.dumps(context,default=str,sort_keys=True),status="Completed");s.add(execution);s.flush();action_results=[]
+            try:
+                for action in json.loads(rule.actions_json or "[]"):action_results.append(self._execute_workflow_action(s,action,context,rule))
+                execution.result_json=json.dumps(action_results,default=str,sort_keys=True)
+            except Exception as exc:execution.status="Failed";execution.error=str(exc);raise
+            results.append({"rule_id":rule.rule_id,"actions":action_results})
+        return results
+
+    @staticmethod
+    def _mention_tokens(body: str) -> list[str]:
+        tokens=[]
+        for raw in (body or "").replace("\n"," ").split():
+            if raw.startswith("@") and len(raw)>1:
+                token=raw[1:].strip(".,:;!?()[]{}<>").lower()
+                if token and token not in tokens:tokens.append(token)
+        return tokens
+
+    def add_record_comment(self, entity_type: str, entity_key: str, body: str, user: str, equipment_id: str = ""):
+        text=(body or "").strip()
+        if not text:raise ValueError("Comment cannot be empty.")
+        entity_type=entity_type.strip().upper();entity_key=str(entity_key)
+        with self.session() as s:
+            row=RecordComment(entity_type=entity_type,entity_key=entity_key,equipment_id=equipment_id.strip(),body=text,created_by=user)
+            s.add(row);s.flush()
+            valid_users={u.username.lower():u.username for u in s.scalars(select(User).where(User.active.is_(True)))}
+            for token in self._mention_tokens(text):
+                username=valid_users.get(token)
+                if username and username.lower()!=user.lower():
+                    s.add(RecordMention(comment_id=row.id,username=username))
+            watcher=s.scalar(select(RecordWatcher).where(RecordWatcher.entity_type==entity_type,RecordWatcher.entity_key==entity_key,RecordWatcher.username==user))
+            if not watcher:s.add(RecordWatcher(entity_type=entity_type,entity_key=entity_key,username=user))
+            s.add(AuditLog(user=user,action="COMMENT_ADD",entity_type=entity_type,entity_key=entity_key,detail=str(row.id)))
+            s.flush();return row
+
+    def edit_record_comment(self, comment_id: int, body: str, user: str, expected_version: int | None = None):
+        text=(body or "").strip()
+        if not text:raise ValueError("Comment cannot be empty.")
+        with self.session() as s:
+            row=s.get(RecordComment,comment_id)
+            if not row or not row.active:raise ValueError("Comment not found")
+            if row.created_by!=user:raise PermissionError("Only the comment author can edit it.")
+            if expected_version is not None and row.version!=expected_version:raise RuntimeError("CONFLICT: Comment changed by another user.")
+            row.body=text;row.edited_at=datetime.utcnow();row.version+=1
+            for mention in s.scalars(select(RecordMention).where(RecordMention.comment_id==row.id)):s.delete(mention)
+            valid_users={u.username.lower():u.username for u in s.scalars(select(User).where(User.active.is_(True)))}
+            for token in self._mention_tokens(text):
+                username=valid_users.get(token)
+                if username and username.lower()!=user.lower():s.add(RecordMention(comment_id=row.id,username=username))
+            s.flush();return row
+
+    def remove_record_comment(self, comment_id: int, user: str):
+        with self.session() as s:
+            row=s.get(RecordComment,comment_id)
+            if not row or not row.active:raise ValueError("Comment not found")
+            if row.created_by!=user:raise PermissionError("Only the comment author can remove it.")
+            row.active=False;row.version+=1;s.flush();return row
+
+    def list_record_comments(self, entity_type: str, entity_key: str, limit: int = 500):
+        with self.session() as s:
+            return list(s.scalars(select(RecordComment).where(
+                RecordComment.entity_type==entity_type.strip().upper(),
+                RecordComment.entity_key==str(entity_key),
+                RecordComment.active.is_(True),
+            ).order_by(RecordComment.created_at.desc(),RecordComment.id.desc()).limit(max(1,min(int(limit),5000)))))
+
+    def set_record_watch(self, entity_type: str, entity_key: str, username: str, watching: bool):
+        entity_type=entity_type.strip().upper();entity_key=str(entity_key)
+        with self.session() as s:
+            row=s.scalar(select(RecordWatcher).where(RecordWatcher.entity_type==entity_type,RecordWatcher.entity_key==entity_key,RecordWatcher.username==username))
+            if watching and not row:
+                row=RecordWatcher(entity_type=entity_type,entity_key=entity_key,username=username);s.add(row)
+            elif not watching and row:
+                s.delete(row);row=None
+            s.flush();return row
+
+    def is_record_watching(self, entity_type: str, entity_key: str, username: str) -> bool:
+        with self.session() as s:return bool(s.scalar(select(func.count()).select_from(RecordWatcher).where(RecordWatcher.entity_type==entity_type.strip().upper(),RecordWatcher.entity_key==str(entity_key),RecordWatcher.username==username)))
+
+    def list_record_watchers(self, entity_type: str, entity_key: str):
+        with self.session() as s:return list(s.scalars(select(RecordWatcher).where(RecordWatcher.entity_type==entity_type.strip().upper(),RecordWatcher.entity_key==str(entity_key)).order_by(RecordWatcher.username)))
+
+    def list_unacknowledged_mentions(self, username: str, limit: int = 200):
+        with self.session() as s:
+            rows=[]
+            mentions=list(s.scalars(select(RecordMention).where(RecordMention.username==username,RecordMention.acknowledged.is_(False)).order_by(RecordMention.created_at.desc()).limit(limit)))
+            for mention in mentions:
+                comment=s.get(RecordComment,mention.comment_id)
+                if comment and comment.active:rows.append((mention,comment))
+            return rows
+
+    def acknowledge_mention(self, mention_id: int, username: str):
+        with self.session() as s:
+            row=s.get(RecordMention,mention_id)
+            if not row or row.username!=username:raise ValueError("Mention not found")
+            row.acknowledged=True;row.acknowledged_at=datetime.utcnow();s.flush();return row
+
     def save_integration_endpoint(self, data: dict[str, Any], expected_version: int | None = None):
         payload=dict(data)
         adapter=str(payload.get("adapter_type","")).upper()
@@ -2028,6 +2267,14 @@ class Database:
             if self.has_permission(userctx,"qualification.approve"):
                 for run in s.scalars(select(QualificationRun).where(QualificationRun.status=="Verified")):
                     rows.append({"severity":"HIGH","kind":"APPROVAL","key":run.run_no,"equipment_id":run.equipment_id,"summary":f"Qualification approval — {run.protocol_name}","owner":username,"age_hours":0.0})
+        for mention,comment in self.list_unacknowledged_mentions(username,limit):
+            rows.append({
+                "severity":"MEDIUM","kind":"MENTION","key":str(mention.id),
+                "equipment_id":comment.equipment_id,
+                "summary":f"@mention on {comment.entity_type}:{comment.entity_key} — {comment.body[:120]}",
+                "owner":username,"age_hours":max(0.0,(datetime.utcnow()-comment.created_at).total_seconds()/3600),
+                "entity_type":comment.entity_type,"entity_key":comment.entity_key,
+            })
         rank={"CRITICAL":0,"HIGH":1,"MEDIUM":2,"LOW":3}
         dedup={}
         for row in rows:
@@ -2207,6 +2454,13 @@ class Database:
                 "message":message,"source":source,"state":state,"occurred_at":occurred_at.isoformat(),
                 "related_ticket":related_ticket,
             })
+            if state=="ACTIVE":
+                self._apply_workflow_automation_in_session(s,"ALARM_ACTIVE",{
+                    "entity_type":"ALARM","entity_key":event_key,"equipment_id":equipment_id,
+                    "alarm_code":alarm_code,"severity":severity,"message":message,"source":source,
+                    "ticket_no":related_ticket,"summary":f"{alarm_code} — {message}",
+                    "detail":json.dumps(raw_payload or {},default=str,sort_keys=True),
+                })
             s.flush();return row
 
     def link_alarm_to_ticket(self, event_key: str, ticket_no: str, user: str, workstation: str = ""):
@@ -3640,6 +3894,17 @@ class Database:
                 item = PMResult(**payload)
                 s.add(item)
             s.flush()
+            if item.result in {"SPECIFICATION FAILURE","CONTROL FAILURE","FAIL","INVALID"}:
+                task=s.get(PMTask,ex.task_id)
+                if task:
+                    self._apply_workflow_automation_in_session(s,"PM_ABNORMAL_RESULT",{
+                        "entity_type":"PM_RESULT","entity_key":f"{execution_id}:{step_no}",
+                        "equipment_id":task.equipment_id,"pm_task_id":task.id,"pm_id":task.pm_id,
+                        "step_no":step_no,"result":item.result,
+                        "summary":f"{task.pm_id} step {step_no} — {item.result}",
+                        "detail":f"{spec.activity}; value={item.value_text or item.value_numeric}; reaction={spec.reaction_plan}",
+                    })
+            s.flush()
             return item
 
     def list_pm_results(self, execution_id: int):
@@ -4363,6 +4628,12 @@ class Database:
                 "protocol_revision":row.protocol_revision,"approved_by":user,
                 "approved_at":now.isoformat(),"expires_at":row.expires_at.isoformat() if row.expires_at else None,
             })
+            self._apply_workflow_automation_in_session(s,"QUALIFICATION_APPROVED",{
+                "entity_type":"QUALIFICATION","entity_key":row.run_no,"equipment_id":row.equipment_id,
+                "protocol_id":row.protocol_id,"protocol_revision":row.protocol_revision,
+                "approved_by":user,"summary":f"Qualification approved — {row.protocol_name}",
+                "detail":note.strip(),
+            })
             s.add(AuditLog(
                 user=user,action="QUALIFICATION_APPROVE",entity_type="QUALIFICATION_RUN",entity_key=row.run_no,
                 detail=json.dumps({"equipment_id":row.equipment_id,"protocol_id":row.protocol_id,"protocol_revision":row.protocol_revision,"expires_at":row.expires_at.isoformat() if row.expires_at else None},sort_keys=True),
@@ -4566,6 +4837,11 @@ class Database:
             self._queue_integration_event(s,"equipment.released","EQUIPMENT",r.equipment_id,{
                 "equipment_id":r.equipment_id,"release_id":r.id,"approved_by":user,
                 "approved_at":r.approved_at.isoformat(),"related_ticket":r.related_ticket,
+            })
+            self._apply_workflow_automation_in_session(s,"RELEASE_APPROVED",{
+                "entity_type":"RELEASE","entity_key":str(r.id),"equipment_id":r.equipment_id,
+                "ticket_no":r.related_ticket,"approved_by":user,
+                "summary":"Equipment release approved","detail":r.notes or "",
             })
             s.add(AuditLog(
                 user=user,

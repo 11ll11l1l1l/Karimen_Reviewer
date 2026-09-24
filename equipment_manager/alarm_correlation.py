@@ -85,4 +85,5 @@ def correlate_alarm_bursts(
             current = []
         current.append(item)
     flush()
+    result.sort(key=lambda burst:(burst.first_seen,burst.equipment_id,burst.alarm_code,burst.burst_key))
     return result

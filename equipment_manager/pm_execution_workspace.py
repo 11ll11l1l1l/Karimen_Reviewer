@@ -15,6 +15,8 @@ from attachment_store import store_attachment_file, store_clipboard_image
 from services import readonly_open_copy
 from table_productivity import install_table_productivity
 from workspaces import AttachmentPanel
+from collaboration_panel import CollaborationPanel
+from reporting import export_pm_execution_pptx, export_pm_execution_xlsx
 from PySide6.QtWidgets import QApplication
 
 FILE_ROOT=os.getenv("EMS_FILE_ROOT",str(Path.cwd()/"equipment_files"))
@@ -53,9 +55,11 @@ class PMExecutionWorkspace(QWidget):
         self.complete_button=QPushButton("Complete PM");self.complete_button.clicked.connect(self.complete_pm)
         self.open_eq=QPushButton("Open Equipment");self.open_eq.clicked.connect(self.open_equipment)
         self.work_order_button=QPushButton("Create / Open Work Order");self.work_order_button.clicked.connect(self.open_work_order)
+        ppt=QPushButton("PM PPTX");ppt.clicked.connect(self.export_pptx)
+        xlsx=QPushButton("PM Excel");xlsx.clicked.connect(self.export_xlsx)
         refresh=QPushButton("Refresh");refresh.clicked.connect(self.refresh)
         head.addWidget(self.title);head.addWidget(self.state);head.addStretch(1)
-        for b in [self.open_eq,self.work_order_button,self.start_button,self.complete_button,refresh]:head.addWidget(b)
+        for b in [self.open_eq,self.work_order_button,ppt,xlsx,self.start_button,self.complete_button,refresh]:head.addWidget(b)
         root.addLayout(head)
         self.context=QLabel("Select a PM task from Maintenance Planner, My Work, Search, or Equipment 360.");self.context.setWordWrap(True);self.context.setStyleSheet("color:#647581;");root.addWidget(self.context)
         self.progress=QLabel();self.progress.setStyleSheet("font-weight:700;");root.addWidget(self.progress)
@@ -84,6 +88,7 @@ class PMExecutionWorkspace(QWidget):
         self.reservation_table=_table(["ID","Part","Location","Qty","Status","Reserved By","Time"]);rv.addWidget(QLabel("PM part reservations"));rv.addWidget(self.reservation_table,1);tabs.addTab(req,"Requirements / Readiness")
 
         self.attachments=AttachmentPanel(db,user);tabs.addTab(self.attachments,"Execution Evidence")
+        self.collaboration=CollaborationPanel(db,user);tabs.addTab(self.collaboration,"Comments / Watchers")
         self._enable_execution(False)
 
     def _enable_execution(self,enabled):
@@ -96,7 +101,7 @@ class PMExecutionWorkspace(QWidget):
     def refresh(self):
         self.task=self.db.get_pm_task(self.task_id) if self.task_id else None
         if not self.task:
-            self.title.setText("Technician PM Runner");self.state.setText("");self.context.setText("Select a PM task from Maintenance Planner, My Work, Search, or Equipment 360.");self._enable_execution(False);return
+            self.title.setText("Technician PM Runner");self.state.setText("");self.context.setText("Select a PM task from Maintenance Planner, My Work, Search, or Equipment 360.");self.attachments.set_entity("","");self.collaboration.set_entity("","");self._enable_execution(False);return
         t=self.task;self.title.setText(f"{t.pm_id} · {t.pm_name}");self.state.setText(t.status)
         self.context.setText(f"{t.equipment_id}    Scheduled: {t.scheduled_date or t.original_due_date or '—'}    Assigned: {t.assigned_to or 'UNASSIGNED'}    Priority: {t.priority}")
         # Viewing a task must not mutate its lifecycle. Existing execution is discovered read-only.
@@ -104,9 +109,9 @@ class PMExecutionWorkspace(QWidget):
         if self.execution:
             self.specs=self.db.list_pm_execution_specs(self.execution.id);self.results={x.step_no:x for x in self.db.list_pm_results(self.execution.id)}
             self.requirements=self.db.list_pm_execution_requirements(self.execution.id);self.acks={x.requirement_id:x for x in self.db.list_pm_requirement_acks(self.execution.id)}
-            self.fill_tables();self.attachments.set_entity("PM_EXECUTION",str(self.execution.id),t.equipment_id);self._enable_execution(self.execution.status!="Completed")
+            self.fill_tables();self.attachments.set_entity("PM_EXECUTION",str(self.execution.id),t.equipment_id);self.collaboration.set_entity("PM_EXECUTION",str(self.execution.id),t.equipment_id);self._enable_execution(self.execution.status!="Completed")
         else:
-            self.specs=[];self.results={};self.requirements=[];self.acks={};self.step_table.setRowCount(0);self.req_table.setRowCount(0);self.progress.setText("Not started in this workspace. Click Start / Resume.");self.attachments.set_entity("PM_TASK",str(t.id),t.equipment_id);self._enable_execution(False)
+            self.specs=[];self.results={};self.requirements=[];self.acks={};self.step_table.setRowCount(0);self.req_table.setRowCount(0);self.progress.setText("Not started in this workspace. Click Start / Resume.");self.attachments.set_entity("PM_TASK",str(t.id),t.equipment_id);self.collaboration.set_entity("PM_TASK",str(t.id),t.equipment_id);self._enable_execution(False)
         self.open_eq.setEnabled(True)
 
     def start_resume(self):
@@ -280,6 +285,22 @@ class PMExecutionWorkspace(QWidget):
             row=self.db.create_work_order_from_pm(self.task.id,self.user["username"],"PM-RUNNER")
             self.open_entity.emit("WORK_ORDER",row.work_order_no,row.equipment_id)
         except Exception as exc:QMessageBox.critical(self,"Work order",str(exc))
+
+    def export_pptx(self):
+        if not self.task:return
+        path,_=QFileDialog.getSaveFileName(self,"Export PM Review PowerPoint",f"{self.task.equipment_id}_{self.task.pm_id}_PM_Review.pptx","PowerPoint (*.pptx)")
+        if not path:return
+        if not path.lower().endswith(".pptx"):path+=".pptx"
+        try:export_pm_execution_pptx(self.db,self.task.id,path);QMessageBox.information(self,"PowerPoint",f"Editable PM review deck created.\n{path}")
+        except Exception as exc:QMessageBox.critical(self,"PowerPoint",str(exc))
+
+    def export_xlsx(self):
+        if not self.task:return
+        path,_=QFileDialog.getSaveFileName(self,"Export PM Review Excel",f"{self.task.equipment_id}_{self.task.pm_id}_PM_Review.xlsx","Excel Workbook (*.xlsx)")
+        if not path:return
+        if not path.lower().endswith(".xlsx"):path+=".xlsx"
+        try:export_pm_execution_xlsx(self.db,self.task.id,path);QMessageBox.information(self,"Excel",f"PM review workbook created.\n{path}")
+        except Exception as exc:QMessageBox.critical(self,"Excel",str(exc))
 
     def open_equipment(self):
         if self.task:self.open_entity.emit("EQUIPMENT",self.task.equipment_id,self.task.equipment_id)
