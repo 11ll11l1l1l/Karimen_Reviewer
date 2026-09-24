@@ -619,12 +619,14 @@ class LayoutPage(QWidget):
 
 
 class PMDefinitionDialog(QDialog):
-    def __init__(self,row=None,parent=None):
+    def __init__(self,row=None,parent=None,initial=None):
         super().__init__(parent); self.row=row; self.setWindowTitle("PM Definition"); f=QFormLayout(self); self.pm=QLineEdit(); self.name=QLineEdit(); self.eq=QLineEdit(); self.type=QComboBox(); self.type.addItems(["Interval","One Time","Event Triggered"]); self.freq=QDoubleSpinBox(); self.freq.setRange(0,1000000); self.unit=QComboBox(); self.unit.addItems(["days","weeks","months","years","hours","cycles"]); self.anchor=QComboBox(); self.anchor.addItems(["Original Due","Last Completion"]); self.early=QSpinBox(); self.early.setRange(0,3650); self.grace=QSpinBox(); self.grace.setRange(0,3650); self.hours=QDoubleSpinBox(); self.hours.setRange(0,10000); self.people=QSpinBox(); self.people.setRange(1,100); self.skill=QLineEdit(); self.parts=QLineEdit(); self.parts.setPlaceholderText("PART-A:2; FILTER-B:1"); self.sop=QLineEdit()
         for label,w in [("PM ID",self.pm),("Name",self.name),("Equipment ID",self.eq),("Schedule Type",self.type),("Frequency",self.freq),("Unit",self.unit),("Anchor",self.anchor),("Early Window Days",self.early),("Grace Days",self.grace),("Estimated Hours",self.hours),("Required People",self.people),("Required Skill",self.skill),("Required Parts",self.parts),("SOP Path",self.sop)]:f.addRow(label,w)
         b=QDialogButtonBox(QDialogButtonBox.StandardButton.Save|QDialogButtonBox.StandardButton.Cancel); b.accepted.connect(self.accept); b.rejected.connect(self.reject); f.addRow(b)
         if row:
             self.pm.setText(row.pm_id); self.pm.setReadOnly(True); self.name.setText(row.name); self.eq.setText(row.equipment_id); self.type.setCurrentText(row.schedule_type); self.freq.setValue(row.frequency_value or 0); self.unit.setCurrentText(row.frequency_unit); self.anchor.setCurrentText(row.anchor_mode); self.early.setValue(row.early_window_days); self.grace.setValue(row.grace_days); self.hours.setValue(row.estimated_hours); self.people.setValue(row.required_people); self.skill.setText(row.required_skill); self.parts.setText(row.required_parts); self.sop.setText(row.sop_path)
+        elif initial:
+            self.pm.setText(str(initial.get("pm_id","")));self.name.setText(str(initial.get("name","")));self.eq.setText(str(initial.get("equipment_id","")));self.type.setCurrentText(str(initial.get("schedule_type","Interval")));self.freq.setValue(float(initial.get("frequency_value",0) or 0));self.unit.setCurrentText(str(initial.get("frequency_unit","days")));self.anchor.setCurrentText(str(initial.get("anchor_mode","Original Due")));self.early.setValue(int(initial.get("early_window_days",0) or 0));self.grace.setValue(int(initial.get("grace_days",0) or 0));self.hours.setValue(float(initial.get("estimated_hours",0) or 0));self.people.setValue(int(initial.get("required_people",1) or 1));self.skill.setText(str(initial.get("required_skill","")));self.parts.setText(str(initial.get("required_parts","")));self.sop.setText(str(initial.get("sop_path","")))
     def data(self):return {"pm_id":self.pm.text().strip(),"name":self.name.text().strip(),"equipment_id":self.eq.text().strip(),"schedule_type":self.type.currentText(),"frequency_value":self.freq.value(),"frequency_unit":self.unit.currentText(),"anchor_mode":self.anchor.currentText(),"early_window_days":self.early.value(),"grace_days":self.grace.value(),"estimated_hours":self.hours.value(),"required_people":self.people.value(),"required_skill":self.skill.text().strip(),"required_parts":self.parts.text().strip(),"sop_path":self.sop.text().strip(),"active":True}
 
 
@@ -788,7 +790,7 @@ class PMConditionTriggerDialog(QDialog):
 class PMPage(QWidget):
     def __init__(self,db,user):
         super().__init__(); self.db=db; self.user=user; self.defs=[]; self.tasks=[]; self.specrows=[]; self.requirements=[]; self.deferrals=[]; self.usage_triggers=[]; self.usage_occurrences=[]; self.condition_triggers=[]; self.condition_occurrences=[]; v=QVBoxLayout(self); self.tabs=QTabWidget(); v.addWidget(self.tabs)
-        wd=QWidget(); vd=QVBoxLayout(wd); hd=QHBoxLayout(); add=QPushButton("Add Definition"); edit=QPushButton("Edit Definition"); gen=QPushButton("Generate Next PM"); ready=QPushButton("Parts Readiness"); add.clicked.connect(self.add_def); edit.clicked.connect(self.edit_def); gen.clicked.connect(self.generate_next); ready.clicked.connect(self.parts_ready); canedit=db.has_permission(user,"pm.edit"); add.setEnabled(canedit); edit.setEnabled(canedit); gen.setEnabled(canedit); hd.addWidget(add);hd.addWidget(edit);hd.addWidget(gen);hd.addWidget(ready);hd.addStretch(1);vd.addLayout(hd);self.def_table=make_table(["PM ID","Name","Equipment","Type","Frequency","Unit","Anchor","Early","Grace","Hours","Parts","Ver"]);vd.addWidget(self.def_table);self.tabs.addTab(wd,"Definitions")
+        wd=QWidget(); vd=QVBoxLayout(wd); hd=QHBoxLayout(); add=QPushButton("Add Definition"); template=QPushButton("Add from Template"); edit=QPushButton("Edit Definition"); gen=QPushButton("Generate Next PM"); ready=QPushButton("Parts Readiness"); add.clicked.connect(self.add_def);template.clicked.connect(self.add_def_from_template); edit.clicked.connect(self.edit_def); gen.clicked.connect(self.generate_next); ready.clicked.connect(self.parts_ready); canedit=db.has_permission(user,"pm.edit"); add.setEnabled(canedit);template.setEnabled(canedit); edit.setEnabled(canedit); gen.setEnabled(canedit); hd.addWidget(add);hd.addWidget(template);hd.addWidget(edit);hd.addWidget(gen);hd.addWidget(ready);hd.addStretch(1);vd.addLayout(hd);self.def_table=make_table(["PM ID","Name","Equipment","Type","Frequency","Unit","Anchor","Early","Grace","Hours","Parts","Ver"]);vd.addWidget(self.def_table);self.tabs.addTab(wd,"Definitions")
         wb=QWidget(); vb=QVBoxLayout(wb); hb=QHBoxLayout(); imp=QPushButton("Import Excel/CSV"); paste=QPushButton("Paste from Excel"); execute=QPushButton("Execute Selected"); defer=QPushButton("Request Deferral"); forecast=QPushButton("Workload Forecast"); imp.clicked.connect(self.import_backlog); paste.clicked.connect(self.paste_backlog); execute.clicked.connect(self.execute); defer.clicked.connect(self.request_deferral); forecast.clicked.connect(self.forecast); imp.setEnabled(canedit); paste.setEnabled(canedit); execute.setEnabled(db.has_permission(user,"pm.execute")); defer.setEnabled(db.has_permission(user,"pm.defer")); [hb.addWidget(x) for x in [imp,paste,execute,defer,forecast]];hb.addStretch(1);vb.addLayout(hb);self.task_table=make_table(["Equipment","PM ID","PM Name","Original Due","Scheduled","Status","Assigned","Hours","Priority","Ver"]);vb.addWidget(self.task_table);self.tabs.addTab(wb,"Backlog / Schedule")
         ws=QWidget(); vs=QVBoxLayout(ws); hs=QHBoxLayout(); ispec=QPushButton("Import Steps / Specs"); pspec=QPushButton("Paste Steps / Specs"); ispec.clicked.connect(self.import_specs); pspec.clicked.connect(self.paste_specs); ispec.setEnabled(canedit); pspec.setEnabled(canedit); hs.addWidget(ispec);hs.addWidget(pspec);hs.addStretch(1);vs.addLayout(hs);self.spec_table=make_table(["PM ID","Step","Activity","Method","Type","Unit","Target","CL","CH","LSL","USL","Rev"]);vs.addWidget(self.spec_table);self.tabs.addTab(ws,"Checklist / Specs")
         wreq=QWidget();vreq=QVBoxLayout(wreq);hreq=QHBoxLayout();addreq=QPushButton("Add Requirement");revreq=QPushButton("Revise Selected");addreq.clicked.connect(self.add_requirement);revreq.clicked.connect(self.revise_requirement);addreq.setEnabled(canedit);revreq.setEnabled(canedit);hreq.addWidget(addreq);hreq.addWidget(revreq);hreq.addStretch(1);vreq.addLayout(hreq);self.requirement_table=make_table(["Requirement","PM ID","Type","Key","Description","Qty","Mandatory","Revision","Active"]);vreq.addWidget(self.requirement_table);self.tabs.addTab(wreq,"Execution Requirements")
@@ -818,6 +820,22 @@ class PMPage(QWidget):
                 item=self.task_table.item(i,0)
                 if item:self.task_table.scrollToItem(item)
                 break
+
+    def add_def_from_template(self):
+        templates=self.db.list_entity_templates("PM_DEFINITION")
+        if not templates:
+            QMessageBox.information(self,"PM Template","No active PM definition templates are configured.");return
+        labels=[f"{x.name} ({x.template_id})" for x in templates]
+        choice,ok=QInputDialog.getItem(self,"PM Template","Template",labels,0,False)
+        if not ok:return
+        template=templates[labels.index(choice)]
+        try:initial=self.db.apply_entity_template(template.template_id)
+        except Exception as exc:QMessageBox.critical(self,"PM Template",str(exc));return
+        d=PMDefinitionDialog(parent=self,initial=initial)
+        if d.exec()==QDialog.DialogCode.Accepted:
+            try:
+                row=self.db.save_pm_definition(d.data());self.db.audit(self.user["username"],"CREATE_FROM_TEMPLATE","PM_DEFINITION",row.pm_id,template.template_id,WORKSTATION);self.refresh()
+            except Exception as exc:QMessageBox.critical(self,"PM Definition",str(exc))
 
     def add_def(self):
         d=PMDefinitionDialog(parent=self)
@@ -1312,7 +1330,7 @@ class TicketPage(QWidget):
 
 
 class QualificationProtocolDialog(QDialog):
-    def __init__(self,row=None,parent=None):
+    def __init__(self,row=None,parent=None,initial=None):
         super().__init__(parent);self.row=row;self.setWindowTitle("Qualification Protocol")
         f=QFormLayout(self);self.protocol=QLineEdit();self.name=QLineEdit();self.eq=QLineEdit();self.eqtype=QLineEdit();self.checks=QTextEdit()
         self.checks.setPlaceholderText("One required qualification check per line")
@@ -1324,6 +1342,15 @@ class QualificationProtocolDialog(QDialog):
                 checks=json.loads(row.checks_json or "[]")
                 self.checks.setPlainText("\n".join(str(x.get("label","")) for x in checks))
             except Exception:pass
+        elif initial:
+            self.protocol.setText(str(initial.get("protocol_id","")));self.name.setText(str(initial.get("name","")));self.eq.setText(str(initial.get("equipment_id","")));self.eqtype.setText(str(initial.get("equipment_type","")))
+            checks=initial.get("checks",[])
+            if isinstance(checks,str):
+                try:checks=json.loads(checks)
+                except Exception:checks=[x.strip() for x in checks.splitlines() if x.strip()]
+            if isinstance(checks,list):
+                labels=[str(x.get("label","")) if isinstance(x,dict) else str(x) for x in checks]
+                self.checks.setPlainText("\n".join(x for x in labels if x))
     def data(self):
         checks=[x.strip() for x in self.checks.toPlainText().splitlines() if x.strip()]
         return {"protocol_id":self.protocol.text().strip(),"name":self.name.text().strip(),"equipment_id":self.eq.text().strip(),"equipment_type":self.eqtype.text().strip(),"checks":checks}
@@ -1334,10 +1361,10 @@ class QualificationPage(QWidget):
         super().__init__();self.db=db;self.user=user;self.protocols=[];self.runs=[];self.check_rows=[];self.check_results={}
         v=QVBoxLayout(self);tabs=QTabWidget();self.tabs=tabs;v.addWidget(tabs)
 
-        wp=QWidget();vp=QVBoxLayout(wp);hp=QHBoxLayout();newp=QPushButton("New Protocol");revp=QPushButton("New Revision");exportp=QPushButton("Export Round-trip Excel");importp=QPushButton("Import Excel/CSV");pastep=QPushButton("Paste from Excel")
-        newp.clicked.connect(self.new_protocol);revp.clicked.connect(self.revise_protocol);exportp.clicked.connect(self.export_protocols_roundtrip);importp.clicked.connect(self.import_protocols);pastep.clicked.connect(self.paste_protocols)
-        canedit=db.has_permission(user,"qualification.edit");newp.setEnabled(canedit);revp.setEnabled(canedit);importp.setEnabled(canedit);pastep.setEnabled(canedit)
-        for x in [newp,revp,exportp,importp,pastep]:hp.addWidget(x)
+        wp=QWidget();vp=QVBoxLayout(wp);hp=QHBoxLayout();newp=QPushButton("New Protocol");templatep=QPushButton("New from Template");revp=QPushButton("New Revision");exportp=QPushButton("Export Round-trip Excel");importp=QPushButton("Import Excel/CSV");pastep=QPushButton("Paste from Excel")
+        newp.clicked.connect(self.new_protocol);templatep.clicked.connect(self.new_protocol_from_template);revp.clicked.connect(self.revise_protocol);exportp.clicked.connect(self.export_protocols_roundtrip);importp.clicked.connect(self.import_protocols);pastep.clicked.connect(self.paste_protocols)
+        canedit=db.has_permission(user,"qualification.edit");newp.setEnabled(canedit);templatep.setEnabled(canedit);revp.setEnabled(canedit);importp.setEnabled(canedit);pastep.setEnabled(canedit)
+        for x in [newp,templatep,revp,exportp,importp,pastep]:hp.addWidget(x)
         hp.addStretch(1);vp.addLayout(hp)
         self.ptable=make_table(["Protocol","Revision","Name","Equipment","Type","Active","Created By","Created","Ver"]);vp.addWidget(self.ptable);tabs.addTab(wp,"Protocols")
 
@@ -1420,6 +1447,23 @@ class QualificationPage(QWidget):
     def paste_protocols(self):
         try:self._qualification_protocol_import_df(read_clipboard_table(QApplication.clipboard().text()))
         except Exception as exc:QMessageBox.critical(self,"Qualification protocol paste",str(exc))
+
+    def new_protocol_from_template(self):
+        templates=self.db.list_entity_templates("QUALIFICATION_PROTOCOL")
+        if not templates:
+            QMessageBox.information(self,"Qualification Template","No active qualification protocol templates are configured.");return
+        labels=[f"{x.name} ({x.template_id})" for x in templates]
+        choice,ok=QInputDialog.getItem(self,"Qualification Template","Template",labels,0,False)
+        if not ok:return
+        template=templates[labels.index(choice)]
+        try:initial=self.db.apply_entity_template(template.template_id)
+        except Exception as exc:QMessageBox.critical(self,"Qualification Template",str(exc));return
+        d=QualificationProtocolDialog(parent=self,initial=initial)
+        if d.exec()==QDialog.DialogCode.Accepted:
+            try:
+                row=self.db.save_qualification_protocol(user=self.user["username"],workstation=WORKSTATION,**d.data())
+                self.db.audit(self.user["username"],"CREATE_FROM_TEMPLATE","QUALIFICATION_PROTOCOL",row.protocol_id,template.template_id,WORKSTATION);self.refresh()
+            except Exception as exc:QMessageBox.critical(self,"Qualification Protocol",str(exc))
 
     def new_protocol(self):
         d=QualificationProtocolDialog(parent=self)
