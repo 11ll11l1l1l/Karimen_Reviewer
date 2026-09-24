@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from PySide6.QtCore import QRectF, Qt, Signal
+from PySide6.QtCore import QPointF, QRectF, Qt, Signal
 from PySide6.QtGui import QColor, QFont, QPainter, QPen
 from PySide6.QtWidgets import (
-    QAbstractItemView,QFileDialog,QFrame,QGridLayout,QHBoxLayout,QHeaderView,QLabel,
-    QMessageBox,QPushButton,QSpinBox,QTableWidget,QTableWidgetItem,QTabWidget,QVBoxLayout,QWidget
+    QAbstractItemView,QComboBox,QFileDialog,QFrame,QGridLayout,QHBoxLayout,QHeaderView,QLabel,
+    QLineEdit,QMessageBox,QPushButton,QSpinBox,QTableWidget,QTableWidgetItem,QTabWidget,QVBoxLayout,QWidget
 )
 
 from table_productivity import install_table_productivity
@@ -82,6 +82,47 @@ class BarChart(QWidget):
         if 0<=idx<len(self.rows):self.itemActivated.emit(str(self.rows[idx][2]))
 
 
+class LineChart(QWidget):
+    def __init__(self,title="",parent=None):
+        super().__init__(parent);self.title=title;self.rows=[];self.setMinimumHeight(280)
+
+    def set_data(self,rows,title: str | None=None):
+        self.rows=list(rows)
+        if title is not None:self.title=title
+        self.update()
+
+    def paintEvent(self,event):
+        painter=QPainter(self);painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        rect=self.rect();painter.fillRect(rect,QColor("#ffffff"))
+        painter.setPen(QColor("#1b2733"));font=QFont();font.setBold(True);font.setPointSize(10);painter.setFont(font)
+        painter.drawText(QRectF(12,8,rect.width()-24,28),Qt.AlignmentFlag.AlignLeft|Qt.AlignmentFlag.AlignVCenter,self.title)
+        if not self.rows:
+            painter.setPen(QColor("#647581"));painter.drawText(rect,Qt.AlignmentFlag.AlignCenter,"No data");return
+        left=62;top=45;right=24;bottom=42
+        w=max(60,rect.width()-left-right);h=max(60,rect.height()-top-bottom)
+        vals=[float(x[1] or 0) for x in self.rows];low=min(vals);high=max(vals)
+        if high==low:high=low+1.0
+        painter.setPen(QPen(QColor("#d7dfe5"),1));painter.drawLine(left,top,left,top+h);painter.drawLine(left,top+h,left+w,top+h)
+        painter.setPen(QColor("#647581"))
+        painter.drawText(QRectF(4,top-8,left-10,20),Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignVCenter,f"{high:.2f}")
+        painter.drawText(QRectF(4,top+h-8,left-10,20),Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignVCenter,f"{low:.2f}")
+        points=[]
+        count=max(1,len(self.rows)-1)
+        for i,row in enumerate(self.rows):
+            x=left+(w*i/count if len(self.rows)>1 else w/2)
+            y=top+h-((float(row[1] or 0)-low)/(high-low))*h
+            points.append(QPointF(x,y))
+        pen=QPen(QColor("#397fa6"),2);painter.setPen(pen)
+        for a,b in zip(points,points[1:]):painter.drawLine(a,b)
+        painter.setBrush(QColor("#397fa6"))
+        for point in points:painter.drawEllipse(point,3,3)
+        painter.setPen(QColor("#647581"))
+        if self.rows:
+            first=str(self.rows[0][0]);last=str(self.rows[-1][0])
+            painter.drawText(QRectF(left,top+h+8,w/2,24),Qt.AlignmentFlag.AlignLeft|Qt.AlignmentFlag.AlignVCenter,first[:16])
+            painter.drawText(QRectF(left+w/2,top+h+8,w/2,24),Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignVCenter,last[:16])
+
+
 class EngineeringAnalyticsWorkspace(QWidget):
     open_entity=Signal(str,str,str)
 
@@ -117,6 +158,28 @@ class EngineeringAnalyticsWorkspace(QWidget):
 
         pm=QWidget();pv=QVBoxLayout(pm);self.pm_summary=QLabel();self.pm_summary.setStyleSheet("font-size:16pt;font-weight:700");pv.addWidget(self.pm_summary)
         self.pm_bar=BarChart("PM completion / overdue / deferred");pv.addWidget(self.pm_bar);pv.addStretch(1);tabs.addTab(pm,"PM Compliance")
+
+        trend=QWidget();tv=QVBoxLayout(trend);th=QHBoxLayout()
+        self.trend_metric=QComboBox();self.trend_metric.addItems(["Fleet availability %","Unplanned downtime h","Failure count"])
+        self.bucket_days=QSpinBox();self.bucket_days.setRange(1,90);self.bucket_days.setValue(7);self.bucket_days.setSuffix(" d/bucket")
+        rebuild=QPushButton("Rebuild trend");rebuild.clicked.connect(self.refresh_trend)
+        th.addWidget(QLabel("Metric"));th.addWidget(self.trend_metric);th.addWidget(QLabel("Bucket"));th.addWidget(self.bucket_days);th.addWidget(rebuild);th.addStretch(1);tv.addLayout(th)
+        self.trend_chart=LineChart("Fleet reliability trend");tv.addWidget(self.trend_chart,2)
+        self.trend_table=_table(["Start","End","Availability %","Unplanned h","Planned h","Failures","Tools"]);tv.addWidget(self.trend_table,1);tabs.addTab(trend,"Fleet Trend")
+
+        compare=QWidget();cv=QVBoxLayout(compare);ch=QHBoxLayout()
+        self.compare_input=QLineEdit();self.compare_input.setPlaceholderText("Equipment IDs separated by commas, e.g. ETCH-01, ETCH-02")
+        compareb=QPushButton("Compare");compareb.clicked.connect(self.refresh_compare)
+        ch.addWidget(self.compare_input,1);ch.addWidget(compareb);cv.addLayout(ch)
+        self.compare_table=_table(["Equipment","Name","Type","Area","State","Availability %","Failures","Unplanned h","MTTR h","MTBF h","Incidents","Active Alarms","Overdue PM"]);self.compare_table.doubleClicked.connect(self.open_compare_selected);cv.addWidget(self.compare_table);tabs.addTab(compare,"Tool Comparison")
+
+        meter=QWidget();mv=QVBoxLayout(meter);mh=QHBoxLayout()
+        self.meter_equipment=QComboBox();self.meter_equipment.currentTextChanged.connect(self.refresh_meter_choices)
+        self.meter_code=QComboBox();self.meter_code.currentTextChanged.connect(self.refresh_meter_trend)
+        meterb=QPushButton("Refresh meter");meterb.clicked.connect(self.refresh_meter_trend)
+        mh.addWidget(QLabel("Equipment"));mh.addWidget(self.meter_equipment);mh.addWidget(QLabel("Meter"));mh.addWidget(self.meter_code);mh.addWidget(meterb);mh.addStretch(1);mv.addLayout(mh)
+        self.meter_chart=LineChart("Meter / condition trend");mv.addWidget(self.meter_chart,2)
+        self.meter_table=_table(["Time","Value","Type","Recorded By","Note"]);mv.addWidget(self.meter_table,1);tabs.addTab(meter,"Meter / Condition Trend")
         self.refresh()
 
     def refresh(self):
@@ -146,6 +209,48 @@ class EngineeringAnalyticsWorkspace(QWidget):
             "PM compliance":f"{pm['compliance_pct']:.1f}%","PM overdue":str(pm["overdue"]),"Tools analyzed":str(len(self.tool_rows)),
         }
         for key,val in vals.items():self.cards[key].value.setText(val)
+        equipment_ids=[x["equipment_id"] for x in self.tool_rows]
+        current=self.meter_equipment.currentText()
+        self.meter_equipment.blockSignals(True);self.meter_equipment.clear();self.meter_equipment.addItems(equipment_ids)
+        if current in equipment_ids:self.meter_equipment.setCurrentText(current)
+        self.meter_equipment.blockSignals(False)
+        if not self.compare_input.text().strip() and len(equipment_ids)>=2:self.compare_input.setText(", ".join(equipment_ids[:2]))
+        self.refresh_trend();self.refresh_compare();self.refresh_meter_choices()
+
+    def refresh_trend(self):
+        rows=self.db.fleet_reliability_trend(self.days.value(),self.bucket_days.value())
+        _fill(self.trend_table,rows,["start","end","availability_pct","unplanned_downtime_hours","planned_downtime_hours","failure_count","equipment_count"])
+        metric=self.trend_metric.currentText()
+        if metric=="Unplanned downtime h":key="unplanned_downtime_hours";title="Fleet unplanned downtime trend (hours)"
+        elif metric=="Failure count":key="failure_count";title="Fleet failure-count trend"
+        else:key="availability_pct";title="Fleet availability trend (%)"
+        self.trend_chart.set_data([(row["end"].strftime("%Y-%m-%d"),row[key]) for row in rows],title)
+
+    def refresh_compare(self):
+        ids=[x.strip() for x in self.compare_input.text().split(",") if x.strip()]
+        self.compare_rows=self.db.compare_equipment(ids,self.days.value()) if ids else []
+        _fill(self.compare_table,self.compare_rows,["equipment_id","name","equipment_type","area","current_state","availability_pct","failure_count","unplanned_downtime_hours","mttr_hours","mtbf_hours","incidents","active_alarms","overdue_pm"])
+
+    def open_compare_selected(self):
+        row=self.compare_table.currentRow()
+        rows=getattr(self,"compare_rows",[])
+        if 0<=row<len(rows):self.open_equipment(rows[row]["equipment_id"])
+
+    def refresh_meter_choices(self):
+        equipment_id=self.meter_equipment.currentText().strip()
+        current=self.meter_code.currentText()
+        meters=self.db.list_meters(equipment_id) if equipment_id else []
+        codes=[x.meter_code for x in meters if x.active]
+        self.meter_code.blockSignals(True);self.meter_code.clear();self.meter_code.addItems(codes)
+        if current in codes:self.meter_code.setCurrentText(current)
+        self.meter_code.blockSignals(False)
+        self.refresh_meter_trend()
+
+    def refresh_meter_trend(self):
+        equipment_id=self.meter_equipment.currentText().strip();meter_code=self.meter_code.currentText().strip()
+        rows=self.db.meter_trend(equipment_id,meter_code,self.days.value()) if equipment_id and meter_code else []
+        _fill(self.meter_table,rows,["recorded_at","value","reading_type","recorded_by","note"])
+        self.meter_chart.set_data([(x["recorded_at"].strftime("%Y-%m-%d %H:%M"),x["value"]) for x in rows],f"{equipment_id} · {meter_code}")
 
     def export_weekly_pptx(self):
         path,_=QFileDialog.getSaveFileName(self,"Export Weekly Engineering Review","Equipment_Engineering_Weekly_Review.pptx","PowerPoint (*.pptx)")
