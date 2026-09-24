@@ -85,4 +85,13 @@ def correlate_alarm_bursts(
             current = []
         current.append(item)
     flush()
+    # Correlation is grouped by equipment/code internally, but callers consume
+    # bursts as an operational time stream. Return a deterministic chronological
+    # order independent of equipment/alarm-code lexical ordering.
+    result.sort(key=lambda burst: (
+        burst.first_seen,
+        burst.equipment_id,
+        burst.alarm_code,
+        burst.burst_key,
+    ))
     return result
