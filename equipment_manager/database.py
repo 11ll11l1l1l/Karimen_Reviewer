@@ -1047,6 +1047,16 @@ class ConfigOption(Base):
     __table_args__ = (UniqueConstraint("category","code",name="uq_config_option"),)
 
 
+class NumberSequence(Base):
+    __tablename__ = "number_sequences"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    scheme_code: Mapped[str] = mapped_column(String(120), index=True)
+    period_key: Mapped[str] = mapped_column(String(40), index=True)
+    next_value: Mapped[int] = mapped_column(Integer, default=1)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    __table_args__ = (UniqueConstraint("scheme_code","period_key",name="uq_number_sequence"),)
+
+
 class EntityTemplate(Base):
     __tablename__ = "entity_templates"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -1359,6 +1369,9 @@ class Database:
                 table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
             ]),
             ("20260924_011","Create inbound integration endpoint receipt and record tables",lambda: [
+                table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
+            ]),
+            ("20260924_012","Create configurable numbering sequences",lambda: [
                 table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
             ]),
         ]
@@ -1967,6 +1980,107 @@ class Database:
             stmt=select(ConfigOption).where(ConfigOption.category==category.strip().upper()).order_by(ConfigOption.sort_order,ConfigOption.label)
             if active_only:stmt=stmt.where(ConfigOption.active.is_(True))
             return list(s.scalars(stmt))
+
+    def _matching_config_options(self, s, category: str, equipment_id: str = "", context: dict[str,Any] | None = None):
+        context=dict(context or {})
+        eq=s.scalar(select(Equipment).where(Equipment.equipment_id==equipment_id)) if equipment_id else None
+        actual={
+            "equipment_id":equipment_id or "",
+            "equipment_type":eq.equipment_type if eq else "",
+            "area":eq.area if eq else "",
+            "site":eq.site if eq else "",
+            **{str(k):v for k,v in context.items()},
+        }
+        rows=list(s.scalars(select(ConfigOption).where(
+            ConfigOption.category==category.strip().upper(),
+            ConfigOption.active.is_(True),
+        ).order_by(ConfigOption.sort_order,ConfigOption.code)))
+        matches=[]
+        for row in rows:
+            try:meta=json.loads(row.metadata_json or "{}")
+            except Exception:continue
+            if not isinstance(meta,dict):continue
+            constraints=meta.get("match",{})
+            if constraints and not isinstance(constraints,dict):continue
+            ok=True;score=0
+            for key,expected in (constraints or {}).items():
+                value=actual.get(key,"")
+                if isinstance(expected,list):
+                    if value not in expected:ok=False;break
+                elif str(expected)!=str(value):
+                    ok=False;break
+                score+=1
+            if ok:matches.append((score,row,meta))
+        matches.sort(key=lambda x:(-x[0],x[1].sort_order,x[1].code))
+        return matches
+
+    @staticmethod
+    def _sequence_period(reset: str, now: datetime) -> str:
+        reset=(reset or "DAILY").upper()
+        if reset=="NEVER":return "ALL"
+        if reset=="YEARLY":return now.strftime("%Y")
+        if reset=="MONTHLY":return now.strftime("%Y%m")
+        return now.strftime("%Y%m%d")
+
+    def _next_configured_number_in_session(
+        self,
+        s,
+        entity_type: str,
+        equipment_id: str = "",
+        context: dict[str,Any] | None = None,
+        now: datetime | None = None,
+    ) -> str:
+        now=now or datetime.utcnow()
+        matches=self._matching_config_options(s,"NUMBERING_SCHEME",equipment_id,{"entity_type":entity_type.upper(),**(context or {})})
+        if matches:
+            _,option,meta=matches[0]
+            prefix=str(meta.get("prefix") or option.code or entity_type[:4]).strip()
+            separator=str(meta.get("separator","-"))
+            date_format=str(meta.get("date_format","%Y%m%d"))
+            width=max(1,min(int(meta.get("width",5)),12))
+            period=self._sequence_period(str(meta.get("reset","DAILY")),now)
+            stmt=select(NumberSequence).where(NumberSequence.scheme_code==option.code,NumberSequence.period_key==period)
+            if self.url.startswith("postgresql"):stmt=stmt.with_for_update()
+            seq=s.scalar(stmt)
+            if not seq:
+                seq=NumberSequence(scheme_code=option.code,period_key=period,next_value=1);s.add(seq);s.flush()
+            value=seq.next_value;seq.next_value+=1;seq.version+=1
+            date_part=now.strftime(date_format) if date_format else ""
+            parts=[x for x in [prefix,date_part,f"{value:0{width}d}"] if x]
+            return separator.join(parts)
+        fallback={"TICKET":"INC","WORK_ORDER":"WO","QUALIFICATION":"QUAL"}.get(entity_type.upper(),entity_type.upper()[:6] or "REC")
+        return f"{fallback}-{now:%Y%m%d%H%M%S%f}"
+
+    def preview_configured_number(self, entity_type: str, equipment_id: str = "", context: dict[str,Any] | None = None) -> str:
+        now=datetime.utcnow()
+        with self.session() as s:
+            matches=self._matching_config_options(s,"NUMBERING_SCHEME",equipment_id,{"entity_type":entity_type.upper(),**(context or {})})
+            if not matches:
+                fallback={"TICKET":"INC","WORK_ORDER":"WO","QUALIFICATION":"QUAL"}.get(entity_type.upper(),entity_type.upper()[:6] or "REC")
+                return f"{fallback}-{now:%Y%m%d…}"
+            _,option,meta=matches[0]
+            prefix=str(meta.get("prefix") or option.code or entity_type[:4]).strip()
+            separator=str(meta.get("separator","-"));date_format=str(meta.get("date_format","%Y%m%d"));width=max(1,min(int(meta.get("width",5)),12))
+            date_part=now.strftime(date_format) if date_format else ""
+            return separator.join([x for x in [prefix,date_part,"0"*width] if x])
+
+    def resolve_default_owner(self, entity_type: str, equipment_id: str = "", context: dict[str,Any] | None = None) -> str:
+        with self.session() as s:
+            matches=self._matching_config_options(s,"DEFAULT_OWNER_RULE",equipment_id,{"entity_type":entity_type.upper(),**(context or {})})
+            if not matches:return ""
+            return str(matches[0][2].get("owner","")).strip()
+
+    def resolve_sla_policy(self, equipment_id: str = "", context: dict[str,Any] | None = None) -> dict[str,int]:
+        with self.session() as s:
+            matches=self._matching_config_options(s,"SLA_POLICY",equipment_id,context or {})
+            if not matches:return {}
+            meta=matches[0][2]
+            out={}
+            for key in ["response_minutes","containment_minutes","resolution_minutes"]:
+                if meta.get(key) is not None:
+                    try:out[key]=max(0,int(meta[key]))
+                    except Exception:pass
+            return out
 
     def save_config_option(self, data: dict[str,Any], expected_version: int | None = None):
         payload=dict(data);payload["category"]=str(payload.get("category","")).strip().upper();payload["code"]=str(payload.get("code","")).strip()
