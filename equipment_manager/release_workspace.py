@@ -164,8 +164,10 @@ class ReleaseWorkspace(QWidget):
     def verify_release(self):
         if not self.release:return
         try:
-            row=self.db.verify_release(self.release.id,self.check_data(),self.user["username"],self.release.version,"RELEASE-WORKSPACE")
-            row.notes=self.notes.toPlainText().strip()
+            row=self.db.verify_release(
+                self.release.id,self.check_data(),self.user["username"],self.release.version,
+                "RELEASE-WORKSPACE",notes=self.notes.toPlainText().strip()
+            )
             self.set_release(row.id)
         except Exception as exc:QMessageBox.critical(self,"Release verification",str(exc))
 
