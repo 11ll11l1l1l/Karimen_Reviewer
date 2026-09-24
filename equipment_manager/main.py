@@ -81,6 +81,20 @@ def config_option_values(db,category: str,fallback: list[str]) -> list[str]:
     except Exception:return list(fallback)
 
 
+def populate_reason_combo(combo: QComboBox,db,category: str,fallback: dict[str,str]):
+    rows=[]
+    if db is not None:
+        try:rows=db.list_config_options(category,True)
+        except Exception:rows=[]
+    entries=[(x.code,x.label) for x in rows] or list(fallback.items())
+    for code,label in entries:combo.addItem(f"{code} — {label}",code)
+
+
+def reason_label(combo: QComboBox) -> str:
+    text=combo.currentText()
+    return text.split(" — ",1)[1] if " — " in text else text
+
+
 def make_table(headers: list[str]) -> QTableWidget:
     t = QTableWidget(); t.setColumnCount(len(headers)); t.setHorizontalHeaderLabels(headers)
     t.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
@@ -197,14 +211,14 @@ class EquipmentDialog(QDialog):
 
 
 class EquipmentStateDialog(QDialog):
-    def __init__(self, row, parent=None):
-        super().__init__(parent); self.row=row; self.setWindowTitle(f"Change Equipment State — {row.equipment_id}"); self.setMinimumWidth(560)
+    def __init__(self, row, parent=None, db=None):
+        super().__init__(parent); self.row=row;self.db=db; self.setWindowTitle(f"Change Equipment State — {row.equipment_id}"); self.setMinimumWidth(560)
         f=QFormLayout(self)
         current=QLabel(row.status); current.setStyleSheet("font-weight:700")
         self.target=QComboBox(); self.target.addItems(allowed_targets(row.status))
-        self.reason=QComboBox(); self.reason.addItems(list(REASON_CODES.keys()))
+        self.reason=QComboBox();populate_reason_combo(self.reason,db,"EQUIPMENT_REASON_LABEL",REASON_CODES)
         self.reason_help=QLabel(); self.reason_help.setWordWrap(True); self.reason_help.setStyleSheet("color:#5a6670")
-        self.reason.currentTextChanged.connect(lambda x:self.reason_help.setText(REASON_CODES.get(x,"")))
+        self.reason.currentIndexChanged.connect(lambda *_:self.reason_help.setText(reason_label(self.reason)))
         self.owner=QLineEdit(row.owner or ""); self.ticket=QLineEdit(); self.pm_task=QSpinBox(); self.pm_task.setRange(0,2_000_000_000); self.pm_task.setSpecialValueText("None")
         self.detail=QTextEdit(); self.detail.setPlaceholderText("Describe the actual condition, trigger, containment, or release basis.")
         f.addRow("Current State",current); f.addRow("Target State",self.target); f.addRow("Reason Code",self.reason); f.addRow("",self.reason_help)
@@ -213,13 +227,13 @@ class EquipmentStateDialog(QDialog):
         warning.setWordWrap(True); warning.setStyleSheet("color:#7a4b00")
         f.addRow("",warning)
         b=QDialogButtonBox(QDialogButtonBox.StandardButton.Save|QDialogButtonBox.StandardButton.Cancel); b.accepted.connect(self.accept); b.rejected.connect(self.reject); f.addRow(b)
-        self.reason_help.setText(REASON_CODES.get(self.reason.currentText(),""))
+        self.reason_help.setText(reason_label(self.reason))
 
     def data(self):
         pm_id=self.pm_task.value() or None
         return {
             "target_state":self.target.currentText(),
-            "reason_code":self.reason.currentText(),
+            "reason_code":str(self.reason.currentData() or self.reason.currentText()).split(" — ",1)[0],
             "reason_text":self.detail.toPlainText().strip(),
             "related_ticket":self.ticket.text().strip(),
             "related_pm_task_id":pm_id,
@@ -458,7 +472,7 @@ class EquipmentPage(QWidget):
     def change_state(self):
         row=selected_row(self.table,self.rows)
         if not row:return
-        d=EquipmentStateDialog(row,self)
+        d=EquipmentStateDialog(row,self,db=self.db)
         if d.exec()==QDialog.DialogCode.Accepted:
             try:
                 self.db.transition_equipment_state(
@@ -1021,18 +1035,18 @@ class TicketDialog(QDialog):
 
 
 class TicketStateDialog(QDialog):
-    def __init__(self,row,parent=None):
-        super().__init__(parent);self.row=row;self.setWindowTitle(f"Change Ticket State — {row.ticket_no}");self.setMinimumWidth(560)
+    def __init__(self,row,parent=None,db=None):
+        super().__init__(parent);self.row=row;self.db=db;self.setWindowTitle(f"Change Ticket State — {row.ticket_no}");self.setMinimumWidth(560)
         f=QFormLayout(self)
         current=QLabel(row.status);current.setStyleSheet("font-weight:700")
         self.target=QComboBox();self.target.addItems(allowed_ticket_targets(row.status))
-        self.reason=QComboBox();self.reason.addItems(list(TICKET_REASON_CODES.keys()))
+        self.reason=QComboBox();populate_reason_combo(self.reason,db,"TICKET_REASON_LABEL",TICKET_REASON_CODES)
         self.help=QLabel();self.help.setWordWrap(True);self.help.setStyleSheet("color:#5a6670")
         self.owner=QLineEdit(row.owner or "");self.note=QTextEdit();self.note.setPlaceholderText("Lifecycle note, verification outcome, cancellation basis, or reopen reason.")
         f.addRow("Current State",current);f.addRow("Target State",self.target);f.addRow("Reason Code",self.reason);f.addRow("",self.help);f.addRow("Accountable Owner",self.owner);f.addRow("Lifecycle Note",self.note)
         warning=QLabel("Resolution requires documented root cause and corrective action. Closure additionally requires verification.");warning.setWordWrap(True);warning.setStyleSheet("color:#7a4b00");f.addRow("",warning)
         b=QDialogButtonBox(QDialogButtonBox.StandardButton.Save|QDialogButtonBox.StandardButton.Cancel);b.accepted.connect(self.accept);b.rejected.connect(self.reject);f.addRow(b)
-        self.reason.currentTextChanged.connect(lambda x:self.help.setText(TICKET_REASON_CODES.get(x,"")))
+        self.reason.currentIndexChanged.connect(lambda *_:self.help.setText(reason_label(self.reason)))
         self.target.currentTextChanged.connect(self._suggest_reason)
         self._suggest_reason(self.target.currentText())
 
@@ -1045,13 +1059,15 @@ class TicketStateDialog(QDialog):
             if self.row.status=="Verification":preferred="VERIFY_FAIL"
             elif self.row.status in {"Resolved","Closed"}:preferred="REOPEN"
             else:preferred="START_INVESTIGATION"
-        if preferred:self.reason.setCurrentText(preferred)
-        self.help.setText(TICKET_REASON_CODES.get(self.reason.currentText(),""))
+        if preferred:
+            idx=self.reason.findData(preferred)
+            if idx>=0:self.reason.setCurrentIndex(idx)
+        self.help.setText(reason_label(self.reason))
 
     def data(self):
         return {
             "target_state":self.target.currentText(),
-            "reason_code":self.reason.currentText(),
+            "reason_code":str(self.reason.currentData() or self.reason.currentText()).split(" — ",1)[0],
             "note":self.note.toPlainText().strip(),
             "owner":self.owner.text().strip(),
         }
@@ -1227,7 +1243,7 @@ class TicketPage(QWidget):
         if not targets:
             QMessageBox.information(self,"Ticket Lifecycle",f"{row.status} is a terminal state. No further lifecycle transition is available.")
             return
-        d=TicketStateDialog(row,self)
+        d=TicketStateDialog(row,self,db=self.db)
         if d.exec()==QDialog.DialogCode.Accepted:
             try:
                 self.db.transition_ticket_state(
