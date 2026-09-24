@@ -6722,6 +6722,78 @@ class Database:
         start=end-timedelta(days=days)
         return [self.reliability_summary(eq.equipment_id,start,end) for eq in self.list_equipment()]
 
+    def fleet_reliability_trend(self, days: int = 90, bucket_days: int = 7, equipment_ids: list[str] | None = None) -> list[dict[str,Any]]:
+        days=max(1,min(int(days),3650));bucket_days=max(1,min(int(bucket_days),365))
+        end=datetime.utcnow();start=end-timedelta(days=days)
+        ids=list(equipment_ids or [x.equipment_id for x in self.list_equipment()])
+        if not ids:return []
+        rows=[];cursor=start
+        while cursor<end:
+            bucket_end=min(end,cursor+timedelta(days=bucket_days))
+            metrics=[]
+            for equipment_id in ids:
+                try:metrics.append(self.reliability_summary(equipment_id,cursor,bucket_end))
+                except Exception:continue
+            if metrics:
+                rows.append({
+                    "start":cursor,"end":bucket_end,
+                    "availability_pct":sum(float(x["availability_pct"]) for x in metrics)/len(metrics),
+                    "unplanned_downtime_hours":sum(float(x["unplanned_downtime_hours"]) for x in metrics),
+                    "planned_downtime_hours":sum(float(x["planned_downtime_hours"]) for x in metrics),
+                    "failure_count":sum(int(x["failure_count"]) for x in metrics),
+                    "equipment_count":len(metrics),
+                })
+            cursor=bucket_end
+        return rows
+
+    def compare_equipment(self, equipment_ids: list[str], days: int = 30) -> list[dict[str,Any]]:
+        ids=[str(x).strip() for x in equipment_ids if str(x).strip()]
+        if not ids:return []
+        days=max(1,min(int(days),3650));end=datetime.utcnow();start=end-timedelta(days=days)
+        rows=[]
+        with self.session() as s:
+            for equipment_id in ids:
+                eq=s.scalar(select(Equipment).where(Equipment.equipment_id==equipment_id))
+                if not eq:continue
+                rel=self.reliability_summary(equipment_id,start,end)
+                incidents=int(s.scalar(select(func.count()).select_from(Ticket).where(
+                    Ticket.equipment_id==equipment_id,Ticket.created_at>=start
+                )) or 0)
+                active_alarms=int(s.scalar(select(func.count()).select_from(EquipmentAlarmEvent).where(
+                    EquipmentAlarmEvent.equipment_id==equipment_id,EquipmentAlarmEvent.state=="ACTIVE"
+                )) or 0)
+                overdue_pm=int(s.scalar(select(func.count()).select_from(PMTask).where(
+                    PMTask.equipment_id==equipment_id,
+                    ((PMTask.status=="Overdue") | (
+                        PMTask.status.notin_(["Completed","Cancelled"]) &
+                        PMTask.original_due_date.is_not(None) &
+                        (PMTask.original_due_date<end)
+                    ))
+                )) or 0)
+                rows.append({
+                    "equipment_id":equipment_id,"name":eq.name,"equipment_type":eq.equipment_type,"area":eq.area,
+                    "current_state":eq.status,"availability_pct":rel["availability_pct"],"failure_count":rel["failure_count"],
+                    "unplanned_downtime_hours":rel["unplanned_downtime_hours"],"planned_downtime_hours":rel["planned_downtime_hours"],
+                    "mttr_hours":rel["mttr_hours"],"mtbf_hours":rel["mtbf_hours"],"incidents":incidents,
+                    "active_alarms":active_alarms,"overdue_pm":overdue_pm,
+                })
+        return rows
+
+    def meter_trend(self, equipment_id: str, meter_code: str, days: int = 30, limit: int = 5000) -> list[dict[str,Any]]:
+        days=max(1,min(int(days),3650));start=datetime.utcnow()-timedelta(days=days)
+        with self.session() as s:
+            rows=list(s.scalars(
+                select(MeterReading)
+                .where(
+                    MeterReading.equipment_id==equipment_id,
+                    MeterReading.meter_code==meter_code,
+                    MeterReading.recorded_at>=start,
+                )
+                .order_by(MeterReading.recorded_at,MeterReading.id)
+                .limit(max(1,min(int(limit),10000)))
+            ))
+        return [{"recorded_at":x.recorded_at,"value":float(x.value),"reading_type":x.reading_type,"note":x.note,"recorded_by":x.recorded_by} for x in rows]
+
     def engineering_analytics(self, days: int = 30) -> dict[str, Any]:
         days=max(1,min(int(days),3650))
         end=datetime.utcnow();start=end-timedelta(days=days)
