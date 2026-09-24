@@ -85,6 +85,11 @@ jobs:
           PYTHONPATH: equipment_manager
           QT_QPA_PLATFORM: offscreen
         run: python equipment_manager/tests/gui_smoke.py
+      - name: Run Smart shell navigation and resize soak
+        env:
+          PYTHONPATH: equipment_manager
+          QT_QPA_PLATFORM: offscreen
+        run: python equipment_manager/tests/gui_soak.py
 
   windows-package:
     runs-on: windows-latest
