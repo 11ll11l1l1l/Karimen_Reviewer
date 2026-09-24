@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import sys
 from datetime import datetime
+from pathlib import Path
 from typing import Callable
 
 from PySide6.QtCore import QTimer
@@ -26,6 +27,8 @@ from PySide6.QtWidgets import (
 )
 
 from database import Database
+from attachment_store import store_clipboard_image
+from feedback import notify
 from logging_config import configure_logging, install_exception_hook
 from incident_workspace import IncidentWorkspace
 from maintenance_planner import MaintenancePlanningWorkspace
@@ -197,6 +200,10 @@ class SmartMainWindow(QMainWindow):
         self.my_work_badge.setToolTip("Open personal action center")
         self.my_work_badge.clicked.connect(lambda:self.open_page("My Work"))
         top_layout.addWidget(self.my_work_badge)
+        self.quick_capture=QPushButton("Quick Screenshot")
+        self.quick_capture.setToolTip("Attach clipboard image to the current record (Ctrl+Shift+V)")
+        self.quick_capture.clicked.connect(self.capture_clipboard_image)
+        top_layout.addWidget(self.quick_capture)
         user_label = QLabel(f"{user['display_name']}  |  {user['role']}  |  {WORKSTATION}")
         user_label.setStyleSheet("color:#c8d6df;")
         top_layout.addWidget(user_label)
@@ -272,12 +279,58 @@ class SmartMainWindow(QMainWindow):
         find_action=QAction("Global Search",self);find_action.setShortcut(QKeySequence("Ctrl+K"));find_action.triggered.connect(self.focus_global_search);self.addAction(find_action)
         back_action=QAction("Back",self);back_action.setShortcut(QKeySequence("Alt+Left"));back_action.triggered.connect(self.go_back);self.addAction(back_action)
         forward_action=QAction("Forward",self);forward_action.setShortcut(QKeySequence("Alt+Right"));forward_action.triggered.connect(self.go_forward);self.addAction(forward_action)
+        capture_action=QAction("Quick Screenshot",self);capture_action.setShortcut(QKeySequence("Ctrl+Shift+V"));capture_action.triggered.connect(self.capture_clipboard_image);self.addAction(capture_action)
         self._update_history_buttons()
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.dashboard.refresh)
         self.timer.timeout.connect(self.refresh_my_work_badge)
         self.timer.start(30000)
         self.refresh_my_work_badge()
+
+    def current_evidence_context(self):
+        page=self.stack.currentWidget()
+        if page is self.equipment360:
+            current=self.equipment360.tabs.currentWidget()
+            equipment_id=getattr(current,"equipment_id","") if current else ""
+            return ("EQUIPMENT",equipment_id,equipment_id) if equipment_id else ("","","")
+        if page is self.incident_workspace and self.incident_workspace.ticket:
+            t=self.incident_workspace.ticket
+            return "TICKET",t.ticket_no,t.equipment_id
+        if page is self.pm_execution and self.pm_execution.task:
+            task=self.pm_execution.task
+            if self.pm_execution.execution:return "PM_EXECUTION",str(self.pm_execution.execution.id),task.equipment_id
+            return "PM_TASK",str(task.id),task.equipment_id
+        if page is self.work_order_workspace and self.work_order_workspace.work_order:
+            wo=self.work_order_workspace.work_order
+            return "WORK_ORDER",wo.work_order_no,wo.equipment_id
+        if page is self.return_to_service and self.return_to_service.equipment_id:
+            if self.return_to_service.tabs.currentIndex()==0 and self.return_to_service.run:
+                return "QUALIFICATION",self.return_to_service.run.run_no,self.return_to_service.run.equipment_id
+            if self.return_to_service.tabs.currentIndex()==1 and self.return_to_service.release:
+                return "RELEASE",str(self.return_to_service.release.id),self.return_to_service.release.equipment_id
+            return "EQUIPMENT",self.return_to_service.equipment_id,self.return_to_service.equipment_id
+        return "","",""
+
+    def capture_clipboard_image(self):
+        entity_type,entity_key,equipment_id=self.current_evidence_context()
+        if not entity_key:
+            notify("Quick Screenshot: open an Equipment, Incident, PM, Work Order, or Return-to-Service record first.");return
+        image=QApplication.clipboard().image()
+        if image.isNull():
+            notify("Quick Screenshot: clipboard does not contain an image.");return
+        try:
+            root=os.getenv("EMS_FILE_ROOT",str(Path.cwd()/"equipment_files"))
+            stored=store_clipboard_image(image,root,entity_type,entity_key)
+            self.db.add_attachment(
+                entity_type,entity_key,stored["stored_path"],original_name=stored["original_name"],
+                media_type=stored["media_type"],category="Screenshot",caption="Quick clipboard capture",
+                equipment_id=equipment_id,created_by=self.user["username"],
+            )
+            page=self.stack.currentWidget()
+            if hasattr(page,"refresh"):page.refresh()
+            notify(f"Screenshot attached to {entity_type}:{entity_key}.")
+        except Exception as exc:
+            notify(f"Quick Screenshot failed: {exc}",8000)
 
     def refresh_my_work_badge(self):
         try:
