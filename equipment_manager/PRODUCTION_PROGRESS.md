@@ -6,43 +6,74 @@ This file is the persistent progress tracker for the full-production roadmap.
 
 **Program state:** Internal Alpha — connected engineering workflow transformation
 
-**Current main:** `85470cd44cc775327dd3e6617e3c076d447f604c`
+**Current main:** `041810cded3979c8247d8c85d39fa50c1d10f111`
 
-**Active development wave:** `ems/internal-alpha-wave2`
+**Active development wave:** `ems/internal-alpha-wave3`
 
-The production backend remains intact while the user-facing product is being rebuilt around connected operational workspaces, Office interoperability, universal evidence, planning/execution and cross-feature orchestration.
+The production backend remains intact while the user-facing product is being rebuilt around connected operational workspaces, Office interoperability, universal evidence, planning/execution, collaboration, configurable local fields/templates, and cross-feature orchestration.
 
 ## Milestone status
 
 | Milestone | Status | Current implementation / remaining gate |
 |---|---|---|
-| M0 Product baseline / UX architecture | **COMPLETE** | Full roadmap, workflow inventory and modular workspace architecture established. |
-| M1 Shell / navigation / productivity | **COMPLETE** | Global Search, My Work, recents/favorites, Ctrl+K, back/forward, persistent multi-equipment tabs, account-saved table column views and deep routing implemented. Acceptance intent met. |
-| M2 Equipment 360 / relationship graph | **AT GATE** | Equipment 360 now combines state, incidents, alarms, PM, work orders, labor, qualification/release, components, meters, parts, documents, handover/disposition, evidence, unified timeline and clickable related records. Remaining: richer compare/collection tools are enhancement rather than core gate blockers. |
-| M3 Universal evidence / attachments | **AT GATE** | Reusable evidence panel supports multi-file attach, drag/drop, Ctrl+V screenshots, preview, metadata/tags, image annotation, copy-to-record with provenance and integrity hashes across major operational workflows. Remaining: richer gallery/bulk attachment management. |
-| M4 Excel-first / bulk operations | **IN PROGRESS** | Shared tables support copy/XLSX export/saved views. Import Studio with preview/mapping/saved mappings now covers PM, equipment master and inventory; bulk equipment/inventory edits exist. Remaining: true round-trip diff/reconciliation and expansion to qualification/tickets/handover. |
-| M5 PM planning / execution redesign | **IN PROGRESS** | Maintenance Planner has schedule/calendar/capacity views, bulk assign/reschedule, due-window control, parts/cert readiness. Technician PM Runner has task-focused checklist, SOP, evidence, work timing, abnormal-result incident creation, in-run part reservation/consumption. Remaining: richer Gantt/drag scheduling, previous-value/trend context and deeper conditional branching. |
-| M6 Alarm / incident / RCA / CAPA | **IN PROGRESS** | Structured Incident Workspace includes summary, containment/SLA, lifecycle, troubleshooting, 5-Why, causal factors, CAPA/actions, recurrence and evidence. Alarm console can now create/link/open incidents directly. Alarm burst correlation service now groups adjacent alarms deterministically, preserves raw alarm IDs, ranks severity, and is covered by regression tests. Burst incident creation now validates a single-equipment scope, selects the highest-severity source for incident priority, links every source alarm, and rejects incompatible pre-linked incidents. Alarm Console now exposes a Correlated Bursts tab, burst incident creation, and a user-configurable correlation window. Remaining: persist plant-specific defaults and add automatic burst escalation/notifications. |
-| M7 Work order / qualification / release | **IN PROGRESS** | Governed Work Order model/lifecycle/links added with source conversion from ticket/PM, My Work/Search/Equipment 360 integration, labor/evidence workspace and direct incident/PM routing. Closeout readiness is now scoped to qualification/release records explicitly linked to the work order, preventing cross-job leakage on shared equipment. Remaining: automatic qualification/release packet orchestration and richer parts/component linkage. |
-| M8 Inventory / components / logistics | **NOT STARTED AS REDESIGN** | Strong inventory/component backend plus PM inline parts workflow exists; barcode/receiving/transfer/kits/substitutes/logistics workspace remain. |
-| M9 Shift / My Work / collaboration | **IN PROGRESS / HANDOVER GATE MET** | My Work exists and the new Shift Operations workspace automatically assembles candidates from abnormal states, incidents, alarms, PM, work orders, qualification/release and restrictions; supervisors can bulk publish/acknowledge with evidence. Comments/@mentions/watchers remain. |
-| M10 Analytics / engineering intelligence | **NOT STARTED AS REDESIGN** | Reliability metrics exist; interactive charts/Pareto/trends/drill-down workbench remains. |
-| M11 Office reporting / PPT / Excel / PDF | **IN PROGRESS** | One-click editable PPTX/XLSX incident review and Equipment 360 review packs are implemented, including evidence slides and structured data sheets. Site templates, PM/qualification/release packs and PDF output remain. |
-| M12 Integration Studio / orchestration | **PARTIAL FOUNDATION** | Transactional outbox/adapters exist; visual mapping, inbound connectors, replay/dead-letter tools and configurable orchestration rules remain. |
-| M13 Configurable forms / templates | **NOT STARTED** | Major gap. |
-| M14 Product polish / performance / accessibility | **INCREMENTAL** | Smart shell/workspaces substantially improve usability; full performance/accessibility/modal-reduction pass remains. |
-| M15 UAT / pilot / production rollout | **NOT STARTED** | Requires product milestones and site pilot. |
+| M0 Product baseline / UX architecture | **COMPLETE** | Roadmap, workflow inventory and modular workspace architecture established. |
+| M1 Shell / navigation / productivity | **COMPLETE** | Global Search, My Work, recents/favorites, Ctrl+K, back/forward, persistent multi-equipment tabs, account-saved table views, actionable command-center drill-through, last-workspace and window restoration. |
+| M2 Equipment 360 / relationship graph | **AT GATE** | State, incidents, alarms, PM, work orders, labor, qualification/release, components, meters, parts, documents, handover/disposition, evidence, discussion, custom fields, unified timeline and related-record navigation are consolidated. Richer tool comparison/collections remain enhancement work. |
+| M3 Universal evidence / attachments | **AT GATE** | Multi-file attach, drag/drop, Ctrl+V screenshots, preview, metadata/tags, image annotation, copy-to-record provenance and integrity hashes are available across the major operational workspaces. Richer gallery/bulk attachment management remains. |
+| M4 Excel-first / bulk operations | **IN PROGRESS** | Shared tables support copy/XLSX export/saved views. Import Studio + saved mappings covers PM, equipment and inventory; reconciliation guards and bulk equipment/inventory updates exist; Qualification Runner supports controlled multi-row clipboard result paste. Ticket/handover round-trip workflows remain. |
+| M5 PM planning / execution redesign | **AT GATE** | Planner includes schedule/calendar/capacity, bulk assign/reschedule, due-window control and parts/cert readiness. Technician runner includes frozen checklist, SOP context, evidence, work timing, abnormal-result incident creation, work-order linkage and in-run part reservation/consumption. Richer drag/Gantt planning and historical trend context remain. |
+| M6 Alarm / incident / RCA / CAPA | **AT GATE** | Incident Workspace includes containment/SLA, troubleshooting, 5-Why, causal factors, CAPA/effectiveness, recurrence, evidence and team discussion. Alarm burst correlation is deterministic, raw IDs are preserved, correlated bursts create one linked incident, and alarm→incident workflows can be automated. Richer fishbone visualization and recurrence intelligence remain. |
+| M7 Work order / qualification / release | **AT GATE** | Governed Work Orders connect source ticket/PM, labor, evidence, closeout, qualification and release. New task-focused Qualification Runner provides frozen checks, check inspector, bulk result paste, evidence, discussion, custom fields, submit/verify/approve/reject and Office reporting. Remaining: modern dedicated release workspace and deeper component/part closeout visualization. |
+| M8 Inventory / components / logistics | **IN PROGRESS** | Dedicated Logistics workspace includes scanner lookup, receiving, transfer, cycle count, reorder queue, part catalog/supplier/barcode/lead-time data, approved substitutes, PM kit readiness and reservation. Remaining: repairable/rotable lifecycle and stronger purchasing/vendor flow. |
+| M9 Shift / My Work / collaboration | **AT GATE** | My Work plus automatic Shift Operations candidate assembly are implemented. Persistent comments, @mentions, watchers and unread record notifications feed back into My Work and are embedded in Equipment, Incident, PM and Work Order workspaces. Remaining: richer team queues/subscriptions and collaboration reporting. |
+| M10 Analytics / engineering intelligence | **IN PROGRESS** | Engineering Analytics provides fleet reliability/chronic-tool matrix, downtime/alarm/incident Pareto, PM compliance, drill-down and bounded time-series trends for availability, unplanned downtime and failures. Remaining: tool-to-tool comparison, subsystem/component breakdown and advanced reliability analysis. |
+| M11 Office reporting / PPT / Excel / PDF | **AT GATE** | Editable PPTX/XLSX packs now cover incidents, Equipment 360, PM execution, Work Orders, Qualification, Release and fleet Engineering Review. Long tables paginate and `EMS_PPT_TEMPLATE` supports site PowerPoint templates. Remaining: PDF output and richer site-defined section/template controls. |
+| M12 Integration Studio / orchestration | **IN PROGRESS** | Visual Integration Studio provides endpoint configuration, controlled field-mapping revisions, payload preview, delivery monitor, retry/dead-letter replay, inbound receipt monitoring and declarative rules. Outbound FILE/HTTP mappings execute at dispatch; inbound events are idempotent; a LAN JSON drop adapter quarantines processed/duplicate/rejected files; rules can perform alarm→incident, incident→work-order and controlled disposition actions exactly once. Remaining: specialized SECS/GEM/MES/FDC/ERP adapters, richer transformations and more governed rule actions. |
+| M13 Configurable forms / templates | **IN PROGRESS** | Configuration Studio provides scoped custom fields and reusable record templates. Scoped definitions override global defaults. Configured fields are embedded in Equipment, Incident and Work Order; engineering work-order creation can use equipment-type templates. Remaining: configurable reason codes, form sections, approval/workflow templates and broader entity template adoption. |
+| M14 Product polish / performance / accessibility | **IN PROGRESS** | Smart shell/workspaces substantially reduce CRUD navigation; command-center items are actionable, incident edits have debounced crash-recovery drafts, and per-user window/last-workspace state is restored. Remaining: high-volume model/view conversion, accessibility pass, modal reduction, background loading and realistic performance/soak targets. |
+| M15 UAT / pilot / production rollout | **NOT STARTED** | Requires completed product gates plus real-site LAN/PostgreSQL/SMB pilot and role-based UAT. |
 
-## Immediate execution order
+## Done in Wave 3
 
-1. Keep Wave 2 green and merge the connected PM/alarm/work-order changes.
-2. Close M4 round-trip Excel diff/reconciliation for equipment and inventory, then expand to qualification/checklists.
-3. Continue M5 with technician result history/trends and planner timeline/Gantt interaction.
-4. Continue M6 with alarm grouping/correlation and direct incident operational-control editing.
-5. Continue M7 with automatic work-order → qualification → release packet orchestration.
-6. Start M10 engineering analytics workbench with native interactive trends/Pareto/drill-down.
-7. Extend M11 report packs to PM, work order, qualification/release and site-defined PowerPoint templates.
-8. Start M8 logistics redesign only after M5/M7 part flows stabilize.
+- Collaboration comments, @mentions, watchers and My Work notification routing.
+- Expanded Office reporting and site PowerPoint template support.
+- Deterministic alarm-correlation ordering regression fix.
+- Integration Studio, mapping revisions, dead-letter/replay, inbound idempotency and LAN drop adapter.
+- Declarative exactly-once alarm→incident→work-order and controlled-disposition orchestration.
+- Configuration Studio, scoped custom fields and record templates.
+- Fleet reliability trends and engineering-review PPTX/XLSX.
+- Incident draft recovery and Smart-shell workspace/window recovery.
+- Modern Qualification Runner and direct qualification routing.
+- Actionable Operations Command Center drill-through.
+
+## In progress
+
+- Exact-head CI validation for the newest Wave 3 commits.
+- Continued M10/M12/M13/M14 gate closure.
+- Reconciliation against `main` before merge if parallel changes land.
+
+## Next
+
+1. Fix any exact-head CI regression and merge Wave 3 once green.
+2. Add a dedicated modern Release workspace and close M7 user-flow gaps.
+3. Extend custom configuration to reason codes/workflow/approval templates.
+4. Add tool comparison and subsystem/component analytics.
+5. Continue M14 with model/view scalability, background loading and accessibility.
+6. Prepare M15 executable site-acceptance/UAT pack after product gates stabilize.
+
+## Remaining milestone work
+
+Production release still requires the remaining M4/M7/M8/M10/M12/M13/M14 gaps plus M15 real-site validation. A milestone is not complete merely because a backend API exists; the acceptance gate in `FULL_PRODUCTION_ROADMAP.md` remains authoritative.
+
+## Regression / CI
+
+Wave 3 contains dedicated tests for collaboration, Office report packs, Integration Studio/orchestration, inbound drop processing and Configuration Studio in addition to the existing PostgreSQL, Windows GUI and packaging gates. Intermediate Wave 3 heads through the Qualification/recovery foundation have completed successfully; the newest head must be green before merge.
+
+## Production readiness
+
+**Current classification: Internal Alpha.**
+
+The program is substantially beyond the original CRUD prototype, but it is not yet a Production Candidate. M15 UAT/pilot has not started.
 
 ## Reporting rule
 
