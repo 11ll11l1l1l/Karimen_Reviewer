@@ -2180,7 +2180,13 @@ class AlarmPage(QWidget):
     open_incident=Signal(str,str)
     def __init__(self,db,user):
         super().__init__();self.db=db;self.user=user;self.rows=[];self.pareto=[];self.bursts=[]
-        self.burst_window=QSpinBox();self.burst_window.setRange(1,3600);self.burst_window.setValue(300);self.burst_window.setSuffix(" s");self.burst_window.valueChanged.connect(self.refresh)
+        policy=db.alarm_burst_policy()
+        self.burst_window=QSpinBox();self.burst_window.setRange(1,86400);self.burst_window.setValue(int(policy["window_seconds"]));self.burst_window.setSuffix(" s");self.burst_window.valueChanged.connect(self.refresh)
+        self.burst_count=QSpinBox();self.burst_count.setRange(2,1000);self.burst_count.setValue(int(policy["threshold_count"]))
+        self.burst_severity=QComboBox();self.burst_severity.addItems(["INFO","LOW","WARNING","MEDIUM","HIGH","CRITICAL"]);self.burst_severity.setCurrentText(str(policy["min_severity"]).upper())
+        self.burst_auto=QCheckBox("Auto workflow");self.burst_auto.setChecked(bool(policy["auto_trigger"]))
+        self.save_burst=QPushButton("Save Burst Policy");self.save_burst.clicked.connect(self.save_burst_policy)
+        self.save_burst.setEnabled(db.has_permission(user,"workflow.override") or db.has_permission(user,"user.admin") or user.get("role")=="Administrator")
         v=QVBoxLayout(self);h=QHBoxLayout();title=QLabel("Equipment Alarms / Events");title.setStyleSheet("font-size:18pt;font-weight:700")
         self.eq=QLineEdit();self.eq.setPlaceholderText("Equipment filter");active=QCheckBox("Active only");active.setChecked(True);self.active_only=active
         refresh=QPushButton("Refresh");refresh.clicked.connect(self.refresh);ack=QPushButton("Acknowledge");ack.clicked.connect(self.acknowledge)
@@ -2190,7 +2196,8 @@ class AlarmPage(QWidget):
         burst_inc=QPushButton("Create Burst Incident");burst_inc.clicked.connect(self.create_burst_incident)
         manual=QPushButton("Record Manual Alarm");manual.clicked.connect(self.manual_alarm)
         can_ticket=db.has_permission(user,"ticket.edit");manual.setEnabled(can_ticket);create_inc.setEnabled(can_ticket);link_inc.setEnabled(can_ticket);burst_inc.setEnabled(can_ticket)
-        h.addWidget(title);h.addStretch(1);h.addWidget(QLabel("Burst window"));h.addWidget(self.burst_window);h.addWidget(self.eq);h.addWidget(active);h.addWidget(refresh);h.addWidget(ack);h.addWidget(create_inc);h.addWidget(link_inc);h.addWidget(open_inc);h.addWidget(burst_inc);h.addWidget(manual);v.addLayout(h)
+        h.addWidget(title);h.addStretch(1);h.addWidget(QLabel("Burst"));h.addWidget(self.burst_window);h.addWidget(QLabel("Count"));h.addWidget(self.burst_count);h.addWidget(QLabel("Min sev"));h.addWidget(self.burst_severity);h.addWidget(self.burst_auto);h.addWidget(self.save_burst);h.addWidget(self.eq);h.addWidget(active);h.addWidget(refresh);h.addWidget(ack);h.addWidget(create_inc);h.addWidget(link_inc);h.addWidget(open_inc);h.addWidget(burst_inc);h.addWidget(manual);v.addLayout(h)
+        self.burst_policy_status=QLabel();self.burst_policy_status.setStyleSheet("color:#647581");v.addWidget(self.burst_policy_status)
         tabs=QTabWidget()
         wa=QWidget();va=QVBoxLayout(wa);self.table=make_table(["Event","Equipment","Alarm Code","Severity","Message","Source","State","Occurred","Ack By","Ack At","Cleared","Ticket"]);self.table.itemSelectionChanged.connect(self.load_attachment);va.addWidget(self.table);tabs.addTab(wa,"Alarm History")
         wp=QWidget();vp=QVBoxLayout(wp);self.pareto_table=make_table(["Alarm Code","Message","Count"]);vp.addWidget(self.pareto_table);tabs.addTab(wp,"30-Day Pareto")
@@ -2211,7 +2218,19 @@ class AlarmPage(QWidget):
         self.pareto_table.setRowCount(len(self.pareto))
         for r,row in enumerate(self.pareto):
             for col,key in enumerate(["alarm_code","message","count"]):self.pareto_table.setItem(r,col,ti(row.get(key,"")))
+        qualifying=sum(1 for b in self.bursts if b.count>=self.burst_count.value() and self.db._alarm_severity_rank(b.severity)>=self.db._alarm_severity_rank(self.burst_severity.currentText()))
+        self.burst_policy_status.setText(f"Plant burst policy: {self.burst_count.value()} alarms within {self.burst_window.value()} s · min {self.burst_severity.currentText()} · auto workflow {'ON' if self.burst_auto.isChecked() else 'OFF'} · {qualifying} displayed burst(s) meet threshold")
         self.load_attachment()
+
+    def save_burst_policy(self):
+        try:
+            self.db.save_alarm_burst_policy(
+                self.burst_window.value(),self.burst_count.value(),
+                self.burst_severity.currentText(),self.burst_auto.isChecked(),
+            )
+            QMessageBox.information(self,"Alarm burst policy","Plant alarm burst policy saved.")
+            self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"Alarm burst policy",str(exc))
 
     def load_attachment(self):
         row=selected_row(self.table,self.rows)
