@@ -313,7 +313,7 @@ class PMExecutionWorkspace(QWidget):
         path,_=QFileDialog.getSaveFileName(self,"Export PM Review PowerPoint",f"{self.task.equipment_id}_{self.task.pm_id}_PM_Review.pptx","PowerPoint (*.pptx)")
         if not path:return
         if not path.lower().endswith(".pptx"):path+=".pptx"
-        try:export_pm_execution_pptx(self.db,self.task.id,path);QMessageBox.information(self,"PowerPoint",f"Editable PM review deck created.\n{path}")
+        try:export_pm_execution_pptx(self.db,self.task.id,path,self.db.resolve_report_template("PM_EXECUTION",self.task.equipment_id));QMessageBox.information(self,"PowerPoint",f"Editable PM review deck created.\n{path}")
         except Exception as exc:QMessageBox.critical(self,"PowerPoint",str(exc))
 
     def export_xlsx(self):
