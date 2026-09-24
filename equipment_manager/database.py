@@ -4484,6 +4484,10 @@ class Database:
                 payload.pop("created_at", None)
                 self._update_versioned(item, payload, expected_version, "Ticket")
             else:
+                context=self._ticket_runtime_context(s,payload)
+                if not str(payload.get("owner","") or "").strip():
+                    assignment=self._resolve_assignment_in_session(s,"TICKET",context)
+                    if assignment and assignment.owner:payload["owner"]=assignment.owner
                 payload["status"] = "Open"
                 if payload["status"] not in TICKET_STATES:
                     raise ValueError(f"Unknown ticket state: {payload['status']}")
@@ -4499,6 +4503,22 @@ class Database:
                     changed_by=payload.get("created_by", ""),
                     workstation=workstation,
                 ))
+                s.flush()
+                sla=self._resolve_sla_in_session(s,context)
+                if sla:
+                    now=item.created_at or datetime.utcnow()
+                    s.add(TicketOperationalControl(
+                        ticket_no=item.ticket_no,
+                        response_due_at=now+timedelta(minutes=sla.response_minutes) if sla.response_minutes else None,
+                        containment_due_at=now+timedelta(minutes=sla.containment_minutes) if sla.containment_minutes else None,
+                        resolution_due_at=now+timedelta(minutes=sla.resolution_minutes) if sla.resolution_minutes else None,
+                    ))
+                    s.add(AuditLog(
+                        user=payload.get("created_by","") or "system",action="TICKET_SLA_APPLY",
+                        entity_type="TICKET",entity_key=item.ticket_no,
+                        detail=json.dumps({"template_id":sla.template_id,"response_minutes":sla.response_minutes,"containment_minutes":sla.containment_minutes,"resolution_minutes":sla.resolution_minutes},sort_keys=True),
+                        workstation=workstation,
+                    ))
             s.flush()
             return item
 
