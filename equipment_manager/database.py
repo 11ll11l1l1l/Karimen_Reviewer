@@ -2172,7 +2172,7 @@ class Database:
 
     def save_workflow_rule(self, data: dict[str, Any], user: str = "", expected_version: int | None = None):
         payload=dict(data);trigger=str(payload.get("trigger","")).strip().upper()
-        allowed={"ALARM_ACTIVE","PM_ABNORMAL_RESULT","QUALIFICATION_APPROVED","RELEASE_APPROVED"}
+        allowed={"ALARM_ACTIVE","ALARM_BURST","PM_ABNORMAL_RESULT","QUALIFICATION_APPROVED","RELEASE_APPROVED"}
         if trigger not in allowed:raise ValueError(f"Unsupported workflow trigger: {trigger}")
         payload["trigger"]=trigger;rule_id=str(payload.get("rule_id","")).strip()
         if not rule_id:raise ValueError("Rule ID is required.")
@@ -2751,6 +2751,88 @@ class Database:
             s.flush()
             return item
 
+    def alarm_burst_policy(self) -> dict[str, Any]:
+        defaults={"window_seconds":300,"threshold_count":3,"min_severity":"WARNING","auto_trigger":False}
+        with self.session() as s:
+            row=s.scalar(select(ConfigOption).where(
+                ConfigOption.category=="ALARM_BURST_POLICY",
+                ConfigOption.code=="DEFAULT",
+                ConfigOption.active.is_(True),
+            ))
+            if not row:return defaults
+            try:meta=json.loads(row.metadata_json or "{}")
+            except Exception:meta={}
+        result=dict(defaults);result.update({k:v for k,v in meta.items() if k in defaults})
+        try:result["window_seconds"]=max(1,min(int(result["window_seconds"]),86400))
+        except Exception:result["window_seconds"]=defaults["window_seconds"]
+        try:result["threshold_count"]=max(2,min(int(result["threshold_count"]),1000))
+        except Exception:result["threshold_count"]=defaults["threshold_count"]
+        result["min_severity"]=str(result.get("min_severity") or "WARNING").upper()
+        result["auto_trigger"]=bool(result.get("auto_trigger",False))
+        return result
+
+    def save_alarm_burst_policy(
+        self,
+        window_seconds: int,
+        threshold_count: int,
+        min_severity: str = "WARNING",
+        auto_trigger: bool = False,
+    ):
+        window=max(1,min(int(window_seconds),86400))
+        threshold=max(2,min(int(threshold_count),1000))
+        severity=str(min_severity or "WARNING").upper()
+        if severity not in {"INFO","LOW","WARNING","MEDIUM","HIGH","CRITICAL"}:
+            raise ValueError("Unsupported minimum alarm severity.")
+        existing=self.list_config_options("ALARM_BURST_POLICY",False)
+        row=next((x for x in existing if x.code=="DEFAULT"),None)
+        return self.save_config_option({
+            "category":"ALARM_BURST_POLICY","code":"DEFAULT","label":"Default alarm burst policy",
+            "sort_order":10,"active":True,"system_locked":False,
+            "metadata_json":{
+                "window_seconds":window,"threshold_count":threshold,
+                "min_severity":severity,"auto_trigger":bool(auto_trigger),
+            },
+        },row.version if row else None)
+
+    @staticmethod
+    def _alarm_severity_rank(value: str) -> int:
+        return {"INFO":0,"LOW":1,"WARNING":2,"MEDIUM":3,"HIGH":4,"CRITICAL":5}.get(str(value or "").upper(),0)
+
+    def _evaluate_alarm_burst_in_session(self, s, row: EquipmentAlarmEvent, occurred_at: datetime):
+        policy=self.alarm_burst_policy()
+        if not policy["auto_trigger"]:return []
+        if self._alarm_severity_rank(row.severity)<self._alarm_severity_rank(policy["min_severity"]):return []
+        start=occurred_at-timedelta(seconds=policy["window_seconds"])
+        alarms=list(s.scalars(select(EquipmentAlarmEvent).where(
+            EquipmentAlarmEvent.equipment_id==row.equipment_id,
+            EquipmentAlarmEvent.alarm_code==row.alarm_code,
+            EquipmentAlarmEvent.occurred_at>=start,
+            EquipmentAlarmEvent.occurred_at<=occurred_at,
+        ).order_by(EquipmentAlarmEvent.occurred_at,EquipmentAlarmEvent.id)))
+        if len(alarms)<policy["threshold_count"]:return []
+        recent_exec=list(s.scalars(select(WorkflowAutomationExecution).where(
+            WorkflowAutomationExecution.trigger=="ALARM_BURST",
+            WorkflowAutomationExecution.equipment_id==row.equipment_id,
+            WorkflowAutomationExecution.executed_at>=start,
+            WorkflowAutomationExecution.status=="Completed",
+        ).order_by(WorkflowAutomationExecution.executed_at.desc())))
+        for execution in recent_exec:
+            try:ctx=json.loads(execution.context_json or "{}")
+            except Exception:ctx={}
+            if str(ctx.get("alarm_code",""))==row.alarm_code:return []
+        first=alarms[0];last=alarms[-1]
+        max_severity=max((x.severity for x in alarms),key=self._alarm_severity_rank)
+        burst_key=f"{row.equipment_id}:{row.alarm_code}:{first.event_key}"
+        context={
+            "entity_type":"ALARM_BURST","entity_key":burst_key,"equipment_id":row.equipment_id,
+            "alarm_code":row.alarm_code,"severity":max_severity,"message":row.message,"source":row.source,
+            "count":len(alarms),"first_seen":first.occurred_at.isoformat(),"last_seen":last.occurred_at.isoformat(),
+            "alarm_ids":[x.event_key for x in alarms],
+            "summary":f"{len(alarms)}× {row.alarm_code} alarm burst on {row.equipment_id}",
+            "detail":f"Alarm burst detected within {policy['window_seconds']} seconds; source events: "+", ".join(x.event_key for x in alarms),
+        }
+        return self._apply_workflow_automation_in_session(s,"ALARM_BURST",context)
+
     def ingest_alarm(
         self,
         equipment_id: str,
@@ -2806,6 +2888,7 @@ class Database:
                     "ticket_no":related_ticket,"summary":f"{alarm_code} — {message}",
                     "detail":json.dumps(raw_payload or {},default=str,sort_keys=True),
                 })
+                self._evaluate_alarm_burst_in_session(s,row,occurred_at)
             s.flush();return row
 
     def link_alarm_to_ticket(self, event_key: str, ticket_no: str, user: str, workstation: str = ""):
