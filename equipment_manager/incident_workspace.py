@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
 from table_productivity import install_table_productivity
 from workspaces import AttachmentPanel
 from collaboration_panel import CollaborationPanel
+from configuration_studio import CustomFieldsPanel
 from reporting import export_incident_pptx, export_incident_xlsx
 
 
@@ -82,12 +83,13 @@ class IncidentWorkspace(QWidget):
         self.title=QLabel("Incident Workspace");self.title.setStyleSheet("font-size:20pt;font-weight:800")
         self.status=QLabel();self.status.setStyleSheet("font-size:12pt;font-weight:700")
         self.open_eq=QPushButton("Open Equipment");self.open_eq.clicked.connect(self.open_equipment)
+        self.template_button=QPushButton("Apply template");self.template_button.clicked.connect(self.apply_template)
         self.work_order_button=QPushButton("Create / Open Work Order");self.work_order_button.clicked.connect(self.open_work_order)
         ppt=QPushButton("Export PPTX");ppt.clicked.connect(self.export_pptx)
         xlsx=QPushButton("Export Excel");xlsx.clicked.connect(self.export_xlsx)
         legacy=QPushButton("Lifecycle / troubleshooting editor");legacy.clicked.connect(self.open_legacy)
         refresh=QPushButton("Refresh");refresh.clicked.connect(self.refresh)
-        head.addWidget(self.title);head.addWidget(self.status);head.addStretch(1);head.addWidget(self.open_eq);head.addWidget(self.work_order_button);head.addWidget(ppt);head.addWidget(xlsx);head.addWidget(legacy);head.addWidget(refresh);root.addLayout(head)
+        head.addWidget(self.title);head.addWidget(self.status);head.addStretch(1);head.addWidget(self.template_button);head.addWidget(self.open_eq);head.addWidget(self.work_order_button);head.addWidget(ppt);head.addWidget(xlsx);head.addWidget(legacy);head.addWidget(refresh);root.addLayout(head)
         self.context=QLabel("Select an incident from Global Search, My Work, or Equipment 360.");self.context.setWordWrap(True);self.context.setStyleSheet("color:#647581;");root.addWidget(self.context)
 
         self.tabs=QTabWidget();root.addWidget(self.tabs,1)
@@ -115,6 +117,7 @@ class IncidentWorkspace(QWidget):
 
         history=QWidget();hv=QVBoxLayout(history);self.similar_table=_table(["Ticket","Title","Priority","Status","Owner","Created","Updated"]);self.similar_table.doubleClicked.connect(self.open_similar);hv.addWidget(QLabel("Other incidents on the same equipment"));hv.addWidget(self.similar_table);self.tabs.addTab(history,"Recurrence History")
 
+        self.custom_fields=CustomFieldsPanel(db,user);self.tabs.addTab(self.custom_fields,"Custom Fields")
         self.attachments=AttachmentPanel(db,user);self.tabs.addTab(self.attachments,"Evidence / Attachments")
         self.collaboration=CollaborationPanel(db,user);self.tabs.addTab(self.collaboration,"Discussion / Updates")
         self._set_enabled(False)
@@ -145,8 +148,31 @@ class IncidentWorkspace(QWidget):
         self.factors=self.db.list_incident_causal_factors(t.ticket_no);_fill(self.factor_table,self.factors,["id","category","factor_type","description","evidence","status","created_by","version"])
         self.actions=self.db.list_incident_actions(t.ticket_no);_fill(self.action_table,self.actions,["id","action_type","description","owner","due_at","status","effectiveness_criteria","completed_by","completed_at","verified_by","verified_at","version"])
         self.similar=self.db.incident_similar_history(t.ticket_no);_fill(self.similar_table,self.similar,["ticket_no","title","priority","status","owner","created_at","updated_at"])
+        self.custom_fields.set_entity("TICKET",t.ticket_no,t.equipment_id)
         self.attachments.set_entity("TICKET",t.ticket_no,t.equipment_id)
         self.collaboration.set_entity("TICKET",t.ticket_no,t.equipment_id)
+
+    def apply_template(self):
+        if not self.ticket:return
+        templates=self.db.list_record_templates("TICKET",True,self.ticket.equipment_id)
+        if not templates:
+            QMessageBox.information(self,"Incident template","No active incident templates apply to this equipment context.");return
+        labels=[f"{x.name} [{x.template_id}]" for x in templates]
+        choice,ok=QInputDialog.getItem(self,"Incident template","Template",labels,0,False)
+        if not ok:return
+        row=templates[labels.index(choice)]
+        try:payload=self.db.get_record_template_payload(row.template_id)
+        except Exception as exc:QMessageBox.critical(self,"Incident template",str(exc));return
+        if "description" in payload:self.description.setPlainText(str(payload["description"]))
+        if "root_cause" in payload:self.root_cause.setPlainText(str(payload["root_cause"]))
+        if "corrective_action" in payload:self.corrective.setPlainText(str(payload["corrective_action"]))
+        if "verification" in payload:self.verification.setPlainText(str(payload["verification"]))
+        if payload.get("custom_fields") and isinstance(payload["custom_fields"],dict):
+            try:
+                self.db.set_custom_field_values("TICKET",self.ticket.ticket_no,payload["custom_fields"],self.user["username"],self.ticket.equipment_id,"INCIDENT-TEMPLATE")
+                self.custom_fields.refresh()
+            except Exception as exc:QMessageBox.warning(self,"Incident template",f"Template applied to summary, but custom fields could not be applied: {exc}")
+        QMessageBox.information(self,"Incident template",f"Applied template: {row.name}. Review and save the incident summary.")
 
     def save_summary(self):
         if not self.ticket:return
