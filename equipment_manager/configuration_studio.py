@@ -49,7 +49,7 @@ class ConfigOptionDialog(QDialog):
 class EntityTemplateDialog(QDialog):
     def __init__(self,row=None,parent=None):
         super().__init__(parent);self.row=row;self.setWindowTitle("Entity Template");self.resize(650,520)
-        f=QFormLayout(self);self.template_id=QLineEdit();self.entity=QComboBox();self.entity.addItems(["EQUIPMENT","TICKET","WORK_ORDER","PM_DEFINITION"]);self.name=QLineEdit();self.applies=QLineEdit();self.defaults=QTextEdit();self.defaults.setPlaceholderText('{"equipment_type":"Etch","criticality":"High","area":"ETCH"}');self.active=QCheckBox("Active");self.active.setChecked(True)
+        f=QFormLayout(self);self.template_id=QLineEdit();self.entity=QComboBox();self.entity.addItems(["EQUIPMENT","TICKET","WORK_ORDER","PM_DEFINITION","QUALIFICATION_PROTOCOL"]);self.name=QLineEdit();self.applies=QLineEdit();self.defaults=QTextEdit();self.defaults.setPlaceholderText('{"equipment_type":"Etch","criticality":"High","area":"ETCH"}');self.active=QCheckBox("Active");self.active.setChecked(True)
         for label,w in [("Template ID",self.template_id),("Entity type",self.entity),("Name",self.name),("Applies to / equipment type",self.applies),("Default values JSON",self.defaults),("",self.active)]:f.addRow(label,w)
         b=QDialogButtonBox(QDialogButtonBox.StandardButton.Save|QDialogButtonBox.StandardButton.Cancel);b.accepted.connect(self._accept);b.rejected.connect(self.reject);f.addRow(b)
         if row:
@@ -81,6 +81,54 @@ class CustomFieldDialog(QDialog):
         self.accept()
     def data(self):
         return {"field_id":self.field_id.text().strip(),"entity_type":self.entity.currentText(),"applies_to":self.applies.text().strip(),"label":self.label.text().strip(),"field_type":self.type.currentText(),"options_json":self.options.toPlainText().strip() or "[]","required":self.required.isChecked(),"active":self.active.isChecked(),"sort_order":int(self.order.value())}
+
+
+class NumberingSchemeDialog(QDialog):
+    def __init__(self,row=None,parent=None):
+        super().__init__(parent);self.row=row;self.setWindowTitle("Numbering Scheme")
+        f=QFormLayout(self);self.entity=QComboBox();self.entity.addItems(["TICKET","WORK_ORDER","ENDORSEMENT","QUALIFICATION"])
+        self.prefix=QLineEdit();self.date_format=QLineEdit("%Y%m%d");self.separator=QLineEdit("-");self.padding=QDoubleSpinBox();self.padding.setDecimals(0);self.padding.setRange(1,12);self.padding.setValue(4);self.reset=QComboBox();self.reset.addItems(["DAY","MONTH","YEAR","NEVER"]);self.active=QCheckBox("Active");self.active.setChecked(True)
+        for label,w in [("Entity",self.entity),("Prefix",self.prefix),("Date format",self.date_format),("Separator",self.separator),("Sequence padding",self.padding),("Reset",self.reset),("",self.active)]:f.addRow(label,w)
+        b=QDialogButtonBox(QDialogButtonBox.StandardButton.Save|QDialogButtonBox.StandardButton.Cancel);b.accepted.connect(self.accept);b.rejected.connect(self.reject);f.addRow(b)
+        if row:self.entity.setCurrentText(row.entity_type);self.entity.setEnabled(False);self.prefix.setText(row.prefix);self.date_format.setText(row.date_format);self.separator.setText(row.separator);self.padding.setValue(row.padding);self.reset.setCurrentText(row.reset_period);self.active.setChecked(row.active)
+    def data(self):
+        return {"entity_type":self.entity.currentText(),"prefix":self.prefix.text().strip(),"date_format":self.date_format.text().strip(),"separator":self.separator.text(),"padding":int(self.padding.value()),"reset_period":self.reset.currentText(),"active":self.active.isChecked()}
+
+
+class AssignmentRuleDialog(QDialog):
+    def __init__(self,row=None,parent=None):
+        super().__init__(parent);self.row=row;self.setWindowTitle("Default Assignment Rule");self.resize(620,450)
+        f=QFormLayout(self);self.rule=QLineEdit();self.entity=QComboBox();self.entity.addItems(["TICKET","WORK_ORDER","PM_TASK"]);self.name=QLineEdit();self.match=QTextEdit();self.match.setPlaceholderText('{"area":"ETCH","priority":["P1","P2"]}');self.owner=QLineEdit();self.team=QLineEdit();self.priority=QDoubleSpinBox();self.priority.setDecimals(0);self.priority.setRange(1,10000);self.priority.setValue(100);self.active=QCheckBox("Active");self.active.setChecked(True)
+        for label,w in [("Rule ID",self.rule),("Entity type",self.entity),("Name",self.name),("Match JSON",self.match),("Default owner",self.owner),("Default team",self.team),("Rule priority",self.priority),("",self.active)]:f.addRow(label,w)
+        b=QDialogButtonBox(QDialogButtonBox.StandardButton.Save|QDialogButtonBox.StandardButton.Cancel);b.accepted.connect(self._accept);b.rejected.connect(self.reject);f.addRow(b)
+        if row:self.rule.setText(row.rule_id);self.rule.setReadOnly(True);self.entity.setCurrentText(row.entity_type);self.name.setText(row.name);self.match.setPlainText(row.match_json);self.owner.setText(row.owner);self.team.setText(row.team);self.priority.setValue(row.priority);self.active.setChecked(row.active)
+    def _accept(self):
+        try:
+            x=json.loads(self.match.toPlainText() or "{}")
+            if not isinstance(x,dict):raise ValueError("Match must be a JSON object.")
+        except Exception as exc:QMessageBox.warning(self,"Assignment rule",str(exc));return
+        self.accept()
+    def data(self):
+        return {"rule_id":self.rule.text().strip(),"entity_type":self.entity.currentText(),"name":self.name.text().strip(),"match_json":self.match.toPlainText().strip() or "{}","owner":self.owner.text().strip(),"team":self.team.text().strip(),"priority":int(self.priority.value()),"active":self.active.isChecked()}
+
+
+class SLATemplateDialog(QDialog):
+    def __init__(self,row=None,parent=None):
+        super().__init__(parent);self.row=row;self.setWindowTitle("Incident SLA Template");self.resize(620,450)
+        f=QFormLayout(self);self.template=QLineEdit();self.name=QLineEdit();self.match=QTextEdit();self.match.setPlaceholderText('{"priority":"P1"}');self.response=QDoubleSpinBox();self.containment=QDoubleSpinBox();self.resolution=QDoubleSpinBox();self.priority=QDoubleSpinBox()
+        for w in [self.response,self.containment,self.resolution]:w.setDecimals(0);w.setRange(0,525600);w.setSuffix(" min")
+        self.priority.setDecimals(0);self.priority.setRange(1,10000);self.priority.setValue(100);self.active=QCheckBox("Active");self.active.setChecked(True)
+        for label,w in [("Template ID",self.template),("Name",self.name),("Match JSON",self.match),("Response due",self.response),("Containment due",self.containment),("Resolution due",self.resolution),("Rule priority",self.priority),("",self.active)]:f.addRow(label,w)
+        b=QDialogButtonBox(QDialogButtonBox.StandardButton.Save|QDialogButtonBox.StandardButton.Cancel);b.accepted.connect(self._accept);b.rejected.connect(self.reject);f.addRow(b)
+        if row:self.template.setText(row.template_id);self.template.setReadOnly(True);self.name.setText(row.name);self.match.setPlainText(row.match_json);self.response.setValue(row.response_minutes);self.containment.setValue(row.containment_minutes);self.resolution.setValue(row.resolution_minutes);self.priority.setValue(row.priority);self.active.setChecked(row.active)
+    def _accept(self):
+        try:
+            x=json.loads(self.match.toPlainText() or "{}")
+            if not isinstance(x,dict):raise ValueError("Match must be a JSON object.")
+        except Exception as exc:QMessageBox.warning(self,"SLA template",str(exc));return
+        self.accept()
+    def data(self):
+        return {"template_id":self.template.text().strip(),"name":self.name.text().strip(),"match_json":self.match.toPlainText().strip() or "{}","response_minutes":int(self.response.value()),"containment_minutes":int(self.containment.value()),"resolution_minutes":int(self.resolution.value()),"priority":int(self.priority.value()),"active":self.active.isChecked()}
 
 
 class CustomFieldsPanel(QWidget):
@@ -145,6 +193,12 @@ class ConfigurationStudio(QWidget):
         tw=QWidget();tv=QVBoxLayout(tw);th=QHBoxLayout();addt=QPushButton("New template");editt=QPushButton("Edit selected");addt.clicked.connect(self.add_template);editt.clicked.connect(self.edit_template);th.addWidget(addt);th.addWidget(editt);th.addStretch(1);tv.addLayout(th);self.template_table=_table(["Template","Entity","Name","Applies To","Active","Created By","Ver"]);tv.addWidget(self.template_table);tabs.addTab(tw,"Entity Templates")
 
         fw=QWidget();fv=QVBoxLayout(fw);fh=QHBoxLayout();addf=QPushButton("New custom field");editf=QPushButton("Edit selected");addf.clicked.connect(self.add_field);editf.clicked.connect(self.edit_field);fh.addWidget(addf);fh.addWidget(editf);fh.addStretch(1);fv.addLayout(fh);self.field_table=_table(["Field","Entity","Applies To","Label","Type","Required","Order","Active","Ver"]);fv.addWidget(self.field_table);tabs.addTab(fw,"Custom Fields")
+
+        nw=QWidget();nv=QVBoxLayout(nw);nh=QHBoxLayout();addn=QPushButton("New scheme");editn=QPushButton("Edit selected");addn.clicked.connect(self.add_numbering);editn.clicked.connect(self.edit_numbering);nh.addWidget(addn);nh.addWidget(editn);nh.addStretch(1);nv.addLayout(nh);self.number_table=_table(["Entity","Prefix","Date Format","Separator","Padding","Reset","Next","Active","Ver"]);nv.addWidget(self.number_table);tabs.addTab(nw,"Numbering")
+
+        aw=QWidget();av=QVBoxLayout(aw);ah=QHBoxLayout();adda=QPushButton("New assignment rule");edita=QPushButton("Edit selected");adda.clicked.connect(self.add_assignment);edita.clicked.connect(self.edit_assignment);ah.addWidget(adda);ah.addWidget(edita);ah.addStretch(1);av.addLayout(ah);self.assignment_table=_table(["Rule","Entity","Name","Match","Owner","Team","Priority","Active","Ver"]);av.addWidget(self.assignment_table);tabs.addTab(aw,"Default Assignment")
+
+        sw=QWidget();sv=QVBoxLayout(sw);sh=QHBoxLayout();adds=QPushButton("New SLA template");edits=QPushButton("Edit selected");adds.clicked.connect(self.add_sla);edits.clicked.connect(self.edit_sla);sh.addWidget(adds);sh.addWidget(edits);sh.addStretch(1);sv.addLayout(sh);self.sla_table=_table(["Template","Name","Match","Response min","Containment min","Resolution min","Priority","Active","Ver"]);sv.addWidget(self.sla_table);tabs.addTab(sw,"Incident SLA")
         self.refresh()
 
     def export_package(self):
@@ -170,7 +224,7 @@ class ConfigurationStudio(QWidget):
             self.refresh();QMessageBox.information(self,"Configuration","Configuration package applied.")
         except Exception as exc:QMessageBox.critical(self,"Configuration import",str(exc))
 
-    def refresh(self):self.refresh_options();self.refresh_templates();self.refresh_fields()
+    def refresh(self):self.refresh_options();self.refresh_templates();self.refresh_fields();self.refresh_runtime_rules()
     def refresh_options(self):
         self.options=self.db.list_config_options(self.category.currentText(),False);self.option_table.setRowCount(len(self.options))
         for r,row in enumerate(self.options):
@@ -185,6 +239,54 @@ class ConfigurationStudio(QWidget):
         self.fields=sorted(rows,key=lambda x:(x.entity_type,x.sort_order,x.label));self.field_table.setRowCount(len(self.fields))
         for r,row in enumerate(self.fields):
             for c,val in enumerate([row.field_id,row.entity_type,row.applies_to,row.label,row.field_type,row.required,row.sort_order,row.active,row.version]):self.field_table.setItem(r,c,_item(val))
+    def refresh_runtime_rules(self):
+        self.numbering=self.db.list_numbering_schemes();self.number_table.setRowCount(len(self.numbering))
+        for r,row in enumerate(self.numbering):
+            for col,val in enumerate([row.entity_type,row.prefix,row.date_format,row.separator,row.padding,row.reset_period,row.next_value,row.active,row.version]):self.number_table.setItem(r,col,_item(val))
+        self.assignments=self.db.list_default_assignment_rules();self.assignment_table.setRowCount(len(self.assignments))
+        for r,row in enumerate(self.assignments):
+            for col,val in enumerate([row.rule_id,row.entity_type,row.name,row.match_json,row.owner,row.team,row.priority,row.active,row.version]):self.assignment_table.setItem(r,col,_item(val))
+        self.slas=self.db.list_sla_templates();self.sla_table.setRowCount(len(self.slas))
+        for r,row in enumerate(self.slas):
+            for col,val in enumerate([row.template_id,row.name,row.match_json,row.response_minutes,row.containment_minutes,row.resolution_minutes,row.priority,row.active,row.version]):self.sla_table.setItem(r,col,_item(val))
+
+    def add_numbering(self):
+        d=NumberingSchemeDialog(parent=self)
+        if d.exec()==QDialog.DialogCode.Accepted:
+            try:self.db.save_numbering_scheme(d.data());self.refresh_runtime_rules()
+            except Exception as exc:QMessageBox.critical(self,"Numbering",str(exc))
+    def edit_numbering(self):
+        row=_selected(self.number_table,self.numbering)
+        if not row:return
+        d=NumberingSchemeDialog(row,self)
+        if d.exec()==QDialog.DialogCode.Accepted:
+            try:self.db.save_numbering_scheme(d.data(),row.version);self.refresh_runtime_rules()
+            except Exception as exc:QMessageBox.critical(self,"Numbering",str(exc))
+    def add_assignment(self):
+        d=AssignmentRuleDialog(parent=self)
+        if d.exec()==QDialog.DialogCode.Accepted:
+            try:self.db.save_default_assignment_rule(d.data());self.refresh_runtime_rules()
+            except Exception as exc:QMessageBox.critical(self,"Assignment rule",str(exc))
+    def edit_assignment(self):
+        row=_selected(self.assignment_table,self.assignments)
+        if not row:return
+        d=AssignmentRuleDialog(row,self)
+        if d.exec()==QDialog.DialogCode.Accepted:
+            try:self.db.save_default_assignment_rule(d.data(),row.version);self.refresh_runtime_rules()
+            except Exception as exc:QMessageBox.critical(self,"Assignment rule",str(exc))
+    def add_sla(self):
+        d=SLATemplateDialog(parent=self)
+        if d.exec()==QDialog.DialogCode.Accepted:
+            try:self.db.save_sla_template(d.data());self.refresh_runtime_rules()
+            except Exception as exc:QMessageBox.critical(self,"SLA template",str(exc))
+    def edit_sla(self):
+        row=_selected(self.sla_table,self.slas)
+        if not row:return
+        d=SLATemplateDialog(row,self)
+        if d.exec()==QDialog.DialogCode.Accepted:
+            try:self.db.save_sla_template(d.data(),row.version);self.refresh_runtime_rules()
+            except Exception as exc:QMessageBox.critical(self,"SLA template",str(exc))
+
     def add_option(self):
         d=ConfigOptionDialog(parent=self);d.category.setText(self.category.currentText())
         if d.exec()==QDialog.DialogCode.Accepted:
