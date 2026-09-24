@@ -102,10 +102,10 @@ class RuleDialog(QDialog):
         super().__init__(parent);self.row=row;self.setWindowTitle("Orchestration Rule");self.resize(720,620)
         f=QFormLayout(self)
         self.rule=QLineEdit();self.name=QLineEdit();self.topic=QLineEdit("equipment.alarm.active")
-        self.condition=QTextEdit();self.action=QComboBox();self.action.addItems(["CREATE_INCIDENT_FROM_ALARM"])
+        self.condition=QTextEdit();self.action=QComboBox();self.action.addItems(["CREATE_INCIDENT_FROM_ALARM","CREATE_WORK_ORDER_FROM_TICKET","SET_DISPOSITION"])
         self.action_json=QTextEdit();self.priority=QSpinBox();self.priority.setRange(1,10000);self.priority.setValue(100);self.enabled=QCheckBox();self.enabled.setChecked(True)
         self.condition.setPlaceholderText('{"payload.severity":{"in":["Critical","Fatal"]}}')
-        self.action_json.setPlaceholderText('{"actor":"engineer_username","owner":"engineer_username"}')
+        self.action_json.setPlaceholderText('Examples: {"actor":"engineer_username","owner":"engineer_username"} · {"actor":"engineer_username","state":"Hold","reason":"Critical alarm","release_criteria":"Engineering review"}')
         for label,w in [("Rule ID",self.rule),("Name",self.name),("Topic pattern",self.topic),("Condition JSON",self.condition),("Action",self.action),("Action JSON",self.action_json),("Priority",self.priority),("Enabled",self.enabled)]:f.addRow(label,w)
         if row:
             self.rule.setText(row.rule_id);self.rule.setReadOnly(True);self.name.setText(row.name);self.topic.setText(row.topic_pattern)
