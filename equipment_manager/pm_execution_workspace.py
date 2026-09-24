@@ -71,12 +71,16 @@ class PMExecutionWorkspace(QWidget):
         inspector=QWidget();iv=QVBoxLayout(inspector)
         self.step_title=QLabel("Select a checklist step");self.step_title.setWordWrap(True);self.step_title.setStyleSheet("font-size:13pt;font-weight:700")
         self.method=QLabel();self.method.setWordWrap(True);self.specification=QLabel();self.specification.setWordWrap(True);self.reaction=QLabel();self.reaction.setWordWrap(True)
+        self.history_summary=QLabel("Previous results: —");self.history_summary.setWordWrap(True);self.history_summary.setStyleSheet("color:#526471;font-weight:600;")
+        self.history_table=_table(["Date","Result","Value","By","Comment"]);self.history_table.setMaximumHeight(170)
         self.text_value=QLineEdit();self.text_value.setPlaceholderText("Enter result / value")
         self.pass_fail=QComboBox();self.pass_fail.addItems(["PASS","FAIL"])
         self.comment=QTextEdit();self.comment.setPlaceholderText("Comment / observation");self.comment.setMaximumHeight(100)
         buttons=QHBoxLayout();save=QPushButton("Save step");save.clicked.connect(self.save_step);paste=QPushButton("Paste screenshot");paste.clicked.connect(self.paste_screenshot);fileb=QPushButton("Attach file");fileb.clicked.connect(self.attach_file);sop=QPushButton("Open SOP");sop.clicked.connect(self.open_sop)
         for b in [save,paste,fileb,sop]:buttons.addWidget(b)
-        iv.addWidget(self.step_title);iv.addWidget(self.method);iv.addWidget(self.specification);iv.addWidget(self.reaction);iv.addWidget(self.text_value);iv.addWidget(self.pass_fail);iv.addWidget(QLabel("Comment"));iv.addWidget(self.comment);iv.addLayout(buttons);iv.addStretch(1)
+        iv.addWidget(self.step_title);iv.addWidget(self.method);iv.addWidget(self.specification);iv.addWidget(self.reaction)
+        iv.addWidget(self.history_summary);iv.addWidget(self.history_table)
+        iv.addWidget(self.text_value);iv.addWidget(self.pass_fail);iv.addWidget(QLabel("Comment"));iv.addWidget(self.comment);iv.addLayout(buttons);iv.addStretch(1)
         split.addWidget(inspector);split.setStretchFactor(0,3);split.setStretchFactor(1,2);ev.addWidget(split);tabs.addTab(execute,"Checklist Runner")
 
         req=QWidget();rv=QVBoxLayout(req);rh=QHBoxLayout();ack=QPushButton("Acknowledge selected requirement");ack.clicked.connect(self.ack_requirement)
@@ -170,6 +174,24 @@ class PMExecutionWorkspace(QWidget):
         if spec.acceptance_text:limits.append(spec.acceptance_text)
         self.specification.setText("Acceptance: "+(" · ".join(limits) if limits else "recorded value / text"))
         self.reaction.setText("Reaction plan: "+(spec.reaction_plan or "No reaction plan defined."))
+        history=self.db.pm_step_history(
+            self.task.equipment_id,self.task.pm_id,spec.step_no,12,
+            self.execution.id if self.execution else None,
+        )
+        self.history_table.setRowCount(len(history))
+        numeric=[]
+        for r,row in enumerate(history):
+            value=row["value_numeric"] if row["value_numeric"] is not None else row["value_text"]
+            vals=[row["entered_at"],row["result"],value,row["entered_by"],row["comment"]]
+            for col,val in enumerate(vals):self.history_table.setItem(r,col,_item(val))
+            if row["value_numeric"] is not None:numeric.append(float(row["value_numeric"]))
+        if numeric:
+            last=numeric[0];avg=sum(numeric)/len(numeric);lo=min(numeric);hi=max(numeric)
+            delta=(last-numeric[1]) if len(numeric)>1 else 0.0
+            self.history_summary.setText(f"Previous numeric results ({len(numeric)}): last {last:g} · avg {avg:.3g} · range {lo:g}–{hi:g} · last delta {delta:+.3g}")
+        elif history:
+            self.history_summary.setText(f"Previous results ({len(history)}): last {history[0]['result']} · value {history[0]['value_text'] or '—'} · by {history[0]['entered_by'] or '—'}")
+        else:self.history_summary.setText("Previous results: none for this equipment / PM / step")
         self.pass_fail.setVisible(spec.input_type=="Pass / Fail");self.text_value.setVisible(spec.input_type!="Pass / Fail")
         if current:
             self.text_value.setText(current.value_text or (str(current.value_numeric) if current.value_numeric is not None else ""));self.comment.setPlainText(current.comment or "")
