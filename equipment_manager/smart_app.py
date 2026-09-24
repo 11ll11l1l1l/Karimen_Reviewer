@@ -30,6 +30,7 @@ from logging_config import configure_logging, install_exception_hook
 from incident_workspace import IncidentWorkspace
 from maintenance_planner import MaintenancePlanningWorkspace
 from pm_execution_workspace import PMExecutionWorkspace
+from return_to_service_workspace import ReturnToServiceWorkspace
 from workflow_automation import WorkflowAutomationStudio
 from configuration_studio import ConfigurationStudio
 from work_order_workspace import WorkOrderWorkspace
@@ -232,10 +233,11 @@ class SmartMainWindow(QMainWindow):
         self.incident_workspace=add("Incident / RCA Workspace",IncidentWorkspace(db,user))
         self.ticket_page=add("Ticket Lifecycle / Troubleshooting",TicketPage(db,user))
         self.alarm_page=add("Alarms / Events",AlarmPage(db,user))
-        self.qualification_page=add("Qualification",QualificationPage(db,user))
+        self.return_to_service=add("Return to Service",ReturnToServiceWorkspace(db,user))
+        self.qualification_page=add("Qualification (Legacy)",QualificationPage(db,user))
         self.analytics_workspace=add("Engineering Analytics",EngineeringAnalyticsWorkspace(db,user))
         self.reliability_page=add("Reliability / MTBF (Legacy)",ReliabilityPage(db))
-        self.control_page=add("Disposition / Release",ControlPage(db,user))
+        self.control_page=add("Disposition / Release (Legacy)",ControlPage(db,user))
         self.work_page=add("Work / Labor",WorkLogPage(db,user))
         self.shift_workspace=add("Shift Operations / Handover",ShiftHandoverWorkspace(db,user))
         self.endorsement_page=add("Handover Records",EndorsementPage(db,user))
@@ -252,6 +254,7 @@ class SmartMainWindow(QMainWindow):
         self.maintenance_planner.open_entity.connect(self.open_entity)
         self.pm_execution.open_entity.connect(self.open_entity)
         self.work_order_workspace.open_entity.connect(self.open_entity)
+        self.return_to_service.open_entity.connect(self.open_entity)
         self.shift_workspace.open_entity.connect(self.open_entity)
         self.analytics_workspace.open_entity.connect(self.open_entity)
         self.inventory_logistics.open_entity.connect(self.open_entity)
@@ -343,7 +346,17 @@ class SmartMainWindow(QMainWindow):
             self.layout_page.highlight_equipment(target)
             self.open_page("Live FAB Map")
             return
-        if entity_type=="EQUIPMENT" or (equipment_id and entity_type in {"ALARM","QUALIFICATION","DOCUMENT","RELEASE"}):
+        if entity_type=="QUALIFICATION":
+            self.return_to_service.set_qualification(entity_key,equipment_id)
+            self.open_page("Return to Service")
+            return
+        if entity_type=="RELEASE":
+            try:release_id=int(entity_key)
+            except Exception:release_id=0
+            self.return_to_service.set_release(release_id,equipment_id)
+            self.open_page("Return to Service")
+            return
+        if entity_type=="EQUIPMENT" or (equipment_id and entity_type in {"ALARM","DOCUMENT"}):
             target=entity_key if entity_type=="EQUIPMENT" else equipment_id
             self.equipment360.set_equipment(target)
             self.open_page("Equipment Workspaces")
