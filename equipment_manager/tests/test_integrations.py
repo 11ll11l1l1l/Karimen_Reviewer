@@ -63,6 +63,54 @@ class IntegrationOutboxTests(unittest.TestCase):
         pending=self.db.pending_integration_deliveries()
         self.assertEqual({x[2].endpoint_id for x in pending},{"FILE-ALL"})
 
+    def test_dead_letter_and_replay_controls_preserve_delivery_identity(self):
+        blocker=Path(self.tmp.name)/"dead-blocker"
+        blocker.write_text("x",encoding="utf-8")
+        self.db.save_integration_endpoint({
+            "endpoint_id":"DEAD",
+            "name":"Dead-letter target",
+            "adapter_type":"FILE",
+            "target":str(blocker),
+            "topics":"equipment.state.changed",
+            "enabled":True,
+        })
+        eq=self.db.get_equipment("ETCH-01")
+        self.db.transition_equipment_state(
+            "ETCH-01","Production",
+            reason_code="RELEASED",reason_text="Qualified",
+            user="ee",expected_version=eq.version,
+        )
+        dispatch_pending(self.db)
+        row=next(x for x in self.db.integration_delivery_rows() if x["endpoint_id"]=="DEAD")
+        self.assertEqual(row["status"],"Retry")
+        delivery_id=row["id"];event_id=row["event_id"]
+        self.db.dead_letter_integration_delivery(delivery_id,"Manual quarantine")
+        dead=next(x for x in self.db.integration_delivery_rows() if x["id"]==delivery_id)
+        self.assertEqual(dead["status"],"DeadLetter")
+        self.assertEqual(dead["event_id"],event_id)
+        self.assertIn("Manual quarantine",dead["last_error"])
+        self.db.requeue_integration_delivery(delivery_id)
+        replay=next(x for x in self.db.integration_delivery_rows() if x["id"]==delivery_id)
+        self.assertEqual(replay["status"],"Pending")
+        self.assertEqual(replay["event_id"],event_id)
+
+    def test_bulk_requeue_dead_letters_can_scope_endpoint(self):
+        eq=self.db.get_equipment("ETCH-01")
+        self.db.transition_equipment_state(
+            "ETCH-01","Production",
+            reason_code="RELEASED",reason_text="Qualified",
+            user="ee",expected_version=eq.version,
+        )
+        pending=self.db.pending_integration_deliveries()
+        self.assertTrue(pending)
+        delivery_id=pending[0][0].id
+        endpoint_id=pending[0][0].endpoint_id
+        self.db.dead_letter_integration_delivery(delivery_id,"operator quarantine")
+        self.assertEqual(self.db.requeue_dead_letters("NOT-THIS-ENDPOINT"),0)
+        self.assertEqual(self.db.requeue_dead_letters(endpoint_id),1)
+        row=next(x for x in self.db.integration_delivery_rows() if x["id"]==delivery_id)
+        self.assertEqual(row["status"],"Pending")
+
     def test_failed_file_delivery_is_retryable(self):
         # Point a FILE endpoint at a path that is a file, not a directory.
         blocker=Path(self.tmp.name)/"blocker"
