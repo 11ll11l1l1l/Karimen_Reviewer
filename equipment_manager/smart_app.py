@@ -5,7 +5,7 @@ import sys
 from datetime import datetime
 from typing import Callable
 
-from PySide6.QtCore import QTimer
+from PySide6.QtCore import QTimer, Signal
 from PySide6.QtGui import QAction, QKeySequence
 from PySide6.QtWidgets import (
     QApplication,
@@ -103,6 +103,8 @@ class MetricCard(QFrame):
 
 
 class SmartDashboardPage(QWidget):
+    open_entity=Signal(str,str,str)
+
     def __init__(self, db: Database, open_map: Callable):
         super().__init__()
         self.db=db;self.attention=[]
@@ -130,7 +132,7 @@ class SmartDashboardPage(QWidget):
         frame=QFrame();frame.setObjectName("Card");box=QVBoxLayout(frame)
         issue_title=QLabel("WHAT REQUIRES ATTENTION");issue_title.setStyleSheet("font-weight:700;font-size:12pt;");box.addWidget(issue_title)
         self.table=QTableWidget(0,7);self.table.setHorizontalHeaderLabels(["Severity","Type","Equipment","Key","Action / Condition","Owner","Age (h)"])
-        self.table.horizontalHeader().setStretchLastSection(True);box.addWidget(self.table);layout.addWidget(frame,1)
+        self.table.horizontalHeader().setStretchLastSection(True);self.table.doubleClicked.connect(self.open_selected);box.addWidget(self.table);layout.addWidget(frame,1)
         self.updated=QLabel();self.updated.setObjectName("Muted");layout.addWidget(self.updated);self.refresh()
 
     def refresh(self):
@@ -145,6 +147,17 @@ class SmartDashboardPage(QWidget):
                 if field=="age_hours":value=f"{float(value or 0):.1f}"
                 self.table.setItem(row,column,QTableWidgetItem(str(value or "")))
         self.updated.setText("Updated "+datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+
+    def open_selected(self):
+        idx=self.table.currentRow()
+        if not (0<=idx<len(self.attention)):return
+        row=self.attention[idx];kind=row.get("kind","");key=str(row.get("key",""));equipment=row.get("equipment_id","")
+        entity={
+            "EQUIPMENT":"EQUIPMENT","PM":"PM_TASK","INCIDENT":"TICKET",
+            "QUALIFICATION":"QUALIFICATION","RELEASE":"RELEASE","HANDOVER":"ENDORSEMENT",
+            "WORK_ORDER":"WORK_ORDER",
+        }.get(kind,kind)
+        if entity:self.open_entity.emit(entity,key,equipment)
 
 
 class SmartMainWindow(QMainWindow):
@@ -251,6 +264,7 @@ class SmartMainWindow(QMainWindow):
         self.configuration_studio=add("Configuration Studio",ConfigurationStudioWorkspace(db,user))
         self.admin_page=add("Users / Administration",AdminPage(db,user))
 
+        self.dashboard.open_entity.connect(self.open_entity)
         self.search_workspace.open_entity.connect(self.open_entity)
         self.my_work.open_entity.connect(self.open_entity)
         self.equipment360.open_entity.connect(self.open_entity)
