@@ -6,7 +6,7 @@ from typing import Any, Callable
 from PySide6.QtCore import QAbstractTableModel, QModelIndex, QObject, QRunnable, Qt, QThreadPool, Signal, Slot
 from PySide6.QtWidgets import (
     QAbstractButton, QAbstractItemView, QComboBox, QLineEdit, QListWidget,
-    QSpinBox, QDoubleSpinBox, QTableView, QTextEdit, QWidget,
+    QSpinBox, QDoubleSpinBox, QTableView, QTableWidget, QTextEdit, QWidget,
 )
 
 
@@ -89,7 +89,7 @@ class AccessibilityIssue:
     reason: str
 
 
-_INTERACTIVE=(QAbstractButton,QLineEdit,QComboBox,QSpinBox,QDoubleSpinBox,QTextEdit,QListWidget,QTableView)
+_INTERACTIVE=(QAbstractButton,QLineEdit,QComboBox,QSpinBox,QDoubleSpinBox,QTextEdit,QListWidget,QTableView,QTableWidget)
 
 
 def apply_accessibility_defaults(root: QWidget) -> list[AccessibilityIssue]:
@@ -105,6 +105,25 @@ def apply_accessibility_defaults(root: QWidget) -> list[AccessibilityIssue]:
             candidates.append(widget.text())
         if isinstance(widget,QLineEdit):
             candidates.append(widget.placeholderText())
+        parent=widget.parentWidget()
+        layout=parent.layout() if parent is not None else None
+        if layout is not None and hasattr(layout,"labelForField"):
+            try:
+                form_label=layout.labelForField(widget)
+                if form_label is not None:candidates.append(form_label.text())
+            except Exception:
+                pass
+        if isinstance(widget,(QTableView,QTableWidget)):
+            try:
+                model=widget.model()
+                first=model.headerData(0,Qt.Orientation.Horizontal,Qt.ItemDataRole.DisplayRole) if model is not None else ""
+                if first:candidates.append(f"{first} table")
+            except Exception:
+                pass
+        if isinstance(widget,QListWidget) and widget.count():
+            candidates.append(f"Navigation list starting with {widget.item(0).text()}")
+        if isinstance(widget,QComboBox) and widget.currentText():
+            candidates.append(f"{widget.currentText()} selection")
         candidates.extend([widget.toolTip(),widget.objectName()])
         label=next((str(x).strip() for x in candidates if str(x or "").strip()),"")
         if label:
