@@ -16,6 +16,7 @@ from services import readonly_open_copy
 from table_productivity import install_table_productivity
 from workspaces import AttachmentPanel
 from collaboration_panel import CollaborationPanel
+from reporting import export_pm_execution_pptx, export_pm_execution_xlsx
 from PySide6.QtWidgets import QApplication
 
 FILE_ROOT=os.getenv("EMS_FILE_ROOT",str(Path.cwd()/"equipment_files"))
@@ -54,9 +55,11 @@ class PMExecutionWorkspace(QWidget):
         self.complete_button=QPushButton("Complete PM");self.complete_button.clicked.connect(self.complete_pm)
         self.open_eq=QPushButton("Open Equipment");self.open_eq.clicked.connect(self.open_equipment)
         self.work_order_button=QPushButton("Create / Open Work Order");self.work_order_button.clicked.connect(self.open_work_order)
+        ppt=QPushButton("PM PPTX");ppt.clicked.connect(self.export_pptx)
+        xlsx=QPushButton("PM Excel");xlsx.clicked.connect(self.export_xlsx)
         refresh=QPushButton("Refresh");refresh.clicked.connect(self.refresh)
         head.addWidget(self.title);head.addWidget(self.state);head.addStretch(1)
-        for b in [self.open_eq,self.work_order_button,self.start_button,self.complete_button,refresh]:head.addWidget(b)
+        for b in [self.open_eq,self.work_order_button,ppt,xlsx,self.start_button,self.complete_button,refresh]:head.addWidget(b)
         root.addLayout(head)
         self.context=QLabel("Select a PM task from Maintenance Planner, My Work, Search, or Equipment 360.");self.context.setWordWrap(True);self.context.setStyleSheet("color:#647581;");root.addWidget(self.context)
         self.progress=QLabel();self.progress.setStyleSheet("font-weight:700;");root.addWidget(self.progress)
@@ -282,6 +285,22 @@ class PMExecutionWorkspace(QWidget):
             row=self.db.create_work_order_from_pm(self.task.id,self.user["username"],"PM-RUNNER")
             self.open_entity.emit("WORK_ORDER",row.work_order_no,row.equipment_id)
         except Exception as exc:QMessageBox.critical(self,"Work order",str(exc))
+
+    def export_pptx(self):
+        if not self.task:return
+        path,_=QFileDialog.getSaveFileName(self,"Export PM Review PowerPoint",f"{self.task.equipment_id}_{self.task.pm_id}_PM_Review.pptx","PowerPoint (*.pptx)")
+        if not path:return
+        if not path.lower().endswith(".pptx"):path+=".pptx"
+        try:export_pm_execution_pptx(self.db,self.task.id,path);QMessageBox.information(self,"PowerPoint",f"Editable PM review deck created.\n{path}")
+        except Exception as exc:QMessageBox.critical(self,"PowerPoint",str(exc))
+
+    def export_xlsx(self):
+        if not self.task:return
+        path,_=QFileDialog.getSaveFileName(self,"Export PM Review Excel",f"{self.task.equipment_id}_{self.task.pm_id}_PM_Review.xlsx","Excel Workbook (*.xlsx)")
+        if not path:return
+        if not path.lower().endswith(".xlsx"):path+=".xlsx"
+        try:export_pm_execution_xlsx(self.db,self.task.id,path);QMessageBox.information(self,"Excel",f"PM review workbook created.\n{path}")
+        except Exception as exc:QMessageBox.critical(self,"Excel",str(exc))
 
     def open_equipment(self):
         if self.task:self.open_entity.emit("EQUIPMENT",self.task.equipment_id,self.task.equipment_id)
