@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timedelta
 
-from PySide6.QtCore import QDate, Signal
+from PySide6.QtCore import QDate, QRectF, Qt, Signal
+from PySide6.QtGui import QColor, QFont, QPainter, QPen
 from PySide6.QtWidgets import (
     QAbstractItemView, QCalendarWidget, QDateTimeEdit, QHBoxLayout, QHeaderView,
     QLabel, QLineEdit, QMessageBox, QPushButton, QSpinBox, QSplitter, QTableWidget,
@@ -26,6 +27,83 @@ def _table(headers):
     t.setAlternatingRowColors(True);t.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
     install_table_productivity(t,headers[0] if headers else "PM Planning")
     return t
+
+
+class PlanningTimeline(QWidget):
+    rescheduleRequested=Signal(int,object)
+
+    def __init__(self,parent=None):
+        super().__init__(parent);self.rows=[];self.start=None;self.end=None;self.drag_row=-1
+        self.setMinimumHeight(330);self.setMouseTracking(True)
+
+    def set_rows(self,rows,start,end):
+        self.rows=list(rows)[:36];self.start=start;self.end=end;self.update()
+
+    def _geometry(self):
+        left=210;top=46;right=24;bottom=24
+        width=max(80,self.width()-left-right);height=max(80,self.height()-top-bottom)
+        row_h=height/max(1,len(self.rows))
+        return left,top,width,height,row_h
+
+    def _x_for(self,when):
+        left,top,width,height,row_h=self._geometry()
+        if not self.start or not self.end or not when:return left
+        span=max(1.0,(self.end-self.start).total_seconds())
+        frac=max(0.0,min(1.0,(when-self.start).total_seconds()/span))
+        return left+width*frac
+
+    def _when_for_x(self,x,row):
+        left,top,width,height,row_h=self._geometry()
+        frac=max(0.0,min(1.0,(x-left)/max(1,width)))
+        when=self.start+(self.end-self.start)*frac
+        planned=row.get("scheduled_date") or row.get("original_due_date")
+        if planned:return when.replace(hour=planned.hour,minute=planned.minute,second=0,microsecond=0)
+        return when.replace(hour=8,minute=0,second=0,microsecond=0)
+
+    def paintEvent(self,event):
+        p=QPainter(self);p.setRenderHint(QPainter.RenderHint.Antialiasing);p.fillRect(self.rect(),QColor("#ffffff"))
+        left,top,width,height,row_h=self._geometry()
+        font=QFont();font.setBold(True);p.setFont(font);p.setPen(QColor("#1b2733"))
+        p.drawText(QRectF(10,8,self.width()-20,28),Qt.AlignmentFlag.AlignLeft|Qt.AlignmentFlag.AlignVCenter,"PM Planning Timeline — drag planned markers to reschedule")
+        if not self.rows or not self.start or not self.end:
+            p.setPen(QColor("#647581"));p.drawText(self.rect(),Qt.AlignmentFlag.AlignCenter,"No PM tasks in this planning horizon");return
+        total_days=max(1,(self.end.date()-self.start.date()).days)
+        step=1 if total_days<=14 else 7 if total_days<=90 else 14
+        d=self.start.replace(hour=0,minute=0,second=0,microsecond=0)
+        while d<=self.end:
+            day=(d.date()-self.start.date()).days
+            if day>=0 and day%step==0:
+                x=self._x_for(d);p.setPen(QPen(QColor("#e4e9ed"),1));p.drawLine(int(x),top,int(x),top+height)
+                p.setPen(QColor("#647581"));p.drawText(QRectF(x-35,top-20,70,18),Qt.AlignmentFlag.AlignCenter,d.strftime("%m-%d"))
+            d+=timedelta(days=1)
+        for i,row in enumerate(self.rows):
+            y=top+i*row_h
+            p.setPen(QColor("#334e5c"))
+            label=f"{row.get('equipment_id','')} · {row.get('pm_id','')}"
+            p.drawText(QRectF(8,y,195,row_h),Qt.AlignmentFlag.AlignLeft|Qt.AlignmentFlag.AlignVCenter,label[:30])
+            p.setPen(QPen(QColor("#edf1f4"),1));p.drawLine(left,int(y+row_h),left+width,int(y+row_h))
+            early=row.get("early_date") or row.get("original_due_date");latest=row.get("latest_date") or row.get("original_due_date")
+            planned=row.get("scheduled_date") or row.get("original_due_date")
+            if early and latest:
+                x1=self._x_for(early);x2=self._x_for(latest)
+                p.fillRect(QRectF(min(x1,x2),y+row_h*.32,max(3,abs(x2-x1)),row_h*.36),QColor("#d8e8f1"))
+            if planned:
+                x=self._x_for(planned)
+                blocked=row.get("parts_status")=="SHORT" or row.get("certification_status") in {"MISSING","UNASSIGNED"}
+                color=QColor("#b75a4a") if row.get("window")=="OVERDUE" else QColor("#d08b2e") if blocked else QColor("#2577a3")
+                p.setBrush(color);p.setPen(QPen(color,1));p.drawEllipse(QRectF(x-5,y+row_h*.5-5,10,10))
+
+    def mousePressEvent(self,event):
+        if not self.rows:return
+        left,top,width,height,row_h=self._geometry()
+        idx=int((event.position().y()-top)/max(1,row_h))
+        if 0<=idx<len(self.rows) and event.position().x()>=left:self.drag_row=idx
+        else:self.drag_row=-1
+
+    def mouseReleaseEvent(self,event):
+        if self.drag_row<0 or self.drag_row>=len(self.rows):return
+        row=self.rows[self.drag_row];when=self._when_for_x(event.position().x(),row);self.drag_row=-1
+        self.rescheduleRequested.emit(int(row["id"]),when)
 
 
 class MaintenancePlanningWorkspace(QWidget):
@@ -63,6 +141,8 @@ class MaintenancePlanningWorkspace(QWidget):
         self.day_table=_table(["Task","Equipment","PM","Name","Status","Assigned","Hours","Window","Parts","Certs"])
         self.day_table.doubleClicked.connect(self.open_day_selected);rv.addWidget(self.day_label);rv.addWidget(self.day_table)
         split.addWidget(right);split.setStretchFactor(1,2);cv.addWidget(split);tabs.addTab(calendar,"Calendar / day plan")
+
+        timeline=QWidget();tv=QVBoxLayout(timeline);self.timeline=PlanningTimeline();self.timeline.rescheduleRequested.connect(self.timeline_reschedule);tv.addWidget(self.timeline);tabs.addTab(timeline,"Timeline / Gantt")
 
         workload=QWidget();wv=QVBoxLayout(workload)
         self.workload_table=_table(["Date","Tasks","Hours","Capacity h","Load %","Overdue tasks"])
@@ -110,6 +190,8 @@ class MaintenancePlanningWorkspace(QWidget):
             tasks=by_owner[owner];hours=sum(float(x.get("estimated_hours") or 0) for x in tasks);overdue=sum(1 for x in tasks if x["window"]=="OVERDUE")
             vals=[owner,len(tasks),f"{hours:.1f}",overdue,len(tasks) if owner=="UNASSIGNED" else 0]
             for col,val in enumerate(vals):self.team_table.setItem(i,col,_item(val))
+        start=datetime.now();end=start+timedelta(days=self.horizon.value())
+        self.timeline.set_rows(self.filtered,start,end)
         self.calendar_changed()
 
     def calendar_changed(self):
@@ -120,6 +202,15 @@ class MaintenancePlanningWorkspace(QWidget):
         self.day_table.setRowCount(len(rows));fields=["id","equipment_id","pm_id","pm_name","status","assigned_to","estimated_hours","window","parts_status","certification_status"]
         for r,row in enumerate(rows):
             for col,field in enumerate(fields):self.day_table.setItem(r,col,_item(row.get(field)))
+
+    def timeline_reschedule(self,task_id: int,when):
+        row=next((x for x in self.filtered if x["id"]==task_id),None)
+        if not row:return
+        try:
+            self.db.plan_pm_task(task_id,self.user["username"],scheduled_date=when,expected_version=row["version"])
+            self.refresh()
+        except Exception as exc:
+            QMessageBox.critical(self,"Timeline reschedule",str(exc))
 
     def _selected_board_rows(self):
         indexes=sorted({x.row() for x in self.board.selectedIndexes()})
