@@ -44,6 +44,25 @@ The production backend remains intact while the user-facing product is being reb
 7. Extend M11 report packs to PM, work order, qualification/release and site-defined PowerPoint templates.
 8. Start M8 logistics redesign only after M5/M7 part flows stabilize.
 
+## EMS development execution policy
+
+**Applies only to the Equipment Management System project. It does not change BibleQuest development/testing rules.**
+
+To speed development:
+- Implement the complete planned code wave first.
+- Do not stop after each feature solely to run regression/CI.
+- Keep changes logically grouped and preserve migrations/compatibility while coding.
+- Run targeted checks only when a coding uncertainty must be resolved immediately.
+- After the code wave is substantially complete, run one consolidated validation cycle:
+  - unit/regression suite
+  - PostgreSQL integration/concurrency tests
+  - Windows/PySide6 GUI smoke
+  - packaging/startup checks where affected
+- Fix all failures found in that consolidated pass before merge.
+- Merge only after the final exact code-bearing head is green.
+
+This is a sequencing change only: tests remain required before merge and milestone acceptance.
+
 ## Reporting rule
 
 Every EMS development update must report:
