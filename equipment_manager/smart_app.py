@@ -66,6 +66,7 @@ from main import (
 from smart_map import SmartLayoutPage
 from workspaces import EquipmentWorkspaceTabs, MyWorkWorkspace, SearchWorkspace
 from table_productivity import configure_productivity_context
+from ui_quality import apply_accessibility_defaults, make_model_table, run_background
 
 DEMO_MODE=os.getenv("EMS_DEMO_MODE","0").strip().lower() in {"1","true","yes","on"}
 
@@ -85,7 +86,7 @@ QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox, QDateEdit, QTextEdit {
 QPushButton { background: #176b96; color: white; border: 0; border-radius: 5px; padding: 7px 12px; font-weight: 600; }
 QPushButton:hover { background: #0e7caf; }
 QPushButton:disabled { background: #aeb9c1; color: #eef2f5; }
-QTableWidget { background: white; border: 1px solid #d7dfe5; border-radius: 5px; gridline-color: #e8edf0; alternate-background-color: #f7f9fa; }
+QTableWidget, QTableView { background: white; border: 1px solid #d7dfe5; border-radius: 5px; gridline-color: #e8edf0; alternate-background-color: #f7f9fa; }
 QHeaderView::section { background: #e8edf1; padding: 7px; border: 0; border-right: 1px solid #d5dde3; font-weight: 700; }
 QFrame#Card { background: white; border: 1px solid #d8e0e6; border-radius: 8px; }
 QFrame#Inspector { background: #f8fafb; border: 1px solid #cfd9e0; border-radius: 7px; }
@@ -111,7 +112,7 @@ class MetricCard(QFrame):
 class SmartDashboardPage(QWidget):
     def __init__(self, db: Database, open_map: Callable):
         super().__init__()
-        self.db=db;self.attention=[]
+        self.db=db;self.attention=[];self._worker=None;self._loading=False
         layout=QVBoxLayout(self);layout.setContentsMargins(18,18,18,18)
         head=QHBoxLayout();title_box=QVBoxLayout()
         title=QLabel("FAB Operations Command Center");title.setObjectName("SectionTitle")
@@ -135,22 +136,40 @@ class SmartDashboardPage(QWidget):
 
         frame=QFrame();frame.setObjectName("Card");box=QVBoxLayout(frame)
         issue_title=QLabel("WHAT REQUIRES ATTENTION");issue_title.setStyleSheet("font-weight:700;font-size:12pt;");box.addWidget(issue_title)
-        self.table=QTableWidget(0,7);self.table.setHorizontalHeaderLabels(["Severity","Type","Equipment","Key","Action / Condition","Owner","Age (h)"])
-        self.table.horizontalHeader().setStretchLastSection(True);box.addWidget(self.table);layout.addWidget(frame,1)
+        self.table,self.table_model=make_model_table(
+            ["Severity","Type","Equipment","Key","Action / Condition","Owner","Age (h)"],
+            ["severity","kind","equipment_id","key","summary","owner","age_hours"],
+            "Operations attention queue",
+        )
+        box.addWidget(self.table);layout.addWidget(frame,1)
         self.updated=QLabel();self.updated.setObjectName("Muted");layout.addWidget(self.updated);self.refresh()
 
-    def refresh(self):
-        counts=self.db.dashboard_counts()
+    def _load_data(self):
+        return self.db.dashboard_counts(),self.db.operations_attention_queue(500)
+
+    def _apply_data(self,data):
+        self._loading=False
+        counts,self.attention=data
         for key,card in self.cards.items():card.value.setText(str(counts.get(key,0)))
-        self.attention=self.db.operations_attention_queue(100)
-        self.table.setRowCount(len(self.attention))
-        fields=["severity","kind","equipment_id","key","summary","owner","age_hours"]
-        for row,item in enumerate(self.attention):
-            for column,field in enumerate(fields):
-                value=item.get(field,"")
-                if field=="age_hours":value=f"{float(value or 0):.1f}"
-                self.table.setItem(row,column,QTableWidgetItem(str(value or "")))
+        self.table_model.set_rows(self.attention)
         self.updated.setText("Updated "+datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+
+    def _load_failed(self,message: str):
+        self._loading=False
+        self.updated.setText("Refresh failed: "+message)
+
+    def refresh(self):
+        if self._loading:return
+        # In-memory SQLite uses connection-local databases and is intentionally
+        # kept synchronous for tests/demo. Production PostgreSQL reads run off
+        # the UI thread so dashboard refresh cannot freeze the application.
+        if str(self.db.engine.url).startswith("sqlite"):
+            try:self._apply_data(self._load_data())
+            except Exception as exc:self._load_failed(str(exc))
+            return
+        self._loading=True
+        self.updated.setText("Loading current operations…")
+        self._worker=run_background(self._load_data,self._apply_data,self._load_failed)
 
 
 class SmartMainWindow(QMainWindow):
@@ -302,6 +321,7 @@ class SmartMainWindow(QMainWindow):
         self.timer.timeout.connect(self.refresh_notification_badge)
         self.timer.start(30000)
         self.refresh_my_work_badge();self.refresh_notification_badge()
+        self.accessibility_issues=apply_accessibility_defaults(self)
 
     def current_evidence_context(self):
         page=self.stack.currentWidget()
