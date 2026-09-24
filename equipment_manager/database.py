@@ -2134,6 +2134,11 @@ class Database:
             if row:row.value_json=encoded;row.updated_at=datetime.utcnow()
             else:row=UserPreference(username=username,preference_key=key,value_json=encoded);s.add(row)
             s.flush();return row
+    def clear_user_preference(self, username: str, key: str):
+        with self.session() as s:
+            row=s.scalar(select(UserPreference).where(UserPreference.username==username,UserPreference.preference_key==key))
+            if row:s.delete(row)
+
 
     def get_user_preference(self, username: str, key: str, default: Any = None):
         with self.session() as s:
