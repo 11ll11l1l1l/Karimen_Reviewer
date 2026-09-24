@@ -10,6 +10,10 @@ INVENTORY_FIELDS=[
     "description","category","manufacturer","model","compatible_equipment","quantity",
     "min_quantity","unit","condition","image_path","notes",
 ]
+TICKET_FIELDS=[
+    "equipment_id","title","description","severity","priority","owner",
+    "root_cause","corrective_action","verification",
+]
 
 
 def _norm(value):
@@ -49,6 +53,30 @@ def reconcile_equipment(db,imported_rows: list[dict[str,Any]],mapping: dict[str,
             for field in EQUIPMENT_FIELDS:
                 if field=="criticality":merged[field]=source.get(field) if field in mapped else "Normal"
                 else:merged[field]=source.get(field,"") if field in mapped else ""
+            changes=[{"field":field,"current":"","incoming":merged[field]} for field in mapped if _norm(merged[field])!=""]
+            status="CREATE"
+        actions.append({"key":key,"status":status,"current":current,"data":merged,"changes":changes})
+    return actions
+
+
+def reconcile_tickets(db,imported_rows: list[dict[str,Any]],mapping: dict[str,str]):
+    seen=set();mapped={x for x in TICKET_FIELDS if x in mapping};existing={x.ticket_no:x for x in db.list_tickets()};actions=[]
+    for index,source in enumerate(imported_rows,1):
+        key=str(source.get("ticket_no","")).strip()
+        if not key:raise ValueError(f"incident row {index} is missing ticket number")
+        if key in seen:raise ValueError(f"Duplicate incident key at row {index}: {key}")
+        seen.add(key);current=existing.get(key)
+        if current:
+            merged={"ticket_no":key}
+            for field in TICKET_FIELDS:merged[field]=source.get(field) if field in mapped else getattr(current,field,"")
+            merged["created_by"]=current.created_by
+            changes=[{"field":field,"current":getattr(current,field,""),"incoming":merged[field]} for field in mapped if _norm(getattr(current,field,""))!=_norm(merged[field])]
+            status="UPDATE" if changes else "UNCHANGED"
+        else:
+            merged={"ticket_no":key}
+            defaults={"severity":"S3","priority":"P3"}
+            for field in TICKET_FIELDS:merged[field]=source.get(field) if field in mapped else defaults.get(field,"")
+            merged["created_by"]=""
             changes=[{"field":field,"current":"","incoming":merged[field]} for field in mapped if _norm(merged[field])!=""]
             status="CREATE"
         actions.append({"key":key,"status":status,"current":current,"data":merged,"changes":changes})
@@ -98,6 +126,8 @@ def apply_reconciliation(db,actions:list[dict[str,Any]],*,entity:str,user:str,al
         saver=db.save_equipment
     elif entity=="inventory":
         saver=db.save_inventory_item
+    elif entity=="ticket":
+        saver=db.save_ticket
     else:
         raise ValueError(f"Unsupported reconciliation entity: {entity}")
     applied=0
