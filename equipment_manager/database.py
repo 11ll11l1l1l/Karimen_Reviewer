@@ -1192,6 +1192,53 @@ class IntegrationDelivery(Base):
     __table_args__ = (UniqueConstraint("event_id","endpoint_id",name="uq_integration_delivery"),)
 
 
+class IntegrationInboundEndpoint(Base):
+    __tablename__ = "integration_inbound_endpoints"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    endpoint_id: Mapped[str] = mapped_column(String(100), unique=True, index=True)
+    name: Mapped[str] = mapped_column(String(180), default="")
+    adapter_type: Mapped[str] = mapped_column(String(30), index=True)
+    entity_type: Mapped[str] = mapped_column(String(40), index=True)
+    source_path: Mapped[str] = mapped_column(Text)
+    file_pattern: Mapped[str] = mapped_column(String(180), default="*.json")
+    mapping_json: Mapped[str] = mapped_column(Text, default="{}")
+    defaults_json: Mapped[str] = mapped_column(Text, default="{}")
+    archive_path: Mapped[str] = mapped_column(Text, default="")
+    quarantine_path: Mapped[str] = mapped_column(Text, default="")
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
+class IntegrationInboundReceipt(Base):
+    __tablename__ = "integration_inbound_receipts"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    endpoint_id: Mapped[str] = mapped_column(String(100), index=True)
+    source_name: Mapped[str] = mapped_column(String(300))
+    source_sha256: Mapped[str] = mapped_column(String(64), index=True)
+    status: Mapped[str] = mapped_column(String(40), index=True)
+    records_total: Mapped[int] = mapped_column(Integer, default=0)
+    records_applied: Mapped[int] = mapped_column(Integer, default=0)
+    records_rejected: Mapped[int] = mapped_column(Integer, default=0)
+    error: Mapped[str] = mapped_column(Text, default="")
+    detail_json: Mapped[str] = mapped_column(Text, default="{}")
+    processed_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    __table_args__ = (UniqueConstraint("endpoint_id","source_sha256",name="uq_inbound_receipt_file"),)
+
+
+class IntegrationInboundRecord(Base):
+    __tablename__ = "integration_inbound_records"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    endpoint_id: Mapped[str] = mapped_column(String(100), index=True)
+    receipt_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    record_key: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    row_index: Mapped[int] = mapped_column(Integer)
+    target_entity: Mapped[str] = mapped_column(String(40), index=True)
+    status: Mapped[str] = mapped_column(String(40), index=True)
+    entity_key: Mapped[str] = mapped_column(String(180), default="")
+    error: Mapped[str] = mapped_column(Text, default="")
+    processed_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
 class RecoveryDrill(Base):
     __tablename__ = "recovery_drills"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -1309,6 +1356,9 @@ class Database:
                 table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
             ]),
             ("20260924_010","Create configuration catalog templates and custom fields",lambda: [
+                table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
+            ]),
+            ("20260924_011","Create inbound integration endpoint receipt and record tables",lambda: [
                 table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
             ]),
         ]
@@ -2349,6 +2399,94 @@ class Database:
             row=s.get(RecordMention,mention_id)
             if not row or row.username!=username:raise ValueError("Mention not found")
             row.acknowledged=True;row.acknowledged_at=datetime.utcnow();s.flush();return row
+
+    def save_inbound_endpoint(self, data: dict[str, Any], expected_version: int | None = None):
+        payload=dict(data)
+        payload["endpoint_id"]=str(payload.get("endpoint_id","")).strip()
+        payload["adapter_type"]=str(payload.get("adapter_type","")).strip().upper()
+        payload["entity_type"]=str(payload.get("entity_type","")).strip().upper()
+        if payload["adapter_type"] not in {"FILE_JSON","FILE_CSV"}:
+            raise ValueError("Inbound adapter must be FILE_JSON or FILE_CSV.")
+        if payload["entity_type"] not in {"ALARM","METER"}:
+            raise ValueError("Inbound entity type must be ALARM or METER.")
+        if not payload["endpoint_id"] or not str(payload.get("source_path","")).strip():
+            raise ValueError("Inbound endpoint ID and source path are required.")
+        for key in ["mapping_json","defaults_json"]:
+            value=payload.get(key,"{}")
+            if isinstance(value,dict):value=json.dumps(value,sort_keys=True)
+            try:
+                parsed=json.loads(value or "{}")
+                if not isinstance(parsed,dict):raise ValueError(f"{key} must be a JSON object.")
+            except Exception as exc:raise ValueError(f"{key} is invalid: {exc}")
+            payload[key]=value or "{}"
+        payload["file_pattern"]=str(payload.get("file_pattern","")).strip() or ("*.json" if payload["adapter_type"]=="FILE_JSON" else "*.csv")
+        payload["source_path"]=str(payload.get("source_path","")).strip()
+        payload["archive_path"]=str(payload.get("archive_path","")).strip()
+        payload["quarantine_path"]=str(payload.get("quarantine_path","")).strip()
+        with self.session() as s:
+            row=s.scalar(select(IntegrationInboundEndpoint).where(IntegrationInboundEndpoint.endpoint_id==payload["endpoint_id"]))
+            if row:self._update_versioned(row,payload,expected_version,"Inbound integration endpoint")
+            else:row=IntegrationInboundEndpoint(**payload);s.add(row)
+            s.flush();return row
+
+    def list_inbound_endpoints(self, enabled_only: bool = False):
+        with self.session() as s:
+            stmt=select(IntegrationInboundEndpoint).order_by(IntegrationInboundEndpoint.endpoint_id)
+            if enabled_only:stmt=stmt.where(IntegrationInboundEndpoint.enabled.is_(True))
+            return list(s.scalars(stmt))
+
+    def get_inbound_endpoint(self, endpoint_id: str):
+        with self.session() as s:
+            return s.scalar(select(IntegrationInboundEndpoint).where(IntegrationInboundEndpoint.endpoint_id==endpoint_id))
+
+    def inbound_receipt_by_hash(self, endpoint_id: str, source_sha256: str):
+        with self.session() as s:
+            return s.scalar(select(IntegrationInboundReceipt).where(
+                IntegrationInboundReceipt.endpoint_id==endpoint_id,
+                IntegrationInboundReceipt.source_sha256==source_sha256,
+            ))
+
+    def save_inbound_receipt(self, data: dict[str, Any]):
+        payload=dict(data)
+        with self.session() as s:
+            row=s.scalar(select(IntegrationInboundReceipt).where(
+                IntegrationInboundReceipt.endpoint_id==payload["endpoint_id"],
+                IntegrationInboundReceipt.source_sha256==payload["source_sha256"],
+            ))
+            if row:
+                for key,value in payload.items():
+                    if key not in {"endpoint_id","source_sha256"} and hasattr(row,key):setattr(row,key,value)
+            else:
+                row=IntegrationInboundReceipt(**payload);s.add(row)
+            s.flush();return row
+
+    def list_inbound_receipts(self, endpoint_id: str = "", limit: int = 1000):
+        with self.session() as s:
+            stmt=select(IntegrationInboundReceipt).order_by(IntegrationInboundReceipt.processed_at.desc(),IntegrationInboundReceipt.id.desc())
+            if endpoint_id:stmt=stmt.where(IntegrationInboundReceipt.endpoint_id==endpoint_id)
+            return list(s.scalars(stmt.limit(max(1,min(int(limit),5000)))))
+
+    def inbound_record(self, record_key: str):
+        with self.session() as s:
+            return s.scalar(select(IntegrationInboundRecord).where(IntegrationInboundRecord.record_key==record_key))
+
+    def save_inbound_record(self, data: dict[str, Any]):
+        payload=dict(data)
+        with self.session() as s:
+            row=s.scalar(select(IntegrationInboundRecord).where(IntegrationInboundRecord.record_key==payload["record_key"]))
+            if row:
+                for key,value in payload.items():
+                    if key!="record_key" and hasattr(row,key):setattr(row,key,value)
+            else:
+                row=IntegrationInboundRecord(**payload);s.add(row)
+            s.flush();return row
+
+    def list_inbound_records(self, endpoint_id: str = "", receipt_id: int | None = None, limit: int = 2000):
+        with self.session() as s:
+            stmt=select(IntegrationInboundRecord).order_by(IntegrationInboundRecord.processed_at.desc(),IntegrationInboundRecord.id.desc())
+            if endpoint_id:stmt=stmt.where(IntegrationInboundRecord.endpoint_id==endpoint_id)
+            if receipt_id is not None:stmt=stmt.where(IntegrationInboundRecord.receipt_id==receipt_id)
+            return list(s.scalars(stmt.limit(max(1,min(int(limit),10000)))))
 
     def save_integration_endpoint(self, data: dict[str, Any], expected_version: int | None = None):
         payload=dict(data)
