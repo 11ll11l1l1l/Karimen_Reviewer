@@ -18,9 +18,9 @@ def run() -> None:
     assert user is not None
     window=SmartMainWindow(db,user)
 
-    window.resize(1100,760);app.processEvents()
+    window._apply_responsive_layout(1100);app.processEvents()
     assert window.nav.width()==185
-    window.resize(1600,930);app.processEvents()
+    window._apply_responsive_layout(1600);app.processEvents()
     assert window.nav.width()==225
 
     baseline=len(app.allWidgets())
