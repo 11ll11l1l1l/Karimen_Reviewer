@@ -9,10 +9,8 @@ from pathlib import Path
 from database import Database
 
 
-def _deliver_file(endpoint, event) -> None:
-    root=Path(endpoint.target).expanduser().resolve()
-    root.mkdir(parents=True,exist_ok=True)
-    payload={
+def _event_envelope(event) -> dict:
+    return {
         "event_id":event.event_id,
         "topic":event.topic,
         "entity_type":event.entity_type,
@@ -20,6 +18,36 @@ def _deliver_file(endpoint, event) -> None:
         "created_at":event.created_at.isoformat(),
         "payload":json.loads(event.payload_json or "{}"),
     }
+
+
+def _resolve_path(data: dict, path: str):
+    value=data
+    for part in (path or "").split("."):
+        if not part:continue
+        if not isinstance(value,dict) or part not in value:return None
+        value=value[part]
+    return value
+
+
+def transform_event_payload(event, mapping=None) -> dict:
+    envelope=_event_envelope(event)
+    if mapping is None:return envelope
+    try:fields=json.loads(mapping.mapping_json or "{}")
+    except Exception as exc:raise RuntimeError("Integration mapping JSON is invalid.") from exc
+    try:defaults=json.loads(mapping.defaults_json or "{}")
+    except Exception as exc:raise RuntimeError("Integration mapping defaults JSON is invalid.") from exc
+    if not fields:return {**defaults,**envelope}
+    output=dict(defaults)
+    for output_key,source_path in fields.items():
+        value=_resolve_path(envelope,str(source_path))
+        if value is not None:output[str(output_key)]=value
+    return output
+
+
+def _deliver_file(endpoint, event, payload=None) -> None:
+    root=Path(endpoint.target).expanduser().resolve()
+    root.mkdir(parents=True,exist_ok=True)
+    payload=payload or _event_envelope(event)
     final=root/f"{event.created_at:%Y%m%dT%H%M%S}_{event.event_id}_{event.topic.replace('.','_')}.json"
     fd,tmp=tempfile.mkstemp(prefix=".ems_evt_",suffix=".tmp",dir=str(root))
     try:
@@ -32,15 +60,8 @@ def _deliver_file(endpoint, event) -> None:
         except OSError:pass
 
 
-def _deliver_http(endpoint, event) -> None:
-    body=json.dumps({
-        "event_id":event.event_id,
-        "topic":event.topic,
-        "entity_type":event.entity_type,
-        "entity_key":event.entity_key,
-        "created_at":event.created_at.isoformat(),
-        "payload":json.loads(event.payload_json or "{}"),
-    },sort_keys=True).encode("utf-8")
+def _deliver_http(endpoint, event, payload=None) -> None:
+    body=json.dumps(payload or _event_envelope(event),sort_keys=True).encode("utf-8")
     headers={"Content-Type":"application/json","User-Agent":"EMS-Integration-Outbox/1"}
     if endpoint.auth_env:
         token=os.getenv(endpoint.auth_env,"")
@@ -60,8 +81,10 @@ def dispatch_pending(db: Database, limit: int = 100) -> dict[str,int]:
     stats["pending"]=len(deliveries)
     for delivery,event,endpoint in deliveries:
         try:
-            if endpoint.adapter_type=="FILE":_deliver_file(endpoint,event)
-            elif endpoint.adapter_type=="HTTP":_deliver_http(endpoint,event)
+            mapping=db.active_integration_mapping(endpoint.endpoint_id)
+            payload=transform_event_payload(event,mapping)
+            if endpoint.adapter_type=="FILE":_deliver_file(endpoint,event,payload)
+            elif endpoint.adapter_type=="HTTP":_deliver_http(endpoint,event,payload)
             else:raise RuntimeError(f"Unsupported integration adapter: {endpoint.adapter_type}")
             db.mark_integration_delivery(delivery.id,True)
             stats["sent"]+=1
