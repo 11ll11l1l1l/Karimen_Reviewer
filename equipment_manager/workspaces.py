@@ -18,6 +18,7 @@ from reporting import export_equipment_pptx, export_equipment_xlsx
 from image_annotator import ImageAnnotationDialog
 from table_productivity import install_table_productivity
 from collaboration_panel import CollaborationPanel
+from custom_field_panel import CustomFieldPanel
 
 FILE_ROOT=os.getenv("EMS_FILE_ROOT",str(Path.cwd()/"equipment_files"))
 
@@ -363,6 +364,7 @@ class Equipment360Workspace(QWidget):
         related=QWidget();rv=QVBoxLayout(related);self.relationships=[];self.related_table=_table(["Type","Key","Title / Context","Status"]);self.related_table.doubleClicked.connect(self.open_related);rv.addWidget(self.related_table);self.tabs.addTab(related,"Related Records")
         self.attachments=AttachmentPanel(db,user);self.tabs.addTab(self.attachments,"Evidence / Attachments")
         self.collaboration=CollaborationPanel(db,user);self.tabs.addTab(self.collaboration,"Discussion / Team")
+        self.custom_fields=CustomFieldPanel(db,user);self.tabs.addTab(self.custom_fields,"Configured Fields")
 
         self.active_tickets=[];self.current_pm=[]
         self._clear()
@@ -420,7 +422,7 @@ class Equipment360Workspace(QWidget):
 
     def refresh(self):
         if not self.equipment_id:
-            self.eq=None;self._clear();self.attachments.set_entity("","");self.collaboration.set_entity("","");return
+            self.eq=None;self._clear();self.attachments.set_entity("","");self.collaboration.set_entity("","");self.custom_fields.set_entity("","");return
         self.eq=self.db.get_equipment(self.equipment_id)
         if not self.eq:
             self.title.setText("Equipment not found");self._clear();return
@@ -473,6 +475,7 @@ class Equipment360Workspace(QWidget):
         _fill_objects(self.related_table,self.relationships,["entity_type","entity_key","title","status"])
         self.attachments.set_entity("EQUIPMENT",eq.equipment_id,eq.equipment_id)
         self.collaboration.set_entity("EQUIPMENT",eq.equipment_id,eq.equipment_id)
+        self.custom_fields.set_entity("EQUIPMENT",eq.equipment_id,eq.equipment_type)
 
         self.active_tickets=sorted([x for x in tickets if x.status not in {"Closed","Cancelled"}],key=lambda x:(0 if x.priority=="P1" else 1 if x.priority=="P2" else 2,x.updated_at or x.created_at),reverse=False)
         self.current_pm=sorted([x for x in pm if x.status not in {"Completed","Cancelled"}],key=lambda x:(0 if x.status=="Overdue" else 1,x.scheduled_date or x.original_due_date))
