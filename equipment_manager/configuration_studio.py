@@ -6,7 +6,7 @@ from datetime import datetime
 from PySide6.QtCore import QDate
 from PySide6.QtWidgets import (
     QAbstractItemView,QCheckBox,QComboBox,QDateEdit,QDialog,QDialogButtonBox,
-    QDoubleSpinBox,QFileDialog,QFormLayout,QHBoxLayout,QHeaderView,QInputDialog,QLabel,QLineEdit,
+    QDoubleSpinBox,QFileDialog,QFormLayout,QGroupBox,QHBoxLayout,QHeaderView,QInputDialog,QLabel,QLineEdit,
     QMessageBox,QPushButton,QTableWidget,QTableWidgetItem,QTabWidget,QTextEdit,
     QVBoxLayout,QWidget,
 )
@@ -137,7 +137,7 @@ class ReportTemplateDialog(QDialog):
 class EntityTemplateDialog(QDialog):
     def __init__(self,row=None,parent=None):
         super().__init__(parent);self.row=row;self.setWindowTitle("Entity Template");self.resize(650,520)
-        f=QFormLayout(self);self.template_id=QLineEdit();self.entity=QComboBox();self.entity.addItems(["EQUIPMENT","TICKET","WORK_ORDER","PM_DEFINITION"]);self.name=QLineEdit();self.applies=QLineEdit();self.defaults=QTextEdit();self.defaults.setPlaceholderText('{"equipment_type":"Etch","criticality":"High","area":"ETCH"}');self.active=QCheckBox("Active");self.active.setChecked(True)
+        f=QFormLayout(self);self.template_id=QLineEdit();self.entity=QComboBox();self.entity.addItems(["EQUIPMENT","TICKET","WORK_ORDER","PM_DEFINITION","QUALIFICATION_PROTOCOL"]);self.name=QLineEdit();self.applies=QLineEdit();self.defaults=QTextEdit();self.defaults.setPlaceholderText('{"equipment_type":"Etch","criticality":"High","area":"ETCH"}');self.active=QCheckBox("Active");self.active.setChecked(True)
         for label,w in [("Template ID",self.template_id),("Entity type",self.entity),("Name",self.name),("Applies to / equipment type",self.applies),("Default values JSON",self.defaults),("",self.active)]:f.addRow(label,w)
         b=QDialogButtonBox(QDialogButtonBox.StandardButton.Save|QDialogButtonBox.StandardButton.Cancel);b.accepted.connect(self._accept);b.rejected.connect(self.reject);f.addRow(b)
         if row:
@@ -171,46 +171,103 @@ class CustomFieldDialog(QDialog):
         return {"field_id":self.field_id.text().strip(),"entity_type":self.entity.currentText(),"applies_to":self.applies.text().strip(),"label":self.label.text().strip(),"field_type":self.type.currentText(),"options_json":self.options.toPlainText().strip() or "[]","required":self.required.isChecked(),"active":self.active.isChecked(),"sort_order":int(self.order.value())}
 
 
+class FormSectionDialog(QDialog):
+    def __init__(self,row=None,parent=None):
+        super().__init__(parent);self.row=row;self.setWindowTitle("Form Section")
+        f=QFormLayout(self);self.section=QLineEdit();self.entity=QComboBox();self.entity.addItems(["EQUIPMENT","TICKET","WORK_ORDER","PM_TASK","QUALIFICATION"])
+        self.applies=QLineEdit();self.title=QLineEdit();self.description=QTextEdit();self.description.setMaximumHeight(80);self.order=QSpinBox();self.order.setRange(0,99999);self.order.setValue(100);self.columns=QSpinBox();self.columns.setRange(1,3);self.columns.setValue(1);self.collapsible=QCheckBox("Collapsible / optional section");self.active=QCheckBox("Active");self.active.setChecked(True)
+        for label,w in [("Section ID",self.section),("Entity type",self.entity),("Applies to / equipment type",self.applies),("Title",self.title),("Description",self.description),("Sort order",self.order),("Columns",self.columns),("",self.collapsible),("",self.active)]:f.addRow(label,w)
+        b=QDialogButtonBox(QDialogButtonBox.StandardButton.Save|QDialogButtonBox.StandardButton.Cancel);b.accepted.connect(self.accept);b.rejected.connect(self.reject);f.addRow(b)
+        if row:
+            self.section.setText(row.section_id);self.section.setReadOnly(True);self.entity.setCurrentText(row.entity_type);self.applies.setText(row.applies_to);self.title.setText(row.title);self.description.setPlainText(row.description);self.order.setValue(row.sort_order);self.columns.setValue(row.columns);self.collapsible.setChecked(row.collapsible);self.active.setChecked(row.active)
+    def data(self):
+        return {"section_id":self.section.text().strip(),"entity_type":self.entity.currentText(),"applies_to":self.applies.text().strip(),"title":self.title.text().strip(),"description":self.description.toPlainText().strip(),"sort_order":self.order.value(),"columns":self.columns.value(),"collapsible":self.collapsible.isChecked(),"active":self.active.isChecked()}
+
+
+class CustomFieldLayoutDialog(QDialog):
+    def __init__(self,field,sections,row=None,parent=None):
+        super().__init__(parent);self.field=field;self.row=row;self.setWindowTitle(f"Field Layout — {field.label}")
+        f=QFormLayout(self);self.section=QComboBox();self.section.addItem("<unassigned>","")
+        for x in sections:self.section.addItem(f"{x.title} ({x.section_id})",x.section_id)
+        self.column=QSpinBox();self.column.setRange(0,2);self.span=QSpinBox();self.span.setRange(1,3);self.placeholder=QLineEdit();self.help=QTextEdit();self.help.setMaximumHeight(90)
+        f.addRow("Field",QLabel(f"{field.field_id} — {field.label}"));f.addRow("Section",self.section);f.addRow("Column (0-based)",self.column);f.addRow("Width span",self.span);f.addRow("Placeholder",self.placeholder);f.addRow("Help text",self.help)
+        b=QDialogButtonBox(QDialogButtonBox.StandardButton.Save|QDialogButtonBox.StandardButton.Cancel);b.accepted.connect(self.accept);b.rejected.connect(self.reject);f.addRow(b)
+        if row:
+            idx=self.section.findData(row.section_id)
+            if idx>=0:self.section.setCurrentIndex(idx)
+            self.column.setValue(row.column_index);self.span.setValue(row.width_span);self.placeholder.setText(row.placeholder);self.help.setPlainText(row.help_text)
+    def data(self):
+        return {"section_id":str(self.section.currentData() or ""),"column_index":self.column.value(),"width_span":self.span.value(),"placeholder":self.placeholder.text().strip(),"help_text":self.help.toPlainText().strip()}
+
+
 class CustomFieldsPanel(QWidget):
     def __init__(self,db,user,entity_type="",entity_key="",applies_to="",parent=None):
-        super().__init__(parent);self.db=db;self.user=user;self.entity_type="";self.entity_key="";self.applies_to="";self.defs=[];self.widgets={}
-        self.root=QVBoxLayout(self);self.form=QFormLayout();self.root.addLayout(self.form);self.save=QPushButton("Save custom fields");self.save.clicked.connect(self.save_values);self.root.addWidget(self.save);self.root.addStretch(1)
+        super().__init__(parent);self.db=db;self.user=user;self.entity_type="";self.entity_key="";self.applies_to="";self.defs=[];self.widgets={};self.group_widgets=[]
+        self.root=QVBoxLayout(self);self.sections_box=QVBoxLayout();self.root.addLayout(self.sections_box);self.save=QPushButton("Save custom fields");self.save.clicked.connect(self.save_values);self.root.addWidget(self.save);self.root.addStretch(1)
         self.set_entity(entity_type,entity_key,applies_to)
     def _clear(self):
-        while self.form.rowCount():self.form.removeRow(0)
-        self.widgets={}
+        while self.sections_box.count():
+            item=self.sections_box.takeAt(0);widget=item.widget()
+            if widget:widget.deleteLater()
+        self.widgets={};self.group_widgets=[]
     def set_entity(self,entity_type,entity_key,applies_to=""):
         self.entity_type=(entity_type or "").strip().upper();self.entity_key=str(entity_key or "");self.applies_to=applies_to or "";self.refresh()
+    def _build_widget(self,definition,value,layout):
+        if definition.field_type=="MULTILINE":
+            w=QTextEdit();w.setMaximumHeight(90);w.setPlainText("" if value is None else str(value))
+            if layout and layout.placeholder:w.setPlaceholderText(layout.placeholder)
+        elif definition.field_type=="NUMBER":
+            w=QDoubleSpinBox();w.setRange(-1e12,1e12);w.setDecimals(6);w.setValue(float(value or 0))
+        elif definition.field_type=="BOOLEAN":
+            w=QCheckBox();w.setChecked(bool(value))
+        elif definition.field_type=="DATE":
+            w=QDateEdit();w.setCalendarPopup(True)
+            if value:
+                q=QDate.fromString(str(value),"yyyy-MM-dd")
+                if q.isValid():w.setDate(q)
+        elif definition.field_type=="CHOICE":
+            w=QComboBox();w.addItems([str(x) for x in json.loads(definition.options_json or "[]")])
+            if value is not None:w.setCurrentText(str(value))
+        else:
+            w=QLineEdit("" if value is None else str(value))
+            if layout and layout.placeholder:w.setPlaceholderText(layout.placeholder)
+        if layout and layout.help_text:w.setToolTip(layout.help_text)
+        return w
     def refresh(self):
         self._clear();enabled=bool(self.entity_type and self.entity_key);self.save.setEnabled(enabled)
         if not enabled:return
         self.defs=self.db.list_custom_field_definitions(self.entity_type,self.applies_to)
         values=self.db.custom_field_values(self.entity_type,self.entity_key)
+        layouts=self.db.custom_field_layouts([x.field_id for x in self.defs])
+        sections=self.db.list_form_sections(self.entity_type,self.applies_to)
+        by_section={x.section_id:[] for x in sections};unassigned=[]
         for definition in self.defs:
-            value=values.get(definition.field_id)
-            if definition.field_type=="MULTILINE":
-                w=QTextEdit();w.setMaximumHeight(90);w.setPlainText("" if value is None else str(value))
-            elif definition.field_type=="NUMBER":
-                w=QDoubleSpinBox();w.setRange(-1e12,1e12);w.setDecimals(6);w.setValue(float(value or 0))
-            elif definition.field_type=="BOOLEAN":
-                w=QCheckBox();w.setChecked(bool(value))
-            elif definition.field_type=="DATE":
-                w=QDateEdit();w.setCalendarPopup(True)
-                if value:
-                    q=QDate.fromString(str(value),"yyyy-MM-dd")
-                    if q.isValid():w.setDate(q)
-            elif definition.field_type=="CHOICE":
-                w=QComboBox();w.addItems([str(x) for x in json.loads(definition.options_json or "[]")])
-                if value is not None:w.setCurrentText(str(value))
-            else:
-                w=QLineEdit("" if value is None else str(value))
-            self.widgets[definition.field_id]=w
-            self.form.addRow(definition.label+(" *" if definition.required else ""),w)
-        if not self.defs:self.form.addRow("",QLabel("No custom fields configured for this record type."))
+            layout=layouts.get(definition.field_id)
+            if layout and layout.section_id in by_section:by_section[layout.section_id].append((definition,layout))
+            else:unassigned.append((definition,layout))
+        render=[(section,by_section[section.section_id]) for section in sections if by_section[section.section_id]]
+        if unassigned:render.append((None,unassigned))
+        if not render:
+            label=QLabel("No custom fields configured for this record type.");label.setStyleSheet("color:#647581");self.sections_box.addWidget(label);return
+        for section,items in render:
+            title=section.title if section else "Additional Fields"
+            group=QGroupBox(title);group.setCheckable(bool(section and section.collapsible));group.setChecked(True)
+            form=QFormLayout(group)
+            if section and section.description:
+                note=QLabel(section.description);note.setWordWrap(True);note.setStyleSheet("color:#647581");form.addRow("",note)
+            items=sorted(items,key=lambda x:(x[1].column_index if x[1] else 0,x[0].sort_order,x[0].label))
+            for definition,layout in items:
+                value=values.get(definition.field_id);w=self._build_widget(definition,value,layout);self.widgets[definition.field_id]=w
+                label=definition.label+(" *" if definition.required else "")
+                form.addRow(label,w)
+                if layout and layout.help_text:
+                    help_label=QLabel(layout.help_text);help_label.setWordWrap(True);help_label.setStyleSheet("color:#647581;font-size:9pt");form.addRow("",help_label)
+            self.sections_box.addWidget(group);self.group_widgets.append(group)
     def save_values(self):
         values={}
         for definition in self.defs:
-            w=self.widgets[definition.field_id]
+            w=self.widgets.get(definition.field_id)
+            if w is None:continue
             if isinstance(w,QTextEdit):value=w.toPlainText().strip()
             elif isinstance(w,QDoubleSpinBox):value=w.value()
             elif isinstance(w,QCheckBox):value=w.isChecked()
@@ -224,7 +281,7 @@ class CustomFieldsPanel(QWidget):
 
 class ConfigurationStudio(QWidget):
     def __init__(self,db,user,parent=None):
-        super().__init__(parent);self.db=db;self.user=user;self.options=[];self.templates=[];self.fields=[]
+        super().__init__(parent);self.db=db;self.user=user;self.options=[];self.templates=[];self.fields=[];self.sections=[];self.layout_rows=[]
         root=QVBoxLayout(self);head=QHBoxLayout();title=QLabel("Configuration Studio");title.setStyleSheet("font-size:20pt;font-weight:800");note=QLabel("Adapt plant-facing lists, templates and custom fields without editing Python.");note.setStyleSheet("color:#647581");exportb=QPushButton("Export package");importb=QPushButton("Import package");exportb.clicked.connect(self.export_package);importb.clicked.connect(self.import_package);head.addWidget(title);head.addWidget(note);head.addStretch(1);head.addWidget(exportb);head.addWidget(importb);root.addLayout(head)
         tabs=QTabWidget();root.addWidget(tabs,1)
 
@@ -233,6 +290,10 @@ class ConfigurationStudio(QWidget):
         tw=QWidget();tv=QVBoxLayout(tw);th=QHBoxLayout();addt=QPushButton("New template");editt=QPushButton("Edit selected");addt.clicked.connect(self.add_template);editt.clicked.connect(self.edit_template);th.addWidget(addt);th.addWidget(editt);th.addStretch(1);tv.addLayout(th);self.template_table=_table(["Template","Entity","Name","Applies To","Active","Created By","Ver"]);tv.addWidget(self.template_table);tabs.addTab(tw,"Entity Templates")
 
         fw=QWidget();fv=QVBoxLayout(fw);fh=QHBoxLayout();addf=QPushButton("New custom field");editf=QPushButton("Edit selected");addf.clicked.connect(self.add_field);editf.clicked.connect(self.edit_field);fh.addWidget(addf);fh.addWidget(editf);fh.addStretch(1);fv.addLayout(fh);self.field_table=_table(["Field","Entity","Applies To","Label","Type","Required","Order","Active","Ver"]);fv.addWidget(self.field_table);tabs.addTab(fw,"Custom Fields")
+
+        lw=QWidget();lv=QVBoxLayout(lw);lh=QHBoxLayout();adds=QPushButton("New Form Section");edits=QPushButton("Edit Section");assign=QPushButton("Assign Field Layout");adds.clicked.connect(self.add_section);edits.clicked.connect(self.edit_section);assign.clicked.connect(self.assign_field_layout);lh.addWidget(adds);lh.addWidget(edits);lh.addWidget(assign);lh.addStretch(1);lv.addLayout(lh)
+        self.section_table=_table(["Section","Entity","Applies To","Title","Order","Columns","Collapsible","Active","Ver"]);lv.addWidget(self.section_table,1)
+        self.layout_table=_table(["Field","Entity","Label","Section","Column","Span","Placeholder","Help"]);lv.addWidget(QLabel("Custom-field placement"));lv.addWidget(self.layout_table,1);tabs.addTab(lw,"Form Layout")
         self.refresh()
 
     def export_package(self):
@@ -251,14 +312,14 @@ class ConfigurationStudio(QWidget):
             with open(path,"r",encoding="utf-8") as handle:bundle=json.load(handle)
             preview=self.db.import_configuration_bundle(bundle,self.user["username"],True)
             lines=[]
-            for section in ["config_options","entity_templates","custom_fields","workflow_rules"]:
+            for section in ["config_options","entity_templates","custom_fields","form_sections","custom_field_layouts","workflow_rules"]:
                 lines.append(f"{section}: {preview['creates'][section]} create / {preview['updates'][section]} update")
             if QMessageBox.question(self,"Configuration Import Preview","Apply this validated package?\n\n"+"\n".join(lines))!=QMessageBox.StandardButton.Yes:return
             self.db.import_configuration_bundle(bundle,self.user["username"],False)
             self.refresh();QMessageBox.information(self,"Configuration","Configuration package applied.")
         except Exception as exc:QMessageBox.critical(self,"Configuration import",str(exc))
 
-    def refresh(self):self.refresh_options();self.refresh_templates();self.refresh_fields()
+    def refresh(self):self.refresh_options();self.refresh_templates();self.refresh_fields();self.refresh_layout()
     def refresh_options(self):
         self.options=self.db.list_config_options(self.category.currentText(),False);self.option_table.setRowCount(len(self.options))
         for r,row in enumerate(self.options):
@@ -273,6 +334,43 @@ class ConfigurationStudio(QWidget):
         self.fields=sorted(rows,key=lambda x:(x.entity_type,x.sort_order,x.label));self.field_table.setRowCount(len(self.fields))
         for r,row in enumerate(self.fields):
             for c,val in enumerate([row.field_id,row.entity_type,row.applies_to,row.label,row.field_type,row.required,row.sort_order,row.active,row.version]):self.field_table.setItem(r,c,_item(val))
+    def refresh_layout(self):
+        self.sections=self.db.list_form_sections(active_only=False)
+        self.section_table.setRowCount(len(self.sections))
+        for r,row in enumerate(self.sections):
+            for col,val in enumerate([row.section_id,row.entity_type,row.applies_to,row.title,row.sort_order,row.columns,row.collapsible,row.active,row.version]):self.section_table.setItem(r,col,_item(val))
+        layouts=self.db.custom_field_layouts([x.field_id for x in self.fields])
+        self.layout_rows=[]
+        for field in self.fields:
+            layout=layouts.get(field.field_id)
+            self.layout_rows.append({"field":field,"layout":layout})
+        self.layout_table.setRowCount(len(self.layout_rows))
+        for r,item in enumerate(self.layout_rows):
+            field=item["field"];layout=item["layout"]
+            vals=[field.field_id,field.entity_type,field.label,layout.section_id if layout else "",layout.column_index if layout else 0,layout.width_span if layout else 1,layout.placeholder if layout else "",layout.help_text if layout else ""]
+            for col,val in enumerate(vals):self.layout_table.setItem(r,col,_item(val))
+    def add_section(self):
+        d=FormSectionDialog(parent=self)
+        if d.exec()==QDialog.DialogCode.Accepted:
+            try:self.db.save_form_section(d.data());self.refresh_layout()
+            except Exception as exc:QMessageBox.critical(self,"Form Section",str(exc))
+    def edit_section(self):
+        row=_selected(self.section_table,self.sections)
+        if not row:return
+        d=FormSectionDialog(row,self)
+        if d.exec()==QDialog.DialogCode.Accepted:
+            try:self.db.save_form_section(d.data(),row.version);self.refresh_layout()
+            except Exception as exc:QMessageBox.critical(self,"Form Section",str(exc))
+    def assign_field_layout(self):
+        item=_selected(self.layout_table,self.layout_rows)
+        if not item:return
+        field=item["field"];current=item["layout"]
+        sections=[x for x in self.sections if x.entity_type==field.entity_type and (not x.applies_to or not field.applies_to or x.applies_to==field.applies_to)]
+        d=CustomFieldLayoutDialog(field,sections,current,self)
+        if d.exec()==QDialog.DialogCode.Accepted:
+            try:self.db.save_custom_field_layout(field.field_id,d.data(),current.version if current else None);self.refresh_layout()
+            except Exception as exc:QMessageBox.critical(self,"Field Layout",str(exc))
+
     def add_option(self):
         category=self.category.currentText()
         if category in {"NUMBERING_SCHEME","DEFAULT_OWNER_RULE","SLA_POLICY"}:
