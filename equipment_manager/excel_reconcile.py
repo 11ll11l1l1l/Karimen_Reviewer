@@ -133,10 +133,14 @@ def apply_reconciliation(db,actions:list[dict[str,Any]],*,entity:str,user:str,al
     applied=0
     for action in actionable:
         data=dict(action["data"])
-        try:
-            saver(data,user=user)
-        except TypeError:
-            saver(data)
+        current=action.get("current")
+        if entity=="ticket":
+            data["created_by"]=data.get("created_by") or user
+            saver(data,current.version if current else None)
+        elif entity=="equipment":
+            saver(data,current.version if current else None,user=user)
+        elif entity=="inventory":
+            saver(data,current.version if current else None)
         applied+=1
     return {"applied":applied,"skipped":len(actions)-applied,"entity":entity}
 
