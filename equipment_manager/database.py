@@ -6111,6 +6111,45 @@ class Database:
             .order_by(WorkOrderLink.created_at,WorkOrderLink.id)
         ))
 
+    def update_work_order_details(
+        self,
+        work_order_no: str,
+        user: str,
+        *,
+        description: str | None = None,
+        owner: str | None = None,
+        team: str | None = None,
+        expected_version: int | None = None,
+        workstation: str = "",
+    ):
+        with self.session() as s:
+            stmt=select(WorkOrder).where(WorkOrder.work_order_no==work_order_no)
+            if self.url.startswith("postgresql"):stmt=stmt.with_for_update()
+            row=s.scalar(stmt)
+            if not row:raise ValueError("Work order not found")
+            self.assert_authorized(user,"worklog.edit",row.equipment_id)
+            if expected_version is not None and row.version!=expected_version:
+                raise RuntimeError("CONFLICT: Work order changed by another user.")
+            if row.status=="Cancelled":raise ValueError("Cancelled work order details cannot be edited.")
+            changes={}
+            if description is not None and description!=row.description:
+                changes["description"]={"old":row.description,"new":description};row.description=description
+            if owner is not None and owner.strip()!=row.owner:
+                changes["owner"]={"old":row.owner,"new":owner.strip()};row.owner=owner.strip()
+            if team is not None and team.strip()!=row.team:
+                changes["team"]={"old":row.team,"new":team.strip()};row.team=team.strip()
+            if not changes:return row
+            row.updated_at=datetime.utcnow();row.version+=1
+            s.add(AuditLog(
+                user=user,action="WORK_ORDER_DETAILS_UPDATE",entity_type="WORK_ORDER",entity_key=row.work_order_no,
+                detail=json.dumps(changes,sort_keys=True),workstation=workstation,
+            ))
+            self._queue_integration_event(s,"work_order.details.changed","WORK_ORDER",row.work_order_no,{
+                "work_order_no":row.work_order_no,"equipment_id":row.equipment_id,
+                "changes":changes,"changed_by":user,
+            })
+            s.flush();return row
+
     def transition_work_order(
         self,work_order_no: str,target_state: str,user: str,reason: str="",
         owner: str="",expected_version: int | None=None,workstation: str="",
