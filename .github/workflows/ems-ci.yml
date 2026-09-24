@@ -48,6 +48,23 @@ jobs:
         run: python -m unittest discover -s equipment_manager/tests -v
 
 
+  ems-large-data:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install EMS stress dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install "SQLAlchemy>=2.0,<3" "psycopg[binary]>=3.2,<4" "pandas>=2.2,<3" "openpyxl>=3.1,<4" "python-pptx>=1.0,<2"
+      - name: Run 100k equipment-history performance gate
+        env:
+          PYTHONPATH: equipment_manager
+          EMS_RUN_STRESS: '1'
+        run: python equipment_manager/tests/test_m14_stress.py
+
   windows-gui-smoke:
     runs-on: windows-latest
     steps:
