@@ -1932,6 +1932,8 @@ class Database:
                 if row.system_locked:
                     allowed={"label","sort_order","active","metadata_json"}
                     payload={k:v for k,v in payload.items() if k in allowed}
+                    if row.category in {"EQUIPMENT_REASON_LABEL","TICKET_REASON_LABEL"}:
+                        payload["active"]=True
                 self._update_versioned(row,payload,expected_version,"Configuration option")
             else:
                 row=ConfigOption(**payload);s.add(row)
