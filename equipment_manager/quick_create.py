@@ -21,7 +21,9 @@ class QuickCreateDialog(QDialog):
         self.setWindowTitle("Report Issue / Quick Create");self.resize(690,650)
         f=QFormLayout(self)
 
-        self.kind=QComboBox();self.kind.addItems(["Report Issue","Engineering Work Order"])
+        self.kind=QComboBox();self.kind.addItem("Report Issue")
+        if db.has_permission(user,"worklog.edit"):
+            self.kind.addItem("Engineering Work Order")
         self.equipment=QLineEdit(default_equipment)
         self.equipment.setPlaceholderText("Equipment / tool ID")
         self.number_preview=QLabel("Auto");self.number_preview.setStyleSheet("color:#647581")
