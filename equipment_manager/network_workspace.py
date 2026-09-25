@@ -183,6 +183,22 @@ class SharedFolderWorkspace:
             _atomic_json(self.manifest_path, manifest)
             self._write_replica_marker(manifest)
 
+    def publish_startup_changes(self, engine=None) -> bool:
+        """Publish schema/bootstrap changes made locally during application startup."""
+        if not self.local_db.is_file():
+            return False
+        if not self.canonical_db.is_file():
+            self.initialize_authoritative_if_missing(engine=engine)
+            return True
+        manifest = self._manifest()
+        expected = str(manifest.get("sha256") or "")
+        actual = _sha256(self.local_db)
+        if expected and actual == expected:
+            return False
+        with self.guarded_publish(engine=engine):
+            pass
+        return True
+
     def refresh_local(self, engine=None) -> bool:
         if self.pending_path.exists():
             self._recover_pending_publish_if_possible(engine=engine)
@@ -309,12 +325,19 @@ class SharedFolderWorkspace:
                     "workstation": self.workstation,
                 },
             )
+            completed_local_commit = False
             try:
                 yield
+                completed_local_commit = True
                 if engine is not None:
                     engine.dispose()
                 self._publish_locked(base_revision)
             except Exception:
+                if not completed_local_commit:
+                    try:
+                        self.pending_path.unlink()
+                    except FileNotFoundError:
+                        pass
                 raise
 
     def _publish_locked(self, base_revision: int) -> dict:
