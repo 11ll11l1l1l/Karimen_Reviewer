@@ -4,11 +4,13 @@ This file is the persistent progress tracker for the full-production roadmap.
 
 ## Current baseline
 
-**Program state:** Release Candidate — M14 software gate / M15 site validation
+**Program state:** RC4 Frontline Operations coding wave — M15 site validation intentionally deferred until coding freeze
 
-**Canonical base main:** `e5baaa93ba24d9dc1039db2ca0681c4c9d864988`
+**Canonical base main:** `288f7b9ab1d1d425dad96297e9dd0b8f7e519caa`
 
-**Active development wave:** `ems/m14-m15-production-readiness`
+**Active development wave:** `ems/rc4-frontline-a`
+
+**RC4 detailed tracker:** `FRONTLINE_OPERATIONS_ROADMAP.md`
 
 The production backend remains intact while the user-facing product is being rebuilt around connected operational workspaces, Office interoperability, evidence capture, maintenance execution, engineering analytics, reporting, logistics, collaboration, configurable workflows and plant-level configuration.
 
@@ -35,11 +37,11 @@ The production backend remains intact while the user-facing product is being reb
 
 ## Immediate execution order
 
-1. Freeze the RC3 code-bearing head and complete the consolidated EMS validation cycle: SQLite/PostgreSQL core, 100k-event stress, Windows/PySide6 smoke/soak and Windows package.
-2. Fix any exact-head regressions as one batch and merge only when the final code-bearing head is green.
-3. On the pilot site, run `EMSCLI uat-template`, execute every required role scenario and attach evidence.
-4. Run backup/restore, upgrade/rollback, DB/file-server outage recovery, site integration and two-workstation concurrency exercises.
-5. Run `EMSCLI production-readiness`; production remains blocked until the report is release-ready and site signoff is recorded.
+1. Continue RC4 coding first: frontline manual issue flow, troubleshooting knowledge, PM authoring/execution, operational calendar, FAB command center, reporting and role-focused navigation.
+2. Keep M15 site UAT/pilot pending; do not block RC4 coding on physical plant testing.
+3. Freeze one exact RC4 code-bearing head after frontline coding is substantially complete.
+4. Run one consolidated EMS validation cycle and fix failures as a batch.
+5. Merge RC4 only after exact-head CI is green; then resume physical M15 pilot/UAT.
 
 ## EMS development execution policy
 
