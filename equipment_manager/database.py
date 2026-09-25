@@ -8415,6 +8415,74 @@ class Database:
             "pm":{"due":due,"completed":completed,"overdue":overdue,"deferred":deferred,"compliance_pct":compliance_pct},
         }
 
+    def fab_shift_activity(
+        self,
+        start_at: datetime | None = None,
+        end_at: datetime | None = None,
+        *,
+        building: str = "",
+        floor: str = "",
+        area: str = "",
+    ) -> dict[str,Any]:
+        """Return work completed/recovered during a reporting window for shift handoff."""
+        end_at=end_at or datetime.utcnow()
+        start_at=start_at or end_at.replace(hour=0,minute=0,second=0,microsecond=0)
+        with self.session() as s:
+            eq_stmt=select(Equipment)
+            if building:eq_stmt=eq_stmt.where(Equipment.building==building)
+            if floor:eq_stmt=eq_stmt.where(Equipment.floor==floor)
+            if area:eq_stmt=eq_stmt.where(Equipment.area==area)
+            equipment=list(s.scalars(eq_stmt))
+            ids={x.equipment_id for x in equipment}
+            if not ids:return {"start_at":start_at,"end_at":end_at,"recovered_tickets":[],"completed_pm":[],"completed_work_orders":[]}
+
+            ticket_events=s.execute(
+                select(TicketStateEvent,Ticket)
+                .join(Ticket,Ticket.ticket_no==TicketStateEvent.ticket_no)
+                .where(
+                    Ticket.equipment_id.in_(ids),
+                    TicketStateEvent.changed_at>=start_at,
+                    TicketStateEvent.changed_at<=end_at,
+                    TicketStateEvent.to_state.in_(["Resolved","Closed"]),
+                )
+                .order_by(TicketStateEvent.changed_at.desc())
+            ).all()
+            pm_rows=s.execute(
+                select(PMExecution,PMTask)
+                .join(PMTask,PMTask.id==PMExecution.task_id)
+                .where(
+                    PMTask.equipment_id.in_(ids),
+                    PMExecution.completed_at.is_not(None),
+                    PMExecution.completed_at>=start_at,
+                    PMExecution.completed_at<=end_at,
+                )
+                .order_by(PMExecution.completed_at.desc())
+            ).all()
+            wo_rows=list(s.scalars(select(WorkOrder).where(
+                WorkOrder.equipment_id.in_(ids),
+                WorkOrder.completed_at.is_not(None),
+                WorkOrder.completed_at>=start_at,
+                WorkOrder.completed_at<=end_at,
+            ).order_by(WorkOrder.completed_at.desc())))
+        return {
+            "start_at":start_at,"end_at":end_at,
+            "recovered_tickets":[{
+                "ticket_no":ticket.ticket_no,"equipment_id":ticket.equipment_id,"title":ticket.title,
+                "priority":ticket.priority,"owner":event.owner or ticket.owner,
+                "completed_at":event.changed_at,"note":event.note,
+                "final_fix":ticket.corrective_action or ticket.root_cause,
+            } for event,ticket in ticket_events],
+            "completed_pm":[{
+                "task_id":task.id,"equipment_id":task.equipment_id,"pm_id":task.pm_id,
+                "pm_name":task.pm_name,"completed_at":execution.completed_at,
+                "completed_by":execution.completed_by,
+            } for execution,task in pm_rows],
+            "completed_work_orders":[{
+                "work_order_no":wo.work_order_no,"equipment_id":wo.equipment_id,"title":wo.title,
+                "completed_at":wo.completed_at,"owner":wo.owner,
+            } for wo in wo_rows],
+        }
+
     def fab_health_snapshot(
         self,
         building: str = "",
