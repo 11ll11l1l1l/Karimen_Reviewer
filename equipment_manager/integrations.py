@@ -72,7 +72,9 @@ def dispatch_pending(db: Database, limit: int = 100) -> dict[str,int]:
 
 
 def main() -> int:
-    db=Database(os.getenv("EMS_DATABASE_URL"))
+    # Database() resolves the configured topology, including no-server
+    # shared-folder mode. Passing EMS_DATABASE_URL explicitly would bypass it.
+    db=Database()
     result=dispatch_pending(db,500)
     print(json.dumps(result,sort_keys=True))
     return 0 if result["failed"]==0 else 2
