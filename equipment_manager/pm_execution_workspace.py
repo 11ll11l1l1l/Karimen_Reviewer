@@ -54,6 +54,7 @@ class PMExecutionWorkspace(QWidget):
         self.title=QLabel("Technician PM Runner");self.title.setStyleSheet("font-size:20pt;font-weight:800")
         self.state=QLabel();self.state.setStyleSheet("font-size:12pt;font-weight:700")
         self.start_button=QPushButton("Start / Resume");self.start_button.clicked.connect(self.start_resume)
+        self.pause_button=QPushButton("Pause / Carry Over");self.pause_button.clicked.connect(self.pause_execution)
         self.complete_button=QPushButton("Complete PM");self.complete_button.clicked.connect(self.complete_pm)
         self.open_eq=QPushButton("Open Equipment");self.open_eq.clicked.connect(self.open_equipment)
         self.work_order_button=QPushButton("Create / Open Work Order");self.work_order_button.clicked.connect(self.open_work_order)
@@ -62,7 +63,7 @@ class PMExecutionWorkspace(QWidget):
         pdf=QPushButton("PM PDF");pdf.clicked.connect(self.export_pdf)
         refresh=QPushButton("Refresh");refresh.clicked.connect(self.refresh)
         head.addWidget(self.title);head.addWidget(self.state);head.addStretch(1)
-        for b in [self.open_eq,self.work_order_button,ppt,xlsx,pdf,self.start_button,self.complete_button,refresh]:head.addWidget(b)
+        for b in [self.open_eq,self.work_order_button,ppt,xlsx,pdf,self.start_button,self.pause_button,self.complete_button,refresh]:head.addWidget(b)
         root.addLayout(head)
         self.context=QLabel("Select a PM task from Maintenance Planner, My Work, Search, or Equipment 360.");self.context.setWordWrap(True);self.context.setStyleSheet("color:#647581;");root.addWidget(self.context)
         self.progress=QLabel();self.progress.setStyleSheet("font-weight:700;");root.addWidget(self.progress)
@@ -94,13 +95,22 @@ class PMExecutionWorkspace(QWidget):
         self.req_table=_table(["Requirement","Type","Key","Description","Qty","Mandatory","Acknowledged by","Time"]);rv.addWidget(self.req_table,2)
         self.reservation_table=_table(["ID","Part","Location","Qty","Status","Reserved By","Time"]);rv.addWidget(QLabel("PM part reservations"));rv.addWidget(self.reservation_table,1);tabs.addTab(req,"Requirements / Readiness")
 
+        sessions=QWidget();sv=QVBoxLayout(sessions)
+        self.session_summary=QLabel("No execution sessions yet.");self.session_summary.setWordWrap(True);sv.addWidget(self.session_summary)
+        self.work_session_table=_table(["Worker","Started","Ended","Minutes","Status","Note"]);sv.addWidget(QLabel("Work sessions"));sv.addWidget(self.work_session_table,1)
+        self.pause_table=_table(["Paused","Reason","Note","Paused By","Resumed","Resumed By"]);sv.addWidget(QLabel("Pause / carry-over history"));sv.addWidget(self.pause_table,1)
+        tabs.addTab(sessions,"Work Sessions")
+
         self.attachments=AttachmentPanel(db,user);tabs.addTab(self.attachments,"Execution Evidence")
         self.collaboration=CollaborationPanel(db,user);tabs.addTab(self.collaboration,"Comments / Watchers")
         self._enable_execution(False)
 
     def _enable_execution(self,enabled):
-        self.complete_button.setEnabled(enabled)
-        self.step_table.setEnabled(enabled);self.req_table.setEnabled(enabled)
+        active=bool(enabled and self.execution and self.execution.status=="In Progress")
+        self.complete_button.setEnabled(active)
+        self.pause_button.setEnabled(active)
+        self.start_button.setEnabled(bool(self.task and (not self.execution or self.execution.status!="Completed")))
+        self.step_table.setEnabled(active);self.req_table.setEnabled(active)
 
     def set_task(self,task_id: int):
         self.task_id=int(task_id or 0);self.execution=None;self.refresh()
@@ -109,16 +119,26 @@ class PMExecutionWorkspace(QWidget):
         self.task=self.db.get_pm_task(self.task_id) if self.task_id else None
         if not self.task:
             self.title.setText("Technician PM Runner");self.state.setText("");self.context.setText("Select a PM task from Maintenance Planner, My Work, Search, or Equipment 360.");self.attachments.set_entity("","");self.collaboration.set_entity("","");self._enable_execution(False);return
-        t=self.task;self.title.setText(f"{t.pm_id} · {t.pm_name}");self.state.setText(t.status)
-        self.context.setText(f"{t.equipment_id}    Scheduled: {t.scheduled_date or t.original_due_date or '—'}    Assigned: {t.assigned_to or 'UNASSIGNED'}    Priority: {t.priority}")
+        t=self.task;self.title.setText(f"{t.pm_id} · {t.pm_name}")
+        schedule=self.db.get_pm_task_schedule(t.id)
+        slot_start=schedule.scheduled_start_at if schedule and schedule.scheduled_start_at else (t.scheduled_date or t.original_due_date)
+        slot_end=schedule.scheduled_end_at if schedule else None
+        self.state.setText(t.status)
+        self.context.setText(
+            f"{t.equipment_id}    Calendar: {slot_start or '—'}"
+            + (f" → {slot_end}" if slot_end else "")
+            + f"    Controlled due: {t.original_due_date or '—'}    Assigned: {t.assigned_to or 'UNASSIGNED'}    Priority: {t.priority}"
+        )
         # Viewing a task must not mutate its lifecycle. Existing execution is discovered read-only.
         if self.execution is None:self.execution=self.db.get_pm_execution_for_task(t.id)
         if self.execution:
             self.specs=self.db.list_pm_execution_specs(self.execution.id);self.results={x.step_no:x for x in self.db.list_pm_results(self.execution.id)}
             self.requirements=self.db.list_pm_execution_requirements(self.execution.id);self.acks={x.requirement_id:x for x in self.db.list_pm_requirement_acks(self.execution.id)}
-            self.fill_tables();self.attachments.set_entity("PM_EXECUTION",str(self.execution.id),t.equipment_id);self.collaboration.set_entity("PM_EXECUTION",str(self.execution.id),t.equipment_id);self._enable_execution(self.execution.status!="Completed")
+            self.state.setText(f"{t.status} · Execution {self.execution.status}")
+            self.fill_tables();self.fill_work_sessions()
+            self.attachments.set_entity("PM_EXECUTION",str(self.execution.id),t.equipment_id);self.collaboration.set_entity("PM_EXECUTION",str(self.execution.id),t.equipment_id);self._enable_execution(self.execution.status!="Completed")
         else:
-            self.specs=[];self.results={};self.requirements=[];self.acks={};self.step_table.setRowCount(0);self.req_table.setRowCount(0);self.progress.setText("Not started in this workspace. Click Start / Resume.");self.attachments.set_entity("PM_TASK",str(t.id),t.equipment_id);self.collaboration.set_entity("PM_TASK",str(t.id),t.equipment_id);self._enable_execution(False)
+            self.specs=[];self.results={};self.requirements=[];self.acks={};self.step_table.setRowCount(0);self.req_table.setRowCount(0);self.work_session_table.setRowCount(0);self.pause_table.setRowCount(0);self.session_summary.setText("No execution sessions yet.");self.progress.setText("Not started in this workspace. Click Start / Resume.");self.attachments.set_entity("PM_TASK",str(t.id),t.equipment_id);self.collaboration.set_entity("PM_TASK",str(t.id),t.equipment_id);self._enable_execution(False)
         self.open_eq.setEnabled(True)
 
     def start_resume(self):
@@ -129,6 +149,49 @@ class PMExecutionWorkspace(QWidget):
             except Exception:pass
             self.refresh()
         except Exception as exc:QMessageBox.critical(self,"PM execution",str(exc))
+
+    def pause_execution(self):
+        if not self.execution or self.execution.status!="In Progress":return
+        reasons=["Production Request","Waiting Parts","Waiting Engineer","Waiting Vendor","Tool Unavailable","Shift End","Safety Hold","Other"]
+        reason,ok=QInputDialog.getItem(self,"Pause / Carry Over PM","Reason",reasons,0,False)
+        if not ok:return
+        note,ok=QInputDialog.getMultiLineText(self,"Pause / Carry Over PM","Optional note / next action")
+        if not ok:return
+        try:
+            self.db.pause_pm_execution(
+                self.execution.id,self.user["username"],reason,note,
+                workstation="PM-RUNNER",
+            )
+            for log in self.db.list_work_logs(self.task.equipment_id,True,200):
+                if log.username==self.user["username"] and log.entity_type=="PM_EXECUTION" and log.entity_key==str(self.execution.id):
+                    try:self.db.stop_work_log(log.id,self.user["username"],f"Paused: {reason}. {note}".strip())
+                    except Exception:pass
+            notify(f"PM paused / carried over: {reason}.")
+            self.execution=self.db.get_pm_execution_for_task(self.task.id)
+            self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"Pause PM",str(exc))
+
+    def fill_work_sessions(self):
+        if not self.execution or not self.task:return
+        logs=[
+            x for x in self.db.list_work_logs(self.task.equipment_id,False,500)
+            if x.entity_type=="PM_EXECUTION" and x.entity_key==str(self.execution.id)
+        ]
+        self.work_session_table.setRowCount(len(logs))
+        for r,row in enumerate(logs):
+            vals=[row.username,row.started_at,row.ended_at,row.duration_minutes,row.status,row.note]
+            for col,val in enumerate(vals):self.work_session_table.setItem(r,col,_item(val))
+        pauses=self.db.list_pm_execution_pauses(self.execution.id)
+        self.pause_table.setRowCount(len(pauses))
+        for r,row in enumerate(pauses):
+            vals=[row.paused_at,row.reason,row.note,row.paused_by,row.resumed_at,row.resumed_by]
+            for col,val in enumerate(vals):self.pause_table.setItem(r,col,_item(val))
+        total=sum(float(x.duration_minutes or 0) for x in logs if x.status=="Completed")
+        active=sum(1 for x in logs if x.status=="Active")
+        self.session_summary.setText(
+            f"Execution {self.execution.status} · {len(logs)} work session(s) · "
+            f"{total/60:.2f} recorded h" + (f" · {active} active" if active else "")
+        )
 
     def fill_tables(self):
         self.step_table.setRowCount(len(self.specs))
