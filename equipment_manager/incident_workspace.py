@@ -107,7 +107,12 @@ class IncidentWorkspace(QWidget):
             ov.addWidget(QLabel(label));ov.addWidget(widget);widget.textChanged.connect(self.schedule_draft)
         save=QPushButton("Save incident summary");save.clicked.connect(self.save_summary);ov.addWidget(save);self.tabs.addTab(overview,"Incident Summary")
 
-        ops=QWidget();opv=QVBoxLayout(ops);self.control_table=_table(["Containment","Production Impact","Affected Lots","Safety/Quality Risk","Response Due","Containment Due","Resolution Due","Esc Level","Esc Reason"]);opv.addWidget(self.control_table)
+        ops=QWidget();opv=QVBoxLayout(ops)
+        lotrow=QHBoxLayout();lotrow.addWidget(QLabel("Running / affected lots"))
+        self.lot_edit=QLineEdit();self.lot_edit.setPlaceholderText("Lot numbers separated by comma or semicolon")
+        self.save_lots_button=QPushButton("Save lots");self.save_lots_button.clicked.connect(self.save_lot_context)
+        lotrow.addWidget(self.lot_edit,1);lotrow.addWidget(self.save_lots_button);opv.addLayout(lotrow)
+        self.control_table=_table(["Containment","Production Impact","Affected Lots","Safety/Quality Risk","Response Due","Containment Due","Resolution Due","Esc Level","Esc Reason"]);opv.addWidget(self.control_table)
         self.escalation_table=_table(["From","To","Reason","User","Time"]);opv.addWidget(QLabel("Escalation history"));opv.addWidget(self.escalation_table);self.tabs.addTab(ops,"Containment / SLA")
 
         activity=QWidget();av=QVBoxLayout(activity);self.lifecycle_table=_table(["From","To","Reason","Note","Owner","Changed by","Time"]);self.investigation_table=_table(["#","Observation","Check","Result","Conclusion","Action","By","Time"])
@@ -147,7 +152,13 @@ class IncidentWorkspace(QWidget):
         t=self.ticket;self._set_enabled(True)
         self.db.record_recent_item(self.user["username"],"TICKET",t.ticket_no,f"{t.ticket_no} — {t.title}",t.equipment_id)
         self.title.setText(f"{t.ticket_no} · {t.title}");self.status.setText(f"{t.priority} · {t.status}")
-        self.context.setText(f"{t.equipment_id}    Severity: {t.severity}    Owner: {t.owner or '—'}    Created by: {t.created_by}")
+        lot_rows=self.db.list_entity_lots("TICKET",t.ticket_no)
+        lot_text=", ".join(x.lot_number for x in lot_rows)
+        self.lot_edit.setText(lot_text)
+        self.context.setText(
+            f"{t.equipment_id}    Severity: {t.severity}    Owner: {t.owner or '—'}    "
+            f"Lots: {lot_text or '—'}    Created by: {t.created_by}"
+        )
         self._draft_loading=True
         try:
             self.description.setPlainText(t.description or "");self.root_cause.setPlainText(t.root_cause or "");self.corrective.setPlainText(t.corrective_action or "");self.verification.setPlainText(t.verification or "")
@@ -165,6 +176,40 @@ class IncidentWorkspace(QWidget):
         equipment=self.db.get_equipment(t.equipment_id)
         self.custom_fields.set_entity("TICKET",t.ticket_no,equipment.equipment_type if equipment else "")
         self.check_draft()
+
+    def save_lot_context(self):
+        if not self.ticket:return
+        import re
+        raw=self.lot_edit.text().strip()
+        lots=[x.strip() for x in re.split(r"[,;\\n\\t]+",raw) if x.strip()]
+        try:
+            self.db.replace_entity_lots(
+                "TICKET",self.ticket.ticket_no,lots,
+                equipment_id=self.ticket.equipment_id,user=self.user["username"],
+                workstation="INCIDENT-WORKSPACE",
+            )
+            control=self.db.ticket_operational_control(self.ticket.ticket_no)
+            payload={
+                "containment":control.containment if control else "",
+                "production_impact":control.production_impact if control else "",
+                "affected_lots":"; ".join(lots),
+                "safety_quality_risk":control.safety_quality_risk if control else "",
+                "response_due_at":control.response_due_at if control else None,
+                "containment_due_at":control.containment_due_at if control else None,
+                "resolution_due_at":control.resolution_due_at if control else None,
+                "escalation_level":control.escalation_level if control else 0,
+                "escalated_at":control.escalated_at if control else None,
+                "escalation_reason":control.escalation_reason if control else "",
+            }
+            self.db.save_ticket_operational_control(
+                self.ticket.ticket_no,payload,self.user["username"],
+                workstation="INCIDENT-WORKSPACE",
+                expected_version=control.version if control else None,
+            )
+            notify(f"Lot context saved: {len(lots)} lot(s).")
+            self.refresh()
+        except Exception as exc:
+            QMessageBox.critical(self,"Lot context",str(exc))
 
     def _draft_payload(self):
         return {
