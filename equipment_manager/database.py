@@ -6282,6 +6282,20 @@ class Database:
                 "to_state":target_state,"reason_code":reason_code,"owner":item.owner,
                 "changed_by":user,"changed_at":now.isoformat(),
             })
+            if target_state in {"Resolved","Closed"}:
+                linked_manual=list(s.scalars(select(EquipmentAlarmEvent).where(
+                    EquipmentAlarmEvent.related_ticket==ticket_no,
+                    EquipmentAlarmEvent.state=="ACTIVE",
+                    EquipmentAlarmEvent.source=="Manual Issue",
+                )))
+                for alarm in linked_manual:
+                    alarm.state="CLEARED";alarm.cleared_at=now
+                    self._queue_integration_event(s,"equipment.alarm.cleared","ALARM",alarm.event_key,{
+                        "equipment_id":alarm.equipment_id,"alarm_code":alarm.alarm_code,
+                        "severity":alarm.severity,"message":alarm.message,"source":"Manual Issue",
+                        "cleared_at":now.isoformat(),"related_ticket":ticket_no,
+                        "cleared_by":user,
+                    })
             s.add(AuditLog(
                 user=user,
                 action="TICKET_STATE_OVERRIDE" if override else "TICKET_STATE_TRANSITION",
