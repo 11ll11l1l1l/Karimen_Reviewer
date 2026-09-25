@@ -4,12 +4,13 @@ import hashlib
 import json
 import os
 import secrets
+import threading
 from contextlib import contextmanager
 from datetime import datetime, timedelta
 from typing import Any
 
-from sqlalchemy import Boolean, DateTime, Float, Integer, String, Text, UniqueConstraint, create_engine, func, inspect, or_, select
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
+from sqlalchemy import Boolean, DateTime, Float, Integer, String, Text, UniqueConstraint, create_engine, event, func, inspect, or_, select
+from sqlalchemy.orm import DeclarativeBase, Mapped, Session as SASession, mapped_column, sessionmaker
 
 from domain import (
     DOWNTIME_STATES, EQUIPMENT_STATES, STATE_CLASS, TICKET_STATES, REASON_CODES, TICKET_REASON_CODES,
@@ -20,6 +21,16 @@ from equipment_health import classify_health, health_rank
 
 class Base(DeclarativeBase):
     pass
+
+
+class TrackingSession(SASession):
+    """Session that remembers writes even when application code flushes before commit."""
+
+
+@event.listens_for(TrackingSession, "before_flush")
+def _mark_tracking_session_write(session, flush_context, instances):
+    if session.new or session.dirty or session.deleted:
+        session.info["ems_had_writes"] = True
 
 
 class SchemaMigration(Base):
@@ -1525,12 +1536,37 @@ def verify_password(password: str, stored: str) -> bool:
         return False
 
 
+class _NullLock:
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        return False
+
+
 class Database:
     def __init__(self, url: str | None = None):
-        self.url = url or os.getenv("EMS_DATABASE_URL", "sqlite:///equipment_manager.db")
+        self.shared_workspace = None
+        self._session_lock = threading.RLock()
+        data_mode = os.getenv("EMS_DATA_MODE", "").strip().lower()
+        shared_root = os.getenv("EMS_SHARED_ROOT", "").strip()
+        shared_enabled = url is None and (data_mode in {"network-folder", "shared-folder", "serverless"} or bool(shared_root))
+        if shared_enabled:
+            from network_workspace import SharedFolderWorkspace
+            self.shared_workspace = SharedFolderWorkspace.from_env()
+            self.shared_workspace.prepare_local_database()
+            self.url = self.shared_workspace.database_url()
+        else:
+            self.url = url or os.getenv("EMS_DATABASE_URL", "sqlite:///equipment_manager.db")
         args = {"check_same_thread": False} if self.url.startswith("sqlite") else {}
         self.engine = create_engine(self.url, future=True, pool_pre_ping=True, connect_args=args)
-        self.Session = sessionmaker(bind=self.engine, autoflush=False, expire_on_commit=False, future=True)
+        self.Session = sessionmaker(
+            bind=self.engine,
+            class_=TrackingSession,
+            autoflush=False,
+            expire_on_commit=False,
+            future=True,
+        )
         inspector=inspect(self.engine)
         existing=set(inspector.get_table_names())
         if not existing:
@@ -1543,6 +1579,8 @@ class Database:
         self._bootstrap_legacy_event_history()
         self._bootstrap_factory_hierarchy()
         self._bootstrap_configuration_catalog()
+        if self.shared_workspace is not None:
+            self.shared_workspace.publish_startup_changes(self.engine)
 
     @staticmethod
     def _migration_checksum(revision: str, description: str) -> str:
@@ -2044,20 +2082,47 @@ class Database:
 
     @contextmanager
     def session(self):
-        s = self.Session()
-        try:
-            yield s
-            s.commit()
-        except Exception:
-            s.rollback()
-            raise
-        finally:
-            s.close()
+        # Network-folder mode serializes local sessions so a replica refresh can
+        # never replace the SQLite file while another thread owns a connection.
+        lock = self._session_lock if self.shared_workspace is not None else _NullLock()
+        with lock:
+            if self.shared_workspace is not None:
+                self.shared_workspace.refresh_local(self.engine)
+            s = self.Session()
+            closed = False
+            try:
+                yield s
+                had_writes = bool(
+                    s.info.get("ems_had_writes")
+                    or s.new
+                    or s.dirty
+                    or s.deleted
+                )
+                if self.shared_workspace is not None and had_writes:
+                    with self.shared_workspace.guarded_publish(self.engine):
+                        s.commit()
+                        s.close()
+                        closed = True
+                else:
+                    s.commit()
+            except Exception:
+                if not closed:
+                    s.rollback()
+                raise
+            finally:
+                if not closed:
+                    s.close()
 
     def health(self) -> tuple[bool, str]:
         try:
             with self.engine.connect() as c:
                 c.execute(select(func.now()))
+            if self.shared_workspace is not None:
+                status = self.shared_workspace.status()
+                return True, (
+                    "SQLite local replica / shared-folder sync "
+                    f"(local r{status['local_revision']}, shared r{status['shared_revision']})"
+                )
             return True, "PostgreSQL" if self.url.startswith("postgresql") else "SQLite local/demo"
         except Exception as exc:
             return False, str(exc)
