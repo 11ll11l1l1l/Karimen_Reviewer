@@ -523,20 +523,37 @@ class SmartMainWindow(QMainWindow):
         self.back_button.setEnabled(self.nav_history_index>0)
         self.forward_button.setEnabled(0<=self.nav_history_index<len(self.nav_history)-1)
 
+    def _navigate_page(self,name: str,record_history: bool=True):
+        index=self.page_index.get(name)
+        if index is None:return
+        item=self.nav.item(index)
+        if item is not None and item.isHidden():
+            self.stack.setCurrentIndex(index);self.refresh_current()
+            if record_history and not self._history_suspended:
+                if self.nav_history_index<0 or self.nav_history[self.nav_history_index]!=name:
+                    self.nav_history=self.nav_history[:self.nav_history_index+1]
+                    self.nav_history.append(name);self.nav_history_index=len(self.nav_history)-1
+                self._update_history_buttons()
+            return
+        previous=self._history_suspended
+        if not record_history:self._history_suspended=True
+        try:self.nav.setCurrentRow(index)
+        finally:self._history_suspended=previous
+
     def go_back(self):
         if self.nav_history_index<=0:return
         self.nav_history_index-=1;name=self.nav_history[self.nav_history_index]
-        self._history_suspended=True
-        try:self.nav.setCurrentRow(self.page_index[name])
-        finally:self._history_suspended=False
+        previous=self._history_suspended;self._history_suspended=True
+        try:self._navigate_page(name,False)
+        finally:self._history_suspended=previous
         self._update_history_buttons()
 
     def go_forward(self):
         if self.nav_history_index<0 or self.nav_history_index>=len(self.nav_history)-1:return
         self.nav_history_index+=1;name=self.nav_history[self.nav_history_index]
-        self._history_suspended=True
-        try:self.nav.setCurrentRow(self.page_index[name])
-        finally:self._history_suspended=False
+        previous=self._history_suspended;self._history_suspended=True
+        try:self._navigate_page(name,False)
+        finally:self._history_suspended=previous
         self._update_history_buttons()
 
     def focus_global_search(self):
@@ -544,8 +561,7 @@ class SmartMainWindow(QMainWindow):
         self.global_search.selectAll()
 
     def open_page(self,name: str):
-        index=self.page_index.get(name)
-        if index is not None:self.nav.setCurrentRow(index)
+        self._navigate_page(name,True)
 
     def run_global_search(self):
         query=self.global_search.text().strip()
