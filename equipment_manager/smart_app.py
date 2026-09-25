@@ -27,7 +27,7 @@ from PySide6.QtWidgets import (
 )
 
 from database import Database
-from attachment_store import store_clipboard_image
+from attachment_store import default_file_root, store_clipboard_image
 from feedback import notify
 from logging_config import configure_logging, install_exception_hook
 from incident_workspace import IncidentWorkspace
@@ -485,11 +485,7 @@ class SmartMainWindow(QMainWindow):
         if image.isNull():
             notify("Quick Screenshot: clipboard does not contain an image.");return
         try:
-            shared_root=os.getenv("EMS_SHARED_ROOT","").strip()
-            root=os.getenv(
-                "EMS_FILE_ROOT",
-                str(Path(shared_root)/"Files") if shared_root else str(Path.cwd()/"equipment_files"),
-            )
+            root=default_file_root()
             stored=store_clipboard_image(image,root,entity_type,entity_key)
             self.db.add_attachment(
                 entity_type,entity_key,stored["stored_path"],original_name=stored["original_name"],
