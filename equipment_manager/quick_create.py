@@ -3,7 +3,8 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from PySide6.QtCore import Qt\nfrom PySide6.QtGui import QKeySequence, QShortcut
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QApplication,QComboBox,QDialog,QDialogButtonBox,QFormLayout,QHBoxLayout,QLabel,
     QLineEdit,QPushButton,QTextEdit,QWidget,
