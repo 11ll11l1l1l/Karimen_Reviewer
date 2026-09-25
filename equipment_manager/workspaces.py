@@ -14,7 +14,7 @@ from PySide6.QtWidgets import (
     QTabWidget, QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget,
 )
 
-from attachment_store import duplicate_attachment_file, store_attachment_file, store_clipboard_image
+from attachment_store import default_file_root, duplicate_attachment_file, store_attachment_file, store_clipboard_image
 from services import readonly_open_copy
 from reporting import export_equipment_pptx, export_equipment_xlsx
 from pdf_reporting import export_equipment_pdf
@@ -22,7 +22,7 @@ from image_annotator import ImageAnnotationDialog
 from table_productivity import install_table_productivity
 from ui_quality import make_model_table
 
-FILE_ROOT=os.getenv("EMS_FILE_ROOT",str(Path.cwd()/"equipment_files"))
+FILE_ROOT=default_file_root()
 
 
 def _item(value: Any) -> QTableWidgetItem:
