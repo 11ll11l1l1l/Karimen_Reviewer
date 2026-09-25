@@ -3,6 +3,7 @@ from __future__ import annotations
 import mimetypes
 import os
 import shutil
+import uuid
 from datetime import datetime
 from pathlib import Path
 
@@ -18,6 +19,18 @@ def entity_attachment_dir(root: str, entity_type: str, entity_key: str) -> Path:
     return folder
 
 
+def _atomic_copy(src: Path, dst: Path) -> None:
+    temp=dst.with_name(f".{dst.name}.{uuid.uuid4().hex}.tmp")
+    try:
+        shutil.copy2(src,temp)
+        os.replace(temp,dst)
+    finally:
+        try:
+            temp.unlink()
+        except FileNotFoundError:
+            pass
+
+
 def store_attachment_file(source_path: str, root: str, entity_type: str, entity_key: str) -> dict:
     src=Path(source_path)
     if not src.is_file():
@@ -25,7 +38,7 @@ def store_attachment_file(source_path: str, root: str, entity_type: str, entity_
     folder=entity_attachment_dir(root,entity_type,entity_key)
     stamp=datetime.now().strftime("%Y%m%d_%H%M%S_%f")
     dst=folder/f"{stamp}_{_safe_segment(src.name)}"
-    shutil.copy2(src,dst)
+    _atomic_copy(src,dst)
     media_type=mimetypes.guess_type(src.name)[0] or "application/octet-stream"
     return {
         "stored_path":str(dst),
@@ -38,8 +51,16 @@ def store_clipboard_image(image, root: str, entity_type: str, entity_key: str) -
     folder=entity_attachment_dir(root,entity_type,entity_key)
     stamp=datetime.now().strftime("%Y%m%d_%H%M%S_%f")
     dst=folder/f"{stamp}_screenshot.png"
-    if not image.save(str(dst),"PNG"):
-        raise IOError("Could not save clipboard image")
+    temp=dst.with_name(f".{dst.name}.{uuid.uuid4().hex}.tmp")
+    try:
+        if not image.save(str(temp),"PNG"):
+            raise IOError("Could not save clipboard image")
+        os.replace(temp,dst)
+    finally:
+        try:
+            temp.unlink()
+        except FileNotFoundError:
+            pass
     return {
         "stored_path":str(dst),
         "original_name":"screenshot.png",
