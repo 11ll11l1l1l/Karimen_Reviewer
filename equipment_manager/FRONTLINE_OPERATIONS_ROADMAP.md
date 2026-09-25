@@ -17,9 +17,11 @@ Primary operator model:
 
 ## Branch ownership
 
-Active implementation branch: `ems/rc4-frontline-a`
+Active implementation branch: `ems/rc4-network-folder-sync`
 
-Base: `main@288f7b9ab1d1d425dad96297e9dd0b8f7e519caa`
+Parent frontline head: `ems/rc4-frontline-a@6fe40cb5ed8b371ecbd13873cc7f3e38a31847c9`
+
+Canonical RC3 base: `main@288f7b9ab1d1d425dad96297e9dd0b8f7e519caa`
 
 This branch owns these files/surfaces while active:
 
@@ -121,13 +123,29 @@ Other chat instances should avoid editing those paths until this wave is integra
 - Troubleshooting History is exposed to operational roles.
 - Legacy/admin/configuration surfaces remain available only to appropriate roles.
 
+### M24 — No-server shared-folder operation — FOUNDATION CODED
+
+- Each Windows PC runs its own local SQLite replica; SQLite is never opened directly over SMB.
+- A normal shared network folder stores the authoritative synchronized snapshot and revision manifest.
+- Writes are serialized by a short atomic directory lease and published by temporary-file + atomic rename.
+- Shared revision is checked before local commit; stale concurrent writes are cancelled instead of using last-writer-wins.
+- SHA-256 validates pulled/published snapshots.
+- A pending-publish marker allows restart recovery after a crash between local commit and shared publication.
+- If another workstation advanced the shared revision after such a crash, the unsynchronized local database is preserved under the workstation Recovery folder before the authoritative snapshot is restored.
+- Evidence/screenshots use atomic network-file publication.
+- Backup, preflight and default evidence roots understand `EMS_SHARED_ROOT`.
+- The smart shell shows current local/shared revision and provides manual refresh.
+- `NETWORK_FOLDER_ARCHITECTURE.md` is the canonical data-flow and concurrency design for this deployment constraint.
+- PostgreSQL remains optional for a future always-on database host, not a production requirement.
+
 ## Remaining coding before consolidated validation
 
-1. UX polish for calendar overlap/readability and keyboard behavior.
-2. Review all lifecycle deep links after role-based nav hiding.
-3. Tighten report preview/print layout for narrow screens.
-4. Add focused RC4 regression fixtures for new migrations and manual issue workflow.
-5. Update version/release notes once the code-bearing head is frozen.
+1. Finish serverless conflict/recovery administration UX and remaining hidden local-path audit.
+2. UX polish for calendar overlap/readability and keyboard behavior.
+3. Review all lifecycle deep links after role-based nav hiding.
+4. Tighten report preview/print layout for narrow screens.
+5. Add focused RC4 regression fixtures for new migrations, manual issue workflow and shared-folder synchronization.
+6. Update version/release notes once the code-bearing head is frozen.
 
 ## Validation policy
 
@@ -137,7 +155,8 @@ Do not mark M15 complete. Real plant UAT/pilot, multi-workstation timing, hardwa
 
 When RC4 coding is frozen, run one consolidated validation cycle:
 - SQLite core/regression
-- PostgreSQL schema/migration/concurrency
+- serverless two-replica synchronization/conflict/crash recovery
+- optional PostgreSQL schema/migration/concurrency
 - RC4 manual issue / lot / clipboard flow
 - PM template generate/import/revision
 - PM completion-evidence rules
