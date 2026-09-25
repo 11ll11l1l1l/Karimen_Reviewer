@@ -297,13 +297,20 @@ class SmartLayoutPage(QWidget):
         task_id=snap.get("active_pm_task_id") or snap.get("next_pm_task_id")
         if task_id:self.open_entity.emit("PM_TASK",str(task_id),snap["equipment_id"])
 
+    def _shift_activity(self):
+        area="" if self.area.currentText()=="All areas" else self.area.currentText()
+        return self.db.fab_shift_activity(
+            building=self.building.currentText(),floor=self.floor.currentText(),area=area
+        )
+
     def copy_fab_status(self):
         rows=getattr(self,"_last_snapshot",[])
         if not rows:notify("FAB status: no equipment in the current scope.");return
         title=f"FAB Status — {self.building.currentText()} / {self.floor.currentText()}"
-        plain,html=build_fab_status_report(rows,title=title)
+        activity=self._shift_activity()
+        plain,html=build_fab_status_report(rows,title=title,activity=activity)
         mime=QMimeData();mime.setText(plain);mime.setHtml(html);QApplication.clipboard().setMimeData(mime)
-        notify("FAB status copied. Paste directly into Outlook, Teams, or another message.")
+        notify("FAB status and shift activity copied. Paste directly into Outlook, Teams, or another message.")
 
     def copy_dashboard_image(self):
         pix=self.grab()
@@ -321,16 +328,16 @@ class SmartLayoutPage(QWidget):
         )
         if not path:return
         try:
-            low=path.lower()
+            low=path.lower();activity=self._shift_activity()
             if "CSV" in selected or low.endswith(".csv"):
                 if not low.endswith(".csv"):path+=".csv"
                 export_fab_status_csv(rows,path)
             elif "PDF" in selected or low.endswith(".pdf"):
                 if not low.endswith(".pdf"):path+=".pdf"
-                export_fab_status_pdf(rows,path,f"FAB Status — {self.building.currentText()} / {self.floor.currentText()}")
+                export_fab_status_pdf(rows,path,f"FAB Status — {self.building.currentText()} / {self.floor.currentText()}",activity)
             else:
                 if not low.endswith(".xlsx"):path+=".xlsx"
-                export_fab_status_xlsx(rows,path)
+                export_fab_status_xlsx(rows,path,activity)
             notify(f"FAB report exported: {path}")
         except Exception as exc:QMessageBox.critical(self,"FAB report",str(exc))
 
