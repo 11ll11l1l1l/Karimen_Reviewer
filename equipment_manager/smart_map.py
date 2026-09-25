@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import Qt, QTimer, QRectF, Signal
+from PySide6.QtCore import Qt, QTimer, QRectF, Signal, QMimeData
 from PySide6.QtGui import QBrush, QColor, QFont, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import (
-    QCheckBox,QComboBox,QFrame,QGraphicsItem,QGraphicsPixmapItem,QGraphicsRectItem,
+    QApplication,QCheckBox,QComboBox,QFileDialog,QFrame,QGraphicsItem,QGraphicsPixmapItem,QGraphicsRectItem,
     QGraphicsScene,QGraphicsSimpleTextItem,QGraphicsView,QHBoxLayout,QLabel,
     QMessageBox,QPushButton,QSplitter,QTableWidget,QTableWidgetItem,QVBoxLayout,QWidget,
 )
@@ -13,6 +13,8 @@ from PySide6.QtWidgets import (
 from database import Database
 from demo_data import STATUS_COLORS
 from main import WORKSTATION
+from feedback import notify
+from shift_report import build_fab_status_report, export_fab_status_csv, export_fab_status_xlsx, export_fab_status_pdf
 
 
 def make_cad_background(width: int = 1550, height: int = 900) -> QPixmap:
@@ -149,7 +151,10 @@ class SmartLayoutPage(QWidget):
         self.issue_only=QCheckBox("Problems only");self.issue_only.toggled.connect(self.refresh)
         self.edit_mode=QCheckBox("Layout edit");self.edit_mode.setEnabled(self.can_edit);self.edit_mode.toggled.connect(self.refresh)
         fit_btn=QPushButton("Fit FAB");fit_btn.clicked.connect(self.fit_map);refresh_btn=QPushButton("Refresh");refresh_btn.clicked.connect(self.refresh);save_btn=QPushButton("Save positions");save_btn.setEnabled(self.can_edit);save_btn.clicked.connect(self.save_positions)
-        for widget in [QLabel("Building"),self.building,QLabel("Floor"),self.floor,QLabel("Area"),self.area,self.issue_only,self.edit_mode,fit_btn,refresh_btn,save_btn]:controls.addWidget(widget)
+        copy_status=QPushButton("Copy FAB Status");copy_status.clicked.connect(self.copy_fab_status)
+        copy_image=QPushButton("Copy Dashboard Image");copy_image.clicked.connect(self.copy_dashboard_image)
+        export_report=QPushButton("Export Report");export_report.clicked.connect(self.export_fab_report)
+        for widget in [QLabel("Building"),self.building,QLabel("Floor"),self.floor,QLabel("Area"),self.area,self.issue_only,self.edit_mode,fit_btn,refresh_btn,copy_status,copy_image,export_report,save_btn]:controls.addWidget(widget)
         controls.addStretch(1);root.addLayout(controls)
 
         self.kpi_row=QHBoxLayout();self.kpi_buttons={}
@@ -199,6 +204,7 @@ class SmartLayoutPage(QWidget):
         background=QGraphicsPixmapItem(pix);background.setZValue(-20);self.scene.addItem(background)
         area="" if self.area.currentText()=="All areas" else self.area.currentText()
         all_rows=self.db.fab_health_snapshot(self.building.currentText(),self.floor.currentText(),area)
+        self._last_snapshot=all_rows
         counts={key:sum(1 for x in all_rows if x["health"]==key) for key in ["good","critical","attention","planned","offline"]};counts["all"]=len(all_rows)
         for key,button in self.kpi_buttons.items():button.setText(f"{button.text().split('  ·  ')[0]}  ·  {counts.get(key,0)}")
         rows=list(all_rows)
@@ -290,6 +296,43 @@ class SmartLayoutPage(QWidget):
         if not snap:return
         task_id=snap.get("active_pm_task_id") or snap.get("next_pm_task_id")
         if task_id:self.open_entity.emit("PM_TASK",str(task_id),snap["equipment_id"])
+
+    def copy_fab_status(self):
+        rows=getattr(self,"_last_snapshot",[])
+        if not rows:notify("FAB status: no equipment in the current scope.");return
+        title=f"FAB Status — {self.building.currentText()} / {self.floor.currentText()}"
+        plain,html=build_fab_status_report(rows,title=title)
+        mime=QMimeData();mime.setText(plain);mime.setHtml(html);QApplication.clipboard().setMimeData(mime)
+        notify("FAB status copied. Paste directly into Outlook, Teams, or another message.")
+
+    def copy_dashboard_image(self):
+        pix=self.grab()
+        if pix.isNull():notify("Dashboard image capture failed.");return
+        QApplication.clipboard().setPixmap(pix)
+        notify("FAB dashboard image copied to clipboard.")
+
+    def export_fab_report(self):
+        rows=getattr(self,"_last_snapshot",[])
+        if not rows:notify("FAB report: no equipment in the current scope.");return
+        default=f"FAB_Status_{self.building.currentText()}_{self.floor.currentText()}"
+        path,selected=QFileDialog.getSaveFileName(
+            self,"Export FAB Status",default+".xlsx",
+            "Excel Workbook (*.xlsx);;CSV (*.csv);;PDF (*.pdf)",
+        )
+        if not path:return
+        try:
+            low=path.lower()
+            if "CSV" in selected or low.endswith(".csv"):
+                if not low.endswith(".csv"):path+=".csv"
+                export_fab_status_csv(rows,path)
+            elif "PDF" in selected or low.endswith(".pdf"):
+                if not low.endswith(".pdf"):path+=".pdf"
+                export_fab_status_pdf(rows,path,f"FAB Status — {self.building.currentText()} / {self.floor.currentText()}")
+            else:
+                if not low.endswith(".xlsx"):path+=".xlsx"
+                export_fab_status_xlsx(rows,path)
+            notify(f"FAB report exported: {path}")
+        except Exception as exc:QMessageBox.critical(self,"FAB report",str(exc))
 
     def save_positions(self):
         if not self.can_edit:return
