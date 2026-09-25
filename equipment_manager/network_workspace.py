@@ -415,6 +415,28 @@ class SharedFolderWorkspace:
             if self.canonical_db.is_file():
                 self._pull_snapshot(manifest, engine=engine)
 
+    def recovery_conflicts(self) -> list[dict]:
+        rows: list[dict] = []
+        if not self.recovery_root.is_dir():
+            return rows
+        for meta_path in sorted(self.recovery_root.glob("conflict-*.json"), reverse=True):
+            payload = self._read_json(meta_path)
+            if not payload:
+                continue
+            recovery_path = Path(str(payload.get("recovery_database") or ""))
+            rows.append(
+                {
+                    "detected_at": str(payload.get("detected_at") or ""),
+                    "workstation": str(payload.get("workstation") or ""),
+                    "local_base_revision": int(payload.get("local_base_revision") or 0),
+                    "shared_revision": int(payload.get("shared_revision") or 0),
+                    "recovery_database": str(recovery_path),
+                    "recovery_exists": recovery_path.is_file(),
+                    "metadata_path": str(meta_path),
+                }
+            )
+        return rows
+
     def status(self) -> dict:
         manifest = self._manifest()
         return {
@@ -427,4 +449,6 @@ class SharedFolderWorkspace:
             "publisher": str(manifest.get("publisher") or ""),
             "published_at": str(manifest.get("published_at") or ""),
             "pending_publish": self.pending_path.exists(),
+            "recovery_root": str(self.recovery_root),
+            "recovery_conflicts": len(self.recovery_conflicts()),
         }
