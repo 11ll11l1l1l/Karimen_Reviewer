@@ -3250,6 +3250,19 @@ class Database:
                 Ticket.equipment_id.ilike(like),Ticket.owner.ilike(like),
             )).limit(max_each)):
                 add("TICKET",row.ticket_no,f"{row.ticket_no} — {row.title}",f"{row.priority} · {row.status} · {row.equipment_id}",row.equipment_id)
+            seen_lot_entities=set()
+            for lot in s.scalars(select(EntityLotLink).where(
+                EntityLotLink.lot_number.ilike(like)
+            ).order_by(EntityLotLink.created_at.desc()).limit(max_each)):
+                identity=(lot.entity_type,lot.entity_key)
+                if identity in seen_lot_entities:continue
+                seen_lot_entities.add(identity)
+                if lot.entity_type=="TICKET":
+                    ticket=s.scalar(select(Ticket).where(Ticket.ticket_no==lot.entity_key))
+                    if ticket:
+                        add("TICKET",ticket.ticket_no,f"{ticket.ticket_no} — {ticket.title}",f"Lot {lot.lot_number} · {ticket.status} · {ticket.equipment_id}",ticket.equipment_id)
+                elif lot.entity_type=="EQUIPMENT":
+                    add("EQUIPMENT",lot.entity_key,f"{lot.entity_key} — lot {lot.lot_number}",f"Lot context",lot.equipment_id or lot.entity_key)
             for row in s.scalars(select(PMTask).where(or_(
                 PMTask.pm_id.ilike(like),PMTask.pm_name.ilike(like),PMTask.equipment_id.ilike(like),PMTask.assigned_to.ilike(like),
             )).limit(max_each)):
@@ -5357,11 +5370,64 @@ class Database:
             s.flush();return row
 
     def incident_similar_history(self, ticket_no: str, limit: int = 50):
+        """Rank previous troubleshooting records using manual-fab context.
+
+        Same equipment is strongest, followed by shared lots/alarm codes and
+        meaningful symptom words. This remains deterministic and local.
+        """
+        stop={"the","and","for","with","from","this","that","tool","issue","problem","error","alarm","equipment"}
+        def tokens(value):
+            return {
+                x for x in re.findall(r"[a-z0-9_-]{3,}",(value or "").lower())
+                if x not in stop
+            }
         with self.session() as s:
             current=s.scalar(select(Ticket).where(Ticket.ticket_no==ticket_no))
             if not current:return []
-            stmt=select(Ticket).where(Ticket.equipment_id==current.equipment_id,Ticket.ticket_no!=ticket_no).order_by(Ticket.created_at.desc()).limit(max(1,min(int(limit),200)))
-            return list(s.scalars(stmt))
+            current_lots={x.lot_number.upper() for x in s.scalars(select(EntityLotLink).where(
+                EntityLotLink.entity_type=="TICKET",EntityLotLink.entity_key==ticket_no
+            ))}
+            current_alarms={x.alarm_code.upper() for x in s.scalars(select(EquipmentAlarmEvent).where(
+                EquipmentAlarmEvent.related_ticket==ticket_no
+            )) if x.alarm_code}
+            current_tokens=tokens(" ".join([current.title or "",current.description or "",current.root_cause or ""]))
+            candidates=list(s.scalars(
+                select(Ticket).where(Ticket.ticket_no!=ticket_no)
+                .order_by(Ticket.created_at.desc()).limit(600)
+            ))
+            rows=[]
+            for row in candidates:
+                row_lots={x.lot_number.upper() for x in s.scalars(select(EntityLotLink).where(
+                    EntityLotLink.entity_type=="TICKET",EntityLotLink.entity_key==row.ticket_no
+                ))}
+                row_alarms={x.alarm_code.upper() for x in s.scalars(select(EquipmentAlarmEvent).where(
+                    EquipmentAlarmEvent.related_ticket==row.ticket_no
+                )) if x.alarm_code}
+                overlap=current_tokens & tokens(" ".join([row.title or "",row.description or "",row.root_cause or "",row.corrective_action or ""]))
+                score=0
+                reasons=[]
+                if row.equipment_id==current.equipment_id:
+                    score+=8;reasons.append("same tool")
+                shared_lots=current_lots & row_lots
+                if shared_lots:
+                    score+=6+min(3,len(shared_lots));reasons.append("same lot")
+                shared_alarms=current_alarms & row_alarms
+                if shared_alarms:
+                    score+=6+min(3,len(shared_alarms));reasons.append("same alarm")
+                if overlap:
+                    score+=min(6,len(overlap)*2);reasons.append("similar symptom")
+                if score<=0:
+                    continue
+                rows.append({
+                    "ticket_no":row.ticket_no,"equipment_id":row.equipment_id,
+                    "title":row.title,"priority":row.priority,"status":row.status,"owner":row.owner,
+                    "lots":", ".join(sorted(row_lots)),"alarms":", ".join(sorted(row_alarms)),
+                    "root_cause":row.root_cause,"corrective_action":row.corrective_action,
+                    "score":score,"match_reason":", ".join(reasons),
+                    "created_at":row.created_at,"updated_at":row.updated_at,
+                })
+            rows.sort(key=lambda x:(-x["score"],-(x["updated_at"] or x["created_at"]).timestamp()))
+            return rows[:max(1,min(int(limit),200))]
 
     def ticket_operational_control(self, ticket_no: str):
         with self.session() as s:
