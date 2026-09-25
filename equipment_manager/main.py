@@ -40,6 +40,8 @@ from integrations import dispatch_pending
 from inbound_integrations import process_inbound_endpoint, process_inbound_file
 from reporting import export_qualification_pptx, export_qualification_xlsx, export_release_pptx, export_release_xlsx
 from pdf_reporting import export_qualification_pdf, export_release_pdf
+from pm_template_io import generate_pm_template, load_pm_template
+from feedback import notify
 from services import (
     auto_mapping, calculate_next_due, copy_clipboard_image, dataframe_to_equipment, dataframe_to_inventory, dataframe_to_tickets, dataframe_to_pm_backlog,
     dataframe_to_pm_specs, evaluate_measurement, pm_parts_readiness, read_clipboard_table,
@@ -790,7 +792,7 @@ class PMConditionTriggerDialog(QDialog):
 class PMPage(QWidget):
     def __init__(self,db,user):
         super().__init__(); self.db=db; self.user=user; self.defs=[]; self.tasks=[]; self.specrows=[]; self.requirements=[]; self.deferrals=[]; self.usage_triggers=[]; self.usage_occurrences=[]; self.condition_triggers=[]; self.condition_occurrences=[]; v=QVBoxLayout(self); self.tabs=QTabWidget(); v.addWidget(self.tabs)
-        wd=QWidget(); vd=QVBoxLayout(wd); hd=QHBoxLayout(); add=QPushButton("Add Definition"); template=QPushButton("Add from Template"); edit=QPushButton("Edit Definition"); gen=QPushButton("Generate Next PM"); ready=QPushButton("Parts Readiness"); add.clicked.connect(self.add_def);template.clicked.connect(self.add_def_from_template); edit.clicked.connect(self.edit_def); gen.clicked.connect(self.generate_next); ready.clicked.connect(self.parts_ready); canedit=db.has_permission(user,"pm.edit"); add.setEnabled(canedit);template.setEnabled(canedit); edit.setEnabled(canedit); gen.setEnabled(canedit); hd.addWidget(add);hd.addWidget(template);hd.addWidget(edit);hd.addWidget(gen);hd.addWidget(ready);hd.addStretch(1);vd.addLayout(hd);self.def_table=make_table(["PM ID","Name","Equipment","Type","Frequency","Unit","Anchor","Early","Grace","Hours","Parts","Ver"]);vd.addWidget(self.def_table);self.tabs.addTab(wd,"Definitions")
+        wd=QWidget(); vd=QVBoxLayout(wd); hd=QHBoxLayout(); add=QPushButton("Add Definition"); template=QPushButton("Add from Template"); edit=QPushButton("Edit Definition"); excel_template=QPushButton("Create PM Excel Template"); import_template=QPushButton("Import PM Template"); gen=QPushButton("Generate Next PM"); ready=QPushButton("Parts Readiness"); add.clicked.connect(self.add_def);template.clicked.connect(self.add_def_from_template); edit.clicked.connect(self.edit_def);excel_template.clicked.connect(self.export_pm_template);import_template.clicked.connect(self.import_pm_template); gen.clicked.connect(self.generate_next); ready.clicked.connect(self.parts_ready); canedit=db.has_permission(user,"pm.edit"); add.setEnabled(canedit);template.setEnabled(canedit); edit.setEnabled(canedit);excel_template.setEnabled(canedit);import_template.setEnabled(canedit); gen.setEnabled(canedit); hd.addWidget(add);hd.addWidget(template);hd.addWidget(edit);hd.addWidget(excel_template);hd.addWidget(import_template);hd.addWidget(gen);hd.addWidget(ready);hd.addStretch(1);vd.addLayout(hd);self.def_table=make_table(["PM ID","Name","Equipment","Type","Frequency","Unit","Anchor","Early","Grace","Hours","Parts","Ver"]);vd.addWidget(self.def_table);self.tabs.addTab(wd,"Definitions")
         wb=QWidget(); vb=QVBoxLayout(wb); hb=QHBoxLayout(); imp=QPushButton("Import Excel/CSV"); paste=QPushButton("Paste from Excel"); execute=QPushButton("Execute Selected"); defer=QPushButton("Request Deferral"); forecast=QPushButton("Workload Forecast"); imp.clicked.connect(self.import_backlog); paste.clicked.connect(self.paste_backlog); execute.clicked.connect(self.execute); defer.clicked.connect(self.request_deferral); forecast.clicked.connect(self.forecast); imp.setEnabled(canedit); paste.setEnabled(canedit); execute.setEnabled(db.has_permission(user,"pm.execute")); defer.setEnabled(db.has_permission(user,"pm.defer")); [hb.addWidget(x) for x in [imp,paste,execute,defer,forecast]];hb.addStretch(1);vb.addLayout(hb);self.task_table=make_table(["Equipment","PM ID","PM Name","Original Due","Scheduled","Status","Assigned","Hours","Priority","Ver"]);vb.addWidget(self.task_table);self.tabs.addTab(wb,"Backlog / Schedule")
         ws=QWidget(); vs=QVBoxLayout(ws); hs=QHBoxLayout(); ispec=QPushButton("Import Steps / Specs"); pspec=QPushButton("Paste Steps / Specs"); ispec.clicked.connect(self.import_specs); pspec.clicked.connect(self.paste_specs); ispec.setEnabled(canedit); pspec.setEnabled(canedit); hs.addWidget(ispec);hs.addWidget(pspec);hs.addStretch(1);vs.addLayout(hs);self.spec_table=make_table(["PM ID","Step","Activity","Method","Type","Unit","Target","CL","CH","LSL","USL","Rev"]);vs.addWidget(self.spec_table);self.tabs.addTab(ws,"Checklist / Specs")
         wreq=QWidget();vreq=QVBoxLayout(wreq);hreq=QHBoxLayout();addreq=QPushButton("Add Requirement");revreq=QPushButton("Revise Selected");addreq.clicked.connect(self.add_requirement);revreq.clicked.connect(self.revise_requirement);addreq.setEnabled(canedit);revreq.setEnabled(canedit);hreq.addWidget(addreq);hreq.addWidget(revreq);hreq.addStretch(1);vreq.addLayout(hreq);self.requirement_table=make_table(["Requirement","PM ID","Type","Key","Description","Qty","Mandatory","Revision","Active"]);vreq.addWidget(self.requirement_table);self.tabs.addTab(wreq,"Execution Requirements")
@@ -820,6 +822,52 @@ class PMPage(QWidget):
                 item=self.task_table.item(i,0)
                 if item:self.task_table.scrollToItem(item)
                 break
+
+    def export_pm_template(self):
+        definition=selected_row(self.def_table,self.defs)
+        name=f"EMS_PM_{definition.pm_id}.xlsx" if definition else "EMS_PM_TEMPLATE.xlsx"
+        path,_=QFileDialog.getSaveFileName(self,"Create PM Excel Template",name,"Excel Workbook (*.xlsx)")
+        if not path:return
+        if not path.lower().endswith(".xlsx"):path+=".xlsx"
+        try:
+            specs=self.db.list_pm_specs(definition.pm_id) if definition else []
+            reqs=self.db.list_pm_requirements(definition.pm_id,True) if definition else []
+            generate_pm_template(path,definition,specs,reqs)
+            notify(f"PM Excel template created: {path}")
+        except Exception as exc:QMessageBox.critical(self,"PM template",str(exc))
+
+    def import_pm_template(self):
+        path,_=QFileDialog.getOpenFileName(self,"Import PM Template","","Excel Workbook (*.xlsx)")
+        if not path:return
+        try:
+            bundle=load_pm_template(path)
+            definition=bundle["definition"];steps=bundle["steps"];requirements=bundle["requirements"];warnings=bundle["warnings"]
+            existing=next((x for x in self.db.list_pm_definitions() if x.pm_id==definition["pm_id"]),None)
+            current_steps=self.db.list_pm_specs(definition["pm_id"]) if existing else []
+            current_reqs=self.db.list_pm_requirements(definition["pm_id"],True) if existing else []
+            imported_step_ids={int(x["step_no"]) for x in steps}
+            imported_req_ids={str(x["requirement_id"]) for x in requirements}
+            retire_steps=sum(1 for x in current_steps if int(x.step_no) not in imported_step_ids)
+            retire_reqs=sum(1 for x in current_reqs if x.requirement_id not in imported_req_ids)
+            detail=(
+                f"PM: {definition['pm_id']} — {definition['name']}\n"
+                f"Equipment: {definition['equipment_id'] or 'Not assigned'}\n"
+                f"Steps: {len(steps)} ({retire_steps} existing step(s) will be retired)\n"
+                f"Requirements: {len(requirements)} ({retire_reqs} existing requirement(s) will be retired)\n"
+                f"Warnings: {len(warnings)}"
+            )
+            if warnings:detail+="\n\n" + "\n".join(warnings[:12])
+            detail+="\n\nApply this workbook as the authoritative PM revision?"
+            if QMessageBox.question(self,"PM Template Import Preview",detail)!=QMessageBox.StandardButton.Yes:return
+            result=self.db.apply_pm_template_bundle(
+                definition,steps,requirements,self.user["username"],WORKSTATION
+            )
+            self.refresh()
+            notify(
+                f"PM {definition['pm_id']} imported · "
+                f"{result['steps_created']} new / {result['steps_revised']} revised / {result['steps_retired']} retired steps."
+            )
+        except Exception as exc:QMessageBox.critical(self,"PM template import",str(exc))
 
     def add_def_from_template(self):
         templates=self.db.list_entity_templates("PM_DEFINITION")
