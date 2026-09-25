@@ -460,7 +460,7 @@ class MaintenancePlanningWorkspace(QWidget):
         self.open_entity.emit(entity_type,entity_key,equipment_id)
 
     def calendar_changed(self):
-        qd=self.calendar.selectedDate();day=qd.toPython();self.plan_dt.setDate(qd)
+        qd=self.calendar.selectedDate();day=qd.toPython();self.plan_dt.setDate(qd);self.plan_end_dt.setDate(qd)
         start=datetime.combine(day,datetime.min.time());end=start+timedelta(days=1)
         try:rows=[x for x in self.db.operational_calendar_rows(start,end) if self._calendar_search_match(x)]
         except Exception as exc:
