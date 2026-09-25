@@ -9,7 +9,7 @@ from PySide6.QtWidgets import (
     QLineEdit,QPushButton,QTextEdit,QWidget,
 )
 
-from attachment_store import store_clipboard_image
+from attachment_store import default_file_root, store_clipboard_image
 
 
 class QuickCreateDialog(QDialog):
@@ -150,7 +150,7 @@ class QuickCreateDialog(QDialog):
                     "owner":owner,
                 },self.user["username"],"QUICK-CREATE")
                 if self.pending_image is not None and not self.pending_image.isNull():
-                    root=os.getenv("EMS_FILE_ROOT",str(Path.cwd()/"equipment_files"))
+                    root=default_file_root()
                     stored=store_clipboard_image(self.pending_image,root,"TICKET",ticket.ticket_no)
                     self.db.add_attachment(
                         "TICKET",ticket.ticket_no,stored["stored_path"],
