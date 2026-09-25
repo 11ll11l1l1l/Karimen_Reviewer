@@ -109,10 +109,11 @@ class PlanningTimeline(QWidget):
 
 class WeekScheduleView(QWidget):
     moveRequested=Signal(str,str,object)
+    resizeRequested=Signal(str,str,object)
     entityActivated=Signal(str,str,str)
 
     def __init__(self,parent=None):
-        super().__init__(parent);self.rows=[];self.week_start=None;self.drag_row=None;self.rects=[]
+        super().__init__(parent);self.rows=[];self.week_start=None;self.drag_row=None;self.drag_mode="move";self.rects=[]
         self.setMinimumHeight(520);self.setMouseTracking(True)
 
     def set_week(self,rows,anchor_date):
@@ -178,19 +179,32 @@ class WeekScheduleView(QWidget):
             if rect.contains(pos):return row
         return None
 
-    def mousePressEvent(self,event):self.drag_row=self._hit(event.position())
+    def _hit_detail(self,pos):
+        for rect,row in reversed(self.rects):
+            if rect.contains(pos):
+                resize_zone=pos.y()>=rect.bottom()-8
+                return row,("resize" if resize_zone else "move")
+        return None,"move"
+
+    def mousePressEvent(self,event):
+        self.drag_row,self.drag_mode=self._hit_detail(event.position())
 
     def mouseDoubleClickEvent(self,event):
         row=self._hit(event.position())
         if row:self.entityActivated.emit(row["entity_type"],str(row["entity_key"]),row["equipment_id"])
 
     def mouseReleaseEvent(self,event):
-        row=self.drag_row;self.drag_row=None
+        row=self.drag_row;mode=self.drag_mode;self.drag_row=None;self.drag_mode="move"
         if not row or not self.week_start:return
         left,top,width,height,day_w,hour_h=self._geometry()
         x=max(left,min(left+width-1,event.position().x()));y=max(top,min(top+height-1,event.position().y()))
-        day=max(0,min(6,int((x-left)/day_w)))
-        raw_minutes=((y-top)/hour_h)*60.0;rounded=int(round(raw_minutes/15.0)*15);rounded=max(0,min(23*60+45,rounded))
+        raw_minutes=((y-top)/hour_h)*60.0;rounded=int(round(raw_minutes/15.0)*15);rounded=max(0,min(24*60,rounded))
+        if mode=="resize":
+            start=row["start_at"];target=datetime.combine(start.date(),datetime.min.time())+timedelta(minutes=rounded)
+            if target<=start:target=start+timedelta(minutes=15)
+            self.resizeRequested.emit(row["entity_type"],str(row["entity_key"]),target)
+            return
+        day=max(0,min(6,int((x-left)/day_w)));rounded=min(23*60+45,rounded)
         target=self.week_start+timedelta(days=day,hours=rounded//60,minutes=rounded%60)
         self.moveRequested.emit(row["entity_type"],str(row["entity_key"]),target)
 
@@ -239,7 +253,7 @@ class MaintenancePlanningWorkspace(QWidget):
         next_week=QPushButton("Next week ›");next_week.clicked.connect(lambda:self.shift_week(7))
         self.week_label=QLabel();self.week_label.setStyleSheet("font-weight:700;font-size:12pt")
         weekbar.addWidget(prev_week);weekbar.addWidget(today);weekbar.addWidget(next_week);weekbar.addStretch(1);weekbar.addWidget(self.week_label);weekv.addLayout(weekbar)
-        self.week_view=WeekScheduleView();self.week_view.moveRequested.connect(self.week_reschedule);self.week_view.entityActivated.connect(self.open_calendar_entity);weekv.addWidget(self.week_view,3)
+        self.week_view=WeekScheduleView();self.week_view.moveRequested.connect(self.week_reschedule);self.week_view.resizeRequested.connect(self.week_resize);self.week_view.entityActivated.connect(self.open_calendar_entity);weekv.addWidget(self.week_view,3)
         backlog_bar=QHBoxLayout();self.unscheduled_label=QLabel("Unscheduled engineering work")
         schedule_wo=QPushButton("Schedule selected work order");schedule_wo.clicked.connect(self.schedule_unscheduled_work)
         open_wo=QPushButton("Open selected work order");open_wo.clicked.connect(self.open_unscheduled_work)
@@ -363,6 +377,29 @@ class MaintenancePlanningWorkspace(QWidget):
     def open_unscheduled_work(self):
         wo=self._selected_unscheduled_work()
         if wo:self.open_entity.emit("WORK_ORDER",wo.work_order_no,wo.equipment_id)
+
+    def week_resize(self,entity_type: str,entity_key: str,new_end):
+        row=next((x for x in getattr(self,"_week_rows",[]) if x["entity_type"]==entity_type and str(x["entity_key"])==str(entity_key)),None)
+        if not row:return
+        start=row["start_at"]
+        if new_end<=start:return
+        try:
+            if entity_type=="PM_TASK":
+                pm_row=next((x for x in self.rows if str(x["id"])==str(entity_key)),None)
+                self.db.schedule_pm_task(
+                    int(entity_key),self.user["username"],start_at=start,end_at=new_end,
+                    reason=self.reason.text().strip() or "Calendar duration change",
+                    expected_task_version=pm_row.get("version") if pm_row else None,
+                    workstation="OPERATIONAL-CALENDAR",
+                )
+            elif entity_type=="WORK_ORDER":
+                self.db.schedule_work_order(
+                    entity_key,self.user["username"],start_at=start,end_at=new_end,
+                    reason=self.reason.text().strip() or "Calendar duration change",
+                    expected_version=row.get("version"),workstation="OPERATIONAL-CALENDAR",
+                )
+            self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"Calendar duration",str(exc))
 
     def week_reschedule(self,entity_type: str,entity_key: str,when):
         row=next((x for x in getattr(self,"_week_rows",[]) if x["entity_type"]==entity_type and str(x["entity_key"])==str(entity_key)),None)
