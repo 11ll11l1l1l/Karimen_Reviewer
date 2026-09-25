@@ -24,22 +24,45 @@ def _writable_directory(path: Path) -> tuple[bool,str]:
 
 
 def run_preflight(database_url: str | None = None, file_root: str | None = None, backup_root: str | None = None) -> dict:
-    database_url=database_url or os.getenv("EMS_DATABASE_URL","sqlite:///equipment_manager.db")
-    file_root=file_root or os.getenv("EMS_FILE_ROOT",str(Path.cwd()/"equipment_files"))
-    backup_root=backup_root or os.getenv("EMS_BACKUP_ROOT",str(Path.cwd()/"equipment_backups"))
+    shared_root=os.getenv("EMS_SHARED_ROOT","").strip()
+    data_mode=os.getenv("EMS_DATA_MODE","").strip().lower()
+    shared_mode=bool(shared_root) or data_mode in {"network-folder","shared-folder","serverless"}
+    configured_url=database_url or os.getenv("EMS_DATABASE_URL","").strip()
+    database_url=configured_url or "sqlite:///equipment_manager.db"
+    if shared_mode and shared_root:
+        file_root=file_root or os.getenv("EMS_FILE_ROOT",str(Path(shared_root)/"Files"))
+        backup_root=backup_root or os.getenv("EMS_BACKUP_ROOT",str(Path(shared_root)/"Backups"))
+    else:
+        file_root=file_root or os.getenv("EMS_FILE_ROOT",str(Path.cwd()/"equipment_files"))
+        backup_root=backup_root or os.getenv("EMS_BACKUP_ROOT",str(Path.cwd()/"equipment_backups"))
     checks=[]
 
     def add(name,status,detail):
         checks.append({"name":name,"status":status,"detail":detail})
 
     try:
-        db=Database(database_url)
+        db=Database() if shared_mode and database_url == (configured_url or "sqlite:///equipment_manager.db") else Database(database_url)
+        database_url=db.url
         ok,detail=db.health()
         add("database_connection","PASS" if ok else "FAIL",detail)
         ok,detail=db.schema_health()
         add("database_schema","PASS" if ok else "FAIL",detail)
 
-        if database_url.startswith("postgresql"):
+        if db.shared_workspace is not None:
+            sync=db.shared_workspace.status()
+            add(
+                "production_database_mode",
+                "PASS",
+                "Serverless shared-folder mode: local SQLite replica with serialized shared snapshot publishing.",
+            )
+            add(
+                "shared_state_revision",
+                "PASS" if sync["local_revision"] == sync["shared_revision"] else "WARN",
+                f"local r{sync['local_revision']}; shared r{sync['shared_revision']}; publisher={sync['publisher'] or 'n/a'}",
+            )
+            ok,detail=_writable_directory(Path(shared_root)/"SharedState")
+            add("shared_state_write","PASS" if ok else "FAIL",detail)
+        elif database_url.startswith("postgresql"):
             require_pitr=os.getenv("EMS_REQUIRE_PITR","0").strip().lower() in {"1","true","yes","on"}
             require_ha=os.getenv("EMS_REQUIRE_HA","0").strip().lower() in {"1","true","yes","on"}
             strict_auth=os.getenv("EMS_STRICT_AUTHZ","0").strip().lower() in {"1","true","yes","on"}
@@ -71,7 +94,7 @@ def run_preflight(database_url: str | None = None, file_root: str | None = None,
                 path=shutil.which(tool)
                 add(tool,"PASS" if path else "FAIL",path or f"{tool} not found in PATH")
         else:
-            add("production_database_mode","WARN","SQLite is supported for local/demo only; production multi-user deployment should use PostgreSQL.")
+            add("production_database_mode","WARN","Standalone SQLite is single-workstation only. For no-server multi-user use, configure EMS_SHARED_ROOT.")
     except Exception as exc:
         add("database_initialization","FAIL",str(exc))
 
