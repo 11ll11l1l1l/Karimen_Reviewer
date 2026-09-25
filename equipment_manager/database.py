@@ -2105,9 +2105,20 @@ class Database:
                         closed = True
                 else:
                     s.commit()
-            except Exception:
+            except Exception as exc:
                 if not closed:
                     s.rollback()
+                if (
+                    self.shared_workspace is not None
+                    and exc.__class__.__name__ == "SharedFolderConflict"
+                ):
+                    if not closed:
+                        s.close()
+                        closed = True
+                    # The rejected transaction never committed. Refresh now so
+                    # the next user retry starts from the winning workstation's
+                    # authoritative revision rather than a stale screen/database.
+                    self.shared_workspace.refresh_local(self.engine)
                 raise
             finally:
                 if not closed:
