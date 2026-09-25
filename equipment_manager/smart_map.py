@@ -5,9 +5,9 @@ from pathlib import Path
 from PySide6.QtCore import Qt, QTimer, QRectF, Signal, QMimeData
 from PySide6.QtGui import QBrush, QColor, QFont, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import (
-    QApplication,QCheckBox,QComboBox,QFileDialog,QFrame,QGraphicsItem,QGraphicsPixmapItem,QGraphicsRectItem,
+    QApplication,QCheckBox,QComboBox,QDialog,QFileDialog,QFrame,QGraphicsItem,QGraphicsPixmapItem,QGraphicsRectItem,
     QGraphicsScene,QGraphicsSimpleTextItem,QGraphicsView,QHBoxLayout,QLabel,
-    QMessageBox,QPushButton,QSplitter,QTableWidget,QTableWidgetItem,QVBoxLayout,QWidget,
+    QMessageBox,QPushButton,QSplitter,QTableWidget,QTableWidgetItem,QTextEdit,QVBoxLayout,QWidget,
 )
 
 from database import Database
@@ -128,6 +128,22 @@ class StorageNode(QGraphicsRectItem):
         label=QGraphicsSimpleTextItem(storage.location_code,self);label.setBrush(QBrush(QColor("#f5e7c9")));label.setFont(QFont("Segoe UI",7,QFont.Weight.Bold));label.setPos(7,10)
 
 
+class ReportPreviewDialog(QDialog):
+    def __init__(self,title: str,plain: str,html_text: str,parent=None):
+        super().__init__(parent);self.plain=plain;self.html_text=html_text
+        self.setWindowTitle(title);self.resize(960,700)
+        root=QVBoxLayout(self)
+        hint=QLabel("This is the same formatted report that Copy FAB Status places on the clipboard.")
+        hint.setWordWrap(True);hint.setStyleSheet("color:#647581");root.addWidget(hint)
+        self.preview=QTextEdit();self.preview.setReadOnly(True);self.preview.setHtml(html_text);root.addWidget(self.preview,1)
+        buttons=QHBoxLayout();copy=QPushButton("Copy Report");copy.clicked.connect(self.copy_report);close=QPushButton("Close");close.clicked.connect(self.accept)
+        buttons.addStretch(1);buttons.addWidget(copy);buttons.addWidget(close);root.addLayout(buttons)
+
+    def copy_report(self):
+        mime=QMimeData();mime.setText(self.plain);mime.setHtml(self.html_text)
+        QApplication.clipboard().setMimeData(mime);notify("Report copied. Paste directly into Outlook, Teams, or another message.")
+
+
 class SmartLayoutPage(QWidget):
     open_entity=Signal(str,str,str)
     report_issue=Signal(str)
@@ -151,10 +167,11 @@ class SmartLayoutPage(QWidget):
         self.issue_only=QCheckBox("Problems only");self.issue_only.toggled.connect(self.refresh)
         self.edit_mode=QCheckBox("Layout edit");self.edit_mode.setEnabled(self.can_edit);self.edit_mode.toggled.connect(self.refresh)
         fit_btn=QPushButton("Fit FAB");fit_btn.clicked.connect(self.fit_map);refresh_btn=QPushButton("Refresh");refresh_btn.clicked.connect(self.refresh);save_btn=QPushButton("Save positions");save_btn.setEnabled(self.can_edit);save_btn.clicked.connect(self.save_positions)
+        preview_report=QPushButton("Preview Report");preview_report.clicked.connect(self.preview_fab_report)
         copy_status=QPushButton("Copy FAB Status");copy_status.clicked.connect(self.copy_fab_status)
         copy_image=QPushButton("Copy Dashboard Image");copy_image.clicked.connect(self.copy_dashboard_image)
         export_report=QPushButton("Export Report");export_report.clicked.connect(self.export_fab_report)
-        for widget in [QLabel("Building"),self.building,QLabel("Floor"),self.floor,QLabel("Area"),self.area,self.issue_only,self.edit_mode,fit_btn,refresh_btn,copy_status,copy_image,export_report,save_btn]:controls.addWidget(widget)
+        for widget in [QLabel("Building"),self.building,QLabel("Floor"),self.floor,QLabel("Area"),self.area,self.issue_only,self.edit_mode,fit_btn,refresh_btn,preview_report,copy_status,copy_image,export_report,save_btn]:controls.addWidget(widget)
         controls.addStretch(1);root.addLayout(controls)
 
         self.kpi_row=QHBoxLayout();self.kpi_buttons={}
@@ -302,6 +319,13 @@ class SmartLayoutPage(QWidget):
         return self.db.fab_shift_activity(
             building=self.building.currentText(),floor=self.floor.currentText(),area=area
         )
+
+    def preview_fab_report(self):
+        rows=getattr(self,"_last_snapshot",[])
+        if not rows:notify("FAB report: no equipment in the current scope.");return
+        title=f"FAB Status — {self.building.currentText()} / {self.floor.currentText()}"
+        activity=self._shift_activity();plain,html_text=build_fab_status_report(rows,title=title,activity=activity)
+        ReportPreviewDialog(title+" Preview",plain,html_text,self).exec()
 
     def copy_fab_status(self):
         rows=getattr(self,"_last_snapshot",[])
