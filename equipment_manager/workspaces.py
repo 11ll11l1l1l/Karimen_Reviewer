@@ -135,11 +135,14 @@ class AttachmentPanel(QWidget):
         if not self.entity_key:return
         image=QApplication.clipboard().image()
         if image.isNull():
-            QMessageBox.warning(self,"Clipboard","Clipboard does not contain an image.")
+            notify("Paste screenshot: clipboard does not contain an image.")
             return
-        caption,ok=QInputDialog.getText(self,"Screenshot","Caption (optional)")
-        if not ok:return
-        try:self._register(store_clipboard_image(image,FILE_ROOT,self.entity_type,self.entity_key),caption=caption,category="Screenshot")
+        try:
+            self._register(
+                store_clipboard_image(image,FILE_ROOT,self.entity_type,self.entity_key),
+                caption="Clipboard screenshot",category="Screenshot",
+            )
+            notify(f"Screenshot attached to {self.entity_type}:{self.entity_key}.")
         except Exception as exc:QMessageBox.critical(self,"Screenshot",str(exc))
 
     def update_preview(self):
