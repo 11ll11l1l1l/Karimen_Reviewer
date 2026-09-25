@@ -239,7 +239,12 @@ class MaintenancePlanningWorkspace(QWidget):
         next_week=QPushButton("Next week ›");next_week.clicked.connect(lambda:self.shift_week(7))
         self.week_label=QLabel();self.week_label.setStyleSheet("font-weight:700;font-size:12pt")
         weekbar.addWidget(prev_week);weekbar.addWidget(today);weekbar.addWidget(next_week);weekbar.addStretch(1);weekbar.addWidget(self.week_label);weekv.addLayout(weekbar)
-        self.week_view=WeekScheduleView();self.week_view.moveRequested.connect(self.week_reschedule);self.week_view.entityActivated.connect(self.open_calendar_entity);weekv.addWidget(self.week_view,1)
+        self.week_view=WeekScheduleView();self.week_view.moveRequested.connect(self.week_reschedule);self.week_view.entityActivated.connect(self.open_calendar_entity);weekv.addWidget(self.week_view,3)
+        backlog_bar=QHBoxLayout();self.unscheduled_label=QLabel("Unscheduled engineering work")
+        schedule_wo=QPushButton("Schedule selected work order");schedule_wo.clicked.connect(self.schedule_unscheduled_work)
+        open_wo=QPushButton("Open selected work order");open_wo.clicked.connect(self.open_unscheduled_work)
+        backlog_bar.addWidget(self.unscheduled_label);backlog_bar.addStretch(1);backlog_bar.addWidget(schedule_wo);backlog_bar.addWidget(open_wo);weekv.addLayout(backlog_bar)
+        self.unscheduled_table=_table(["WO","Equipment","Activity","Priority","Status","Owner"]);self.unscheduled_table.setMaximumHeight(180);self.unscheduled_table.doubleClicked.connect(self.open_unscheduled_work);weekv.addWidget(self.unscheduled_table,1)
         tabs.addTab(week,"Week Calendar")
 
         timeline=QWidget();tv=QVBoxLayout(timeline);self.timeline=PlanningTimeline();self.timeline.rescheduleRequested.connect(self.timeline_reschedule);tv.addWidget(self.timeline);tabs.addTab(timeline,"Timeline / Gantt")
@@ -321,6 +326,43 @@ class MaintenancePlanningWorkspace(QWidget):
         self._week_rows=[x for x in rows if self._calendar_search_match(x)]
         self.week_label.setText(f"{monday:%Y-%m-%d} — {sunday:%Y-%m-%d} · {len(self._week_rows)} scheduled activity(s)")
         self.week_view.set_week(self._week_rows,day)
+        work_orders=[x for x in self.db.list_work_orders(open_only=True) if x.planned_start is None]
+        q=self.search.text().strip().lower()
+        if q:
+            work_orders=[x for x in work_orders if q in " ".join([
+                x.work_order_no,x.equipment_id,x.title,x.priority,x.status,x.owner,x.team
+            ]).lower()]
+        self._unscheduled_work=work_orders
+        self.unscheduled_label.setText(f"Unscheduled engineering work · {len(work_orders)}")
+        self.unscheduled_table.setRowCount(len(work_orders))
+        for r,row in enumerate(work_orders):
+            for col,value in enumerate([row.work_order_no,row.equipment_id,row.title,row.priority,row.status,row.owner]):
+                self.unscheduled_table.setItem(r,col,_item(value))
+
+    def _selected_unscheduled_work(self):
+        row=self.unscheduled_table.currentRow();items=getattr(self,"_unscheduled_work",[])
+        return items[row] if 0<=row<len(items) else None
+
+    def schedule_unscheduled_work(self):
+        wo=self._selected_unscheduled_work()
+        if not wo:
+            QMessageBox.information(self,"Operational Calendar","Select an unscheduled work order.");return
+        start=self.plan_dt.dateTime().toPython();end=self.plan_end_dt.dateTime().toPython()
+        if end<=start:
+            end=start+timedelta(hours=1)
+        try:
+            self.db.schedule_work_order(
+                wo.work_order_no,self.user["username"],start_at=start,end_at=end,
+                reason=self.reason.text().strip() or "Scheduled from operational calendar",
+                expected_version=wo.version,workstation="OPERATIONAL-CALENDAR",
+            )
+            notify(f"{wo.work_order_no} scheduled for {start:%Y-%m-%d %H:%M}.")
+            self.refresh();self.calendar.setSelectedDate(QDate(start.year,start.month,start.day))
+        except Exception as exc:QMessageBox.critical(self,"Operational Calendar",str(exc))
+
+    def open_unscheduled_work(self):
+        wo=self._selected_unscheduled_work()
+        if wo:self.open_entity.emit("WORK_ORDER",wo.work_order_no,wo.equipment_id)
 
     def week_reschedule(self,entity_type: str,entity_key: str,when):
         row=next((x for x in getattr(self,"_week_rows",[]) if x["entity_type"]==entity_type and str(x["entity_key"])==str(entity_key)),None)
