@@ -1,12 +1,30 @@
-# The first build reads the database URL from EMS_DATABASE_URL.
-# Example production value:
-# postgresql+psycopg://ems_user:CHANGE_THIS@192.168.1.50:5432/equipment_management
+# Preferred no-server deployment: every Windows PC runs EMS locally.
+# Set these environment variables on each workstation:
+#
+#   EMS_DATA_MODE=network-folder
+#   EMS_SHARED_ROOT=\\\\FILESERVER\\EquipmentManagement
+#
+# EMS keeps SQLite in each workstation's local app-data directory and
+# synchronizes committed snapshots through the shared folder. Never place the
+# active SQLite file itself on SMB.
+#
+# Optional overrides:
+#   EMS_LOCAL_STATE_ROOT=C:\\Users\\<user>\\AppData\\Local\\EquipmentManagement
+#   EMS_FILE_ROOT=\\\\FILESERVER\\EquipmentManagement\\Files
+#   EMS_BACKUP_ROOT=\\\\FILESERVER\\EquipmentManagement\\Backups
+#
+# PostgreSQL remains supported for sites that later gain an always-on database
+# host, but it is not required for the serverless network-folder topology.
 
-[database]
-host = "192.168.1.50"
-port = 5432
-name = "equipment_management"
+[deployment]
+mode = "network-folder"
 
 [files]
-root = "\\\\FILESERVER\\EquipmentManagement"
-controlled_documents = "\\\\FILESERVER\\ControlledDocuments"
+shared_root = "\\\\FILESERVER\\EquipmentManagement"
+root = "\\\\FILESERVER\\EquipmentManagement\\Files"
+controlled_documents = "\\\\FILESERVER\\EquipmentManagement\\Files\\ControlledDocuments"
+backups = "\\\\FILESERVER\\EquipmentManagement\\Backups"
+
+[synchronization]
+lock_timeout_seconds = 15
+stale_lock_seconds = 300
