@@ -555,6 +555,8 @@ class PMSpec(Base):
     sop_path: Mapped[str] = mapped_column(Text, default="")
     sop_page: Mapped[str] = mapped_column(String(40), default="")
     sop_section: Mapped[str] = mapped_column(String(80), default="")
+    screenshot_required: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    comment_required: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     revision: Mapped[int] = mapped_column(Integer, default=1)
     active: Mapped[bool] = mapped_column(Boolean, default=True)
     version: Mapped[int] = mapped_column(Integer, default=1)
@@ -609,6 +611,8 @@ class PMExecutionStepSnapshot(Base):
     sop_path: Mapped[str] = mapped_column(Text, default="")
     sop_page: Mapped[str] = mapped_column(String(40), default="")
     sop_section: Mapped[str] = mapped_column(String(80), default="")
+    screenshot_required: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    comment_required: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     __table_args__ = (UniqueConstraint("execution_id", "step_no", name="uq_pm_execution_snapshot_step"),)
 
 
@@ -1601,6 +1605,7 @@ class Database:
             ("20260925_019","Create PM pause and carry-over history",lambda: [
                 table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
             ]),
+            ("20260925_020","Add PM per-step completion evidence rules",self._migration_pm_step_completion_rules),
         ]
 
     def _migration_indexes(self):
@@ -1614,6 +1619,21 @@ class Database:
         ]
         with self.engine.begin() as conn:
             for sql in statements:conn.exec_driver_sql(sql)
+
+    def _migration_pm_step_completion_rules(self):
+        inspector=inspect(self.engine)
+        targets={
+            "pm_specs":["screenshot_required","comment_required"],
+            "pm_execution_step_snapshots":["screenshot_required","comment_required"],
+        }
+        with self.engine.begin() as conn:
+            for table,columns in targets.items():
+                existing={x["name"] for x in inspector.get_columns(table)} if table in inspector.get_table_names() else set()
+                for column in columns:
+                    if column not in existing:
+                        conn.exec_driver_sql(
+                            f"ALTER TABLE {table} ADD COLUMN {column} BOOLEAN NOT NULL DEFAULT FALSE"
+                        )
 
     def _record_bootstrap_migrations(self):
         SchemaMigration.__table__.create(self.engine,checkfirst=True)
@@ -5228,6 +5248,8 @@ class Database:
                 sop_path=spec.sop_path,
                 sop_page=spec.sop_page,
                 sop_section=spec.sop_section,
+                screenshot_required=bool(spec.screenshot_required),
+                comment_required=bool(spec.comment_required),
             ))
 
     def get_pm_execution_for_task(self, task_id: int):
@@ -5465,6 +5487,18 @@ class Database:
                 raise ValueError(
                     f"Failed/invalid PM steps require correction, disposition, or engineering review: {hard_fail}"
                 )
+            missing_screenshot=[
+                p.step_no for p in specs
+                if p.screenshot_required and not (by_step[p.step_no].evidence_path or "").strip()
+            ]
+            if missing_screenshot:
+                raise ValueError(f"Screenshot evidence required for PM step(s): {missing_screenshot}")
+            missing_comment=[
+                p.step_no for p in specs
+                if p.comment_required and not (by_step[p.step_no].comment or "").strip()
+            ]
+            if missing_comment:
+                raise ValueError(f"Comment required for PM step(s): {missing_comment}")
             requirements=list(s.scalars(select(PMExecutionRequirementSnapshot).where(
                 PMExecutionRequirementSnapshot.execution_id==execution_id,
                 PMExecutionRequirementSnapshot.mandatory.is_(True),
