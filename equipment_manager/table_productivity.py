@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+import csv
 import hashlib
 from pathlib import Path
 
@@ -81,6 +82,39 @@ def copy_selection_tsv(table: QTableWidget):
     QApplication.clipboard().setText("\n".join(lines))
 
 
+def copy_rows_with_headers(table: QTableWidget,selected_only: bool=False):
+    rows=sorted({idx.row() for idx in table.selectedIndexes()}) if selected_only else list(range(table.rowCount()))
+    if not rows:return
+    columns=[c for c in range(table.columnCount()) if not table.isColumnHidden(c)]
+    headers=_headers(table)
+    lines=["\t".join(headers[c] for c in columns)]
+    for r in rows:lines.append("\t".join(_cell(table,r,c) for c in columns))
+    QApplication.clipboard().setText("\n".join(lines))
+
+
+def export_table_csv(table: QTableWidget,selected_only: bool=False,parent=None):
+    rows=sorted({idx.row() for idx in table.selectedIndexes()}) if selected_only else list(range(table.rowCount()))
+    if not rows:
+        QMessageBox.information(parent or table,"Export","No rows selected.")
+        return None
+    suggested=table.property("ems_export_name") or "EMS_Export"
+    safe="".join(ch if ch.isalnum() or ch in {"-","_"} else "_" for ch in str(suggested)).strip("_") or "EMS_Export"
+    default=str(Path.cwd()/f"{safe}_{datetime.now():%Y%m%d_%H%M}.csv")
+    path,_=QFileDialog.getSaveFileName(parent or table,"Export to CSV",default,"CSV (*.csv)")
+    if not path:return None
+    if not path.lower().endswith(".csv"):path+=".csv"
+    columns=[c for c in range(table.columnCount()) if not table.isColumnHidden(c)]
+    try:
+        with open(path,"w",encoding="utf-8-sig",newline="") as handle:
+            writer=csv.writer(handle)
+            headers=_headers(table);writer.writerow([headers[c] for c in columns])
+            for r in rows:writer.writerow([_cell(table,r,c) for c in columns])
+    except Exception as exc:
+        QMessageBox.critical(parent or table,"CSV export",str(exc));return None
+    QMessageBox.information(parent or table,"CSV export",f"Exported {len(rows)} row(s).\n{path}")
+    return path
+
+
 def _write_workbook(table: QTableWidget,path: str,rows: list[int]):
     wb=Workbook();ws=wb.active;ws.title="Export"
     headers=_headers(table)
@@ -128,8 +162,13 @@ def install_table_productivity(table: QTableWidget,export_name: str="EMS Export"
     def menu_at(pos):
         menu=QMenu(table)
         copy_action=menu.addAction("Copy selected cells")
+        copy_rows=menu.addAction("Copy selected rows with headers")
+        copy_all=menu.addAction("Copy current table with headers")
+        menu.addSeparator()
         export_selected=menu.addAction("Export selected rows to Excel")
         export_all=menu.addAction("Export current table to Excel")
+        csv_selected=menu.addAction("Export selected rows to CSV")
+        csv_all=menu.addAction("Export current table to CSV")
         menu.addSeparator()
         columns=menu.addMenu("Columns")
         column_actions={}
@@ -139,8 +178,12 @@ def install_table_productivity(table: QTableWidget,export_name: str="EMS Export"
         reset_view=menu.addAction("Reset table view")
         action=menu.exec(table.viewport().mapToGlobal(pos))
         if action==copy_action:copy_selection_tsv(table)
+        elif action==copy_rows:copy_rows_with_headers(table,True)
+        elif action==copy_all:copy_rows_with_headers(table,False)
         elif action==export_selected:export_table_xlsx(table,True,table)
         elif action==export_all:export_table_xlsx(table,False,table)
+        elif action==csv_selected:export_table_csv(table,True,table)
+        elif action==csv_all:export_table_csv(table,False,table)
         elif action==save_view:_save_view(table)
         elif action==reset_view:
             for col in range(table.columnCount()):table.setColumnHidden(col,False)
