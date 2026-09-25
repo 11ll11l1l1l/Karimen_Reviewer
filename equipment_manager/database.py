@@ -6822,6 +6822,110 @@ class Database:
             "priority":task.priority,"owner":task.assigned_to,
         },user,workstation)
 
+    def schedule_work_order(
+        self,
+        work_order_no: str,
+        user: str,
+        *,
+        start_at: datetime,
+        end_at: datetime,
+        owner: str | None = None,
+        reason: str = "",
+        expected_version: int | None = None,
+        workstation: str = "",
+    ):
+        if not start_at or not end_at or end_at<=start_at:
+            raise ValueError("Work-order schedule requires an end after the start.")
+        with self.session() as s:
+            stmt=select(WorkOrder).where(WorkOrder.work_order_no==work_order_no)
+            if self.url.startswith("postgresql"):stmt=stmt.with_for_update()
+            row=s.scalar(stmt)
+            if not row:raise ValueError("Work order not found")
+            self.assert_authorized(user,"worklog.edit",row.equipment_id)
+            if expected_version is not None and row.version!=expected_version:
+                raise RuntimeError("CONFLICT: Work order changed by another user. Refresh and retry.")
+            if row.status in {"Completed","Cancelled"}:
+                raise ValueError(f"Cannot schedule work order in {row.status} state.")
+            old_start=row.planned_start;old_end=row.planned_end;old_owner=row.owner
+            row.planned_start=start_at;row.planned_end=end_at
+            if owner is not None:row.owner=owner.strip()
+            row.updated_at=datetime.utcnow();row.version+=1
+            detail={
+                "old_start":old_start.isoformat() if old_start else None,
+                "old_end":old_end.isoformat() if old_end else None,
+                "new_start":start_at.isoformat(),"new_end":end_at.isoformat(),
+                "old_owner":old_owner,"new_owner":row.owner,"reason":reason.strip(),
+            }
+            s.add(AuditLog(
+                user=user,action="WORK_ORDER_SCHEDULE_UPDATE",entity_type="WORK_ORDER",
+                entity_key=row.work_order_no,detail=json.dumps(detail,sort_keys=True),
+                workstation=workstation,
+            ))
+            self._queue_integration_event(s,"work_order.schedule.changed","WORK_ORDER",row.work_order_no,{
+                "work_order_no":row.work_order_no,"equipment_id":row.equipment_id,
+                "planned_start":start_at.isoformat(),"planned_end":end_at.isoformat(),
+                "owner":row.owner,"reason":reason.strip(),"changed_by":user,
+            })
+            s.flush();return row
+
+    def operational_calendar_rows(
+        self,
+        start_at: datetime,
+        end_at: datetime,
+    ) -> list[dict[str,Any]]:
+        """Merge PM and engineering work into one operational calendar view."""
+        if end_at<=start_at:return []
+        with self.session() as s:
+            pm_tasks=list(s.scalars(select(PMTask).where(
+                PMTask.status.notin_(["Completed","Cancelled"])
+            )))
+            task_ids=[x.id for x in pm_tasks]
+            schedules={x.task_id:x for x in s.scalars(select(PMTaskSchedule).where(
+                PMTaskSchedule.task_id.in_(task_ids)
+            ))} if task_ids else {}
+            definitions={x.pm_id:x for x in s.scalars(select(PMDefinition))}
+            work_orders=list(s.scalars(select(WorkOrder).where(
+                WorkOrder.status.notin_(["Completed","Cancelled"]),
+                WorkOrder.planned_start.is_not(None),
+                WorkOrder.planned_start<end_at,
+                (WorkOrder.planned_end.is_(None) | (WorkOrder.planned_end>start_at)),
+            )))
+        rows=[]
+        for task in pm_tasks:
+            schedule=schedules.get(task.id)
+            start=(schedule.scheduled_start_at if schedule else None) or task.scheduled_date or task.original_due_date
+            if not start:continue
+            hours=float(schedule.planned_hours if schedule else (task.estimated_hours or 0)) or 1.0
+            end=(schedule.scheduled_end_at if schedule else None) or (start+timedelta(hours=max(.5,hours)))
+            if start>=end_at or end<=start_at:continue
+            definition=definitions.get(task.pm_id);due=task.original_due_date
+            early=(due-timedelta(days=max(0,definition.early_window_days or 0))) if due and definition else due
+            latest=(due+timedelta(days=max(0,definition.grace_days or 0))) if due and definition else due
+            window="IN WINDOW"
+            if latest and datetime.utcnow()>latest:window="OVERDUE"
+            elif early and start<early:window="TOO EARLY"
+            elif latest and start>latest and task.status!="Deferred":window="OUTSIDE GRACE"
+            elif task.status=="Deferred":window="DEFERRED"
+            rows.append({
+                "entity_type":"PM_TASK","entity_key":str(task.id),"kind":"PM",
+                "equipment_id":task.equipment_id,"title":f"{task.pm_id} — {task.pm_name}",
+                "start_at":start,"end_at":end,"owner":task.assigned_to,"status":task.status,
+                "priority":task.priority,"window":window,"version":task.version,
+                "controlled_due":task.original_due_date,
+            })
+        for wo in work_orders:
+            start=wo.planned_start
+            end=wo.planned_end or (start+timedelta(hours=1))
+            rows.append({
+                "entity_type":"WORK_ORDER","entity_key":wo.work_order_no,"kind":"WO",
+                "equipment_id":wo.equipment_id,"title":wo.title,
+                "start_at":start,"end_at":end,"owner":wo.owner,"status":wo.status,
+                "priority":wo.priority,"window":"","version":wo.version,
+                "controlled_due":None,
+            })
+        rows.sort(key=lambda x:(x["start_at"],x["equipment_id"],x["kind"],x["entity_key"]))
+        return rows
+
     def list_work_orders(self, equipment_id: str = "", open_only: bool = False):
         with self.session() as s:
             stmt=select(WorkOrder)
