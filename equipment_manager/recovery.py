@@ -91,13 +91,19 @@ def postgres_restore_drill(source_database_url: str, backup_path: str, admin_url
         admin_engine.dispose()
 
 
-def run_restore_drill(database_url: str, backup_path: str, user: str = "") -> tuple[bool,str]:
-    db=Database(database_url)
-    if database_url.startswith("sqlite"):
-        ok,detail=sqlite_restore_drill(database_url,backup_path)
+def run_restore_drill(
+    database_url: str | None,
+    backup_path: str,
+    user: str = "",
+    database: Database | None = None,
+) -> tuple[bool,str]:
+    db=database or (Database(database_url) if database_url else Database())
+    effective_url=db.url
+    if effective_url.startswith("sqlite"):
+        ok,detail=sqlite_restore_drill(effective_url,backup_path)
         db_type="SQLite"
-    elif database_url.startswith("postgresql"):
-        ok,detail=postgres_restore_drill(database_url,backup_path)
+    elif effective_url.startswith("postgresql"):
+        ok,detail=postgres_restore_drill(effective_url,backup_path)
         db_type="PostgreSQL"
     else:
         return False,"Unsupported database driver"
@@ -114,8 +120,8 @@ def main() -> int:
     parser.add_argument("backup_path")
     parser.add_argument("--user",default=os.getenv("USERNAME") or os.getenv("USER") or "operator")
     args=parser.parse_args()
-    url=os.getenv("EMS_DATABASE_URL","sqlite:///equipment_manager.db")
-    ok,detail=run_restore_drill(url,args.backup_path,args.user)
+    db=Database()
+    ok,detail=run_restore_drill(db.url,args.backup_path,args.user,database=db)
     print(("RESTORE DRILL PASS: " if ok else "RESTORE DRILL FAIL: ")+detail)
     return 0 if ok else 2
 
