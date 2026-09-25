@@ -107,6 +107,105 @@ class PlanningTimeline(QWidget):
         self.rescheduleRequested.emit(int(row["id"]),when)
 
 
+class WeekScheduleView(QWidget):
+    moveRequested=Signal(int,object)
+    taskActivated=Signal(int)
+
+    def __init__(self,parent=None):
+        super().__init__(parent);self.rows=[];self.week_start=None;self.drag_task=None;self.rects=[]
+        self.setMinimumHeight(520);self.setMouseTracking(True)
+
+    def set_week(self,rows,anchor_date):
+        if hasattr(anchor_date,"toPython"):anchor_date=anchor_date.toPython()
+        start=anchor_date-timedelta(days=anchor_date.weekday())
+        self.week_start=datetime.combine(start,datetime.min.time())
+        end=self.week_start+timedelta(days=7)
+        self.rows=[
+            x for x in rows
+            if (x.get("scheduled_start_at") or x.get("original_due_date"))
+            and self.week_start <= (x.get("scheduled_start_at") or x.get("original_due_date")) < end
+        ]
+        self.update()
+
+    def _geometry(self):
+        left=72;top=44;right=12;bottom=18
+        width=max(210,self.width()-left-right);height=max(360,self.height()-top-bottom)
+        return left,top,width,height,width/7.0,height/24.0
+
+    def _rect_for(self,row):
+        left,top,width,height,day_w,hour_h=self._geometry()
+        start=row.get("scheduled_start_at") or row.get("original_due_date")
+        if not start or not self.week_start:return QRectF()
+        end=row.get("scheduled_end_at") or (start+timedelta(hours=max(float(row.get("planned_hours") or row.get("estimated_hours") or 1),0.5)))
+        day=max(0,min(6,(start.date()-self.week_start.date()).days))
+        start_h=start.hour+start.minute/60.0
+        end_h=(end.hour+end.minute/60.0) if end.date()==start.date() else 24.0
+        duration=max(.35,end_h-start_h)
+        x=left+day*day_w+3;y=top+start_h*hour_h+1
+        return QRectF(x,y,max(18,day_w-6),max(18,duration*hour_h-2))
+
+    def paintEvent(self,event):
+        p=QPainter(self);p.setRenderHint(QPainter.RenderHint.Antialiasing);p.fillRect(self.rect(),QColor("#ffffff"))
+        left,top,width,height,day_w,hour_h=self._geometry()
+        if not self.week_start:
+            p.setPen(QColor("#647581"));p.drawText(self.rect(),Qt.AlignmentFlag.AlignCenter,"No week selected");return
+        days=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]
+        for d in range(7):
+            x=left+d*day_w
+            date=self.week_start.date()+timedelta(days=d)
+            p.setPen(QColor("#1b2733"));p.setFont(QFont("Segoe UI",8,QFont.Weight.Bold))
+            p.drawText(QRectF(x,4,day_w,34),Qt.AlignmentFlag.AlignCenter,f"{days[d]}\n{date:%m-%d}")
+            p.setPen(QPen(QColor("#dfe6ea"),1));p.drawLine(int(x),top,int(x),top+height)
+        p.drawLine(int(left+width),top,int(left+width),top+height)
+        for hour in range(25):
+            y=top+hour*hour_h
+            p.setPen(QPen(QColor("#eef2f4"),1));p.drawLine(left,int(y),left+width,int(y))
+            if hour<24:
+                p.setPen(QColor("#647581"));p.setFont(QFont("Segoe UI",7))
+                p.drawText(QRectF(5,y-8,left-10,16),Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignVCenter,f"{hour:02d}:00")
+        self.rects=[]
+        for row in self.rows:
+            rect=self._rect_for(row);self.rects.append((rect,row))
+            blocked=row.get("parts_status")=="SHORT" or row.get("certification_status") in {"MISSING","UNASSIGNED"}
+            if row.get("window")=="OVERDUE":color=QColor("#b75045")
+            elif blocked:color=QColor("#d08b2e")
+            elif row.get("status")=="In Progress":color=QColor("#386cb0")
+            else:color=QColor("#2577a3")
+            p.setBrush(QColor(color.red(),color.green(),color.blue(),215));p.setPen(QPen(color.darker(125),1.2));p.drawRoundedRect(rect,4,4)
+            p.setPen(QColor("#ffffff"));p.setFont(QFont("Segoe UI",7,QFont.Weight.Bold))
+            label=f"{row.get('equipment_id','')} · {row.get('pm_id','')}"
+            p.drawText(rect.adjusted(5,2,-4,-2),Qt.AlignmentFlag.AlignLeft|Qt.AlignmentFlag.AlignTop,label)
+            p.setFont(QFont("Segoe UI",6))
+            owner=row.get("assigned_to") or "UNASSIGNED"
+            p.drawText(rect.adjusted(5,18,-4,-2),Qt.AlignmentFlag.AlignLeft|Qt.AlignmentFlag.AlignTop,owner[:22])
+
+    def _hit(self,pos):
+        for rect,row in reversed(self.rects):
+            if rect.contains(pos):return row
+        return None
+
+    def mousePressEvent(self,event):
+        self.drag_task=self._hit(event.position())
+
+    def mouseDoubleClickEvent(self,event):
+        row=self._hit(event.position())
+        if row:self.taskActivated.emit(int(row["id"]))
+
+    def mouseReleaseEvent(self,event):
+        row=self.drag_task;self.drag_task=None
+        if not row or not self.week_start:return
+        left,top,width,height,day_w,hour_h=self._geometry()
+        x=max(left,min(left+width-1,event.position().x()))
+        y=max(top,min(top+height-1,event.position().y()))
+        day=max(0,min(6,int((x-left)/day_w)))
+        raw_minutes=((y-top)/hour_h)*60.0
+        rounded=int(round(raw_minutes/15.0)*15)
+        rounded=max(0,min(23*60+45,rounded))
+        hour=rounded//60;minute=rounded%60
+        target=self.week_start+timedelta(days=day,hours=hour,minutes=minute)
+        self.moveRequested.emit(int(row["id"]),target)
+
+
 class MaintenancePlanningWorkspace(QWidget):
     open_entity=Signal(str,str,str)
 
@@ -143,7 +242,16 @@ class MaintenancePlanningWorkspace(QWidget):
         right=QWidget();rv=QVBoxLayout(right);self.day_label=QLabel();self.day_label.setStyleSheet("font-weight:700;font-size:12pt")
         self.day_table=_table(["Task","Equipment","PM","Name","Start","End","Slot h","Status","Assigned","Window","Parts","Certs"])
         self.day_table.doubleClicked.connect(self.open_day_selected);rv.addWidget(self.day_label);rv.addWidget(self.day_table)
-        split.addWidget(right);split.setStretchFactor(1,2);cv.addWidget(split);tabs.addTab(calendar,"Calendar / day plan")
+        split.addWidget(right);split.setStretchFactor(1,2);cv.addWidget(split);tabs.addTab(calendar,"Month / Day")
+
+        week=QWidget();weekv=QVBoxLayout(week);weekbar=QHBoxLayout()
+        prev_week=QPushButton("‹ Previous week");prev_week.clicked.connect(lambda:self.shift_week(-7))
+        today=QPushButton("Today");today.clicked.connect(self.go_today)
+        next_week=QPushButton("Next week ›");next_week.clicked.connect(lambda:self.shift_week(7))
+        self.week_label=QLabel();self.week_label.setStyleSheet("font-weight:700;font-size:12pt")
+        weekbar.addWidget(prev_week);weekbar.addWidget(today);weekbar.addWidget(next_week);weekbar.addStretch(1);weekbar.addWidget(self.week_label);weekv.addLayout(weekbar)
+        self.week_view=WeekScheduleView();self.week_view.moveRequested.connect(self.week_reschedule);self.week_view.taskActivated.connect(self.open_task_id);weekv.addWidget(self.week_view,1)
+        tabs.addTab(week,"Week Calendar")
 
         timeline=QWidget();tv=QVBoxLayout(timeline);self.timeline=PlanningTimeline();self.timeline.rescheduleRequested.connect(self.timeline_reschedule);tv.addWidget(self.timeline);tabs.addTab(timeline,"Timeline / Gantt")
 
@@ -181,7 +289,7 @@ class MaintenancePlanningWorkspace(QWidget):
     def rebuild_views(self):
         by_day=defaultdict(list);by_owner=defaultdict(list)
         for row in self.filtered:
-            date=row.get("scheduled_date") or row.get("original_due_date")
+            date=row.get("scheduled_start_at") or row.get("scheduled_date") or row.get("original_due_date")
             if date:by_day[date.date()].append(row)
             by_owner[(row.get("assigned_to") or "UNASSIGNED").strip() or "UNASSIGNED"].append(row)
         dates=sorted(by_day)
@@ -200,6 +308,27 @@ class MaintenancePlanningWorkspace(QWidget):
         start=datetime.now();end=start+timedelta(days=self.horizon.value())
         self.timeline.set_rows(self.filtered,start,end)
         self.calendar_changed()
+        self.rebuild_week()
+
+    def go_today(self):
+        self.calendar.setSelectedDate(QDate.currentDate());self.rebuild_week()
+
+    def shift_week(self,days: int):
+        self.calendar.setSelectedDate(self.calendar.selectedDate().addDays(days));self.rebuild_week()
+
+    def rebuild_week(self):
+        day=self.calendar.selectedDate().toPython()
+        monday=day-timedelta(days=day.weekday());sunday=monday+timedelta(days=6)
+        self.week_label.setText(f"{monday:%Y-%m-%d} — {sunday:%Y-%m-%d}")
+        self.week_view.set_week(self.filtered,day)
+
+    def week_reschedule(self,task_id: int,when):
+        self.timeline_reschedule(task_id,when)
+        self.calendar.setSelectedDate(QDate(when.year,when.month,when.day));self.rebuild_week()
+
+    def open_task_id(self,task_id: int):
+        row=next((x for x in self.filtered if int(x["id"])==int(task_id)),None)
+        if row:self.open_entity.emit("PM_TASK",str(row["id"]),row["equipment_id"])
 
     def calendar_changed(self):
         qd=self.calendar.selectedDate();day=qd.toPython()
@@ -209,6 +338,7 @@ class MaintenancePlanningWorkspace(QWidget):
         self.day_table.setRowCount(len(rows));fields=["id","equipment_id","pm_id","pm_name","scheduled_start_at","scheduled_end_at","planned_hours","status","assigned_to","window","parts_status","certification_status"]
         for r,row in enumerate(rows):
             for col,field in enumerate(fields):self.day_table.setItem(r,col,_item(row.get(field)))
+        self.rebuild_week()
 
     def timeline_reschedule(self,task_id: int,when):
         row=next((x for x in self.filtered if x["id"]==task_id),None)
