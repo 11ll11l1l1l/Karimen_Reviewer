@@ -21,7 +21,7 @@ from PySide6.QtWidgets import (
 )
 
 from database import Database, PERMISSIONS, ROLE_PERMISSIONS
-from backup import create_backup, verify_backup
+from backup import create_backup, default_backup_path, verify_backup
 from attachment_store import store_attachment_file
 from logging_config import configure_logging, install_exception_hook
 from version import __version__
@@ -2177,7 +2177,7 @@ class UserDialog(QDialog):
 
 class AdminPage(QWidget):
     def __init__(self,db,user):
-        super().__init__();self.db=db;self.user=user;self.rows=[];self.attempts=[];self.scope_rows=[];self.cert_rows=[];self.integration_endpoints=[];self.integration_deliveries=[];self.inbound_endpoints=[];self.inbound_receipts=[];v=QVBoxLayout(self)
+        super().__init__();self.db=db;self.user=user;self.rows=[];self.attempts=[];self.scope_rows=[];self.cert_rows=[];self.integration_endpoints=[];self.integration_deliveries=[];self.inbound_endpoints=[];self.inbound_receipts=[];self.sync_recovery_rows=[];v=QVBoxLayout(self)
         h=QHBoxLayout();add=QPushButton("Add User");role=QPushButton("Change Role");toggle=QPushButton("Enable / Disable");reset=QPushButton("Reset Password");unlock=QPushButton("Unlock Login");override=QPushButton("Permission Override");scope=QPushButton("Access Scope");clearscope=QPushButton("Clear Scopes");cert=QPushButton("Certification");integration=QPushButton("Integration Endpoint");backupb=QPushButton("Create DB Backup");verifyb=QPushButton("Verify Backup")
         add.clicked.connect(self.add);role.clicked.connect(self.role);toggle.clicked.connect(self.toggle);reset.clicked.connect(self.reset);unlock.clicked.connect(self.unlock);override.clicked.connect(self.override);scope.clicked.connect(self.manage_scope);clearscope.clicked.connect(self.clear_scopes);cert.clicked.connect(self.manage_certification);integration.clicked.connect(self.manage_integration);backupb.clicked.connect(self.create_backup);verifyb.clicked.connect(self.verify_backup)
         allowed=db.has_permission(user,"user.admin") or user.get("role")=="Administrator";[x.setEnabled(allowed) for x in [add,role,toggle,reset,unlock,override,scope,clearscope,cert,integration,backupb,verifyb]];[h.addWidget(x) for x in [add,role,toggle,reset,unlock,override,scope,clearscope,cert,integration,backupb,verifyb]];h.addStretch(1);v.addLayout(h)
@@ -2204,6 +2204,19 @@ class AdminPage(QWidget):
         self.receipt_table=make_table(["ID","Endpoint","Source","Status","Total","Applied","Rejected","Error","Processed"])
         vin.addWidget(self.inbound_table,1);vin.addWidget(self.receipt_table,2);tabs.addTab(win,"Inbound Integrations")
         wa=QWidget();va=QVBoxLayout(wa);self.attempt_table=make_table(["Username","Success","Reason","Workstation","Attempted"]);va.addWidget(self.attempt_table);tabs.addTab(wa,"Login Attempts")
+
+        wsync=QWidget();vsync=QVBoxLayout(wsync);synch=QHBoxLayout()
+        self.sync_status_label=QLabel("Shared synchronization status unavailable")
+        self.sync_status_label.setWordWrap(True)
+        pullsync=QPushButton("Pull Latest Shared State");pullsync.clicked.connect(self.pull_shared_state)
+        copypath=QPushButton("Copy Selected Recovery Path");copypath.clicked.connect(self.copy_recovery_path)
+        for x in [pullsync,copypath]:x.setEnabled(allowed)
+        synch.addWidget(self.sync_status_label,1);synch.addWidget(pullsync);synch.addWidget(copypath);vsync.addLayout(synch)
+        syncnote=QLabel("Preserved recovery databases are created only when a workstation had a committed local change that could not be safely published because the shared revision advanced. They are never merged automatically.")
+        syncnote.setWordWrap(True);syncnote.setStyleSheet("color:#5a6670");vsync.addWidget(syncnote)
+        self.sync_recovery_table=make_table(["Detected","Workstation","Local Base","Shared Rev","Recovery DB","Exists","Metadata"])
+        vsync.addWidget(self.sync_recovery_table);tabs.addTab(wsync,"Shared Sync / Recovery")
+
         v.addWidget(tabs);self.refresh()
 
     def refresh(self):
@@ -2232,6 +2245,53 @@ class AdminPage(QWidget):
         fill_table(self.inbound_table,self.inbound_endpoints,["endpoint_id","name","adapter_type","entity_type","source_path","file_pattern","archive_path","quarantine_path","enabled","version"])
         self.inbound_receipts=self.db.list_inbound_receipts(limit=1000)
         fill_table(self.receipt_table,self.inbound_receipts,["id","endpoint_id","source_name","status","records_total","records_applied","records_rejected","error","processed_at"])
+        self.refresh_shared_sync()
+
+    def refresh_shared_sync(self):
+        try:
+            status=self.db.shared_sync_status()
+            if status is None:
+                self.sync_status_label.setText("Standalone database mode — no shared network-folder synchronization is configured.")
+                self.sync_recovery_rows=[]
+            else:
+                self.sync_recovery_rows=self.db.shared_recovery_conflicts()
+                self.sync_status_label.setText(
+                    f"Shared root: {status.get('shared_root','')}  |  "
+                    f"Local revision: {status.get('local_revision',0)}  |  "
+                    f"Shared revision: {status.get('shared_revision',0)}  |  "
+                    f"Pending publish: {'YES' if status.get('pending_publish') else 'No'}  |  "
+                    f"Preserved conflicts: {len(self.sync_recovery_rows)}"
+                )
+        except Exception as exc:
+            self.sync_status_label.setText("Shared synchronization unavailable: "+str(exc))
+            self.sync_recovery_rows=[]
+        self.sync_recovery_table.setRowCount(len(self.sync_recovery_rows))
+        fields=["detected_at","workstation","local_base_revision","shared_revision","recovery_database","recovery_exists","metadata_path"]
+        for r,row in enumerate(self.sync_recovery_rows):
+            for col,key in enumerate(fields):
+                self.sync_recovery_table.setItem(r,col,ti(row.get(key,"")))
+
+    def pull_shared_state(self):
+        if self.db.shared_workspace is None:
+            QMessageBox.information(self,"Shared Sync","EMS is running in standalone database mode.");return
+        try:
+            changed=self.db.refresh_shared_state()
+            self.refresh()
+            QMessageBox.information(
+                self,"Shared Sync",
+                "Latest shared revision loaded." if changed else "This workstation is already on the latest shared revision.",
+            )
+        except Exception as exc:
+            QMessageBox.critical(self,"Shared Sync","Unable to refresh shared state:\n"+str(exc))
+
+    def copy_recovery_path(self):
+        index=self.sync_recovery_table.currentRow()
+        if index<0 or index>=len(self.sync_recovery_rows):
+            QMessageBox.information(self,"Shared Recovery","Select a preserved conflict row first.");return
+        path=str(self.sync_recovery_rows[index].get("recovery_database") or "")
+        if not path:return
+        QApplication.clipboard().setText(path)
+        notify("Recovery database path copied to clipboard.")
 
     def selected_inbound_endpoint(self):
         return selected_row(self.inbound_table,self.inbound_endpoints)
@@ -2422,7 +2482,11 @@ class AdminPage(QWidget):
     def create_backup(self):
         postgres=self.db.url.startswith("postgresql")
         filt="PostgreSQL Backup (*.dump)" if postgres else "SQLite Backup (*.db)"
-        default=str(Path.cwd()/("equipment_backup.dump" if postgres else "equipment_backup.db"))
+        if self.db.shared_workspace is not None:
+            backup_root=os.getenv("EMS_BACKUP_ROOT",str(self.db.shared_workspace.shared_root/"Backups"))
+            default=default_backup_path(self.db.url,backup_root)
+        else:
+            default=str(Path.cwd()/("equipment_backup.dump" if postgres else "equipment_backup.db"))
         path,_=QFileDialog.getSaveFileName(self,"Create Database Backup",default,filt)
         if not path:return
         try:
