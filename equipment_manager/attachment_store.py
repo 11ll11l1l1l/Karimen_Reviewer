@@ -13,6 +13,16 @@ def _safe_segment(value: str) -> str:
     return "".join(ch if ch.isalnum() or ch in {"-","_","."} else "_" for ch in raw)[:120] or "unknown"
 
 
+def default_file_root() -> str:
+    configured=os.getenv("EMS_FILE_ROOT","").strip()
+    if configured:
+        return configured
+    shared_root=os.getenv("EMS_SHARED_ROOT","").strip()
+    if shared_root:
+        return str(Path(shared_root)/"Files")
+    return str(Path.cwd()/"equipment_files")
+
+
 def entity_attachment_dir(root: str, entity_type: str, entity_key: str) -> Path:
     folder=Path(root)/"Attachments"/_safe_segment(entity_type.upper())/_safe_segment(str(entity_key))
     folder.mkdir(parents=True,exist_ok=True)
