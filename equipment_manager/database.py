@@ -5719,6 +5719,87 @@ class Database:
             s.add(AuditLog(user=user,action="INCIDENT_ACTION_VERIFY",entity_type="TICKET",entity_key=row.ticket_no,detail=json.dumps({"action_id":row.id,"note":note.strip()}),workstation=workstation))
             s.flush();return row
 
+    def search_troubleshooting_cases(
+        self,
+        query: str = "",
+        equipment_id: str = "",
+        limit: int = 200,
+    ) -> list[dict[str,Any]]:
+        """Search closed and open troubleshooting knowledge across tickets, checks, alarms and lots."""
+        q=(query or "").strip();like=f"%{q}%";max_rows=max(1,min(int(limit),500))
+        with self.session() as s:
+            ticket_nos=set()
+            if q:
+                for value in s.scalars(select(Ticket.ticket_no).where(or_(
+                    Ticket.ticket_no.ilike(like),Ticket.title.ilike(like),Ticket.description.ilike(like),
+                    Ticket.root_cause.ilike(like),Ticket.corrective_action.ilike(like),
+                    Ticket.equipment_id.ilike(like),
+                )).limit(max_rows*2)):ticket_nos.add(value)
+                for value in s.scalars(select(TicketInvestigation.ticket_no).where(or_(
+                    TicketInvestigation.observation.ilike(like),TicketInvestigation.check_performed.ilike(like),
+                    TicketInvestigation.result.ilike(like),TicketInvestigation.conclusion.ilike(like),
+                    TicketInvestigation.action.ilike(like),
+                )).limit(max_rows*2)):ticket_nos.add(value)
+                for value in s.scalars(select(EquipmentAlarmEvent.related_ticket).where(
+                    EquipmentAlarmEvent.related_ticket!="",
+                    or_(EquipmentAlarmEvent.alarm_code.ilike(like),EquipmentAlarmEvent.message.ilike(like)),
+                ).limit(max_rows*2)):
+                    if value:ticket_nos.add(value)
+                for value in s.scalars(select(EntityLotLink.entity_key).where(
+                    EntityLotLink.entity_type=="TICKET",EntityLotLink.lot_number.ilike(like)
+                ).limit(max_rows*2)):ticket_nos.add(value)
+                stmt=select(Ticket).where(Ticket.ticket_no.in_(ticket_nos)) if ticket_nos else select(Ticket).where(False)
+            else:
+                stmt=select(Ticket)
+            if equipment_id.strip():stmt=stmt.where(Ticket.equipment_id==equipment_id.strip())
+            tickets=list(s.scalars(stmt.order_by(Ticket.updated_at.desc(),Ticket.created_at.desc()).limit(max_rows)))
+            if not tickets:return []
+            nos=[x.ticket_no for x in tickets]
+            investigations=list(s.scalars(select(TicketInvestigation).where(
+                TicketInvestigation.ticket_no.in_(nos)
+            ).order_by(TicketInvestigation.ticket_no,TicketInvestigation.sequence.desc(),TicketInvestigation.entered_at.desc())))
+            alarms=list(s.scalars(select(EquipmentAlarmEvent).where(
+                EquipmentAlarmEvent.related_ticket.in_(nos)
+            ).order_by(EquipmentAlarmEvent.occurred_at.desc())))
+            lots=list(s.scalars(select(EntityLotLink).where(
+                EntityLotLink.entity_type=="TICKET",EntityLotLink.entity_key.in_(nos)
+            )))
+            attachments=list(s.scalars(select(EntityAttachment).where(
+                EntityAttachment.entity_type=="TICKET",EntityAttachment.entity_key.in_(nos),
+                EntityAttachment.active.is_(True),
+            )))
+        latest_inv={};alarms_by={};lots_by={};images={}
+        for x in investigations:
+            if x.ticket_no not in latest_inv:latest_inv[x.ticket_no]=x
+        for x in alarms:
+            if x.alarm_code:
+                arr=alarms_by.setdefault(x.related_ticket,[])
+                if x.alarm_code not in arr:arr.append(x.alarm_code)
+        for x in lots:
+            arr=lots_by.setdefault(x.entity_key,[])
+            if x.lot_number not in arr:arr.append(x.lot_number)
+        for x in attachments:
+            if (x.category or "").lower() in {"screenshot","photo"} or (x.media_type or "").lower().startswith("image/"):
+                images[x.entity_key]=images.get(x.entity_key,0)+1
+        rows=[]
+        for t in tickets:
+            inv=latest_inv.get(t.ticket_no)
+            rows.append({
+                "ticket_no":t.ticket_no,"equipment_id":t.equipment_id,"created_at":t.created_at,
+                "updated_at":t.updated_at,"priority":t.priority,"status":t.status,"owner":t.owner,
+                "title":t.title,"description":t.description,
+                "lots":", ".join(lots_by.get(t.ticket_no,[])),
+                "alarms":", ".join(alarms_by.get(t.ticket_no,[])[:8]),
+                "last_observation":inv.observation if inv else "",
+                "last_check":inv.check_performed if inv else "",
+                "last_result":inv.result if inv else "",
+                "last_conclusion":inv.conclusion if inv else "",
+                "last_action":inv.action if inv else "",
+                "root_cause":t.root_cause,"corrective_action":t.corrective_action,
+                "screenshot_count":images.get(t.ticket_no,0),
+            })
+        return rows
+
     def incident_similar_history(self, ticket_no: str, limit: int = 50):
         """Rank prior troubleshooting cases and return technician-useful resolution detail."""
         stop={"the","and","for","with","from","this","that","tool","issue","problem","error","alarm","equipment"}
