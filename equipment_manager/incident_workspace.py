@@ -129,7 +129,7 @@ class IncidentWorkspace(QWidget):
         for b in [adda,edita,complete,verify]:ah.addWidget(b)
         ah.addStretch(1);actv.addLayout(ah);self.action_table=_table(["ID","Type","Action","Owner","Due","Status","Effectiveness criteria","Completed by","Completed","Verified by","Verified","Ver"]);actv.addWidget(self.action_table);self.tabs.addTab(actions,"CAPA / Actions")
 
-        history=QWidget();hv=QVBoxLayout(history);self.similar_table=_table(["Score","Match","Ticket","Equipment","Title","Lots","Alarms","Root Cause","Corrective Action","Status","Updated"]);self.similar_table.doubleClicked.connect(self.open_similar);hv.addWidget(QLabel("Previous troubleshooting cases ranked by same tool, lot, alarm and symptom"));hv.addWidget(self.similar_table);self.tabs.addTab(history,"Troubleshooting History")
+        history=QWidget();hv=QVBoxLayout(history);self.similar_table=_table(["Score","Match","Ticket","Equipment","Title","Lots","Alarms","Check","Result","Action","Root Cause","Final Fix","Images","Status","Updated"]);self.similar_table.doubleClicked.connect(self.open_similar);hv.addWidget(QLabel("Previous troubleshooting cases ranked by same tool, lot, alarm and symptom"));hv.addWidget(self.similar_table);self.tabs.addTab(history,"Troubleshooting History")
 
         self.attachments=AttachmentPanel(db,user);self.tabs.addTab(self.attachments,"Evidence / Attachments")
         self.collaboration=CollaborationPanel(db,user);self.tabs.addTab(self.collaboration,"Comments / Watchers")
@@ -170,7 +170,7 @@ class IncidentWorkspace(QWidget):
         self.whys=self.db.list_incident_whys(t.ticket_no);_fill(self.why_table,self.whys,["sequence","question","answer","updated_by","updated_at","version"])
         self.factors=self.db.list_incident_causal_factors(t.ticket_no);_fill(self.factor_table,self.factors,["id","category","factor_type","description","evidence","status","created_by","version"])
         self.actions=self.db.list_incident_actions(t.ticket_no);_fill(self.action_table,self.actions,["id","action_type","description","owner","due_at","status","effectiveness_criteria","completed_by","completed_at","verified_by","verified_at","version"])
-        self.similar=self.db.incident_similar_history(t.ticket_no);_fill(self.similar_table,self.similar,["score","match_reason","ticket_no","equipment_id","title","lots","alarms","root_cause","corrective_action","status","updated_at"])
+        self.similar=self.db.incident_similar_history(t.ticket_no);_fill(self.similar_table,self.similar,["score","match_reason","ticket_no","equipment_id","title","lots","alarms","last_check","last_result","last_action","root_cause","corrective_action","screenshot_count","status","updated_at"])
         self.attachments.set_entity("TICKET",t.ticket_no,t.equipment_id)
         self.collaboration.set_entity("TICKET",t.ticket_no,t.equipment_id)
         equipment=self.db.get_equipment(t.equipment_id)
