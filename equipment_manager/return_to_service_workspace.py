@@ -11,7 +11,7 @@ from PySide6.QtWidgets import (
     QTableWidgetItem,QTabWidget,QTextEdit,QVBoxLayout,QWidget,
 )
 
-from attachment_store import store_attachment_file
+from attachment_store import default_file_root, store_attachment_file
 from collaboration_panel import CollaborationPanel
 from feedback import notify
 from pdf_reporting import export_qualification_pdf, export_release_pdf
@@ -22,7 +22,7 @@ from reporting import (
 from table_productivity import install_table_productivity
 from workspaces import AttachmentPanel
 
-FILE_ROOT=os.getenv("EMS_FILE_ROOT",str(Path.cwd()/"equipment_files"))
+FILE_ROOT=default_file_root()
 RELEASE_CHECKS=[
     ("maintenance_complete","Maintenance complete"),
     ("measurements_pass","Measurements pass"),
