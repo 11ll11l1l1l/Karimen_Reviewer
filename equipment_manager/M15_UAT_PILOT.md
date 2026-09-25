@@ -1,11 +1,11 @@
 # EMS M15 Site UAT and Pilot Runbook
 
-This runbook is the production gate for the Equipment Management System. Software CI can prove code behavior; it cannot certify the plant LAN, SMB permissions, endpoint security, users, local PostgreSQL topology, integrations, or operational fit. Those items require evidence from the actual site.
+This runbook is the production gate for the Equipment Management System. Software CI can prove code behavior; it cannot certify the plant LAN, SMB permissions, endpoint security, users, the selected data topology, integrations, or operational fit. Those items require evidence from the actual site.
 
 ## Entry criteria
 
 - M0-M14 software acceptance gates are closed or have an explicitly accepted exception.
-- The exact candidate commit has green EMS core, PostgreSQL, Windows GUI and Windows package jobs.
+- The exact candidate commit has green EMS core, serverless synchronization fixtures, Windows GUI and Windows package jobs; optional PostgreSQL jobs remain green where supported.
 - Production preflight returns no FAIL checks on every pilot workstation.
 - A verified backup exists and a scratch restore has succeeded.
 - The pilot equipment group, users, support owner and rollback owner are named.
@@ -25,7 +25,7 @@ Use EMSCLI.exe uat-template <path> to create the controlled JSON evidence file. 
 - UAT-RTS-01 — Independent Approver: verify segregation of requester/verifier/approver and final return-to-service.
 - UAT-OFFICE-01 — Engineer: Excel export/edit/re-import preview/diff and editable PPTX/PDF report creation.
 - UAT-REC-01 — Site Admin: create/verify backup and complete scratch restore drill.
-- UAT-RES-01 — Site Admin: temporary database/file-server interruption, clear error state and client recovery.
+- UAT-RES-01 — Site Admin: temporary shared-folder interruption, clear error state and client recovery without silent local success.
 - UAT-MW-01 — Site Team: two-workstation concurrent edit with conflict detection and controlled retry.
 
 ## Pilot execution
@@ -36,7 +36,7 @@ Daily pilot triage must classify defects as P0/P1/P2/P3. P0 and P1 block release
 
 ## Failure and recovery exercises
 
-The pilot must include client restart during an unfinished draft; temporary PostgreSQL outage and reconnect; unavailable SMB/file root; stale concurrent edit; inbound integration bad payload/quarantine/replay; backup verification; scratch restore; upgrade rehearsal; rollback to the preserved prior application build.
+The pilot must include client restart during an unfinished draft; unavailable SMB/shared state; stale concurrent edit from two workstations; write-lease contention; crash after local commit before shared publish; inbound integration bad payload/quarantine/replay; backup verification; scratch restore; upgrade rehearsal; rollback to the preserved prior application build. Optional PostgreSQL deployments must additionally test database outage/reconnect.
 
 ## Release command
 
