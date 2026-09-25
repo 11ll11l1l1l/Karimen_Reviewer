@@ -8478,14 +8478,20 @@ class Database:
                 WorkOrder.completed_at>=start_at,
                 WorkOrder.completed_at<=end_at,
             ).order_by(WorkOrder.completed_at.desc())))
-        return {
-            "start_at":start_at,"end_at":end_at,
-            "recovered_tickets":[{
+        recovered=[]
+        seen_tickets=set()
+        for event,ticket in ticket_events:
+            if ticket.ticket_no in seen_tickets:continue
+            seen_tickets.add(ticket.ticket_no)
+            recovered.append({
                 "ticket_no":ticket.ticket_no,"equipment_id":ticket.equipment_id,"title":ticket.title,
                 "priority":ticket.priority,"owner":event.owner or ticket.owner,
                 "completed_at":event.changed_at,"note":event.note,
                 "final_fix":ticket.corrective_action or ticket.root_cause,
-            } for event,ticket in ticket_events],
+            })
+        return {
+            "start_at":start_at,"end_at":end_at,
+            "recovered_tickets":recovered,
             "completed_pm":[{
                 "task_id":task.id,"equipment_id":task.equipment_id,"pm_id":task.pm_id,
                 "pm_name":task.pm_name,"completed_at":execution.completed_at,
