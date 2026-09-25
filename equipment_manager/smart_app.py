@@ -235,6 +235,10 @@ class SmartMainWindow(QMainWindow):
         self.quick_capture.setToolTip("Attach clipboard image to the current record (Ctrl+Shift+V)")
         self.quick_capture.clicked.connect(self.capture_clipboard_image)
         top_layout.addWidget(self.quick_capture)
+        self.sync_badge=QPushButton("Sync")
+        self.sync_badge.setToolTip("Shared data synchronization status. Click to pull the latest shared revision.")
+        self.sync_badge.clicked.connect(self.manual_sync_refresh)
+        top_layout.addWidget(self.sync_badge)
         user_label = QLabel(f"{user['display_name']}  |  {user['role']}  |  {WORKSTATION}")
         user_label.setStyleSheet("color:#c8d6df;")
         top_layout.addWidget(user_label)
@@ -326,8 +330,9 @@ class SmartMainWindow(QMainWindow):
         self.timer.timeout.connect(self.dashboard.refresh)
         self.timer.timeout.connect(self.refresh_my_work_badge)
         self.timer.timeout.connect(self.refresh_notification_badge)
+        self.timer.timeout.connect(self.refresh_sync_status)
         self.timer.start(30000)
-        self.refresh_my_work_badge();self.refresh_notification_badge()
+        self.refresh_my_work_badge();self.refresh_notification_badge();self.refresh_sync_status()
         self.accessibility_issues=apply_accessibility_defaults(self)
 
     def _role_visible_pages(self) -> set[str] | None:
@@ -496,6 +501,44 @@ class SmartMainWindow(QMainWindow):
             notify(f"Screenshot attached to {entity_type}:{entity_key}.")
         except Exception as exc:
             notify(f"Quick Screenshot failed: {exc}",8000)
+
+    def refresh_sync_status(self):
+        try:
+            status=self.db.shared_sync_status()
+            if status is None:
+                self.sync_badge.setText("Standalone")
+                self.sync_badge.setToolTip("Standalone database mode.")
+                return
+            local_rev=int(status.get("local_revision") or 0)
+            shared_rev=int(status.get("shared_revision") or 0)
+            if status.get("pending_publish"):
+                label=f"Sync pending r{local_rev}"
+            elif local_rev==shared_rev:
+                label=f"Synced r{shared_rev}"
+            else:
+                label=f"Sync r{local_rev}→{shared_rev}"
+            self.sync_badge.setText(label)
+            self.sync_badge.setToolTip(
+                f"Shared: {status.get('shared_root','')}\n"
+                f"Local revision: {local_rev}\nShared revision: {shared_rev}\n"
+                f"Last publisher: {status.get('publisher') or 'n/a'}"
+            )
+        except Exception as exc:
+            self.sync_badge.setText("Shared offline")
+            self.sync_badge.setToolTip(str(exc))
+
+    def manual_sync_refresh(self):
+        try:
+            changed=self.db.refresh_shared_state()
+            self.refresh_sync_status()
+            if changed:
+                self.refresh_current()
+                notify("Latest shared EMS data loaded.")
+            else:
+                notify("EMS data is already current.")
+        except Exception as exc:
+            self.refresh_sync_status()
+            notify(f"Shared sync failed: {exc}",8000)
 
     def refresh_notification_badge(self):
         try:
