@@ -50,7 +50,11 @@ from services import (
 
 APP_TITLE = f"Equipment Management System {__version__}"
 WORKSTATION = socket.gethostname()
-FILE_ROOT = os.getenv("EMS_FILE_ROOT", str(Path.cwd() / "equipment_files"))
+SHARED_ROOT = os.getenv("EMS_SHARED_ROOT", "").strip()
+FILE_ROOT = os.getenv(
+    "EMS_FILE_ROOT",
+    str(Path(SHARED_ROOT) / "Files") if SHARED_ROOT else str(Path.cwd() / "equipment_files"),
+)
 
 STYLE = """
 QWidget { font-size: 10.5pt; }
