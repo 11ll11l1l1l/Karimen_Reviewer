@@ -4405,6 +4405,77 @@ class Database:
             else: item = PMDefinition(**data); s.add(item)
             s.flush(); return item
 
+    def apply_pm_template_bundle(
+        self,
+        definition: dict[str, Any],
+        steps: list[dict[str, Any]],
+        requirements: list[dict[str, Any]],
+        user: str,
+        workstation: str = "",
+    ) -> dict[str,int]:
+        """Apply one Excel-authored PM definition as an authoritative revision."""
+        payload=dict(definition)
+        pm_id=str(payload.get("pm_id","")).strip()
+        equipment_id=str(payload.get("equipment_id","")).strip()
+        if not pm_id:raise ValueError("PM ID is required.")
+        if not steps:raise ValueError("A PM template must contain at least one valid step.")
+        if equipment_id:self.assert_authorized(user,"pm.edit",equipment_id)
+        imported_steps={int(x["step_no"]) for x in steps}
+        imported_requirements={str(x["requirement_id"]).strip() for x in requirements}
+        result={"definition_updated":0,"steps_revised":0,"steps_created":0,"steps_retired":0,
+                "requirements_revised":0,"requirements_created":0,"requirements_retired":0}
+        with self.session() as s:
+            current_def=s.scalar(select(PMDefinition).where(PMDefinition.pm_id==pm_id))
+            if current_def:
+                if current_def.equipment_id and equipment_id and current_def.equipment_id!=equipment_id:
+                    raise ValueError("Existing PM ID cannot be reassigned to a different equipment through template import.")
+                self._update_versioned(current_def,payload,current_def.version,"PM definition")
+                current_def.revision=(current_def.revision or 1)+1
+                result["definition_updated"]=1
+            else:
+                payload.setdefault("revision",1);payload.setdefault("version",1)
+                s.add(PMDefinition(**payload));result["definition_updated"]=1
+
+            active_specs=list(s.scalars(select(PMSpec).where(PMSpec.pm_id==pm_id,PMSpec.active.is_(True))))
+            current_by_step={int(x.step_no):x for x in active_specs}
+            for spec_data in steps:
+                data=dict(spec_data);data["pm_id"]=pm_id;step_no=int(data["step_no"])
+                old=current_by_step.get(step_no)
+                if old:
+                    old.active=False;old.version+=1
+                    data["revision"]=(old.revision or 1)+1;data["active"]=True
+                    s.add(PMSpec(**data));result["steps_revised"]+=1
+                else:
+                    data.setdefault("revision",1);data["active"]=True
+                    s.add(PMSpec(**data));result["steps_created"]+=1
+            for old in active_specs:
+                if int(old.step_no) not in imported_steps:
+                    old.active=False;old.version+=1;result["steps_retired"]+=1
+
+            active_reqs=list(s.scalars(select(PMRequirement).where(PMRequirement.pm_id==pm_id,PMRequirement.active.is_(True))))
+            current_req={x.requirement_id:x for x in active_reqs}
+            for req_data in requirements:
+                data=dict(req_data);data["pm_id"]=pm_id
+                rid=str(data["requirement_id"]).strip()
+                old=current_req.get(rid)
+                if old:
+                    old.active=False;old.version+=1
+                    data["revision"]=(old.revision or 1)+1;data["active"]=True
+                    s.add(PMRequirement(**data));result["requirements_revised"]+=1
+                else:
+                    data.setdefault("revision",1);data["active"]=True
+                    s.add(PMRequirement(**data));result["requirements_created"]+=1
+            for old in active_reqs:
+                if old.requirement_id not in imported_requirements:
+                    old.active=False;old.version+=1;result["requirements_retired"]+=1
+
+            s.add(AuditLog(
+                user=user,action="PM_TEMPLATE_IMPORT",entity_type="PM_DEFINITION",entity_key=pm_id,
+                detail=json.dumps(result,sort_keys=True),workstation=workstation,
+            ))
+            s.flush()
+        return result
+
     def list_pm_definitions(self):
         with self.session() as s: return list(s.scalars(select(PMDefinition).order_by(PMDefinition.pm_id)))
 
