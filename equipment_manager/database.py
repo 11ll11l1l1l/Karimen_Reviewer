@@ -650,6 +650,23 @@ class TicketOperationalControl(Base):
     version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
 
 
+class EntityLotLink(Base):
+    __tablename__ = "entity_lot_links"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    entity_type: Mapped[str] = mapped_column(String(50), index=True)
+    entity_key: Mapped[str] = mapped_column(String(140), index=True)
+    equipment_id: Mapped[str] = mapped_column(String(100), default="", index=True)
+    lot_number: Mapped[str] = mapped_column(String(120), index=True)
+    product: Mapped[str] = mapped_column(String(160), default="")
+    process_operation: Mapped[str] = mapped_column(String(160), default="")
+    note: Mapped[str] = mapped_column(Text, default="")
+    created_by: Mapped[str] = mapped_column(String(120), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    __table_args__ = (
+        UniqueConstraint("entity_type","entity_key","lot_number",name="uq_entity_lot_link"),
+    )
+
+
 class TicketEscalationEvent(Base):
     __tablename__ = "ticket_escalation_events"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -1528,6 +1545,9 @@ class Database:
                 table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
             ]),
             ("20260924_016","Create persistent user notification center",lambda: [
+                table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
+            ]),
+            ("20260925_017","Create first-class lot context links for manual operations",lambda: [
                 table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
             ]),
         ]
@@ -5371,6 +5391,190 @@ class Database:
                 workstation=workstation,
             ))
             s.flush();return row
+
+    @staticmethod
+    def _normalize_lot_numbers(values: Any) -> list[str]:
+        if values is None:
+            return []
+        if isinstance(values,str):
+            raw=re.split(r"[\n,;\t]+",values)
+        else:
+            raw=list(values)
+        out=[]
+        seen=set()
+        for value in raw:
+            lot=str(value or "").strip()
+            if not lot:
+                continue
+            key=lot.upper()
+            if key in seen:
+                continue
+            seen.add(key);out.append(lot)
+        return out
+
+    def list_entity_lots(self, entity_type: str, entity_key: str):
+        with self.session() as s:
+            return list(s.scalars(
+                select(EntityLotLink)
+                .where(
+                    EntityLotLink.entity_type==(entity_type or "").upper(),
+                    EntityLotLink.entity_key==str(entity_key),
+                )
+                .order_by(EntityLotLink.created_at,EntityLotLink.id)
+            ))
+
+    def replace_entity_lots(
+        self,
+        entity_type: str,
+        entity_key: str,
+        lot_numbers: Any,
+        *,
+        equipment_id: str = "",
+        user: str = "",
+        workstation: str = "",
+    ):
+        entity_type=(entity_type or "").upper().strip()
+        entity_key=str(entity_key or "").strip()
+        if not entity_type or not entity_key:
+            raise ValueError("Entity type and key are required for lot context.")
+        lots=self._normalize_lot_numbers(lot_numbers)
+        with self.session() as s:
+            existing=list(s.scalars(select(EntityLotLink).where(
+                EntityLotLink.entity_type==entity_type,
+                EntityLotLink.entity_key==entity_key,
+            )))
+            by_upper={x.lot_number.upper():x for x in existing}
+            wanted={x.upper() for x in lots}
+            for row in existing:
+                if row.lot_number.upper() not in wanted:
+                    s.delete(row)
+            for lot in lots:
+                if lot.upper() not in by_upper:
+                    s.add(EntityLotLink(
+                        entity_type=entity_type,entity_key=entity_key,
+                        equipment_id=equipment_id.strip(),lot_number=lot,
+                        created_by=user,
+                    ))
+            s.add(AuditLog(
+                user=user or "system",action="LOT_CONTEXT_REPLACE",
+                entity_type=entity_type,entity_key=entity_key,
+                detail=json.dumps({"lots":lots,"equipment_id":equipment_id},sort_keys=True),
+                workstation=workstation,
+            ))
+            s.flush()
+        return self.list_entity_lots(entity_type,entity_key)
+
+    def find_lot_history(self, lot_number: str, limit: int = 100):
+        query=(lot_number or "").strip()
+        if not query:
+            return []
+        with self.session() as s:
+            stmt=(
+                select(EntityLotLink)
+                .where(func.lower(EntityLotLink.lot_number).contains(query.lower()))
+                .order_by(EntityLotLink.created_at.desc(),EntityLotLink.id.desc())
+                .limit(max(1,min(int(limit),500)))
+            )
+            return list(s.scalars(stmt))
+
+    def create_manual_issue(
+        self,
+        data: dict[str, Any],
+        user: str,
+        workstation: str = "",
+    ):
+        equipment_id=str(data.get("equipment_id","")).strip()
+        title=str(data.get("title","")).strip()
+        if not equipment_id:
+            raise ValueError("Equipment is required.")
+        if not title:
+            raise ValueError("Problem / symptom is required.")
+        self.assert_authorized(user,"ticket.edit",equipment_id)
+        impact=str(data.get("impact","Observation")).strip() or "Observation"
+        impact_defaults={
+            "Production Stop":("P1","S1"),
+            "Degraded":("P2","S2"),
+            "Observation":("P3","S3"),
+        }
+        default_priority,default_severity=impact_defaults.get(impact,("P3","S3"))
+        priority=str(data.get("priority","")).strip() or default_priority
+        severity=str(data.get("severity","")).strip() or default_severity
+        context={"priority":priority,"severity":severity}
+        owner=str(data.get("owner","")).strip() or self.resolve_default_owner("TICKET",equipment_id,context)
+        sla=self.resolve_sla_policy(equipment_id,context)
+        lots=self._normalize_lot_numbers(data.get("lot_numbers",[]))
+        description=str(data.get("description","")).strip()
+        alarm_code=str(data.get("alarm_code","")).strip()
+        now=datetime.utcnow()
+        with self.session() as s:
+            if not s.scalar(select(Equipment).where(Equipment.equipment_id==equipment_id)):
+                raise ValueError("Equipment not found")
+            ticket_no=self._next_configured_number_in_session(s,"TICKET",equipment_id,context)
+            ticket=Ticket(
+                ticket_no=ticket_no,equipment_id=equipment_id,title=title,
+                description=description,severity=severity,priority=priority,
+                status="Open",owner=owner,root_cause="",corrective_action="",
+                verification="",created_by=user,created_at=now,updated_at=now,
+            )
+            s.add(ticket);s.flush()
+            s.add(TicketStateEvent(
+                ticket_no=ticket_no,from_state="",to_state="Open",
+                reason_code="MANUAL_REPORT",note=f"Manual issue reported; impact={impact}",
+                owner=owner,changed_by=user,workstation=workstation,changed_at=now,
+            ))
+            s.add(TicketOperationalControl(
+                ticket_no=ticket_no,
+                production_impact=impact,
+                affected_lots="; ".join(lots),
+                response_due_at=now+timedelta(minutes=sla["response_minutes"]) if sla.get("response_minutes") else None,
+                containment_due_at=now+timedelta(minutes=sla["containment_minutes"]) if sla.get("containment_minutes") else None,
+                resolution_due_at=now+timedelta(minutes=sla["resolution_minutes"]) if sla.get("resolution_minutes") else None,
+            ))
+            for lot in lots:
+                s.add(EntityLotLink(
+                    entity_type="TICKET",entity_key=ticket_no,equipment_id=equipment_id,
+                    lot_number=lot,created_by=user,created_at=now,
+                ))
+            alarm=None
+            if alarm_code:
+                alarm_severity=str(data.get("alarm_severity","")).strip() or (
+                    "Critical" if impact=="Production Stop" else "Warning"
+                )
+                event_key=secrets.token_hex(20)
+                alarm=EquipmentAlarmEvent(
+                    event_key=event_key,equipment_id=equipment_id,alarm_code=alarm_code,
+                    severity=alarm_severity,message=title,source="Manual Issue",
+                    state="ACTIVE",occurred_at=now,related_ticket=ticket_no,
+                    raw_payload_json=json.dumps({"manual_issue":True,"impact":impact,"lots":lots},sort_keys=True),
+                )
+                s.add(alarm)
+                self._queue_integration_event(s,"equipment.alarm.active","ALARM",event_key,{
+                    "equipment_id":equipment_id,"alarm_code":alarm_code,
+                    "severity":alarm_severity,"message":title,"source":"Manual Issue",
+                    "state":"ACTIVE","occurred_at":now.isoformat(),"related_ticket":ticket_no,
+                })
+                self._apply_workflow_automation_in_session(s,"ALARM_ACTIVE",{
+                    "entity_type":"ALARM","entity_key":event_key,"equipment_id":equipment_id,
+                    "alarm_code":alarm_code,"severity":alarm_severity,"message":title,
+                    "source":"Manual Issue","ticket_no":ticket_no,
+                    "summary":f"{alarm_code} — {title}","detail":description,
+                })
+            s.add(AuditLog(
+                user=user,action="MANUAL_ISSUE_CREATE",entity_type="TICKET",
+                entity_key=ticket_no,
+                detail=json.dumps({
+                    "equipment_id":equipment_id,"impact":impact,"lots":lots,
+                    "alarm_code":alarm_code,
+                },sort_keys=True),
+                workstation=workstation,
+            ))
+            self._queue_integration_event(s,"incident.created","TICKET",ticket_no,{
+                "ticket_no":ticket_no,"equipment_id":equipment_id,"title":title,
+                "priority":priority,"severity":severity,"owner":owner,
+                "created_by":user,"impact":impact,"lots":lots,
+            })
+            s.flush()
+            return ticket,alarm
 
     def evaluate_ticket_escalations(self, now: datetime | None = None):
         now=now or datetime.utcnow()
