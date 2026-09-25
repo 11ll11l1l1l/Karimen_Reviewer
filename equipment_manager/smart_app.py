@@ -291,6 +291,8 @@ class SmartMainWindow(QMainWindow):
         self.my_work.open_entity.connect(self.open_entity)
         self.notification_center.open_entity.connect(self.open_entity)
         self.equipment360.open_entity.connect(self.open_entity)
+        self.layout_page.open_entity.connect(self.open_entity)
+        self.layout_page.report_issue.connect(self.open_quick_create_for_equipment)
         self.maintenance_planner.open_entity.connect(self.open_entity)
         self.pm_execution.open_entity.connect(self.open_entity)
         self.work_order_workspace.open_entity.connect(self.open_entity)
@@ -361,11 +363,16 @@ class SmartMainWindow(QMainWindow):
 
     def open_quick_create(self):
         _,_,equipment_id=self.current_evidence_context()
-        dialog=QuickCreateDialog(self.db,self.user,self,equipment_id)
+        self.open_quick_create_for_equipment(equipment_id)
+
+    def open_quick_create_for_equipment(self,equipment_id: str=""):
+        dialog=QuickCreateDialog(self.db,self.user,self,equipment_id or "")
         if dialog.exec()==QDialog.DialogCode.Accepted and dialog.created_entity:
             entity_type,entity_key,equipment_id=dialog.created_entity
             notify(f"Created {entity_type}: {entity_key}")
             self.open_entity(entity_type,entity_key,equipment_id)
+            try:self.layout_page.refresh()
+            except Exception:pass
 
     def capture_clipboard_image(self):
         entity_type,entity_key,equipment_id=self.current_evidence_context()
