@@ -18,7 +18,8 @@ DEFINITION_HEADERS = [
 STEP_HEADERS = [
     "Step","Activity / Instruction","Method","Input Type","Unit","Target",
     "Warning Low","Warning High","Control Low","Control High","Spec Low","Spec High",
-    "Acceptance","Reaction Plan","Reference Path","Reference Page","Reference Section",
+    "Acceptance","Reaction Plan","Screenshot Required","Comment Required",
+    "Reference Path","Reference Page","Reference Section",
 ]
 REQUIREMENT_HEADERS = [
     "Requirement ID","Type","Key / Code","Description","Quantity","Mandatory",
@@ -51,6 +52,7 @@ def generate_pm_template(path: str, definition=None, specs=None, requirements=No
         ("Steps","Add or remove rows as needed. Step numbers must be unique within the PM."),
         ("Instructions","Put the actual step instruction in Activity / Instruction. Reference Path may point to an Excel, PowerPoint, PDF, or other controlled file."),
         ("Acceptance","Use Input Type = Text, Numeric, or Pass / Fail. Numeric limits may be entered directly."),
+        ("Completion evidence","Set Screenshot Required and/or Comment Required to Yes when that step must include that proof before PM completion."),
         ("Requirements","Use CERTIFICATION, LOTO, SAFETY, TOOL, PART, or DOCUMENT."),
         ("Unknown sheets","Extra sheets are allowed and ignored by the importer, so supporting material may remain in the workbook."),
         ("Images","Images may remain in supporting sheets. For controlled execution, reference the source document/path from the step."),
@@ -78,10 +80,13 @@ def generate_pm_template(path: str, definition=None, specs=None, requirements=No
         s.append([
             row.step_no,row.activity,row.method,row.input_type,row.unit,row.target,
             row.warning_low,row.warning_high,row.control_low,row.control_high,row.spec_low,row.spec_high,
-            row.acceptance_text,row.reaction_plan,row.sop_path,row.sop_page,row.sop_section,
+            row.acceptance_text,row.reaction_plan,
+            "Yes" if getattr(row,"screenshot_required",False) else "No",
+            "Yes" if getattr(row,"comment_required",False) else "No",
+            row.sop_path,row.sop_page,row.sop_section,
         ])
     if not specs:
-        s.append([1,"Describe the work step","","Text","","","","","","","","","","","","",""])
+        s.append([1,"Describe the work step","","Text","","","","","","","","","","","No","No","","",""])
     _style_sheet(s)
 
     r=wb.create_sheet("Requirements");r.append(REQUIREMENT_HEADERS)
@@ -187,6 +192,8 @@ def load_pm_template(path: str) -> dict[str,Any]:
             "spec_low":_float(row.get("Spec Low")),"spec_high":_float(row.get("Spec High")),
             "acceptance_text":acceptance or _text(parsed.get("acceptance_text","")),
             "reaction_plan":_text(row.get("Reaction Plan")),
+            "screenshot_required":_bool(row.get("Screenshot Required"),False),
+            "comment_required":_bool(row.get("Comment Required"),False),
             "sop_path":_text(row.get("Reference Path")),
             "sop_page":_text(row.get("Reference Page")),
             "sop_section":_text(row.get("Reference Section")),
