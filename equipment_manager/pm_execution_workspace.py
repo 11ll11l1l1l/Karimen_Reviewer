@@ -50,7 +50,7 @@ class PMExecutionWorkspace(QWidget):
 
     def __init__(self,db,user,parent=None):
         super().__init__(parent);self.db=db;self.user=user;self.task_id=0;self.task=None;self.execution=None
-        self.specs=[];self.results={};self.requirements=[];self.acks={};self.focus_mode=False
+        self.specs=[];self.results={};self.requirements=[];self.acks={};self.focus_mode=False;self.pending_evidence={}
         root=QVBoxLayout(self);head=QHBoxLayout()
         self.title=QLabel("Technician PM Runner");self.title.setStyleSheet("font-size:20pt;font-weight:800")
         self.state=QLabel();self.state.setStyleSheet("font-size:12pt;font-weight:700")
@@ -121,7 +121,7 @@ class PMExecutionWorkspace(QWidget):
         self.step_table.setEnabled(active);self.req_table.setEnabled(active)
 
     def set_task(self,task_id: int):
-        self.task_id=int(task_id or 0);self.execution=None;self.refresh()
+        self.task_id=int(task_id or 0);self.execution=None;self.pending_evidence={};self.refresh()
 
     def refresh(self):
         self.task=self.db.get_pm_task(self.task_id) if self.task_id else None
@@ -252,7 +252,13 @@ class PMExecutionWorkspace(QWidget):
             if val is not None:limits.append(f"{label} {val:g}")
         if spec.acceptance_text:limits.append(spec.acceptance_text)
         self.specification.setText("Acceptance: "+(" · ".join(limits) if limits else "recorded value / text"))
-        self.reaction.setText("Reaction plan: "+(spec.reaction_plan or "No reaction plan defined."))
+        completion=[]
+        if getattr(spec,"screenshot_required",False):completion.append("screenshot required")
+        if getattr(spec,"comment_required",False):completion.append("comment required")
+        self.reaction.setText(
+            "Reaction plan: "+(spec.reaction_plan or "No reaction plan defined.")
+            + ("\nCompletion proof: "+", ".join(completion) if completion else "")
+        )
         history=self.db.pm_step_history(
             self.task.equipment_id,self.task.pm_id,spec.step_no,12,
             self.execution.id if self.execution else None,
@@ -288,9 +294,15 @@ class PMExecutionWorkspace(QWidget):
             except Exception:QMessageBox.warning(self,"PM step","Enter a valid numeric value.");return
             value_text=raw
         else:value_text=self.text_value.text().strip()
-        evidence=current.evidence_path if current else ""
+        evidence=(current.evidence_path if current else "") or self.pending_evidence.get(spec.step_no,"")
         try:
-            saved=self.db.save_pm_result(self.execution.id,spec.step_no,{"value_text":value_text,"value_numeric":value_numeric,"comment":self.comment.toPlainText().strip(),"result":"","entered_by":self.user["username"],"evidence_path":evidence},current.version if current else None)
+            comment=self.comment.toPlainText().strip()
+            if getattr(spec,"comment_required",False) and not comment:
+                QMessageBox.warning(self,"PM step","This step requires a comment before it can be completed.");return
+            if getattr(spec,"screenshot_required",False) and not evidence:
+                QMessageBox.warning(self,"PM step","This step requires screenshot evidence. Paste or attach the screenshot first.");return
+            saved=self.db.save_pm_result(self.execution.id,spec.step_no,{"value_text":value_text,"value_numeric":value_numeric,"comment":comment,"result":"","entered_by":self.user["username"],"evidence_path":evidence},current.version if current else None)
+            self.pending_evidence.pop(spec.step_no,None)
             self.refresh()
             if saved.result in {"SPECIFICATION FAILURE","CONTROL FAILURE","FAIL"}:
                 self.offer_incident(spec,saved)
@@ -306,6 +318,7 @@ class PMExecutionWorkspace(QWidget):
             att=self.db.add_attachment("PM_EXECUTION",str(self.execution.id),stored["stored_path"],original_name=stored["original_name"],media_type=stored["media_type"],category="Screenshot",caption=f"Step {spec.step_no} — {spec.activity}",equipment_id=self.task.equipment_id,created_by=self.user["username"])
             current=self.results.get(spec.step_no)
             if current:self.db.save_pm_result(self.execution.id,spec.step_no,{"value_text":current.value_text,"value_numeric":current.value_numeric,"comment":current.comment,"result":current.result,"entered_by":self.user["username"],"evidence_path":att.stored_path},current.version)
+            else:self.pending_evidence[spec.step_no]=att.stored_path
             notify(f"Screenshot attached to PM step {spec.step_no}.")
             self.refresh()
         except Exception as exc:QMessageBox.critical(self,"Screenshot",str(exc))
@@ -320,6 +333,8 @@ class PMExecutionWorkspace(QWidget):
             att=self.db.add_attachment("PM_EXECUTION",str(self.execution.id),stored["stored_path"],original_name=stored["original_name"],media_type=stored["media_type"],category="Step Evidence",caption=f"Step {spec.step_no} — {spec.activity}",equipment_id=self.task.equipment_id,created_by=self.user["username"])
             current=self.results.get(spec.step_no)
             if current:self.db.save_pm_result(self.execution.id,spec.step_no,{"value_text":current.value_text,"value_numeric":current.value_numeric,"comment":current.comment,"result":current.result,"entered_by":self.user["username"],"evidence_path":att.stored_path},current.version)
+            else:self.pending_evidence[spec.step_no]=att.stored_path
+            notify(f"Evidence attached to PM step {spec.step_no}.")
             self.refresh()
         except Exception as exc:QMessageBox.critical(self,"Evidence",str(exc))
 
