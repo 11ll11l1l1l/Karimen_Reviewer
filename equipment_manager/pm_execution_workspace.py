@@ -11,7 +11,7 @@ from PySide6.QtWidgets import (
     QTabWidget, QTextEdit, QVBoxLayout, QWidget, QInputDialog,
 )
 
-from attachment_store import store_attachment_file, store_clipboard_image
+from attachment_store import default_file_root, store_attachment_file, store_clipboard_image
 from services import readonly_open_copy
 from table_productivity import install_table_productivity
 from feedback import notify
@@ -22,7 +22,7 @@ from pdf_reporting import export_pm_execution_pdf
 from instruction_resolver import preferred_openable_instruction, resolve_pm_instruction
 from PySide6.QtWidgets import QApplication
 
-FILE_ROOT=os.getenv("EMS_FILE_ROOT",str(Path.cwd()/"equipment_files"))
+FILE_ROOT=default_file_root()
 
 
 def _item(value):
