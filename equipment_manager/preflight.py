@@ -41,7 +41,7 @@ def run_preflight(database_url: str | None = None, file_root: str | None = None,
         checks.append({"name":name,"status":status,"detail":detail})
 
     try:
-        db=Database() if shared_mode and database_url == (configured_url or "sqlite:///equipment_manager.db") else Database(database_url)
+        db=Database() if shared_mode else Database(database_url)
         database_url=db.url
         ok,detail=db.health()
         add("database_connection","PASS" if ok else "FAIL",detail)
