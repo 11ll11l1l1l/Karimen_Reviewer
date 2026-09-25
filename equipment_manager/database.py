@@ -572,6 +572,18 @@ class PMExecution(Base):
     version: Mapped[int] = mapped_column(Integer, default=1)
 
 
+class PMExecutionPauseEvent(Base):
+    __tablename__ = "pm_execution_pause_events"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    execution_id: Mapped[int] = mapped_column(Integer, index=True)
+    reason: Mapped[str] = mapped_column(String(80), index=True)
+    note: Mapped[str] = mapped_column(Text, default="")
+    paused_by: Mapped[str] = mapped_column(String(120), default="")
+    paused_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    resumed_by: Mapped[str] = mapped_column(String(120), default="")
+    resumed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+
+
 class PMExecutionStepSnapshot(Base):
     __tablename__ = "pm_execution_step_snapshots"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -1580,6 +1592,9 @@ class Database:
                 table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
             ]),
             ("20260925_018","Create flexible PM calendar schedule and audit tables",lambda: [
+                table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
+            ]),
+            ("20260925_019","Create PM pause and carry-over history",lambda: [
                 table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
             ]),
         ]
@@ -5226,10 +5241,31 @@ class Database:
             self.assert_authorized(user,"pm.execute",task.equipment_id)
             ex = s.scalar(select(PMExecution).where(PMExecution.task_id == task_id))
             if ex:
+                if ex.status=="Completed":
+                    return ex
                 self._snapshot_pm_specs(s, ex, task)
                 self._snapshot_pm_requirements(s, ex, task)
                 s.flush()
                 self._validate_pm_certifications(s,ex.id,user)
+                if ex.status=="Paused":
+                    pause=s.scalar(select(PMExecutionPauseEvent).where(
+                        PMExecutionPauseEvent.execution_id==ex.id,
+                        PMExecutionPauseEvent.resumed_at.is_(None),
+                    ).order_by(PMExecutionPauseEvent.paused_at.desc(),PMExecutionPauseEvent.id.desc()))
+                    if pause:
+                        pause.resumed_by=user;pause.resumed_at=datetime.utcnow()
+                    ex.status="In Progress";ex.version+=1
+                    task.status="In Progress";task.version+=1
+                    s.add(AuditLog(
+                        user=user,action="PM_EXECUTION_RESUME",entity_type="PM_EXECUTION",
+                        entity_key=str(ex.id),detail=json.dumps({"task_id":task.id},sort_keys=True),
+                        workstation="PM-RUNNER",
+                    ))
+                    self._queue_integration_event(s,"maintenance.pm.resumed","PM_EXECUTION",str(ex.id),{
+                        "execution_id":ex.id,"task_id":task.id,"equipment_id":task.equipment_id,
+                        "pm_id":task.pm_id,"resumed_by":user,
+                    })
+                    s.flush()
                 return ex
             ex = PMExecution(task_id=task_id, started_by=user)
             s.add(ex)
@@ -5242,6 +5278,58 @@ class Database:
             task.version += 1
             s.flush()
             return ex
+
+    def pause_pm_execution(
+        self,
+        execution_id: int,
+        user: str,
+        reason: str,
+        note: str = "",
+        workstation: str = "",
+    ):
+        allowed={
+            "Production Request","Waiting Parts","Waiting Engineer","Waiting Vendor",
+            "Tool Unavailable","Shift End","Safety Hold","Other",
+        }
+        reason=(reason or "").strip()
+        if reason not in allowed:raise ValueError("Select a valid PM pause / carry-over reason.")
+        with self.session() as s:
+            stmt=select(PMExecution).where(PMExecution.id==execution_id)
+            if self.url.startswith("postgresql"):stmt=stmt.with_for_update()
+            ex=s.scalar(stmt)
+            if not ex:raise ValueError("PM execution not found")
+            task=s.get(PMTask,ex.task_id)
+            if not task:raise ValueError("PM task not found")
+            self.assert_authorized(user,"pm.execute",task.equipment_id)
+            if ex.status=="Completed":raise ValueError("Completed PM execution cannot be paused.")
+            if ex.status=="Paused":return ex
+            ex.status="Paused";ex.version+=1
+            # Task remains operationally in progress; execution status carries
+            # the interruption so PM compliance is not misrepresented.
+            task.status="In Progress";task.version+=1
+            s.add(PMExecutionPauseEvent(
+                execution_id=ex.id,reason=reason,note=(note or "").strip(),
+                paused_by=user,paused_at=datetime.utcnow(),
+            ))
+            s.add(AuditLog(
+                user=user,action="PM_EXECUTION_PAUSE",entity_type="PM_EXECUTION",
+                entity_key=str(ex.id),
+                detail=json.dumps({"task_id":task.id,"reason":reason,"note":(note or "").strip()},sort_keys=True),
+                workstation=workstation,
+            ))
+            self._queue_integration_event(s,"maintenance.pm.paused","PM_EXECUTION",str(ex.id),{
+                "execution_id":ex.id,"task_id":task.id,"equipment_id":task.equipment_id,
+                "pm_id":task.pm_id,"reason":reason,"note":(note or "").strip(),"paused_by":user,
+            })
+            s.flush();return ex
+
+    def list_pm_execution_pauses(self, execution_id: int):
+        with self.session() as s:
+            return list(s.scalars(
+                select(PMExecutionPauseEvent)
+                .where(PMExecutionPauseEvent.execution_id==execution_id)
+                .order_by(PMExecutionPauseEvent.paused_at.desc(),PMExecutionPauseEvent.id.desc())
+            ))
 
     def list_pm_execution_specs(self, execution_id: int):
         with self.session() as s:
@@ -5385,6 +5473,12 @@ class Database:
             if missing_req:
                 raise ValueError(f"Mandatory PM execution requirements not acknowledged: {missing_req}")
             now = datetime.utcnow()
+            active_pause=s.scalar(select(PMExecutionPauseEvent).where(
+                PMExecutionPauseEvent.execution_id==execution_id,
+                PMExecutionPauseEvent.resumed_at.is_(None),
+            ).order_by(PMExecutionPauseEvent.paused_at.desc(),PMExecutionPauseEvent.id.desc()))
+            if active_pause:
+                active_pause.resumed_by=user;active_pause.resumed_at=now
             ex.status = "Completed"
             ex.completed_by = user
             ex.completed_at = now
