@@ -2113,6 +2113,18 @@ class Database:
                 if not closed:
                     s.close()
 
+    def shared_sync_status(self) -> dict | None:
+        if self.shared_workspace is None:
+            return None
+        with self._session_lock:
+            return self.shared_workspace.status()
+
+    def refresh_shared_state(self) -> bool:
+        if self.shared_workspace is None:
+            return False
+        with self._session_lock:
+            return self.shared_workspace.refresh_local(self.engine)
+
     def health(self) -> tuple[bool, str]:
         try:
             with self.engine.connect() as c:
