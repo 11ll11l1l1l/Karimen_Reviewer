@@ -454,6 +454,35 @@ class PMTask(Base):
     __table_args__ = (UniqueConstraint("equipment_id", "pm_id", "original_due_date", name="uq_pm_backlog"),)
 
 
+class PMTaskSchedule(Base):
+    __tablename__ = "pm_task_schedules"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    task_id: Mapped[int] = mapped_column(Integer, unique=True, index=True)
+    baseline_start_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    scheduled_start_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    scheduled_end_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    planned_hours: Mapped[float] = mapped_column(Float, default=0.0)
+    updated_by: Mapped[str] = mapped_column(String(120), default="")
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
+class PMTaskScheduleEvent(Base):
+    __tablename__ = "pm_task_schedule_events"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    task_id: Mapped[int] = mapped_column(Integer, index=True)
+    old_start_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    old_end_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    new_start_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    new_end_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    old_assignee: Mapped[str] = mapped_column(String(120), default="")
+    new_assignee: Mapped[str] = mapped_column(String(120), default="")
+    reason: Mapped[str] = mapped_column(Text, default="")
+    outside_window: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    changed_by: Mapped[str] = mapped_column(String(120), default="")
+    changed_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
 class PMDeferral(Base):
     __tablename__ = "pm_deferrals"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -1548,6 +1577,9 @@ class Database:
                 table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
             ]),
             ("20260925_017","Create first-class lot context links for manual operations",lambda: [
+                table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
+            ]),
+            ("20260925_018","Create flexible PM calendar schedule and audit tables",lambda: [
                 table.create(self.engine,checkfirst=True) for table in Base.metadata.sorted_tables
             ]),
         ]
@@ -4547,6 +4579,115 @@ class Database:
             })
             s.flush();return task
 
+    def get_pm_task_schedule(self, task_id: int):
+        with self.session() as s:
+            return s.scalar(select(PMTaskSchedule).where(PMTaskSchedule.task_id==task_id))
+
+    def list_pm_schedule_events(self, task_id: int):
+        with self.session() as s:
+            return list(s.scalars(
+                select(PMTaskScheduleEvent).where(PMTaskScheduleEvent.task_id==task_id)
+                .order_by(PMTaskScheduleEvent.changed_at.desc(),PMTaskScheduleEvent.id.desc())
+            ))
+
+    def schedule_pm_task(
+        self,
+        task_id: int,
+        user: str,
+        *,
+        start_at: datetime,
+        end_at: datetime | None = None,
+        assigned_to: str | None = None,
+        reason: str = "",
+        expected_task_version: int | None = None,
+        workstation: str = "",
+    ) -> dict[str,Any]:
+        """Move a PM calendar slot without changing its controlled due date.
+
+        Calendar placement is operational planning. Moving outside the recommended
+        early/grace window is allowed when a reason is supplied and remains
+        visible in the audit trail; formal due-date extension is still handled by
+        the deferral workflow.
+        """
+        if not start_at:raise ValueError("Scheduled start is required.")
+        with self.session() as s:
+            stmt=select(PMTask).where(PMTask.id==task_id)
+            if self.url.startswith("postgresql"):stmt=stmt.with_for_update()
+            task=s.scalar(stmt)
+            if not task:raise ValueError("PM task not found")
+            self.assert_authorized(user,"pm.edit",task.equipment_id)
+            if expected_task_version is not None and task.version!=expected_task_version:
+                raise RuntimeError("CONFLICT: PM task changed by another user. Refresh and retry.")
+            if task.status in {"Completed","Cancelled"}:
+                raise ValueError(f"Cannot schedule PM task in {task.status} state.")
+            hours=float(task.estimated_hours or 0)
+            if end_at is None:end_at=start_at+timedelta(hours=max(hours,0.5))
+            if end_at<=start_at:raise ValueError("Scheduled end must be after scheduled start.")
+
+            definition=s.scalar(select(PMDefinition).where(PMDefinition.pm_id==task.pm_id))
+            due=task.original_due_date
+            early=(due-timedelta(days=max(0,definition.early_window_days or 0))) if due and definition else None
+            latest=(due+timedelta(days=max(0,definition.grace_days or 0))) if due and definition else None
+            outside=bool((early and start_at<early) or (latest and start_at>latest))
+            if outside and not reason.strip():
+                raise ValueError("This slot is outside the recommended PM window. Enter a scheduling reason to continue.")
+
+            schedule=s.scalar(select(PMTaskSchedule).where(PMTaskSchedule.task_id==task.id))
+            old_start=schedule.scheduled_start_at if schedule else task.scheduled_date
+            old_end=schedule.scheduled_end_at if schedule else (
+                old_start+timedelta(hours=max(hours,0.5)) if old_start else None
+            )
+            old_assignee=task.assigned_to or ""
+            new_assignee=old_assignee if assigned_to is None else assigned_to.strip()
+            if schedule is None:
+                baseline=task.scheduled_date or task.original_due_date or start_at
+                schedule=PMTaskSchedule(
+                    task_id=task.id,baseline_start_at=baseline,
+                    scheduled_start_at=start_at,scheduled_end_at=end_at,
+                    planned_hours=max(0.0,(end_at-start_at).total_seconds()/3600),
+                    updated_by=user,
+                )
+                s.add(schedule)
+            else:
+                schedule.scheduled_start_at=start_at;schedule.scheduled_end_at=end_at
+                schedule.planned_hours=max(0.0,(end_at-start_at).total_seconds()/3600)
+                schedule.updated_by=user;schedule.updated_at=datetime.utcnow();schedule.version+=1
+            task.scheduled_date=start_at
+            task.assigned_to=new_assignee
+            if task.status in {"Pending","Overdue"}:task.status="Scheduled"
+            task.version+=1;task.updated_at=datetime.utcnow()
+
+            event=PMTaskScheduleEvent(
+                task_id=task.id,old_start_at=old_start,old_end_at=old_end,
+                new_start_at=start_at,new_end_at=end_at,
+                old_assignee=old_assignee,new_assignee=new_assignee,
+                reason=reason.strip(),outside_window=outside,changed_by=user,
+            )
+            s.add(event)
+            s.add(AuditLog(
+                user=user,action="PM_CALENDAR_MOVE",entity_type="PM_TASK",entity_key=str(task.id),
+                detail=json.dumps({
+                    "old_start":old_start.isoformat() if old_start else None,
+                    "old_end":old_end.isoformat() if old_end else None,
+                    "new_start":start_at.isoformat(),"new_end":end_at.isoformat(),
+                    "old_assignee":old_assignee,"new_assignee":new_assignee,
+                    "outside_window":outside,"reason":reason.strip(),
+                    "controlled_due":due.isoformat() if due else None,
+                },sort_keys=True),workstation=workstation,
+            ))
+            self._queue_integration_event(s,"maintenance.pm.calendar_moved","PM_TASK",str(task.id),{
+                "task_id":task.id,"equipment_id":task.equipment_id,"pm_id":task.pm_id,
+                "scheduled_start_at":start_at.isoformat(),"scheduled_end_at":end_at.isoformat(),
+                "assigned_to":new_assignee,"outside_window":outside,"reason":reason.strip(),
+                "changed_by":user,
+            })
+            s.flush()
+            return {
+                "task_id":task.id,"start_at":start_at,"end_at":end_at,
+                "assigned_to":new_assignee,"outside_window":outside,
+                "early_date":early,"latest_date":latest,
+            }
+
     def pm_task_readiness(self, task_id: int) -> dict[str, Any]:
         now=datetime.utcnow()
         with self.session() as s:
@@ -4715,10 +4856,13 @@ class Database:
         with self.session() as s:
             tasks=list(s.scalars(select(PMTask).where(PMTask.status.notin_(["Completed","Cancelled"])).order_by(PMTask.scheduled_date,PMTask.original_due_date,PMTask.priority)))
             definitions={x.pm_id:x for x in s.scalars(select(PMDefinition))}
+            schedules={x.task_id:x for x in s.scalars(select(PMTaskSchedule))}
         rows=[]
         for task in tasks:
             due=task.original_due_date
-            planned=task.scheduled_date or due
+            schedule=schedules.get(task.id)
+            planned=(schedule.scheduled_start_at if schedule else None) or task.scheduled_date or due
+            planned_end=(schedule.scheduled_end_at if schedule else None)
             if planned and planned>end and not (include_overdue and due and due<now):continue
             definition=definitions.get(task.pm_id)
             early=(due-timedelta(days=max(0,definition.early_window_days or 0))) if due and definition else due
@@ -4731,7 +4875,10 @@ class Database:
             readiness=self.pm_task_readiness(task.id)
             rows.append({
                 "id":task.id,"equipment_id":task.equipment_id,"pm_id":task.pm_id,"pm_name":task.pm_name,
-                "original_due_date":due,"scheduled_date":planned,"status":task.status,"assigned_to":task.assigned_to,
+                "original_due_date":due,"scheduled_date":planned,"scheduled_start_at":planned,
+                "scheduled_end_at":planned_end,"baseline_start_at":schedule.baseline_start_at if schedule else task.scheduled_date,
+                "planned_hours":float(schedule.planned_hours if schedule else (task.estimated_hours or 0)),
+                "status":task.status,"assigned_to":task.assigned_to,
                 "estimated_hours":float(task.estimated_hours or 0),"priority":task.priority,"window":window,
                 "parts_status":readiness["parts_status"],"certification_status":readiness["certification_status"],
                 "part_shortages":", ".join(f"{x['part_number']}:{x['shortage']:g}" for x in readiness["part_shortages"]),
