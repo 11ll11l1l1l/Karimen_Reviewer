@@ -129,7 +129,31 @@ class WeekScheduleView(QWidget):
         width=max(210,self.width()-left-right);height=max(360,self.height()-top-bottom)
         return left,top,width,height,width/7.0,height/24.0
 
-    def _rect_for(self,row):
+    def _layout_rows(self):
+        by_day={}
+        for row in self.rows:
+            start=row.get("start_at")
+            if not start:continue
+            day=(start.date()-self.week_start.date()).days if self.week_start else 0
+            if 0<=day<=6:by_day.setdefault(day,[]).append(row)
+        layout=[]
+        for day,rows in by_day.items():
+            rows=sorted(rows,key=lambda x:(x["start_at"],x.get("end_at") or x["start_at"]))
+            lane_ends=[];assigned=[]
+            for row in rows:
+                start=row["start_at"];end=row.get("end_at") or (start+timedelta(hours=1))
+                lane=None
+                for idx,lane_end in enumerate(lane_ends):
+                    if lane_end<=start:
+                        lane=idx;lane_ends[idx]=end;break
+                if lane is None:
+                    lane=len(lane_ends);lane_ends.append(end)
+                assigned.append((row,lane))
+            lanes=max(1,len(lane_ends))
+            layout.extend((row,lane,lanes) for row,lane in assigned)
+        return layout
+
+    def _rect_for(self,row,lane=0,lanes=1):
         left,top,width,height,day_w,hour_h=self._geometry()
         start=row.get("start_at")
         if not start or not self.week_start:return QRectF()
@@ -138,8 +162,9 @@ class WeekScheduleView(QWidget):
         start_h=start.hour+start.minute/60.0
         end_h=(end.hour+end.minute/60.0) if end.date()==start.date() else 24.0
         duration=max(.35,end_h-start_h)
-        x=left+day*day_w+3;y=top+start_h*hour_h+1
-        return QRectF(x,y,max(18,day_w-6),max(18,duration*hour_h-2))
+        inner=max(18,day_w-6);lane_w=max(18,inner/max(1,lanes))
+        x=left+day*day_w+3+lane*lane_w;y=top+start_h*hour_h+1
+        return QRectF(x,y,max(16,lane_w-2),max(18,duration*hour_h-2))
 
     def paintEvent(self,event):
         p=QPainter(self);p.setRenderHint(QPainter.RenderHint.Antialiasing);p.fillRect(self.rect(),QColor("#ffffff"))
@@ -159,8 +184,8 @@ class WeekScheduleView(QWidget):
                 p.setPen(QColor("#647581"));p.setFont(QFont("Segoe UI",7))
                 p.drawText(QRectF(5,y-8,left-10,16),Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignVCenter,f"{hour:02d}:00")
         self.rects=[]
-        for row in self.rows:
-            rect=self._rect_for(row);self.rects.append((rect,row))
+        for row,lane,lanes in self._layout_rows():
+            rect=self._rect_for(row,lane,lanes);self.rects.append((rect,row))
             if row.get("kind")=="PM":
                 color=QColor("#b75045") if row.get("window")=="OVERDUE" else QColor("#2577a3")
             else:
