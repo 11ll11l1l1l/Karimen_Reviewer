@@ -4,31 +4,42 @@ This runbook is for the Windows/PySide6 Equipment Management System under `equip
 
 ## Production topology
 
-Use PostgreSQL on an always-on LAN server for shared multi-user operation. SQLite is only for local/demo use. Store evidence, linked files, controlled documents, layout images and attachments on a normal Windows/SMB file server with operating-system permissions appropriate to the site.
+The primary constrained deployment is **no-server / shared-network-folder mode**.
 
-Recommended environment variables on every EMS workstation:
+Every user runs EMS on their own Windows PC. Each workstation uses a private local SQLite replica; the shared SMB folder stores the authoritative synchronized snapshot, revision manifest, evidence/documents and backups. SQLite is never opened directly on SMB.
+
+Configure every EMS workstation:
 
 ```bat
-set EMS_DATABASE_URL=postgresql+psycopg://ems_user:CHANGE_THIS@DATABASE-PC:5432/equipment_management
-set EMS_FILE_ROOT=\\FILESERVER\EquipmentManagement
-set EMS_BACKUP_ROOT=\\BACKUPSERVER\EquipmentManagementBackups
+set EMS_DATA_MODE=network-folder
+set EMS_SHARED_ROOT=\\FILESERVER\EquipmentManagement
 ```
 
-Do not place a SQLite database on an SMB share.
+Optional explicit roots:
+
+```bat
+set EMS_FILE_ROOT=\\FILESERVER\EquipmentManagement\Files
+set EMS_BACKUP_ROOT=\\FILESERVER\EquipmentManagement\Backups
+```
+
+PostgreSQL is still supported when a future site has an always-on database host, but it is not required for this deployment.
+
+See `NETWORK_FOLDER_ARCHITECTURE.md` for the exact read/write, locking, conflict and recovery flow.
 
 ## First production deployment
 
-1. Install PostgreSQL 16 or a currently supported PostgreSQL release on the designated database server.
-2. Create a dedicated EMS database and least-privilege application login.
-3. Create the file root and backup root. Confirm the EMS workstation accounts have the intended access.
-4. Set `EMS_DATABASE_URL`, `EMS_FILE_ROOT` and `EMS_BACKUP_ROOT`.
-5. Run `START_WINDOWS.bat` once to create the virtual environment and install the desktop dependencies.
-6. Run `PREFLIGHT_WINDOWS.bat`. Production rollout should not proceed with a FAIL result. SQLite produces a WARN by design.
-7. Launch the application and create the first administrator. No default administrator password is shipped.
+1. Create one normal Windows/SMB root such as `\\FILESERVER\EquipmentManagement`.
+2. Grant the intended EMS users read/write/create/rename permissions on `SharedState`, `Files` and `Backups`; use tighter NTFS/SMB permissions for controlled-document folders as appropriate.
+3. Set `EMS_DATA_MODE=network-folder` and `EMS_SHARED_ROOT` on every workstation.
+4. Run `START_WINDOWS.bat` once on the first workstation to create the virtual environment and dependencies.
+5. Run `PREFLIGHT_WINDOWS.bat`. Production rollout should not proceed with a FAIL result.
+6. Launch EMS on the first workstation and create the first administrator. The first committed database becomes shared revision 1.
+7. Launch a second workstation and confirm it pulls the same shared revision and users.
 8. Configure roles and permission overrides.
-9. Run one verified manual backup from Administration.
-10. Optionally run `INSTALL_DAILY_BACKUP_WINDOWS.bat` to create the 02:00 Windows scheduled backup task.
-11. Perform a restore drill into a separate scratch database before declaring the deployment protected.
+9. Run one verified manual backup to the shared backup root.
+10. Optionally run `INSTALL_DAILY_BACKUP_WINDOWS.bat` on the designated backup workstation.
+11. Perform a restore drill into a separate scratch location before declaring the deployment protected.
+12. Execute the M15 two-workstation concurrency/interruption scenarios before production sign-off.
 
 ## Upgrade behavior
 
@@ -49,11 +60,11 @@ Before any application upgrade:
 
 `BACKUP_WINDOWS.bat` creates a backup in `EMS_BACKUP_ROOT` when configured.
 
-For SQLite, EMS uses the native SQLite backup API and verifies the result with `PRAGMA integrity_check`.
+In no-server mode, EMS first resolves the synchronized local replica and uses the native SQLite backup API. The backup is verified with `PRAGMA integrity_check` and defaults to `<EMS_SHARED_ROOT>\Backups`.
 
-For PostgreSQL, EMS uses `pg_dump -Fc` and verifies the archive with `pg_restore --list`. PostgreSQL client tools must be available in PATH on the workstation/account that performs the backup.
+For optional PostgreSQL deployments, EMS uses `pg_dump -Fc` and verifies the archive with `pg_restore --list`.
 
-A backup is not considered production-proven until a restore drill succeeds. Restore PostgreSQL backups into a separate scratch database using standard `pg_restore` procedures; never overwrite the live database while EMS clients are connected.
+A backup is not considered production-proven until a restore drill succeeds. Never replace the live shared snapshot manually while EMS clients are operating.
 
 ## Controlled files
 
@@ -84,6 +95,6 @@ Before production sign-off, verify these workflows on the real site network:
 - controlled-document approval, supersession and integrity validation;
 - backup creation and scratch restore;
 - file-server evidence creation/opening;
-- client restart and database-server restart recovery.
+- client restart, temporary shared-folder interruption and reconnect recovery;
 
-Automated CI already validates the core against SQLite, a real PostgreSQL service, and both PySide6 desktop shells on Windows. Site acceptance remains necessary because the actual LAN, SMB permissions, endpoint security and PostgreSQL deployment are environment-specific.
+Automated CI validates the core against SQLite, optional PostgreSQL and both PySide6 desktop shells on Windows. Site acceptance remains necessary because the real SMB/LAN behavior, workstation endpoint controls and concurrent shared-folder timing are environment-specific.
