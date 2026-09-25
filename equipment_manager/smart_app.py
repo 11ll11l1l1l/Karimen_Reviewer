@@ -305,7 +305,9 @@ class SmartMainWindow(QMainWindow):
         self.inventory.show_map_part.connect(self.show_part_map)
         self.nav.currentRowChanged.connect(self.stack.setCurrentIndex)
         self.nav.currentRowChanged.connect(self._on_nav_changed)
-        self.nav.setCurrentRow(self.page_index["Operations Overview"])
+        self._apply_role_navigation()
+        landing=self._role_landing_page()
+        self.nav.setCurrentRow(self.page_index.get(landing,self.page_index["Operations Overview"]))
 
         refresh = QAction("Refresh", self)
         refresh.setShortcut(QKeySequence("F5"))
@@ -324,6 +326,96 @@ class SmartMainWindow(QMainWindow):
         self.timer.start(30000)
         self.refresh_my_work_badge();self.refresh_notification_badge()
         self.accessibility_issues=apply_accessibility_defaults(self)
+
+    def _role_visible_pages(self) -> set[str] | None:
+        role=str(self.user.get("role","") or "")
+        profiles={
+            "Operator":{
+                "Global Search","Notifications","Live FAB Map","Equipment Workspaces",
+                "Incident / RCA Workspace","SOPs / Documents",
+            },
+            "Manufacturing Technician":{
+                "Global Search","My Work","Notifications","Live FAB Map","Equipment Workspaces",
+                "Maintenance Planner","Technician PM Runner","Work Orders",
+                "Incident / RCA Workspace","Shift Operations / Handover","SOPs / Documents",
+            },
+            "Technician":{
+                "Global Search","My Work","Notifications","Live FAB Map","Equipment Workspaces",
+                "Maintenance Planner","Technician PM Runner","Work Orders",
+                "Incident / RCA Workspace","SOPs / Documents",
+            },
+            "Maintenance":{
+                "Global Search","My Work","Notifications","Live FAB Map","Equipment Workspaces",
+                "Maintenance Planner","Technician PM Runner","Work Orders","PM Configuration",
+                "Incident / RCA Workspace","Shift Operations / Handover","Parts / Inventory Logistics",
+                "SOPs / Documents",
+            },
+            "Shift Leader":{
+                "Global Search","My Work","Notifications","Operations Overview","Live FAB Map",
+                "Equipment Workspaces","Maintenance Planner","Technician PM Runner","Work Orders",
+                "Incident / RCA Workspace","Alarms / Events","Return to Service",
+                "Shift Operations / Handover","Handover Records","Engineering Analytics","SOPs / Documents",
+            },
+            "Supervisor":{
+                "Global Search","My Work","Notifications","Operations Overview","Live FAB Map",
+                "Equipment Workspaces","Equipment Registry","Maintenance Planner","Technician PM Runner",
+                "Work Orders","PM Configuration","Incident / RCA Workspace","Alarms / Events",
+                "Return to Service","Engineering Analytics","Shift Operations / Handover",
+                "Handover Records","Parts / Inventory Logistics","SOPs / Documents",
+            },
+            "Manager":{
+                "Global Search","My Work","Notifications","Operations Overview","Live FAB Map",
+                "Equipment Workspaces","Equipment Registry","Maintenance Planner","Work Orders",
+                "PM Configuration","Incident / RCA Workspace","Alarms / Events","Return to Service",
+                "Engineering Analytics","Shift Operations / Handover","Handover Records",
+                "Parts / Inventory Logistics","SOPs / Documents","Configuration Studio",
+            },
+            "Equipment Engineer":{
+                "Global Search","My Work","Notifications","Operations Overview","Live FAB Map",
+                "Equipment Workspaces","Equipment Registry","Maintenance Planner","Technician PM Runner",
+                "Work Orders","PM Configuration","Incident / RCA Workspace","Alarms / Events",
+                "Return to Service","Engineering Analytics","Shift Operations / Handover",
+                "Handover Records","Parts / Inventory Logistics","SOPs / Documents",
+            },
+            "Process Engineer":{
+                "Global Search","My Work","Notifications","Operations Overview","Live FAB Map",
+                "Equipment Workspaces","Incident / RCA Workspace","Alarms / Events","Return to Service",
+                "Engineering Analytics","SOPs / Documents",
+            },
+            "Inventory Controller":{
+                "Global Search","Notifications","Live FAB Map","Equipment Workspaces",
+                "Parts / Inventory Logistics","Parts / Inventory (Legacy)","SOPs / Documents",
+            },
+            "Document Controller":{
+                "Global Search","Notifications","Equipment Workspaces","SOPs / Documents",
+            },
+            "Read Only":{
+                "Global Search","Notifications","Operations Overview","Live FAB Map",
+                "Equipment Workspaces","Engineering Analytics","SOPs / Documents",
+            },
+        }
+        return profiles.get(role)
+
+    def _role_landing_page(self) -> str:
+        role=str(self.user.get("role","") or "")
+        return {
+            "Operator":"Live FAB Map",
+            "Manufacturing Technician":"My Work",
+            "Technician":"My Work",
+            "Maintenance":"My Work",
+            "Shift Leader":"Live FAB Map",
+            "Supervisor":"Live FAB Map",
+            "Manager":"Live FAB Map",
+            "Inventory Controller":"Parts / Inventory Logistics",
+            "Document Controller":"SOPs / Documents",
+        }.get(role,"Operations Overview")
+
+    def _apply_role_navigation(self):
+        visible=self._role_visible_pages()
+        if visible is None:return
+        for row in range(self.nav.count()):
+            item=self.nav.item(row)
+            item.setHidden(item.text() not in visible)
 
     def _apply_responsive_layout(self,width: int):
         compact=width<1300
