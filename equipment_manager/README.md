@@ -31,7 +31,7 @@ See `M15_UAT_PILOT.md`. Production release is intentionally blocked until real-s
 - Qualification requires completed passing checks, independent verification, and an independent final approver. Optional validity periods support qualification expiry.
 - Equipment in Qualification state/disposition cannot pass final release approval without a current approved qualification run.
 - Existing pre-governed equipment and tickets receive one idempotent baseline event on upgrade so reliability and lifecycle history start from a known state.
-- `PREFLIGHT_WINDOWS.bat` validates database/schema access, file/attachment writeability, backup path readiness and PostgreSQL backup tooling before site rollout.
+- `PREFLIGHT_WINDOWS.bat` validates the selected data topology, schema access, local/shared revision state, file/attachment writeability and backup path readiness before site rollout.
 - `INSTALL_DAILY_BACKUP_WINDOWS.bat` can install an optional daily Windows backup task; the backup destination honors `EMS_BACKUP_ROOT`.
 - See `PRODUCTION_DEPLOYMENT.md` for the deployment, upgrade, backup/restore and site-acceptance runbook.
 
@@ -95,7 +95,7 @@ See `M15_UAT_PILOT.md`. Production release is intentionally blocked until real-s
 
 
 - Login page and first-run administrator creation; no default password is committed.
-- PostgreSQL-ready multi-user architecture. SQLite remains a local/demo fallback only and must not be placed on the shared drive.
+- Two deployment topologies are supported: the primary no-server mode uses a private SQLite replica on every workstation synchronized through a shared network folder; PostgreSQL remains supported when an always-on database host is available. SQLite is never opened directly from SMB.
 - Role-based permissions plus per-user allow/deny overrides. Administrator UI supports user creation, enable/disable, role changes, password resets, and granular overrides.
 - Optimistic version checks for shared records and transactional PostgreSQL row locking for critical stock/disposition/release operations.
 - Generic equipment master, hierarchy/location fields, status, disposition and map coordinates.
@@ -143,16 +143,30 @@ The core was executed against temporary SQLite databases and passed tests coveri
 
 The current execution environment does not contain PySide6, so the Qt desktop window itself is syntax-compiled but cannot be rendered here. Runtime GUI verification still needs to be done on a Windows PC after installing `requirements.txt`.
 
-## Production database
+## Production data topology
 
-Install PostgreSQL on a designated always-on LAN PC/server. Do **not** place SQLite on the SMB share.
+The constrained production topology does **not** require a database server.
 
-On each client PC, configure the shared database and normal file-server root, for example:
+On every Windows workstation:
 
 ```bat
-set EMS_DATABASE_URL=postgresql+psycopg://ems_user:password@DATABASE-PC/equipment_management
-set EMS_FILE_ROOT=\\FILESERVER\EquipmentManagement
-python main.py
+set EMS_DATA_MODE=network-folder
+set EMS_SHARED_ROOT=\\FILESERVER\EquipmentManagement
+python smart_app.py
 ```
+
+EMS stores the active SQLite database under the workstation's local application-data directory. The network folder contains the synchronized authoritative snapshot, revision manifest, shared evidence/documents and backups. The application never opens SQLite directly over SMB.
+
+Normal defaults become:
+
+```text
+<EMS_SHARED_ROOT>\SharedState\ems.sqlite
+<EMS_SHARED_ROOT>\Files\...
+<EMS_SHARED_ROOT>\Backups\...
+```
+
+Committed writes are serialized through a short shared-folder lease. If another workstation advances the shared revision while a transaction is open, the stale write is rejected and must be retried rather than silently overwriting newer data. See `NETWORK_FOLDER_ARCHITECTURE.md`.
+
+PostgreSQL remains supported as an optional future topology for a site that gains an always-on database host; existing PostgreSQL row-locking and integration tests are retained.
 
 All normal linked-file opening is read-only by default. For controlled SOP/specification folders, also enforce read-only access with Windows/SMB permissions because application behavior alone cannot stop a user from editing files directly outside the app.
