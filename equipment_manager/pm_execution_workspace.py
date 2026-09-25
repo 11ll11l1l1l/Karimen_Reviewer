@@ -19,6 +19,7 @@ from workspaces import AttachmentPanel
 from collaboration_panel import CollaborationPanel
 from reporting import export_pm_execution_pptx, export_pm_execution_xlsx
 from pdf_reporting import export_pm_execution_pdf
+from instruction_resolver import preferred_openable_instruction, resolve_pm_instruction
 from PySide6.QtWidgets import QApplication
 
 FILE_ROOT=os.getenv("EMS_FILE_ROOT",str(Path.cwd()/"equipment_files"))
@@ -49,7 +50,7 @@ class PMExecutionWorkspace(QWidget):
 
     def __init__(self,db,user,parent=None):
         super().__init__(parent);self.db=db;self.user=user;self.task_id=0;self.task=None;self.execution=None
-        self.specs=[];self.results={};self.requirements=[];self.acks={}
+        self.specs=[];self.results={};self.requirements=[];self.acks={};self.focus_mode=False
         root=QVBoxLayout(self);head=QHBoxLayout()
         self.title=QLabel("Technician PM Runner");self.title.setStyleSheet("font-size:20pt;font-weight:800")
         self.state=QLabel();self.state.setStyleSheet("font-size:12pt;font-weight:700")
@@ -73,16 +74,23 @@ class PMExecutionWorkspace(QWidget):
         self.step_table=_table(["Step","Activity","Method","Input","Unit","Result","Value","By","Evidence"])
         self.step_table.itemSelectionChanged.connect(self.load_step);split.addWidget(self.step_table)
         inspector=QWidget();iv=QVBoxLayout(inspector)
-        self.step_title=QLabel("Select a checklist step");self.step_title.setWordWrap(True);self.step_title.setStyleSheet("font-size:13pt;font-weight:700")
+        self.step_title=QLabel("Select a checklist step");self.step_title.setWordWrap(True);self.step_title.setStyleSheet("font-size:15pt;font-weight:800")
+        self.step_counter=QLabel("Step — / —");self.step_counter.setStyleSheet("font-weight:700;color:#526471")
+        self.instruction_source=QLabel("Instruction source: —");self.instruction_source.setWordWrap(True);self.instruction_source.setStyleSheet("color:#526471")
         self.method=QLabel();self.method.setWordWrap(True);self.specification=QLabel();self.specification.setWordWrap(True);self.reaction=QLabel();self.reaction.setWordWrap(True)
         self.history_summary=QLabel("Previous results: —");self.history_summary.setWordWrap(True);self.history_summary.setStyleSheet("color:#526471;font-weight:600;")
         self.history_table=_table(["Date","Result","Value","By","Comment"]);self.history_table.setMaximumHeight(170)
         self.text_value=QLineEdit();self.text_value.setPlaceholderText("Enter result / value")
         self.pass_fail=QComboBox();self.pass_fail.addItems(["PASS","FAIL"])
         self.comment=QTextEdit();self.comment.setPlaceholderText("Comment / observation");self.comment.setMaximumHeight(100)
-        buttons=QHBoxLayout();save=QPushButton("Save step");save.clicked.connect(self.save_step);paste=QPushButton("Paste screenshot");paste.clicked.connect(self.paste_screenshot);fileb=QPushButton("Attach file");fileb.clicked.connect(self.attach_file);sop=QPushButton("Open SOP");sop.clicked.connect(self.open_sop)
+        nav_buttons=QHBoxLayout()
+        prev=QPushButton("Previous");prev.clicked.connect(self.previous_step)
+        nxt=QPushButton("Next");nxt.clicked.connect(self.next_step)
+        focus=QPushButton("Focus Step");focus.clicked.connect(self.toggle_focus_mode)
+        nav_buttons.addWidget(prev);nav_buttons.addWidget(nxt);nav_buttons.addStretch(1);nav_buttons.addWidget(focus)
+        buttons=QHBoxLayout();save=QPushButton("Save step");save.clicked.connect(self.save_step);paste=QPushButton("Paste screenshot");paste.clicked.connect(self.paste_screenshot);fileb=QPushButton("Attach file");fileb.clicked.connect(self.attach_file);sop=QPushButton("Open Instruction");sop.clicked.connect(self.open_instruction)
         for b in [save,paste,fileb,sop]:buttons.addWidget(b)
-        iv.addWidget(self.step_title);iv.addWidget(self.method);iv.addWidget(self.specification);iv.addWidget(self.reaction)
+        iv.addWidget(self.step_counter);iv.addWidget(self.step_title);iv.addWidget(self.instruction_source);iv.addLayout(nav_buttons);iv.addWidget(self.method);iv.addWidget(self.specification);iv.addWidget(self.reaction)
         iv.addWidget(self.history_summary);iv.addWidget(self.history_table)
         iv.addWidget(self.text_value);iv.addWidget(self.pass_fail);iv.addWidget(QLabel("Comment"));iv.addWidget(self.comment);iv.addLayout(buttons);iv.addStretch(1)
         split.addWidget(inspector);split.setStretchFactor(0,3);split.setStretchFactor(1,2);ev.addWidget(split);tabs.addTab(execute,"Checklist Runner")
@@ -230,9 +238,14 @@ class PMExecutionWorkspace(QWidget):
     def load_step(self):
         spec=self.selected_spec()
         if not spec:
-            self.step_title.setText("Select a checklist step");return
+            self.step_counter.setText("Step — / —");self.step_title.setText("Select a checklist step");self.instruction_source.setText("Instruction source: —");return
         current=self.results.get(spec.step_no)
+        index=self.specs.index(spec) if spec in self.specs else self.step_table.currentRow()
+        self.step_counter.setText(f"Step {max(0,index)+1} / {len(self.specs)}")
         self.step_title.setText(f"Step {spec.step_no} — {spec.activity}")
+        sources=resolve_pm_instruction(self.db,self.task,spec)
+        source_text=" · ".join(x.label+(f" ({x.locator})" if x.locator else "") for x in sources[:3])
+        self.instruction_source.setText("Instruction source: "+(source_text or "EMS checklist only"))
         self.method.setText(f"Method: {spec.method or '—'}")
         limits=[]
         for label,val in [("Target",spec.target),("Warn L",spec.warning_low),("Warn H",spec.warning_high),("Control L",spec.control_low),("Control H",spec.control_high),("Spec L",spec.spec_low),("Spec H",spec.spec_high)]:
@@ -293,6 +306,7 @@ class PMExecutionWorkspace(QWidget):
             att=self.db.add_attachment("PM_EXECUTION",str(self.execution.id),stored["stored_path"],original_name=stored["original_name"],media_type=stored["media_type"],category="Screenshot",caption=f"Step {spec.step_no} — {spec.activity}",equipment_id=self.task.equipment_id,created_by=self.user["username"])
             current=self.results.get(spec.step_no)
             if current:self.db.save_pm_result(self.execution.id,spec.step_no,{"value_text":current.value_text,"value_numeric":current.value_numeric,"comment":current.comment,"result":current.result,"entered_by":self.user["username"],"evidence_path":att.stored_path},current.version)
+            notify(f"Screenshot attached to PM step {spec.step_no}.")
             self.refresh()
         except Exception as exc:QMessageBox.critical(self,"Screenshot",str(exc))
 
@@ -309,11 +323,33 @@ class PMExecutionWorkspace(QWidget):
             self.refresh()
         except Exception as exc:QMessageBox.critical(self,"Evidence",str(exc))
 
-    def open_sop(self):
+    def previous_step(self):
+        if not self.specs:return
+        row=self.step_table.currentRow()
+        self.step_table.selectRow(max(0,row-1 if row>=0 else 0))
+
+    def next_step(self):
+        if not self.specs:return
+        row=self.step_table.currentRow()
+        self.step_table.selectRow(min(len(self.specs)-1,row+1 if row>=0 else 0))
+
+    def toggle_focus_mode(self):
+        self.focus_mode=not self.focus_mode
+        self.step_table.setVisible(not self.focus_mode)
+        notify("PM Focus Step mode enabled." if self.focus_mode else "PM checklist overview restored.")
+
+    def open_instruction(self):
         spec=self.selected_spec()
-        if not spec or not spec.sop_path:QMessageBox.information(self,"SOP","No SOP path is frozen for this step.");return
-        try:readonly_open_copy(spec.sop_path)
-        except Exception as exc:QMessageBox.critical(self,"SOP",str(exc))
+        if not spec or not self.task:return
+        source=preferred_openable_instruction(self.db,self.task,spec)
+        if not source:
+            notify("This step is fully instructed in EMS; no external instruction file is required.")
+            return
+        try:
+            readonly_open_copy(source.path)
+            detail=source.label+(f" · {source.locator}" if source.locator else "")
+            notify(f"Opened read-only instruction: {detail}")
+        except Exception as exc:QMessageBox.critical(self,"Instruction",str(exc))
 
     def ack_requirement(self):
         req=_selected(self.req_table,self.requirements)
