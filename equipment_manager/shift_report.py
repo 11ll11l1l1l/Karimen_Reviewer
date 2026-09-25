@@ -55,6 +55,7 @@ def build_fab_status_report(
     *,
     title: str="FAB Status",
     generated_at: datetime | None=None,
+    activity: dict[str,Any] | None=None,
 ) -> tuple[str,str]:
     generated_at=generated_at or datetime.now()
     counts=_status_counts(rows);details=report_rows(rows)
@@ -80,6 +81,22 @@ def build_fab_status_report(
             elif x["next_pm"] and x["next_pm_at"]:bits.append(f"Next PM: {x['next_pm']} {x['next_pm_at']:%m-%d %H:%M}")
             plain.append(" - "+" | ".join(bits))
         plain.append("")
+    activity=activity or {}
+    recovered=activity.get("recovered_tickets") or []
+    completed_pm=activity.get("completed_pm") or []
+    completed_wo=activity.get("completed_work_orders") or []
+    if recovered or completed_pm or completed_wo:
+        plain.append("COMPLETED / RECOVERED THIS SHIFT")
+        for x in recovered:
+            bits=[x.get("equipment_id",""),x.get("ticket_no",""),x.get("title","")]
+            if x.get("final_fix"):bits.append("Fix: "+str(x["final_fix"]))
+            if x.get("owner"):bits.append("Owner: "+str(x["owner"]))
+            plain.append(" - "+" | ".join(v for v in bits if v))
+        for x in completed_pm:
+            plain.append(f" - {x.get('equipment_id','')} | PM {x.get('pm_id','')} {x.get('pm_name','')} | completed by {x.get('completed_by') or '—'}")
+        for x in completed_wo:
+            plain.append(f" - {x.get('equipment_id','')} | WO {x.get('work_order_no','')} {x.get('title','')} | owner {x.get('owner') or '—'}")
+        plain.append("")
     plain_text="\n".join(plain).rstrip()
 
     rows_html=[]
@@ -100,6 +117,19 @@ def build_fab_status_report(
             +f"<td>{html.escape(str(next_pm))}</td>"
             +"</tr>"
         )
+    activity_rows=[]
+    for x in recovered:
+        activity_rows.append("<tr>"+f"<td>Recovered issue</td><td>{html.escape(str(x.get('equipment_id','')))}</td><td>{html.escape(str(x.get('ticket_no','')))}</td><td>{html.escape(str(x.get('title','')))}</td><td>{html.escape(str(x.get('final_fix','')))}</td>"+"</tr>")
+    for x in completed_pm:
+        activity_rows.append("<tr>"+f"<td>Completed PM</td><td>{html.escape(str(x.get('equipment_id','')))}</td><td>{html.escape(str(x.get('pm_id','')))}</td><td>{html.escape(str(x.get('pm_name','')))}</td><td>{html.escape(str(x.get('completed_by','')))}</td>"+"</tr>")
+    for x in completed_wo:
+        activity_rows.append("<tr>"+f"<td>Completed WO</td><td>{html.escape(str(x.get('equipment_id','')))}</td><td>{html.escape(str(x.get('work_order_no','')))}</td><td>{html.escape(str(x.get('title','')))}</td><td>{html.escape(str(x.get('owner','')))}</td>"+"</tr>")
+    activity_html=(
+        "<h3>Completed / Recovered This Shift</h3>"
+        "<table style='border-collapse:collapse;font-size:10pt' border='1' cellpadding='5'>"
+        "<tr style='background:#e9edf1'><th>Type</th><th>Tool</th><th>ID</th><th>Activity</th><th>Fix / Owner</th></tr>"
+        + "".join(activity_rows)+"</table>"
+    ) if activity_rows else ""
     html_text=f"""<div style="font-family:Segoe UI,Arial,sans-serif">
 <h2 style="margin-bottom:4px">{html.escape(title)}</h2>
 <div style="color:#555">{generated_at:%Y-%m-%d %H:%M}</div>
@@ -107,7 +137,9 @@ def build_fab_status_report(
 <table style="border-collapse:collapse;font-size:10pt" border="1" cellpadding="5">
 <tr style="background:#e9edf1"><th>Tool</th><th>State</th><th>Issue</th><th>Lot(s)</th><th>Alarm(s)</th><th>Current Action</th><th>Owner</th><th>PM</th></tr>
 {''.join(rows_html)}
-</table></div>"""
+</table>
+{activity_html}
+</div>"""
     return plain_text,html_text
 
 
@@ -123,7 +155,7 @@ def export_fab_status_csv(rows: list[dict[str,Any]],path: str) -> str:
     return str(path)
 
 
-def export_fab_status_xlsx(rows: list[dict[str,Any]],path: str) -> str:
+def export_fab_status_xlsx(rows: list[dict[str,Any]],path: str,activity: dict[str,Any] | None=None) -> str:
     wb=Workbook();ws=wb.active;ws.title="FAB Status"
     counts=_status_counts(rows)
     ws.append(["FAB STATUS",datetime.now().strftime("%Y-%m-%d %H:%M")])
@@ -137,10 +169,21 @@ def export_fab_status_xlsx(rows: list[dict[str,Any]],path: str) -> str:
     for col in ws.columns:
         letter=col[0].column_letter
         ws.column_dimensions[letter].width=min(48,max(12,max(len(str(c.value or "")) for c in col)+2))
+    activity=activity or {}
+    done=wb.create_sheet("Completed This Shift")
+    done.append(["Type","Tool","ID","Activity","Completed","Fix / Owner"])
+    for cell in done[1]:
+        cell.font=Font(bold=True);cell.fill=PatternFill("solid",fgColor="D9EAF7")
+    for x in activity.get("recovered_tickets") or []:
+        done.append(["Recovered Issue",x.get("equipment_id",""),x.get("ticket_no",""),x.get("title",""),x.get("completed_at"),x.get("final_fix","") or x.get("owner","")])
+    for x in activity.get("completed_pm") or []:
+        done.append(["Completed PM",x.get("equipment_id",""),x.get("pm_id",""),x.get("pm_name",""),x.get("completed_at"),x.get("completed_by","")])
+    for x in activity.get("completed_work_orders") or []:
+        done.append(["Completed WO",x.get("equipment_id",""),x.get("work_order_no",""),x.get("title",""),x.get("completed_at"),x.get("owner","")])
     Path(path).parent.mkdir(parents=True,exist_ok=True);wb.save(path);return str(path)
 
 
-def export_fab_status_pdf(rows: list[dict[str,Any]],path: str,title: str="FAB Status") -> str:
+def export_fab_status_pdf(rows: list[dict[str,Any]],path: str,title: str="FAB Status",activity: dict[str,Any] | None=None) -> str:
     counts=_status_counts(rows);styles=getSampleStyleSheet();story=[]
     story.append(Paragraph(title,styles["Heading1"]))
     story.append(Paragraph(datetime.now().strftime("%Y-%m-%d %H:%M"),styles["BodyText"]))
@@ -159,6 +202,18 @@ def export_fab_status_pdf(rows: list[dict[str,Any]],path: str,title: str="FAB St
         ("FONTSIZE",(0,0),(-1,-1),6.8),("VALIGN",(0,0),(-1,-1),"TOP"),
         ("GRID",(0,0),(-1,-1),.35,colors.HexColor("#B8C3CB")),("ROWBACKGROUNDS",(0,1),(-1,-1),[colors.white,colors.HexColor("#F7F9FA")]),
     ]));story.append(table)
+    activity=activity or {}
+    activity_data=[["Type","Tool","ID","Activity","Fix / Owner"]]
+    for x in activity.get("recovered_tickets") or []:activity_data.append(["Recovered",x.get("equipment_id",""),x.get("ticket_no",""),x.get("title",""),x.get("final_fix","") or x.get("owner","")])
+    for x in activity.get("completed_pm") or []:activity_data.append(["PM",x.get("equipment_id",""),x.get("pm_id",""),x.get("pm_name",""),x.get("completed_by","")])
+    for x in activity.get("completed_work_orders") or []:activity_data.append(["WO",x.get("equipment_id",""),x.get("work_order_no",""),x.get("title",""),x.get("owner","")])
+    if len(activity_data)>1:
+        story.append(Spacer(1,12));story.append(Paragraph("Completed / Recovered This Shift",styles["Heading2"]))
+        done_table=Table(activity_data,repeatRows=1,colWidths=[55,65,70,220,150])
+        done_table.setStyle(TableStyle([
+            ("BACKGROUND",(0,0),(-1,0),colors.HexColor("#D9EAF7")),("FONTNAME",(0,0),(-1,0),"Helvetica-Bold"),
+            ("FONTSIZE",(0,0),(-1,-1),7),("VALIGN",(0,0),(-1,-1),"TOP"),("GRID",(0,0),(-1,-1),.35,colors.HexColor("#B8C3CB"))
+        ]));story.append(done_table)
     Path(path).parent.mkdir(parents=True,exist_ok=True)
     doc=SimpleDocTemplate(path,pagesize=landscape(A4),leftMargin=20,rightMargin=20,topMargin=22,bottomMargin=22)
     doc.build(story);return str(path)
