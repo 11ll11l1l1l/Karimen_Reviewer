@@ -43,6 +43,7 @@ from work_order_workspace import WorkOrderWorkspace
 from shift_handover_workspace import ShiftHandoverWorkspace
 from analytics_workspace import EngineeringAnalyticsWorkspace
 from inventory_logistics_workspace import InventoryLogisticsWorkspace
+from troubleshooting_library import TroubleshootingLibrary
 from version import __version__
 from demo_data import active_tickets, seed_demo_data
 from main import (
@@ -269,6 +270,7 @@ class SmartMainWindow(QMainWindow):
         self.work_order_workspace=add("Work Orders",WorkOrderWorkspace(db,user))
         self.pm_page=add("PM Configuration",PMPage(db,user))
         self.incident_workspace=add("Incident / RCA Workspace",IncidentWorkspace(db,user))
+        self.troubleshooting_library=add("Troubleshooting History",TroubleshootingLibrary(db,user))
         self.ticket_page=add("Ticket Lifecycle / Troubleshooting",TicketPage(db,user))
         self.alarm_page=add("Alarms / Events",AlarmPage(db,user))
         self.return_to_service=add("Return to Service",ReturnToServiceWorkspace(db,user))
@@ -301,6 +303,7 @@ class SmartMainWindow(QMainWindow):
         self.analytics_workspace.open_entity.connect(self.open_entity)
         self.inventory_logistics.open_entity.connect(self.open_entity)
         self.incident_workspace.open_entity.connect(self.open_entity)
+        self.troubleshooting_library.open_entity.connect(self.open_entity)
         self.alarm_page.open_incident.connect(lambda ticket,equipment:self.open_entity("TICKET",ticket,equipment))
         self.inventory.show_map_part.connect(self.show_part_map)
         self.nav.currentRowChanged.connect(self.stack.setCurrentIndex)
@@ -332,54 +335,54 @@ class SmartMainWindow(QMainWindow):
         profiles={
             "Operator":{
                 "Global Search","Notifications","Live FAB Map","Equipment Workspaces",
-                "Incident / RCA Workspace","SOPs / Documents",
+                "Incident / RCA Workspace","Troubleshooting History","SOPs / Documents",
             },
             "Manufacturing Technician":{
                 "Global Search","My Work","Notifications","Live FAB Map","Equipment Workspaces",
                 "Maintenance Planner","Technician PM Runner","Work Orders",
-                "Incident / RCA Workspace","Shift Operations / Handover","SOPs / Documents",
+                "Incident / RCA Workspace","Troubleshooting History","Shift Operations / Handover","SOPs / Documents",
             },
             "Technician":{
                 "Global Search","My Work","Notifications","Live FAB Map","Equipment Workspaces",
                 "Maintenance Planner","Technician PM Runner","Work Orders",
-                "Incident / RCA Workspace","SOPs / Documents",
+                "Incident / RCA Workspace","Troubleshooting History","SOPs / Documents",
             },
             "Maintenance":{
                 "Global Search","My Work","Notifications","Live FAB Map","Equipment Workspaces",
                 "Maintenance Planner","Technician PM Runner","Work Orders","PM Configuration",
-                "Incident / RCA Workspace","Shift Operations / Handover","Parts / Inventory Logistics",
+                "Incident / RCA Workspace","Troubleshooting History","Shift Operations / Handover","Parts / Inventory Logistics",
                 "SOPs / Documents",
             },
             "Shift Leader":{
                 "Global Search","My Work","Notifications","Operations Overview","Live FAB Map",
                 "Equipment Workspaces","Maintenance Planner","Technician PM Runner","Work Orders",
-                "Incident / RCA Workspace","Alarms / Events","Return to Service",
+                "Incident / RCA Workspace","Troubleshooting History","Alarms / Events","Return to Service",
                 "Shift Operations / Handover","Handover Records","Engineering Analytics","SOPs / Documents",
             },
             "Supervisor":{
                 "Global Search","My Work","Notifications","Operations Overview","Live FAB Map",
                 "Equipment Workspaces","Equipment Registry","Maintenance Planner","Technician PM Runner",
-                "Work Orders","PM Configuration","Incident / RCA Workspace","Alarms / Events",
+                "Work Orders","PM Configuration","Incident / RCA Workspace","Troubleshooting History","Alarms / Events",
                 "Return to Service","Engineering Analytics","Shift Operations / Handover",
                 "Handover Records","Parts / Inventory Logistics","SOPs / Documents",
             },
             "Manager":{
                 "Global Search","My Work","Notifications","Operations Overview","Live FAB Map",
                 "Equipment Workspaces","Equipment Registry","Maintenance Planner","Work Orders",
-                "PM Configuration","Incident / RCA Workspace","Alarms / Events","Return to Service",
+                "PM Configuration","Incident / RCA Workspace","Troubleshooting History","Alarms / Events","Return to Service",
                 "Engineering Analytics","Shift Operations / Handover","Handover Records",
                 "Parts / Inventory Logistics","SOPs / Documents","Configuration Studio",
             },
             "Equipment Engineer":{
                 "Global Search","My Work","Notifications","Operations Overview","Live FAB Map",
                 "Equipment Workspaces","Equipment Registry","Maintenance Planner","Technician PM Runner",
-                "Work Orders","PM Configuration","Incident / RCA Workspace","Alarms / Events",
+                "Work Orders","PM Configuration","Incident / RCA Workspace","Troubleshooting History","Alarms / Events",
                 "Return to Service","Engineering Analytics","Shift Operations / Handover",
                 "Handover Records","Parts / Inventory Logistics","SOPs / Documents",
             },
             "Process Engineer":{
                 "Global Search","My Work","Notifications","Operations Overview","Live FAB Map",
-                "Equipment Workspaces","Incident / RCA Workspace","Alarms / Events","Return to Service",
+                "Equipment Workspaces","Incident / RCA Workspace","Troubleshooting History","Alarms / Events","Return to Service",
                 "Engineering Analytics","SOPs / Documents",
             },
             "Inventory Controller":{
@@ -391,10 +394,13 @@ class SmartMainWindow(QMainWindow):
             },
             "Read Only":{
                 "Global Search","Notifications","Operations Overview","Live FAB Map",
-                "Equipment Workspaces","Engineering Analytics","SOPs / Documents",
+                "Equipment Workspaces","Troubleshooting History","Engineering Analytics","SOPs / Documents",
             },
         }
-        return profiles.get(role)
+        visible=profiles.get(role)
+        if visible is not None and role in {"Operator","Manufacturing Technician","Technician","Maintenance","Shift Leader","Supervisor","Manager","Equipment Engineer","Process Engineer","Read Only"}:
+            visible=set(visible);visible.add("Troubleshooting History")
+        return visible
 
     def _role_landing_page(self) -> str:
         role=str(self.user.get("role","") or "")
