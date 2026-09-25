@@ -480,7 +480,11 @@ class SmartMainWindow(QMainWindow):
         if image.isNull():
             notify("Quick Screenshot: clipboard does not contain an image.");return
         try:
-            root=os.getenv("EMS_FILE_ROOT",str(Path.cwd()/"equipment_files"))
+            shared_root=os.getenv("EMS_SHARED_ROOT","").strip()
+            root=os.getenv(
+                "EMS_FILE_ROOT",
+                str(Path(shared_root)/"Files") if shared_root else str(Path.cwd()/"equipment_files"),
+            )
             stored=store_clipboard_image(image,root,entity_type,entity_key)
             self.db.add_attachment(
                 entity_type,entity_key,stored["stored_path"],original_name=stored["original_name"],
