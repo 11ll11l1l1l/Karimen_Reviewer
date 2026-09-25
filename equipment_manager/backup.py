@@ -106,8 +106,18 @@ def main() -> int:
     parser.add_argument("action",choices=["backup","verify"])
     parser.add_argument("path",nargs="?")
     args=parser.parse_args()
-    url=os.getenv("EMS_DATABASE_URL","sqlite:///equipment_manager.db")
-    backup_root=os.getenv("EMS_BACKUP_ROOT","equipment_backups")
+    shared_root=os.getenv("EMS_SHARED_ROOT","").strip()
+    data_mode=os.getenv("EMS_DATA_MODE","").strip().lower()
+    shared_mode=bool(shared_root) or data_mode in {"network-folder","shared-folder","serverless"}
+    if shared_mode:
+        from network_workspace import SharedFolderWorkspace
+        workspace=SharedFolderWorkspace.from_env()
+        workspace.prepare_local_database()
+        url=workspace.database_url()
+        backup_root=os.getenv("EMS_BACKUP_ROOT",str(Path(shared_root)/"Backups"))
+    else:
+        url=os.getenv("EMS_DATABASE_URL","sqlite:///equipment_manager.db")
+        backup_root=os.getenv("EMS_BACKUP_ROOT","equipment_backups")
     path=args.path or default_backup_path(url,backup_root)
     if args.action=="backup":
         result=create_backup(url,path)
