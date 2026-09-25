@@ -4,11 +4,11 @@ This file is the persistent progress tracker for the full-production roadmap.
 
 ## Current baseline
 
-**Program state:** RC4 Frontline Operations coding wave — M15 site validation intentionally deferred until coding freeze
+**Program state:** RC4 Frontline Operations + RC4-G no-server synchronization coding wave — M15 site validation intentionally deferred until coding freeze
 
 **Canonical base main:** `288f7b9ab1d1d425dad96297e9dd0b8f7e519caa`
 
-**Active development wave:** `ems/rc4-frontline-a`
+**Active development wave:** `ems/rc4-network-folder-sync` (parent `ems/rc4-frontline-a@6fe40cb5`)
 
 **RC4 detailed tracker:** `FRONTLINE_OPERATIONS_ROADMAP.md`
 
@@ -37,11 +37,24 @@ The production backend remains intact while the user-facing product is being reb
 
 ## Immediate execution order
 
-1. Continue RC4 coding first: frontline manual issue flow, troubleshooting knowledge, PM authoring/execution, operational calendar, FAB command center, reporting and role-focused navigation.
+1. Continue RC4 coding first: complete no-server shared-folder operation and remaining frontline UX/polish.
 2. Keep M15 site UAT/pilot pending; do not block RC4 coding on physical plant testing.
-3. Freeze one exact RC4 code-bearing head after frontline coding is substantially complete.
-4. Run one consolidated EMS validation cycle and fix failures as a batch.
-5. Merge RC4 only after exact-head CI is green; then resume physical M15 pilot/UAT.
+3. Freeze one exact RC4 code-bearing head after the network-folder and frontline waves are substantially complete.
+4. Run one consolidated EMS validation cycle covering serverless two-workstation synchronization plus the existing SQLite/PostgreSQL/Windows gates.
+5. Merge only after the exact code-bearing head is green; then resume physical M15 pilot/UAT.
+
+
+## RC4-G no-server deployment status
+
+- **CODED:** local per-PC SQLite replica selection through `EMS_SHARED_ROOT`.
+- **CODED:** shared authoritative snapshot + revision/SHA manifest.
+- **CODED:** serialized cross-workstation write lease and stale-revision rejection.
+- **CODED:** crash pending-publish recovery and preserved conflict database copies.
+- **CODED:** atomic shared evidence/screenshot publication and centralized evidence-root resolution.
+- **CODED:** synchronized backup/preflight defaults and smart-shell sync badge/manual refresh.
+- **FIXED:** malformed Quick Create import that could prevent the smart shell from importing the module.
+- **REMAINING CODING:** Recovery/conflict administration workflow, final local-path sweep, serverless regression fixtures and release/version notes.
+- **VALIDATION DEFERRED:** representative SMB two-workstation timing, interruption/reconnect and full consolidated Windows regression.
 
 ## EMS development execution policy
 
