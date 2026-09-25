@@ -124,22 +124,24 @@ class MaintenancePlanningWorkspace(QWidget):
         self.horizon=QSpinBox();self.horizon.setRange(7,365);self.horizon.setValue(60);self.horizon.setSuffix(" days");self.horizon.valueChanged.connect(self.refresh)
         self.capacity=QSpinBox();self.capacity.setRange(1,200);self.capacity.setValue(32);self.capacity.setSuffix(" team h/day");self.capacity.valueChanged.connect(self.rebuild_views)
         self.plan_dt=QDateTimeEdit();self.plan_dt.setCalendarPopup(True);self.plan_dt.setDateTime(datetime.now());self.plan_dt.setDisplayFormat("yyyy-MM-dd HH:mm")
+        self.plan_end_dt=QDateTimeEdit();self.plan_end_dt.setCalendarPopup(True);self.plan_end_dt.setDateTime(datetime.now()+timedelta(hours=1));self.plan_end_dt.setDisplayFormat("yyyy-MM-dd HH:mm")
+        self.reason=QLineEdit();self.reason.setPlaceholderText("Scheduling reason (required outside PM window)");self.reason.setMinimumWidth(260)
         assign=QPushButton("Assign selected");assign.clicked.connect(self.assign_selected)
-        schedule=QPushButton("Reschedule selected");schedule.clicked.connect(self.reschedule_selected)
+        schedule=QPushButton("Move / Reschedule");schedule.clicked.connect(self.reschedule_selected)
         openpm=QPushButton("Open selected PM");openpm.clicked.connect(self.open_selected)
-        for w in [self.search,QLabel("Horizon"),self.horizon,QLabel("Target"),self.plan_dt,assign,schedule,openpm]:controls.addWidget(w)
+        for w in [self.search,QLabel("Horizon"),self.horizon,QLabel("Start"),self.plan_dt,QLabel("End"),self.plan_end_dt,self.reason,assign,schedule,openpm]:controls.addWidget(w)
         controls.addStretch(1);root.addLayout(controls)
 
         tabs=QTabWidget();root.addWidget(tabs,1)
 
         board=QWidget();bv=QVBoxLayout(board)
-        self.board=_table(["Task","Equipment","PM","Name","Original Due","Planned","Window","Parts","Certs","Status","Assigned","Hours","Priority","Ver"])
-        self.board.doubleClicked.connect(self.open_selected);bv.addWidget(self.board);tabs.addTab(board,"Schedule board")
+        self.board=_table(["Task","Equipment","PM","Name","Controlled Due","Slot Start","Slot End","Slot h","Window","Parts","Certs","Status","Assigned","Std h","Priority","Ver"])
+        self.board.doubleClicked.connect(self.open_selected);self.board.itemSelectionChanged.connect(self.load_selected_slot);bv.addWidget(self.board);tabs.addTab(board,"Schedule board")
 
         calendar=QWidget();cv=QHBoxLayout(calendar);split=QSplitter()
         self.calendar=QCalendarWidget();self.calendar.selectionChanged.connect(self.calendar_changed);split.addWidget(self.calendar)
         right=QWidget();rv=QVBoxLayout(right);self.day_label=QLabel();self.day_label.setStyleSheet("font-weight:700;font-size:12pt")
-        self.day_table=_table(["Task","Equipment","PM","Name","Status","Assigned","Hours","Window","Parts","Certs"])
+        self.day_table=_table(["Task","Equipment","PM","Name","Start","End","Slot h","Status","Assigned","Window","Parts","Certs"])
         self.day_table.doubleClicked.connect(self.open_day_selected);rv.addWidget(self.day_label);rv.addWidget(self.day_table)
         split.addWidget(right);split.setStretchFactor(1,2);cv.addWidget(split);tabs.addTab(calendar,"Calendar / day plan")
 
@@ -149,6 +151,10 @@ class MaintenancePlanningWorkspace(QWidget):
         self.workload_table=_table(["Date","Tasks","Hours","Capacity h","Load %","Overdue tasks"])
         self.team_table=_table(["Assigned to","Tasks","Planned hours","Overdue","Unassigned"])
         wv.addWidget(QLabel("Daily workload"));wv.addWidget(self.workload_table,1);wv.addWidget(QLabel("Technician / owner load"));wv.addWidget(self.team_table,1);tabs.addTab(workload,"Workload / capacity")
+
+        history=QWidget();hv=QVBoxLayout(history);self.history_label=QLabel("Select a PM task to view scheduling history.")
+        self.history_table=_table(["Changed","Old Start","Old End","New Start","New End","Old Assignee","New Assignee","Outside Window","Reason","Changed By"])
+        hv.addWidget(self.history_label);hv.addWidget(self.history_table);tabs.addTab(history,"Schedule history")
 
         self.refresh()
 
@@ -163,10 +169,10 @@ class MaintenancePlanningWorkspace(QWidget):
             self.filtered=[r for r in self.rows if q in " ".join(str(r.get(k,"") or "") for k in ["equipment_id","pm_id","pm_name","status","assigned_to","priority","window"]).lower()]
         else:self.filtered=list(self.rows)
         self.board.setRowCount(len(self.filtered))
-        fields=["id","equipment_id","pm_id","pm_name","original_due_date","scheduled_date","window","parts_status","certification_status","status","assigned_to","estimated_hours","priority","version"]
+        fields=["id","equipment_id","pm_id","pm_name","original_due_date","scheduled_start_at","scheduled_end_at","planned_hours","window","parts_status","certification_status","status","assigned_to","estimated_hours","priority","version"]
         for r,row in enumerate(self.filtered):
             for col,field in enumerate(fields):self.board.setItem(r,col,_item(row.get(field)))
-        open_count=len(self.filtered);overdue=sum(1 for x in self.filtered if x["window"]=="OVERDUE");hours=sum(float(x.get("estimated_hours") or 0) for x in self.filtered)
+        open_count=len(self.filtered);overdue=sum(1 for x in self.filtered if x["window"]=="OVERDUE");hours=sum(float(x.get("planned_hours") or x.get("estimated_hours") or 0) for x in self.filtered)
         parts_short=sum(1 for x in self.filtered if x.get("parts_status")=="SHORT")
         cert_block=sum(1 for x in self.filtered if x.get("certification_status") in {"MISSING","UNASSIGNED"})
         self.summary.setText(f"{open_count} open tasks · {hours:.1f} planned h · {overdue} overdue · {parts_short} parts-blocked · {cert_block} cert-blocked")
@@ -182,13 +188,13 @@ class MaintenancePlanningWorkspace(QWidget):
         self.workload_table.setRowCount(len(dates))
         cap=float(self.capacity.value())
         for i,day in enumerate(dates):
-            tasks=by_day[day];hours=sum(float(x.get("estimated_hours") or 0) for x in tasks);overdue=sum(1 for x in tasks if x["window"]=="OVERDUE")
+            tasks=by_day[day];hours=sum(float(x.get("planned_hours") or x.get("estimated_hours") or 0) for x in tasks);overdue=sum(1 for x in tasks if x["window"]=="OVERDUE")
             vals=[day.isoformat(),len(tasks),f"{hours:.1f}",f"{cap:.1f}",f"{(hours/cap*100 if cap else 0):.0f}%",overdue]
             for col,val in enumerate(vals):self.workload_table.setItem(i,col,_item(val))
         owners=sorted(by_owner)
         self.team_table.setRowCount(len(owners))
         for i,owner in enumerate(owners):
-            tasks=by_owner[owner];hours=sum(float(x.get("estimated_hours") or 0) for x in tasks);overdue=sum(1 for x in tasks if x["window"]=="OVERDUE")
+            tasks=by_owner[owner];hours=sum(float(x.get("planned_hours") or x.get("estimated_hours") or 0) for x in tasks);overdue=sum(1 for x in tasks if x["window"]=="OVERDUE")
             vals=[owner,len(tasks),f"{hours:.1f}",overdue,len(tasks) if owner=="UNASSIGNED" else 0]
             for col,val in enumerate(vals):self.team_table.setItem(i,col,_item(val))
         start=datetime.now();end=start+timedelta(days=self.horizon.value())
@@ -198,20 +204,49 @@ class MaintenancePlanningWorkspace(QWidget):
     def calendar_changed(self):
         qd=self.calendar.selectedDate();day=qd.toPython()
         self.plan_dt.setDate(qd)
-        rows=[r for r in self.filtered if (r.get("scheduled_date") or r.get("original_due_date")) and (r.get("scheduled_date") or r.get("original_due_date")).date()==day]
-        self._day_rows=rows;self.day_label.setText(f"{day.isoformat()} · {len(rows)} task(s) · {sum(float(x.get('estimated_hours') or 0) for x in rows):.1f} h")
-        self.day_table.setRowCount(len(rows));fields=["id","equipment_id","pm_id","pm_name","status","assigned_to","estimated_hours","window","parts_status","certification_status"]
+        rows=[r for r in self.filtered if (r.get("scheduled_start_at") or r.get("original_due_date")) and (r.get("scheduled_start_at") or r.get("original_due_date")).date()==day]
+        self._day_rows=rows;self.day_label.setText(f"{day.isoformat()} · {len(rows)} task(s) · {sum(float(x.get('planned_hours') or x.get('estimated_hours') or 0) for x in rows):.1f} scheduled h")
+        self.day_table.setRowCount(len(rows));fields=["id","equipment_id","pm_id","pm_name","scheduled_start_at","scheduled_end_at","planned_hours","status","assigned_to","window","parts_status","certification_status"]
         for r,row in enumerate(rows):
             for col,field in enumerate(fields):self.day_table.setItem(r,col,_item(row.get(field)))
 
     def timeline_reschedule(self,task_id: int,when):
         row=next((x for x in self.filtered if x["id"]==task_id),None)
         if not row:return
+        duration=float(row.get("planned_hours") or row.get("estimated_hours") or 1)
+        end=when+timedelta(hours=max(duration,0.5))
+        reason=""
+        early=row.get("early_date");latest=row.get("latest_date")
+        outside=bool((early and when<early) or (latest and when>latest))
+        if outside:
+            reason,ok=QInputDialog.getText(self,"Move outside PM window","Reason for scheduling outside the recommended PM window:")
+            if not ok or not reason.strip():return
         try:
-            self.db.plan_pm_task(task_id,self.user["username"],scheduled_date=when,expected_version=row["version"])
+            self.db.schedule_pm_task(
+                task_id,self.user["username"],start_at=when,end_at=end,reason=reason,
+                expected_task_version=row["version"],workstation="MAINTENANCE-PLANNER",
+            )
             self.refresh()
         except Exception as exc:
             QMessageBox.critical(self,"Timeline reschedule",str(exc))
+
+    def load_selected_slot(self):
+        rows=self._selected_board_rows()
+        if not rows:
+            self.history_label.setText("Select a PM task to view scheduling history.")
+            self.history_table.setRowCount(0);return
+        row=rows[0]
+        start=row.get("scheduled_start_at") or row.get("scheduled_date") or row.get("original_due_date")
+        duration=float(row.get("planned_hours") or row.get("estimated_hours") or 1)
+        end=row.get("scheduled_end_at") or (start+timedelta(hours=max(duration,0.5)) if start else None)
+        if start:self.plan_dt.setDateTime(start)
+        if end:self.plan_end_dt.setDateTime(end)
+        events=self.db.list_pm_schedule_events(row["id"])
+        self.history_label.setText(f"{row['equipment_id']} · {row['pm_id']} · controlled due {row.get('original_due_date') or '—'}")
+        self.history_table.setRowCount(len(events))
+        fields=["changed_at","old_start_at","old_end_at","new_start_at","new_end_at","old_assignee","new_assignee","outside_window","reason","changed_by"]
+        for r,event in enumerate(events):
+            for col,field in enumerate(fields):self.history_table.setItem(r,col,_item(getattr(event,field,"")))
 
     def _selected_board_rows(self):
         indexes=sorted({x.row() for x in self.board.selectedIndexes()})
@@ -225,18 +260,38 @@ class MaintenancePlanningWorkspace(QWidget):
         if not ok:return
         failures=[];done=0
         for row in rows:
-            try:self.db.plan_pm_task(row["id"],self.user["username"],assigned_to=owner,expected_version=row["version"]);done+=1
+            start=row.get("scheduled_start_at") or row.get("scheduled_date") or row.get("original_due_date") or datetime.now()
+            duration=float(row.get("planned_hours") or row.get("estimated_hours") or 1)
+            end=row.get("scheduled_end_at") or (start+timedelta(hours=max(duration,0.5)))
+            try:
+                self.db.schedule_pm_task(
+                    row["id"],self.user["username"],start_at=start,end_at=end,assigned_to=owner,
+                    reason="Assignment update",expected_task_version=row["version"],workstation="MAINTENANCE-PLANNER",
+                );done+=1
             except Exception as exc:failures.append(f"{row['id']}: {exc}")
         self.refresh();self._result("Assignment",done,len(rows),failures)
 
     def reschedule_selected(self):
         rows=self._selected_board_rows()
         if not rows:QMessageBox.information(self,"Reschedule PM","Select one or more PM tasks.");return
-        when=self.plan_dt.dateTime().toPython()
-        if QMessageBox.question(self,"Reschedule PM",f"Schedule {len(rows)} PM task(s) for {when:%Y-%m-%d %H:%M}?\nControlled early/grace/deferral rules will be enforced.")!=QMessageBox.StandardButton.Yes:return
+        target_start=self.plan_dt.dateTime().toPython();target_end=self.plan_end_dt.dateTime().toPython()
+        if target_end<=target_start:QMessageBox.warning(self,"Reschedule PM","End must be after start.");return
+        reason=self.reason.text().strip()
+        anchor=rows[0].get("scheduled_start_at") or rows[0].get("scheduled_date") or rows[0].get("original_due_date") or target_start
+        delta=target_start-anchor
         failures=[];done=0
-        for row in rows:
-            try:self.db.plan_pm_task(row["id"],self.user["username"],scheduled_date=when,expected_version=row["version"]);done+=1
+        for index,row in enumerate(rows):
+            old_start=row.get("scheduled_start_at") or row.get("scheduled_date") or row.get("original_due_date") or target_start
+            duration=float(row.get("planned_hours") or row.get("estimated_hours") or 1)
+            if len(rows)==1:
+                start=target_start;end=target_end
+            else:
+                start=old_start+delta;end=start+timedelta(hours=max(duration,0.5))
+            try:
+                self.db.schedule_pm_task(
+                    row["id"],self.user["username"],start_at=start,end_at=end,reason=reason,
+                    expected_task_version=row["version"],workstation="MAINTENANCE-PLANNER",
+                );done+=1
             except Exception as exc:failures.append(f"{row['equipment_id']} / {row['pm_id']}: {exc}")
         self.refresh();self._result("Reschedule",done,len(rows),failures)
 
