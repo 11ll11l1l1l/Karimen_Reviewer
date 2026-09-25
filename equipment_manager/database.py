@@ -2125,6 +2125,12 @@ class Database:
         with self._session_lock:
             return self.shared_workspace.refresh_local(self.engine)
 
+    def shared_recovery_conflicts(self) -> list[dict]:
+        if self.shared_workspace is None:
+            return []
+        with self._session_lock:
+            return self.shared_workspace.recovery_conflicts()
+
     def health(self) -> tuple[bool, str]:
         try:
             with self.engine.connect() as c:
