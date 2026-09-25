@@ -15,6 +15,7 @@ from domain import (
     DOWNTIME_STATES, EQUIPMENT_STATES, STATE_CLASS, TICKET_STATES, REASON_CODES, TICKET_REASON_CODES,
     validate_ticket_transition, validate_transition,
 )
+from equipment_health import classify_health, health_rank
 
 
 class Base(DeclarativeBase):
@@ -8163,6 +8164,126 @@ class Database:
             "alarm_pareto":alarm_pareto,"incident_pareto":incident_pareto,
             "pm":{"due":due,"completed":completed,"overdue":overdue,"deferred":deferred,"compliance_pct":compliance_pct},
         }
+
+    def fab_health_snapshot(
+        self,
+        building: str = "",
+        floor: str = "",
+        area: str = "",
+    ) -> list[dict[str,Any]]:
+        """Return one batched management snapshot for the plant/floor map."""
+        now=datetime.utcnow()
+        with self.session() as s:
+            stmt=select(Equipment)
+            if building:stmt=stmt.where(Equipment.building==building)
+            if floor:stmt=stmt.where(Equipment.floor==floor)
+            if area:stmt=stmt.where(Equipment.area==area)
+            equipment=list(s.scalars(stmt.order_by(Equipment.area,Equipment.line_cell,Equipment.equipment_id)))
+            ids=[x.equipment_id for x in equipment]
+            if not ids:return []
+
+            tickets=list(s.scalars(select(Ticket).where(
+                Ticket.equipment_id.in_(ids),Ticket.status.notin_(["Closed","Cancelled"])
+            )))
+            alarms=list(s.scalars(select(EquipmentAlarmEvent).where(
+                EquipmentAlarmEvent.equipment_id.in_(ids),EquipmentAlarmEvent.state=="ACTIVE"
+            )))
+            pm=list(s.scalars(select(PMTask).where(
+                PMTask.equipment_id.in_(ids),PMTask.status.notin_(["Completed","Cancelled"])
+            )))
+            work_orders=list(s.scalars(select(WorkOrder).where(
+                WorkOrder.equipment_id.in_(ids),WorkOrder.status.notin_(["Completed","Cancelled"])
+            )))
+            task_ids=[x.id for x in pm]
+            schedules={x.task_id:x for x in s.scalars(select(PMTaskSchedule).where(
+                PMTaskSchedule.task_id.in_(task_ids)
+            ))} if task_ids else {}
+            ticket_nos=[x.ticket_no for x in tickets]
+            lot_links=list(s.scalars(select(EntityLotLink).where(
+                EntityLotLink.entity_type=="TICKET",EntityLotLink.entity_key.in_(ticket_nos)
+            ))) if ticket_nos else []
+            actions=list(s.scalars(select(IncidentAction).where(
+                IncidentAction.ticket_no.in_(ticket_nos),
+                IncidentAction.status.notin_(["Completed","Verified","Closed","Cancelled"]),
+            ).order_by(IncidentAction.due_at.asc().nullslast(),IncidentAction.id))) if ticket_nos else []
+            active_executions=list(s.scalars(select(PMExecution).where(
+                PMExecution.task_id.in_(task_ids),PMExecution.status!="Completed"
+            ))) if task_ids else []
+            execution_ids=[x.id for x in active_executions]
+            abnormal_results=list(s.scalars(select(PMResult).where(
+                PMResult.execution_id.in_(execution_ids),
+                PMResult.result.in_(["SPECIFICATION FAILURE","CONTROL FAILURE","FAIL","INVALID"]),
+            ))) if execution_ids else []
+
+        by_ticket={};by_alarm={};by_pm={};by_wo={};lots_by_ticket={};actions_by_ticket={}
+        for x in tickets:by_ticket.setdefault(x.equipment_id,[]).append(x)
+        for x in alarms:by_alarm.setdefault(x.equipment_id,[]).append(x)
+        for x in pm:by_pm.setdefault(x.equipment_id,[]).append(x)
+        for x in work_orders:by_wo.setdefault(x.equipment_id,[]).append(x)
+        for x in lot_links:lots_by_ticket.setdefault(x.entity_key,[]).append(x.lot_number)
+        for x in actions:actions_by_ticket.setdefault(x.ticket_no,[]).append(x)
+        task_by_execution={x.id:x.task_id for x in active_executions}
+        abnormal_task_ids={task_by_execution.get(x.execution_id) for x in abnormal_results}
+        abnormal_task_ids.discard(None)
+
+        priority_rank={"P1":0,"P2":1,"P3":2,"P4":3}
+        rows=[]
+        for eq in equipment:
+            eq_tickets=by_ticket.get(eq.equipment_id,[])
+            eq_tickets.sort(key=lambda x:(priority_rank.get((x.priority or "").upper(),9),-(x.created_at.timestamp() if x.created_at else 0)))
+            eq_alarms=by_alarm.get(eq.equipment_id,[])
+            eq_pm=by_pm.get(eq.equipment_id,[])
+            eq_wo=by_wo.get(eq.equipment_id,[])
+            active_pm=next((x for x in eq_pm if x.status=="In Progress"),None)
+            effective_status="PM" if active_pm and eq.status not in {"Down","Hold","Waiting Parts","Waiting Vendor","Restricted","Offline","Decommissioned"} else eq.status
+            health=classify_health(
+                effective_status,
+                ticket_priorities=[x.priority for x in eq_tickets],
+                alarm_severities=[x.severity for x in eq_alarms],
+                abnormal_pm=any(x.id in abnormal_task_ids for x in eq_pm),
+            )
+            current_issue=eq_tickets[0] if eq_tickets else None
+            lots=[]
+            for ticket in eq_tickets:
+                for lot in lots_by_ticket.get(ticket.ticket_no,[]):
+                    if lot not in lots:lots.append(lot)
+            current_action=""
+            if current_issue:
+                acts=actions_by_ticket.get(current_issue.ticket_no,[])
+                if acts:current_action=acts[0].description
+                elif current_issue.corrective_action:current_action=current_issue.corrective_action
+                else:current_action=current_issue.description
+            next_pm=None;next_pm_at=None
+            for task in eq_pm:
+                schedule=schedules.get(task.id)
+                when=(schedule.scheduled_start_at if schedule else None) or task.scheduled_date or task.original_due_date
+                if when and (next_pm_at is None or when<next_pm_at):
+                    next_pm=task;next_pm_at=when
+            owner=(current_issue.owner if current_issue and current_issue.owner else "") or (active_pm.assigned_to if active_pm and active_pm.assigned_to else "") or eq.owner
+            rows.append({
+                "equipment_id":eq.equipment_id,"name":eq.name,"equipment_type":eq.equipment_type,
+                "building":eq.building,"floor":eq.floor,"area":eq.area,"line_cell":eq.line_cell,
+                "map_x":eq.map_x,"map_y":eq.map_y,"equipment_status":eq.status,
+                "disposition":eq.disposition,"criticality":eq.criticality,"owner":owner,
+                "health":health,"health_rank":health_rank(health),
+                "active_alarm_count":len(eq_alarms),"open_ticket_count":len(eq_tickets),
+                "open_work_order_count":len(eq_wo),"open_pm_count":len(eq_pm),
+                "active_pm_task_id":active_pm.id if active_pm else None,
+                "active_pm_id":active_pm.pm_id if active_pm else "",
+                "current_issue_no":current_issue.ticket_no if current_issue else "",
+                "current_issue_title":current_issue.title if current_issue else "",
+                "current_issue_priority":current_issue.priority if current_issue else "",
+                "current_action":current_action or "",
+                "lots":lots,
+                "next_pm_task_id":next_pm.id if next_pm else None,
+                "next_pm_id":next_pm.pm_id if next_pm else "",
+                "next_pm_at":next_pm_at,
+                "next_pm_within_24h":bool(next_pm_at and now<=next_pm_at<=now+timedelta(hours=24)),
+                "alarm_codes":[x.alarm_code for x in eq_alarms[:5]],
+                "ticket_numbers":[x.ticket_no for x in eq_tickets[:5]],
+                "version":eq.version,
+            })
+        return rows
 
     def dashboard_counts(self):
         with self.session() as s:
