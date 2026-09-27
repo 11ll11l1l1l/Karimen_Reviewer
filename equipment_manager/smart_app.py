@@ -646,6 +646,13 @@ class SmartMainWindow(QMainWindow):
             self.work_order_workspace.set_work_order(entity_key)
             self.open_page("Work Orders")
             return
+        if entity_type=="WORK_LOG":
+            try:work_log_id=int(entity_key)
+            except Exception:work_log_id=0
+            if work_log_id and hasattr(self.work_page,"select_work_log"):
+                self.work_page.select_work_log(work_log_id)
+            self.open_page("Work / Labor")
+            return
         if entity_type=="PM_TASK":
             try:key=int(entity_key)
             except Exception:key=0
