@@ -43,7 +43,7 @@ class IncidentRcaCapaTests(unittest.TestCase):
 
     def test_recurrence_history_returns_same_equipment_incidents(self):
         rows=self.db.incident_similar_history("INC-001")
-        self.assertTrue(any(x.ticket_no=="INC-000" for x in rows))
+        self.assertTrue(any(x["ticket_no"]=="INC-000" for x in rows))
 
 
 if __name__=="__main__":
