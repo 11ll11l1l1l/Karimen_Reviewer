@@ -625,9 +625,8 @@ class SmartMainWindow(QMainWindow):
             self.return_to_service.set_release(release_id,equipment_id)
             self.open_page("Return to Service")
             return
-        if entity_type=="EQUIPMENT" or (equipment_id and entity_type in {"ALARM","DOCUMENT"}):
-            target=entity_key if entity_type=="EQUIPMENT" else equipment_id
-            self.equipment360.set_equipment(target)
+        if entity_type=="EQUIPMENT":
+            self.equipment360.set_equipment(entity_key)
             self.open_page("Equipment Workspaces")
             return
         if entity_type=="TICKET":
