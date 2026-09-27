@@ -7616,18 +7616,52 @@ class Database:
         work_type: str = "Engineering",
         note: str = "",
     ):
-        if equipment_id:self.assert_authorized(user,"worklog.edit",equipment_id)
+        et=(entity_type or "").strip().upper();key=str(entity_key or "").strip()
+        resolved_equipment=(equipment_id or "").strip()
+        allowed={"WORK_ORDER","PM_TASK","PM_EXECUTION","TICKET","QUALIFICATION","EQUIPMENT","OTHER"}
+        if et not in allowed:raise ValueError(f"Unsupported work-log entity type: {et}")
+        if et!="OTHER" and not key:raise ValueError("Linked record key is required.")
+        with self.session() as s:
+            target_equipment=""
+            if et=="WORK_ORDER":
+                target=s.scalar(select(WorkOrder).where(WorkOrder.work_order_no==key));target_equipment=target.equipment_id if target else ""
+            elif et=="PM_TASK":
+                target=s.get(PMTask,int(key)) if key.isdigit() else None;target_equipment=target.equipment_id if target else ""
+            elif et=="PM_EXECUTION":
+                execution=s.get(PMExecution,int(key)) if key.isdigit() else None
+                task=s.get(PMTask,execution.task_id) if execution else None
+                target=execution;target_equipment=task.equipment_id if task else ""
+            elif et=="TICKET":
+                target=s.scalar(select(Ticket).where(Ticket.ticket_no==key));target_equipment=target.equipment_id if target else ""
+            elif et=="QUALIFICATION":
+                target=s.scalar(select(QualificationRun).where(QualificationRun.run_no==key));target_equipment=target.equipment_id if target else ""
+            elif et=="EQUIPMENT":
+                target=s.scalar(select(Equipment).where(Equipment.equipment_id==key));target_equipment=target.equipment_id if target else ""
+            else:
+                target=True
+            if et!="OTHER" and not target:raise ValueError(f"Linked {et} record not found: {key}")
+            if resolved_equipment and target_equipment and resolved_equipment!=target_equipment:
+                raise ValueError(f"Linked {et} record belongs to {target_equipment}, not {resolved_equipment}.")
+            resolved_equipment=resolved_equipment or target_equipment
+            if resolved_equipment and not s.scalar(select(Equipment).where(Equipment.equipment_id==resolved_equipment)):
+                raise ValueError("Work-log equipment not found.")
+        if resolved_equipment and user:self.assert_authorized(user,"worklog.edit",resolved_equipment)
         with self.session() as s:
             active=s.scalar(select(WorkLog).where(
-                WorkLog.username==user,WorkLog.entity_type==entity_type,
-                WorkLog.entity_key==entity_key,WorkLog.status=="Active",
+                WorkLog.username==user,WorkLog.entity_type==et,
+                WorkLog.entity_key==key,WorkLog.status=="Active",
             ))
             if active:return active
             row=WorkLog(
-                equipment_id=equipment_id,entity_type=entity_type,entity_key=str(entity_key),
+                equipment_id=resolved_equipment,entity_type=et,entity_key=key,
                 username=user,work_type=work_type,note=note.strip(),status="Active",
             )
-            s.add(row);s.flush();return row
+            s.add(row);s.flush()
+            s.add(AuditLog(
+                user=user or "system",action="WORK_LOG_START",entity_type="WORK_LOG",entity_key=str(row.id),
+                detail=json.dumps({"linked_type":et,"linked_key":key,"equipment_id":resolved_equipment,"work_type":work_type},sort_keys=True),
+            ))
+            return row
 
     def stop_work_log(self, work_log_id: int, user: str, note: str = ""):
         with self.session() as s:
