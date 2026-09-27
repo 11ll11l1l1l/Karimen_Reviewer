@@ -102,7 +102,7 @@ See `M15_UAT_PILOT.md`. Production release is intentionally blocked until real-s
 - PM completion verifies that every frozen step has a result and blocks completion on specification/control failures or invalid steps.
 
 
-- Login page and first-run administrator creation; no default password is committed.
+- Login page and first-run administrator creation; normal/production startup has no default password. The isolated demo launcher uses demo-only credentials against `equipment_manager_demo.db`.
 - Two deployment topologies are supported: the primary no-server mode uses a private SQLite replica on every workstation synchronized through a shared network folder; PostgreSQL remains supported when an always-on database host is available. SQLite is never opened directly from SMB.
 - Role-based permissions plus per-user allow/deny overrides. Administrator UI supports user creation, enable/disable, role changes, password resets, and granular overrides.
 - Optimistic version checks for shared records and transactional PostgreSQL row locking for critical stock/disposition/release operations.
@@ -150,6 +150,21 @@ The core was executed against temporary SQLite databases and passed tests coveri
 - Python syntax compilation of all three source files.
 
 The current execution environment does not contain PySide6, so the Qt desktop window itself is syntax-compiled but cannot be rendered here. Runtime GUI verification still needs to be done on a Windows PC after installing `requirements.txt`.
+
+## Isolated demo / test dataset
+
+Use `START_DEMO_WINDOWS.bat` for the populated demonstration environment. It explicitly clears shared-folder mode and uses only:
+
+```text
+equipment_manager_demo.db
+demo_files\
+```
+
+On a clean demo database, EMS creates a demo-only Administrator account and pre-fills the login dialog. The default demo password is `DemoEMS2026!`; set `EMS_DEMO_PASSWORD` before launch to override it.
+
+The fixture populates representative data across Equipment Registry, factory hierarchy, components/meters, PM planning/execution/deferrals/triggers, incidents/RCA, alarms, work orders/labor, qualification/release, handovers, inventory/reservations/supplier orders/rotables, documents, collaboration, notifications, attachments, drafts and audit/integration history. Demo seeding is blocked on a non-demo database unless `EMS_ALLOW_DEMO_SEED=1` is explicitly set.
+
+Use `RESET_DEMO_WINDOWS.bat` to delete only the isolated demo database/files and rebuild a clean demo environment. It does not touch `EMS_SHARED_ROOT` or the production/shared database.
 
 ## Production data topology
 
