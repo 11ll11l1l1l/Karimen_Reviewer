@@ -94,6 +94,18 @@ class PMDeferralWorkflowTests(unittest.TestCase):
         self.assertEqual(task.status,"Scheduled")
         self.assertEqual(task.scheduled_date,self.task.original_due_date)
 
+    def test_non_reviewer_role_cannot_review_deferral(self):
+        self.db.create_user("operator_user","Operator","operator-password-123","Operator")
+        row=self.db.request_pm_deferral(
+            self.task.id,self.task.original_due_date+timedelta(days=2),
+            "No window","Risk","Daily checks","engineer_a",
+            expected_task_version=self.task.version,
+        )
+        with self.assertRaises(PermissionError):
+            self.db.review_pm_deferral(
+                row.id,True,"operator_user","Attempted approval",expected_version=row.version
+            )
+
     def test_second_pending_request_is_blocked(self):
         self.db.request_pm_deferral(
             self.task.id,
