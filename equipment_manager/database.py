@@ -1838,6 +1838,43 @@ class Database:
                             assigned_by="system-migration",
                         ))
 
+    def _sync_equipment_location_from_master_in_session(self, s, eq: Equipment, user: str = "", workstation: str = ""):
+        parent=""
+        deepest=""
+        for node_type,name in [
+            ("Site",eq.site),("Building",eq.building),("Floor",eq.floor),("Area",eq.area),("Line",eq.line_cell),
+        ]:
+            name=str(name or "").strip()
+            if not name:continue
+            code=self._factory_code(parent,node_type,name)
+            node=s.scalar(select(FactoryNode).where(FactoryNode.node_code==code))
+            if not node:
+                node=FactoryNode(node_code=code,parent_code=parent,node_type=node_type,name=name)
+                s.add(node);s.flush()
+            elif not node.active:
+                node.active=True
+            parent=code;deepest=code
+        active=s.scalar(select(EquipmentLocationAssignment).where(
+            EquipmentLocationAssignment.equipment_id==eq.equipment_id,
+            EquipmentLocationAssignment.active.is_(True),
+        ))
+        if active and active.node_code==deepest:return active
+        now=datetime.utcnow()
+        if active:
+            active.active=False;active.ended_at=now
+        row=None
+        if deepest:
+            row=EquipmentLocationAssignment(
+                equipment_id=eq.equipment_id,node_code=deepest,active=True,
+                assigned_by=user or "registry-sync",assigned_at=now,
+            )
+            s.add(row)
+        s.add(AuditLog(
+            user=user or "registry-sync",action="EQUIPMENT_LOCATION_SYNC_MASTER",entity_type="EQUIPMENT",
+            entity_key=eq.equipment_id,detail=deepest,workstation=workstation,
+        ))
+        return row
+
     def list_factory_nodes(self, active_only: bool = True):
         with self.session() as s:
             stmt=select(FactoryNode).order_by(FactoryNode.node_code)
@@ -1868,6 +1905,17 @@ class Database:
                 assigned_by=user,assigned_at=now,
             )
             s.add(row)
+            # Keep registry location fields and hierarchy assignment as one source of truth.
+            values={"site":"","building":"","floor":"","area":"","line_cell":""}
+            current=node
+            while current:
+                key={
+                    "site":"site","building":"building","floor":"floor","area":"area","line":"line_cell","cell":"line_cell","bay":"line_cell",
+                }.get(str(current.node_type or "").strip().lower())
+                if key and not values[key]:values[key]=current.name or ""
+                current=s.scalar(select(FactoryNode).where(FactoryNode.node_code==current.parent_code)) if current.parent_code else None
+            for key,value in values.items():setattr(eq,key,value)
+            eq.version+=1
             s.add(AuditLog(
                 user=user,action="EQUIPMENT_LOCATION_ASSIGN",entity_type="EQUIPMENT",
                 entity_key=equipment_id,detail=node_code,workstation=workstation,
@@ -3631,6 +3679,8 @@ class Database:
                     changed_by=user,
                     workstation=workstation,
                 ))
+            s.flush()
+            self._sync_equipment_location_from_master_in_session(s,item,user,workstation)
             s.flush()
             return item
 
