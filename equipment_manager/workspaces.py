@@ -311,9 +311,10 @@ class MyWorkWorkspace(QWidget):
 
     @staticmethod
     def _entity_for(row: dict) -> str:
+        explicit=str(row.get("entity_type") or "").strip().upper()
+        if explicit:return explicit
         kind=row.get("kind","")
-        if kind=="MENTION":return str(row.get("entity_type") or "")
-        return {"INCIDENT":"TICKET","PM":"PM_EXECUTION","EQUIPMENT":"EQUIPMENT","QUALIFICATION":"QUALIFICATION","VERIFY":"QUALIFICATION","APPROVAL":"EQUIPMENT","RELEASE":"EQUIPMENT","HANDOVER":"ENDORSEMENT","WORK_ORDER":"WORK_ORDER"}.get(kind,kind)
+        return {"INCIDENT":"TICKET","PM":"PM_TASK","EQUIPMENT":"EQUIPMENT","QUALIFICATION":"QUALIFICATION","VERIFY":"QUALIFICATION","RELEASE":"RELEASE","HANDOVER":"ENDORSEMENT","WORK_ORDER":"WORK_ORDER","ALARM":"ALARM"}.get(kind,kind)
 
     def refresh(self):
         self.rows=self.db.my_work(self.user["username"],500)
@@ -354,7 +355,7 @@ class MyWorkWorkspace(QWidget):
             key=str(row.get("entity_key") or "")
             try:self.db.acknowledge_mention(int(row.get("key") or 0),self.user["username"])
             except Exception:pass
-        else:key=str(row.get("key",""))
+        else:key=str(row.get("entity_key") or row.get("key",""))
         equipment=row.get("equipment_id","")
         self.open_entity.emit(entity,key,equipment)
         if row.get("kind")=="MENTION":self.refresh()
