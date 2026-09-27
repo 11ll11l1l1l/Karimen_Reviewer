@@ -3669,6 +3669,50 @@ class Database:
     def get_equipment(self, equipment_id: str):
         with self.session() as s: return s.scalar(select(Equipment).where(Equipment.equipment_id == equipment_id))
 
+    def equipment_dependency_snapshot(self, equipment_id: str) -> dict[str,Any]:
+        with self.session() as s:
+            eq=s.scalar(select(Equipment).where(Equipment.equipment_id==equipment_id))
+            if not eq:raise ValueError("Equipment not found")
+            count=lambda model,*where: int(s.scalar(select(func.count()).select_from(model).where(*where)) or 0)
+            active_location=s.scalar(select(EquipmentLocationAssignment).where(
+                EquipmentLocationAssignment.equipment_id==equipment_id,
+                EquipmentLocationAssignment.active.is_(True),
+            ))
+            parent="";expected_node=""
+            for node_type,name in [
+                ("Site",eq.site),("Building",eq.building),("Floor",eq.floor),("Area",eq.area),("Line",eq.line_cell),
+            ]:
+                name=str(name or "").strip()
+                if not name:continue
+                expected_node=self._factory_code(parent,node_type,name);parent=expected_node
+            actual_node=active_location.node_code if active_location else ""
+            location_status="OK" if expected_node==actual_node else ("MISSING" if not actual_node else "MISMATCH")
+            domains=[
+                ("State events",count(EquipmentStateEvent,EquipmentStateEvent.equipment_id==equipment_id)),
+                ("Incidents",count(Ticket,Ticket.equipment_id==equipment_id)),
+                ("Alarms",count(EquipmentAlarmEvent,EquipmentAlarmEvent.equipment_id==equipment_id)),
+                ("PM definitions",count(PMDefinition,PMDefinition.equipment_id==equipment_id)),
+                ("PM tasks",count(PMTask,PMTask.equipment_id==equipment_id)),
+                ("Work orders",count(WorkOrder,WorkOrder.equipment_id==equipment_id)),
+                ("Qualification runs",count(QualificationRun,QualificationRun.equipment_id==equipment_id)),
+                ("Release requests",count(EquipmentRelease,EquipmentRelease.equipment_id==equipment_id)),
+                ("Components",count(EquipmentComponent,EquipmentComponent.equipment_id==equipment_id)),
+                ("Meters",count(EquipmentMeter,EquipmentMeter.equipment_id==equipment_id)),
+                ("Controlled documents",count(ControlledDocument,ControlledDocument.entity_type=="Equipment",ControlledDocument.entity_key==equipment_id)),
+                ("Handovers",count(Endorsement,Endorsement.equipment_id==equipment_id)),
+                ("Dispositions",count(Disposition,Disposition.equipment_id==equipment_id)),
+                ("Inventory transactions",count(InventoryTransaction,InventoryTransaction.equipment_id==equipment_id)),
+                ("Attachments",count(EntityAttachment,EntityAttachment.equipment_id==equipment_id,EntityAttachment.active.is_(True))),
+            ]
+            return {
+                "equipment_id":equipment_id,
+                "expected_location_node":expected_node,
+                "actual_location_node":actual_node,
+                "location_status":location_status,
+                "domains":[{"domain":name,"count":value} for name,value in domains],
+                "linked_total":sum(value for _,value in domains),
+            }
+
     def save_equipment(
         self,
         data: dict[str, Any],
