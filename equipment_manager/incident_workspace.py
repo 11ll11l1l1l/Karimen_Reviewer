@@ -92,9 +92,8 @@ class IncidentWorkspace(QWidget):
         ppt=QPushButton("Export PPTX");ppt.clicked.connect(self.export_pptx)
         xlsx=QPushButton("Export Excel");xlsx.clicked.connect(self.export_xlsx)
         pdf=QPushButton("Export PDF");pdf.clicked.connect(self.export_pdf)
-        legacy=QPushButton("Lifecycle / troubleshooting editor");legacy.clicked.connect(self.open_legacy)
         refresh=QPushButton("Refresh");refresh.clicked.connect(self.refresh)
-        head.addWidget(self.title);head.addWidget(self.status);head.addStretch(1);head.addWidget(self.open_eq);head.addWidget(self.work_order_button);head.addWidget(ppt);head.addWidget(xlsx);head.addWidget(pdf);head.addWidget(legacy);head.addWidget(refresh);root.addLayout(head)
+        head.addWidget(self.title);head.addWidget(self.status);head.addStretch(1);head.addWidget(self.open_eq);head.addWidget(self.work_order_button);head.addWidget(ppt);head.addWidget(xlsx);head.addWidget(pdf);head.addWidget(refresh);root.addLayout(head)
         self.context=QLabel("Select an incident from Global Search, My Work, or Equipment 360.");self.context.setWordWrap(True);self.context.setStyleSheet("color:#647581;");root.addWidget(self.context)
         self.draft_bar=QWidget();dbh=QHBoxLayout(self.draft_bar);dbh.setContentsMargins(8,4,8,4)
         self.draft_label=QLabel();self.draft_label.setStyleSheet("color:#7a4b00;font-weight:600")
@@ -388,9 +387,6 @@ class IncidentWorkspace(QWidget):
 
     def open_equipment(self):
         if self.ticket:self.open_entity.emit("EQUIPMENT",self.ticket.equipment_id,self.ticket.equipment_id)
-
-    def open_legacy(self):
-        if self.ticket:self.open_entity.emit("TICKET_LEGACY",self.ticket.ticket_no,self.ticket.equipment_id)
 
     def open_similar(self):
         row=_selected(self.similar_table,self.similar)
