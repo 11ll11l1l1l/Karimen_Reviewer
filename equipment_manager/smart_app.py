@@ -671,6 +671,16 @@ class SmartMainWindow(QMainWindow):
                 self.inventory_logistics.set_reservation(reservation_id)
             self.open_page("Parts / Inventory Logistics")
             return
+        if entity_type=="SUPPLIER_ORDER":
+            if hasattr(self.inventory_logistics,"set_supplier_order"):
+                self.inventory_logistics.set_supplier_order(entity_key)
+            self.open_page("Parts / Inventory Logistics")
+            return
+        if entity_type=="ROTABLE":
+            if hasattr(self.inventory_logistics,"set_rotable"):
+                self.inventory_logistics.set_rotable(entity_key)
+            self.open_page("Parts / Inventory Logistics")
+            return
         if entity_type=="DOCUMENT":
             if hasattr(self.document_page,"select_document"):self.document_page.select_document(entity_key)
             self.open_page("SOPs / Documents")
