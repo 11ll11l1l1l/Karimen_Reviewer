@@ -13,6 +13,14 @@ Local Windows desktop equipment-management system isolated under `equipment_mana
 
 ## Current build
 
+## Running the current Python application
+
+- `START_WINDOWS.bat` starts the modern EMS shell against the configured production/local/shared data source.
+- `START_DEMO_WINDOWS.bat` starts the same modern EMS shell against an isolated `equipment_manager_demo.db` and enables the full-domain demo fixture.
+- Direct `python main.py` is a compatibility entry point to the modern shell; the legacy shell is no longer launchable.
+- Demo data covers representative user-facing fields and workflows for equipment, components/meters, PM/calendar, incidents/RCA, alarms, work orders, inventory/logistics, qualification, return-to-service, handover, documents, configurable fields, collaboration and integration configuration. System/audit tables are populated by those workflows rather than by direct fake inserts.
+
+
 ## M14/M15 production-readiness candidate
 
 RC3 adds bounded large-history loading, model/view rendering for high-volume operational surfaces, background PostgreSQL dashboard reads, responsive/high-DPI shell behavior, accessibility labeling, non-blocking success feedback, a 100k-event CI performance gate, and Windows navigation/resize soak coverage.
