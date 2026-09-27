@@ -8157,15 +8157,65 @@ class Database:
             return list(s.scalars(stmt))
 
     def consume_inventory(self, part_number: str, location_code: str, qty: float, user: str="", equipment_id: str="", related_ticket: str=""):
-        if qty <= 0: raise ValueError("Quantity must be positive")
+        part_number=(part_number or "").strip();location_code=(location_code or "").strip()
+        equipment_id=(equipment_id or "").strip();related_ticket=(related_ticket or "").strip()
+        if not part_number or not location_code:raise ValueError("Part number and storage location are required.")
+        if qty<=0:raise ValueError("Quantity must be positive")
         with self.session() as s:
-            stmt=select(InventoryItem).where(InventoryItem.part_number==part_number,InventoryItem.location_code==location_code)
-            if not self.url.startswith("sqlite"): stmt=stmt.with_for_update()
+            if related_ticket:
+                ticket=s.scalar(select(Ticket).where(Ticket.ticket_no==related_ticket))
+                if not ticket:raise ValueError("Related incident / ticket not found.")
+                if equipment_id and ticket.equipment_id!=equipment_id:
+                    raise ValueError(f"Ticket belongs to {ticket.equipment_id}, not {equipment_id}.")
+                equipment_id=equipment_id or ticket.equipment_id
+            if equipment_id and not s.scalar(select(Equipment).where(Equipment.equipment_id==equipment_id)):
+                raise ValueError("Consumption equipment not found.")
+        if user:self.assert_authorized(user,"inventory.consume",equipment_id)
+        with self.session() as s:
+            stmt=select(InventoryItem).where(
+                InventoryItem.part_number==part_number,
+                InventoryItem.location_code==location_code,
+                InventoryItem.condition=="Available",
+            )
+            if not self.url.startswith("sqlite"):stmt=stmt.with_for_update()
             item=s.scalar(stmt)
-            if not item or item.quantity < qty: return False, item.quantity if item else 0.0
-            item.quantity -= qty; item.version += 1
-            s.add(InventoryTransaction(part_number=part_number,location_code=location_code,transaction_type="Consume",quantity=-qty,equipment_id=equipment_id,related_ticket=related_ticket,user=user))
-            s.flush(); return True,item.quantity
+            if not item:return False,0.0
+
+            all_stock=list(s.scalars(select(InventoryItem).where(
+                InventoryItem.part_number==part_number,InventoryItem.condition=="Available",
+            )))
+            reservations=list(s.scalars(select(InventoryReservation).where(
+                InventoryReservation.part_number==part_number,
+                InventoryReservation.status=="Reserved",
+            )))
+            exact_reserved=sum(float(r.quantity or 0) for r in reservations if r.location_code==location_code)
+            global_reserved=sum(float(r.quantity or 0) for r in reservations if not r.location_code)
+            other_stock=sum(float(x.quantity or 0) for x in all_stock if x.location_code!=location_code)
+            other_specific_reserved=sum(
+                float(r.quantity or 0) for r in reservations
+                if r.location_code and r.location_code!=location_code
+            )
+            other_free=max(0.0,other_stock-other_specific_reserved)
+            global_claim_here=max(0.0,global_reserved-other_free)
+            available=max(0.0,float(item.quantity or 0)-exact_reserved-global_claim_here)
+            if available<qty:return False,available
+
+            item.quantity-=qty;item.version+=1
+            tx=InventoryTransaction(
+                part_number=part_number,location_code=location_code,transaction_type="Consume",
+                quantity=-qty,equipment_id=equipment_id,related_ticket=related_ticket,user=user,
+                note="Ad-hoc consumption from unreserved stock",
+            )
+            s.add(tx)
+            s.add(AuditLog(
+                user=user or "system",action="INVENTORY_CONSUME",entity_type="PART",
+                entity_key=f"{part_number}@{location_code}",
+                detail=json.dumps({
+                    "quantity":qty,"equipment_id":equipment_id,"related_ticket":related_ticket,
+                    "remaining_physical":item.quantity,"remaining_unreserved":available-qty,
+                },sort_keys=True),
+            ))
+            s.flush();return True,item.quantity
 
     def list_inventory_transactions(self, limit: int=500, equipment_id: str = ""):
         with self.session() as s:
