@@ -67,6 +67,38 @@ class FactoryHierarchyAndScopeTests(unittest.TestCase):
         rows=self.db.my_work("etch_ee")
         self.assertTrue(any(x["kind"]=="WORK_ORDER" and x["key"]==wo.work_order_no for x in rows))
 
+    def test_registry_location_edit_keeps_factory_assignment_in_sync(self):
+        eq=self.db.get_equipment("ETCH-A01")
+        self.db.save_equipment({
+            "equipment_id":"ETCH-A01","name":eq.name,"equipment_type":eq.equipment_type,
+            "manufacturer":eq.manufacturer,"model":eq.model,"serial_number":eq.serial_number,
+            "asset_number":eq.asset_number,"site":"FAB1","building":"MFG","floor":"1F",
+            "area":"ETCH-NEW","line_cell":"BAY-Z","owner":eq.owner,"criticality":eq.criticality,
+            "map_x":eq.map_x,"map_y":eq.map_y,
+        },expected_version=eq.version,user="admin")
+        updated=self.db.get_equipment("ETCH-A01")
+        assignment=self.db.equipment_location("ETCH-A01")
+        self.assertEqual(updated.area,"ETCH-NEW")
+        self.assertIn("AREA:ETCH-NEW",assignment.node_code)
+        self.assertIn("LINE:BAY-Z",assignment.node_code)
+        snapshot=self.db.equipment_dependency_snapshot("ETCH-A01")
+        self.assertEqual(snapshot["location_status"],"OK")
+
+    def test_restricted_user_can_create_only_inside_authorized_node(self):
+        self.db.set_user_access_policy("etch_ee","RESTRICTED")
+        area_code=next(x.node_code for x in self.db.list_factory_nodes() if x.node_type=="Area" and x.name=="ETCH")
+        self.db.add_user_scope("etch_ee","NODE",area_code,"equipment.edit")
+        self.db.save_equipment({
+            "equipment_id":"ETCH-A02","name":"Etcher A02","site":"FAB1","building":"MFG",
+            "floor":"1F","area":"ETCH","line_cell":"BAY-C",
+        },user="etch_ee")
+        self.assertIsNotNone(self.db.get_equipment("ETCH-A02"))
+        with self.assertRaises(PermissionError):
+            self.db.save_equipment({
+                "equipment_id":"CVD-X02","name":"CVD X02","site":"FAB1","building":"MFG",
+                "floor":"1F","area":"CVD","line_cell":"BAY-X",
+            },user="etch_ee")
+
     def test_strict_authz_rejects_unknown_actor(self):
         old=os.environ.get("EMS_STRICT_AUTHZ")
         os.environ["EMS_STRICT_AUTHZ"]="1"
