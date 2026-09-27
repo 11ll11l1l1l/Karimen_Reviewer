@@ -490,7 +490,6 @@ class EquipmentPage(QWidget):
         if d.exec()==QDialog.DialogCode.Accepted:
             try:
                 row=self.db.save_equipment(d.data(), user=self.user["username"], workstation=WORKSTATION)
-                self.db.audit(self.user["username"],"CREATE","EQUIPMENT",row.equipment_id,workstation=WORKSTATION)
                 self.refresh();self.equipmentChanged.emit(row.equipment_id)
             except Exception as exc: QMessageBox.critical(self,"Equipment",str(exc))
 
@@ -501,7 +500,6 @@ class EquipmentPage(QWidget):
         if d.exec()==QDialog.DialogCode.Accepted:
             try:
                 self.db.save_equipment(d.data(),row.version,user=self.user["username"],workstation=WORKSTATION)
-                self.db.audit(self.user["username"],"UPDATE_MASTER","EQUIPMENT",row.equipment_id,workstation=WORKSTATION)
                 self.refresh();self.equipmentChanged.emit(row.equipment_id)
             except Exception as exc: QMessageBox.critical(self,"Equipment",str(exc))
 
