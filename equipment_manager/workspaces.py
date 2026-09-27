@@ -573,7 +573,7 @@ class Equipment360Workspace(QWidget):
         row=_selected(self.timeline_table,getattr(self,"activity_rows",[]))
         if not row:return
         kind=str(row.get("kind",""));key=str(row.get("key",""))
-        mapping={"INCIDENT":"TICKET","PM":"PM_TASK","QUALIFICATION":"QUALIFICATION","RELEASE":"RELEASE","ALARM":"ALARM","WORK_ORDER":"WORK_ORDER"}
+        mapping={"INCIDENT":"TICKET","PM":"PM_TASK","QUALIFICATION":"QUALIFICATION","RELEASE":"RELEASE","ALARM":"ALARM","WORK_ORDER":"WORK_ORDER","WORK":"WORK_LOG","PART":"PART"}
         entity=mapping.get(kind)
         if entity:self.open_entity.emit(entity,key,self.equipment_id)
 
