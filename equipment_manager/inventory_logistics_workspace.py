@@ -174,7 +174,7 @@ class InventoryLogisticsWorkspace(QWidget):
         count=QPushButton("Cycle Count");count.clicked.connect(self.cycle_count)
         show_eq=QPushButton("Open compatible equipment");show_eq.clicked.connect(self.open_compatible_equipment)
         show_map=QPushButton("Show on FAB map");show_map.clicked.connect(self.show_selected_on_map)
-        can_edit=db.has_permission(user,"inventory.edit");edit_stock.setEnabled(can_edit);receive.setEnabled(can_edit)
+        can_edit=db.has_permission(user,"inventory.edit");edit_stock.setEnabled(can_edit);receive.setEnabled(can_edit);transfer.setEnabled(can_edit);count.setEnabled(can_edit)
         consume.setEnabled(db.has_permission(user,"inventory.consume") or can_edit);reserve_stock.setEnabled(db.has_permission(user,"inventory.reserve"))
         for w in [self.search,receive,edit_stock,consume,reserve_stock,transfer,count,show_eq,show_map]:sh.addWidget(w)
         sv.addLayout(sh);self.stock_table=_table(["Part","Description","Qty","Min","Unit","Condition","Location","Compatible Equipment","Ver"]);self.stock_table.itemSelectionChanged.connect(self.load_transactions);sv.addWidget(self.stock_table,2)
@@ -184,8 +184,8 @@ class InventoryLogisticsWorkspace(QWidget):
         self.reorder_table=_table(["Part","Description","Location","On Hand","Reserved","Available","Minimum","Short to Min","Suggested Order","Supplier","Supplier PN","Lead Days"]);rv.addWidget(self.reorder_table);tabs.addTab(reorder,"Reorder Queue")
 
         cat=QWidget();cv=QVBoxLayout(cat);ch=QHBoxLayout()
-        addcat=QPushButton("Add / Edit Part Catalog");addcat.clicked.connect(self.edit_catalog)
-        alternate=QPushButton("Add Approved Substitute");alternate.clicked.connect(self.add_alternate)
+        addcat=QPushButton("Add / Edit Part Catalog");addcat.clicked.connect(self.edit_catalog);addcat.setEnabled(can_edit)
+        alternate=QPushButton("Add Approved Substitute");alternate.clicked.connect(self.add_alternate);alternate.setEnabled(can_edit)
         ch.addWidget(addcat);ch.addWidget(alternate);ch.addStretch(1);cv.addLayout(ch)
         self.catalog_table=_table(["Part","Description","Category","Manufacturer","Supplier","Supplier PN","Barcode","Lead Days","Reorder Qty","Active","Ver"]);self.catalog_table.itemSelectionChanged.connect(self.load_alternates);cv.addWidget(self.catalog_table,2)
         self.alt_table=_table(["Primary","Alternate","Approved","Note","Created By","Created"]);cv.addWidget(QLabel("Approved substitutes / alternates"));cv.addWidget(self.alt_table,1);tabs.addTab(cat,"Part Catalog / Substitutes")
@@ -197,7 +197,7 @@ class InventoryLogisticsWorkspace(QWidget):
         self.kit_summary=QLabel("Enter a PM task ID to see kit readiness and approved substitutes.");self.kit_summary.setWordWrap(True);kv.addWidget(self.kit_summary)
         self.kit_table=_table(["Part","Required","Reserved","Available Unreserved","Shortage","Ready","Approved Alternates"]);kv.addWidget(self.kit_table,2)
         self.res_table=_table(["Reservation","Part","Location","Qty","Status","Reserved By"]);kv.addWidget(QLabel("Reservations"));kv.addWidget(self.res_table,1)
-        stagebar=QHBoxLayout();stage=QPushButton("Mark Kit Staged");issue=QPushButton("Issue Kit");complete=QPushButton("Complete Kit");stage.clicked.connect(lambda:self.set_kit_stage("Staged"));issue.clicked.connect(lambda:self.set_kit_stage("Issued"));complete.clicked.connect(lambda:self.set_kit_stage("Completed"));stagebar.addWidget(stage);stagebar.addWidget(issue);stagebar.addWidget(complete);stagebar.addStretch(1);kv.addLayout(stagebar)
+        stagebar=QHBoxLayout();stage=QPushButton("Mark Kit Staged");issue=QPushButton("Issue Kit");complete=QPushButton("Complete Kit");stage.clicked.connect(lambda:self.set_kit_stage("Staged"));issue.clicked.connect(lambda:self.set_kit_stage("Issued"));complete.clicked.connect(lambda:self.set_kit_stage("Completed"));can_reserve=db.has_permission(user,"inventory.reserve");stage.setEnabled(can_reserve);issue.setEnabled(can_reserve);complete.setEnabled(can_reserve);stagebar.addWidget(stage);stagebar.addWidget(issue);stagebar.addWidget(complete);stagebar.addStretch(1);kv.addLayout(stagebar)
         self.stage_label=QLabel();self.stage_label.setStyleSheet("color:#647581");kv.addWidget(self.stage_label);self.kit_tab_index=tabs.addTab(kit,"PM Kits")
 
         reservations=QWidget();resv=QVBoxLayout(reservations);resh=QHBoxLayout()
@@ -215,12 +215,13 @@ class InventoryLogisticsWorkspace(QWidget):
 
         po=QWidget();pov=QVBoxLayout(po);poh=QHBoxLayout();newpo=QPushButton("New / Edit PO");addline=QPushButton("Add / Edit Line");submit=QPushButton("Submit PO");receivepo=QPushButton("Receive Selected Line");cancelpo=QPushButton("Cancel PO")
         newpo.clicked.connect(self.edit_order);addline.clicked.connect(self.edit_order_line);submit.clicked.connect(self.submit_order);receivepo.clicked.connect(self.receive_order_line);cancelpo.clicked.connect(self.cancel_order)
-        for b in [newpo,addline,submit,receivepo,cancelpo]:poh.addWidget(b)
+        for b in [newpo,addline,submit,receivepo,cancelpo]:b.setEnabled(can_edit);poh.addWidget(b)
         poh.addStretch(1);pov.addLayout(poh)
         self.order_table=_table(["PO","Supplier","Status","Order Date","Expected","Reference","Created By","Submitted By","Version"]);self.order_table.itemSelectionChanged.connect(self.load_order_lines);pov.addWidget(self.order_table,1)
         self.order_line_table=_table(["Line","Part","Supplier PN","Ordered","Received","Unit Cost","Currency","Destination","Status","Note","Version"]);pov.addWidget(QLabel("Order lines"));pov.addWidget(self.order_line_table,1);tabs.addTab(po,"Supplier Orders")
 
         rot=QWidget();rotv=QVBoxLayout(rot);roth=QHBoxLayout();self.rotable_search=QLineEdit();self.rotable_search.setPlaceholderText("Search asset / part / serial / equipment / vendor");self.rotable_search.textChanged.connect(self.load_rotables);register=QPushButton("Register / Edit");transition=QPushButton("Lifecycle Transition");register.clicked.connect(self.edit_rotable);transition.clicked.connect(self.transition_rotable);roth.addWidget(self.rotable_search,1);roth.addWidget(register);roth.addWidget(transition);rotv.addLayout(roth)
+        register.setEnabled(can_edit);transition.setEnabled(can_edit)
         self.rotable_table=_table(["Asset","Part","Serial","Description","Status","Condition","Location","Equipment","Component","Vendor","Repair Ref","Repairs","Version"]);self.rotable_table.itemSelectionChanged.connect(self.load_rotable_events);rotv.addWidget(self.rotable_table,2)
         self.rotable_event_table=_table(["Time","Event","From","To","Location","Equipment","Reference","User","Note"]);rotv.addWidget(QLabel("Rotable lifecycle history"));rotv.addWidget(self.rotable_event_table,1);tabs.addTab(rot,"Rotables / Repairables")
 
