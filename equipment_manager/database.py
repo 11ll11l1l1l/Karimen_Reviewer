@@ -3724,7 +3724,29 @@ class Database:
         equipment_id=str(payload.get("equipment_id","")).strip()
         if not equipment_id:raise ValueError("Equipment ID is required.")
         payload["equipment_id"]=equipment_id
-        if user:self.assert_authorized(user,"equipment.edit",equipment_id)
+        existing=self.get_equipment(equipment_id)
+        if user:
+            if existing:
+                self.assert_authorized(user,"equipment.edit",equipment_id)
+            else:
+                self.assert_authorized(user,"equipment.edit")
+                policy=self.user_access_policy(user)
+                if policy and policy.scope_mode=="RESTRICTED":
+                    parent="";target_node=""
+                    for node_type,name in [
+                        ("Site",payload.get("site","")),("Building",payload.get("building","")),
+                        ("Floor",payload.get("floor","")),("Area",payload.get("area","")),("Line",payload.get("line_cell","")),
+                    ]:
+                        name=str(name or "").strip()
+                        if not name:continue
+                        target_node=self._factory_code(parent,node_type,name);parent=target_node
+                    allowed=False
+                    for scope in self.list_user_scopes(user):
+                        if scope.scope_type!="NODE" or scope.permission not in {"*","equipment.edit"}:continue
+                        if target_node and (target_node==scope.scope_key or target_node.startswith(scope.scope_key+"/")):
+                            allowed=True;break
+                    if not allowed:
+                        raise PermissionError("New equipment location is outside the user's authorized factory scope.")
         master_fields=[
             "name","equipment_type","manufacturer","model","serial_number","asset_number",
             "site","building","floor","area","line_cell","owner","criticality","map_x","map_y",
