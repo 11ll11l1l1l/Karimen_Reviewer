@@ -1758,6 +1758,15 @@ class WorkLogPage(QWidget):
         self.rows=self.db.list_work_logs(active_only=self.active.isChecked())
         fill_table(self.table,self.rows,["id","equipment_id","entity_type","entity_key","username","work_type","started_at","ended_at","duration_minutes","status","note"])
 
+    def select_work_log(self,work_log_id: int):
+        self.active.setChecked(False);self.refresh()
+        for i,row in enumerate(self.rows):
+            if row.id==int(work_log_id):
+                self.table.selectRow(i)
+                item=self.table.item(i,0)
+                if item:self.table.scrollToItem(item)
+                break
+
     def start(self):
         entity_type,ok=QInputDialog.getItem(self,"Start Work","Linked work type",["PM_TASK","TICKET","QUALIFICATION","EQUIPMENT","OTHER"],0,False)
         if not ok:return
