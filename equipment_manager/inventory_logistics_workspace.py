@@ -218,12 +218,12 @@ class InventoryLogisticsWorkspace(QWidget):
         for b in [newpo,addline,submit,receivepo,cancelpo]:b.setEnabled(can_edit);poh.addWidget(b)
         poh.addStretch(1);pov.addLayout(poh)
         self.order_table=_table(["PO","Supplier","Status","Order Date","Expected","Reference","Created By","Submitted By","Version"]);self.order_table.itemSelectionChanged.connect(self.load_order_lines);pov.addWidget(self.order_table,1)
-        self.order_line_table=_table(["Line","Part","Supplier PN","Ordered","Received","Unit Cost","Currency","Destination","Status","Note","Version"]);pov.addWidget(QLabel("Order lines"));pov.addWidget(self.order_line_table,1);tabs.addTab(po,"Supplier Orders")
+        self.order_line_table=_table(["Line","Part","Supplier PN","Ordered","Received","Unit Cost","Currency","Destination","Status","Note","Version"]);pov.addWidget(QLabel("Order lines"));pov.addWidget(self.order_line_table,1);self.order_tab_index=tabs.addTab(po,"Supplier Orders")
 
         rot=QWidget();rotv=QVBoxLayout(rot);roth=QHBoxLayout();self.rotable_search=QLineEdit();self.rotable_search.setPlaceholderText("Search asset / part / serial / equipment / vendor");self.rotable_search.textChanged.connect(self.load_rotables);register=QPushButton("Register / Edit");transition=QPushButton("Lifecycle Transition");register.clicked.connect(self.edit_rotable);transition.clicked.connect(self.transition_rotable);roth.addWidget(self.rotable_search,1);roth.addWidget(register);roth.addWidget(transition);rotv.addLayout(roth)
         register.setEnabled(can_edit);transition.setEnabled(can_edit)
         self.rotable_table=_table(["Asset","Part","Serial","Description","Status","Condition","Location","Equipment","Component","Vendor","Repair Ref","Repairs","Version"]);self.rotable_table.itemSelectionChanged.connect(self.load_rotable_events);rotv.addWidget(self.rotable_table,2)
-        self.rotable_event_table=_table(["Time","Event","From","To","Location","Equipment","Reference","User","Note"]);rotv.addWidget(QLabel("Rotable lifecycle history"));rotv.addWidget(self.rotable_event_table,1);tabs.addTab(rot,"Rotables / Repairables")
+        self.rotable_event_table=_table(["Time","Event","From","To","Location","Equipment","Reference","User","Note"]);rotv.addWidget(QLabel("Rotable lifecycle history"));rotv.addWidget(self.rotable_event_table,1);self.rotable_tab_index=tabs.addTab(rot,"Rotables / Repairables")
 
         self.refresh()
 
@@ -259,6 +259,30 @@ class InventoryLogisticsWorkspace(QWidget):
                 self.reservation_table.selectRow(i)
                 item=self.reservation_table.item(i,0)
                 if item:self.reservation_table.scrollToItem(item)
+                break
+
+    def set_supplier_order(self,order_no: str):
+        order_no=(order_no or "").strip()
+        if not order_no:return
+        self.load_orders();self.tabs.setCurrentIndex(self.order_tab_index)
+        for i,row in enumerate(self.orders):
+            if row.order_no==order_no:
+                self.order_table.selectRow(i)
+                item=self.order_table.item(i,0)
+                if item:self.order_table.scrollToItem(item)
+                self.load_order_lines()
+                break
+
+    def set_rotable(self,asset_id: str):
+        asset_id=(asset_id or "").strip()
+        if not asset_id:return
+        self.rotable_search.setText(asset_id);self.load_rotables();self.tabs.setCurrentIndex(self.rotable_tab_index)
+        for i,row in enumerate(self.rotables):
+            if row.asset_id==asset_id:
+                self.rotable_table.selectRow(i)
+                item=self.rotable_table.item(i,0)
+                if item:self.rotable_table.scrollToItem(item)
+                self.load_rotable_events()
                 break
 
     def load_stock(self):
