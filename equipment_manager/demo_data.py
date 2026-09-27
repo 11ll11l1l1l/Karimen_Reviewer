@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -22,7 +23,7 @@ PLANNED_STATES = {"PM", "Engineering", "Qualification"}
 ATTENTION_STATES = {"Hold", "Waiting Parts", "Waiting Vendor", "Restricted"}
 OFFLINE_STATES = {"Offline", "Decommissioned"}
 CLOSED_TICKET_STATES = {"Closed", "Resolved", "Completed", "Cancelled"}
-DEMO_FIXTURE_CODE = "FULL_DOMAIN_V3"
+DEMO_FIXTURE_CODE = "FULL_DOMAIN_V4"
 DEMO_WORKSTATION = "DEMO-SEED"
 
 
@@ -112,6 +113,14 @@ def seed_demo_data(db: Database, username: str = "") -> dict[str, Any]:
     direct synthetic inserts.
     """
     actor = (username or "").strip() or "demo"
+    demo_url=str(getattr(db,"url","") or "")
+    allow_any=os.getenv("EMS_ALLOW_DEMO_SEED","0").strip().lower() in {"1","true","yes","on"}
+    if "equipment_manager_demo.db" not in demo_url and not allow_any:
+        return {
+            "changed":False,
+            "errors":["Demo seeding blocked: database is not the isolated EMS demo database."],
+            "message":"Demo data was not written to the active database.",
+        }
     if _already_seeded(db):
         return {"changed": False, "errors": [], "message": "Full EMS demo fixture already present."}
 
@@ -120,6 +129,21 @@ def seed_demo_data(db: Database, username: str = "") -> dict[str, Any]:
     today = now.replace(hour=0, minute=0)
     sop_path = _demo_asset("DEMO_PM_SOP.md")
     troubleshooting_path = _demo_asset("DEMO_TROUBLESHOOTING.md")
+
+    # Reusable role accounts for demo/testing.  These exist only in the isolated demo DB.
+    demo_password=os.getenv("EMS_DEMO_PASSWORD","DemoEMS2026!")
+    existing_users={u.username for u in db.list_users()}
+    for demo_user,display_name,role in [
+        ("demo_operator","Demo Operator","Operator"),
+        ("demo_tech","Demo Technician","Technician"),
+        ("demo_engineer","Demo Equipment Engineer","Equipment Engineer"),
+        ("demo_supervisor","Demo Supervisor","Supervisor"),
+        ("demo_inventory","Demo Inventory Controller","Inventory Controller"),
+    ]:
+        if demo_user not in existing_users:
+            _run(errors,f"user {demo_user}",lambda demo_user=demo_user,display_name=display_name,role=role: db.create_user(
+                demo_user,display_name,demo_password,role
+            ))
 
     # Equipment master: every editable registry field is populated.
     existing_equipment = {x.equipment_id for x in db.list_equipment()}
@@ -274,6 +298,8 @@ def seed_demo_data(db: Database, username: str = "") -> dict[str, Any]:
         {"pm_id":"DEMO-PM-PVD-WEEKLY","name":"Weekly PVD chamber / vacuum inspection","equipment_id":"FAB-PVD-04","schedule_type":"Interval","frequency_value":7.0,"frequency_unit":"days","anchor_mode":"Original Due","early_window_days":2,"grace_days":2,"estimated_hours":2.0,"required_people":1,"required_skill":"VACUUM-PM","required_parts":"DEMO-O-RING-KIT:1","sop_path":sop_path,"active":True,"revision":1},
         {"pm_id":"DEMO-PM-ETCH-RF","name":"Etcher RF system monthly PM","equipment_id":"FAB-ETCH-02","schedule_type":"Interval","frequency_value":30.0,"frequency_unit":"days","anchor_mode":"Original Due","early_window_days":4,"grace_days":4,"estimated_hours":3.0,"required_people":2,"required_skill":"RF-MAINT","required_parts":"DEMO-RF-MATCH:1","sop_path":sop_path,"active":True,"revision":1},
         {"pm_id":"DEMO-PM-CVD-MFC","name":"CVD MFC verification","equipment_id":"FAB-CVD-03","schedule_type":"Condition","frequency_value":90.0,"frequency_unit":"days","anchor_mode":"Completion","early_window_days":5,"grace_days":7,"estimated_hours":1.5,"required_people":1,"required_skill":"GAS-SYSTEM","required_parts":"DEMO-MFC-001:1","sop_path":sop_path,"active":True,"revision":1},
+        {"pm_id":"DEMO-PM-PVD-USAGE","name":"PVD wafer-count usage PM","equipment_id":"FAB-PVD-04","schedule_type":"Usage","frequency_value":100.0,"frequency_unit":"wafers","anchor_mode":"Meter","early_window_days":0,"grace_days":1,"estimated_hours":1.0,"required_people":1,"required_skill":"","required_parts":"","sop_path":sop_path,"active":True,"revision":1},
+        {"pm_id":"DEMO-PM-CVD-CONDITION","name":"CVD vacuum condition inspection","equipment_id":"FAB-CVD-03","schedule_type":"Condition","frequency_value":None,"frequency_unit":"","anchor_mode":"Condition","early_window_days":0,"grace_days":1,"estimated_hours":1.0,"required_people":1,"required_skill":"","required_parts":"","sop_path":sop_path,"active":True,"revision":1},
     ]
     existing_pm={x.pm_id for x in db.list_pm_definitions()}
     for row in pm_definitions:
@@ -285,6 +311,8 @@ def seed_demo_data(db: Database, username: str = "") -> dict[str, Any]:
         {"pm_id":"DEMO-PM-PVD-WEEKLY","step_no":2,"activity":"Measure base pressure","method":"Stabilized gauge reading","input_type":"Numeric","unit":"Pa","target":0.8,"warning_low":0.5,"warning_high":1.0,"control_low":0.4,"control_high":1.2,"spec_low":0.3,"spec_high":1.5,"acceptance_text":"Within specification","reaction_plan":"Leak check, inspect O-rings, escalate abnormal result.","sop_path":sop_path,"sop_page":"1","sop_section":"4","screenshot_required":False,"comment_required":False,"revision":1,"active":True},
         {"pm_id":"DEMO-PM-ETCH-RF","step_no":1,"activity":"Verify RF forward/reflected power","method":"Maintenance diagnostic","input_type":"Numeric","unit":"W","target":1000.0,"warning_low":950.0,"warning_high":1050.0,"control_low":900.0,"control_high":1100.0,"spec_low":850.0,"spec_high":1150.0,"acceptance_text":"Stable response","reaction_plan":"Inspect match network and connections.","sop_path":sop_path,"sop_page":"1","sop_section":"4","screenshot_required":True,"comment_required":True,"revision":1,"active":True},
         {"pm_id":"DEMO-PM-CVD-MFC","step_no":1,"activity":"Verify MFC response","method":"Reference flow check","input_type":"Numeric","unit":"sccm","target":500.0,"warning_low":490.0,"warning_high":510.0,"control_low":480.0,"control_high":520.0,"spec_low":475.0,"spec_high":525.0,"acceptance_text":"Within ±5%","reaction_plan":"Replace MFC and qualify gas delivery.","sop_path":sop_path,"sop_page":"1","sop_section":"4","screenshot_required":False,"comment_required":True,"revision":1,"active":True},
+        {"pm_id":"DEMO-PM-PVD-USAGE","step_no":1,"activity":"Inspect high-usage wear surfaces","method":"Visual inspection at wafer-count threshold","input_type":"Text","unit":"","target":None,"warning_low":None,"warning_high":None,"control_low":None,"control_high":None,"spec_low":None,"spec_high":None,"acceptance_text":"Pass","reaction_plan":"Create corrective work order if abnormal wear is found.","sop_path":sop_path,"sop_page":"1","sop_section":"3","screenshot_required":False,"comment_required":True,"revision":1,"active":True},
+        {"pm_id":"DEMO-PM-CVD-CONDITION","step_no":1,"activity":"Inspect vacuum integrity after condition trigger","method":"Leak check and pressure stabilization","input_type":"Numeric","unit":"Pa","target":0.8,"warning_low":0.5,"warning_high":1.0,"control_low":0.4,"control_high":1.2,"spec_low":0.3,"spec_high":1.5,"acceptance_text":"Within specification","reaction_plan":"Escalate recurring condition trigger to Incident / RCA.","sop_path":sop_path,"sop_page":"1","sop_section":"4","screenshot_required":False,"comment_required":True,"revision":1,"active":True},
     ]
     existing_specs={(x.pm_id,x.step_no) for x in db.list_pm_specs()}
     for row in specs:
@@ -342,6 +370,77 @@ def seed_demo_data(db: Database, username: str = "") -> dict[str, Any]:
             "DEMO-O-RING-KIT",1.0,actor,pm_task_id=pvd_task.id,equipment_id=pvd_task.equipment_id,
             location_code="DEMO-STORES-A1",note="Reserved for demo weekly chamber PM."
         ))
+
+    # Secondary PM states for demo/test coverage: kit staging, execution/results,
+    # deferral, usage trigger and condition trigger.
+    if pvd_task:
+        kit=db.pm_kit_stage(pvd_task.id)
+        if not kit:
+            _run(errors,"PM kit stage",lambda: db.set_pm_kit_stage(
+                pvd_task.id,"Staged",actor,staging_location="DEMO-PM-STAGE",
+                note="Demo kit staged with reserved chamber seal.",
+            ))
+        execution=db.get_pm_execution_for_task(pvd_task.id)
+        if not execution:
+            execution=_run(errors,"PM execution",lambda: db.start_pm_execution(pvd_task.id,actor))
+        if execution:
+            acked={x.requirement_id for x in db.list_pm_requirement_acks(execution.id)}
+            for req in db.list_pm_execution_requirements(execution.id):
+                if req.requirement_type!="CERTIFICATION" and req.requirement_id not in acked:
+                    _run(errors,f"PM requirement ack {req.requirement_id}",lambda req=req: db.acknowledge_pm_requirement(
+                        execution.id,req.requirement_id,actor,
+                        note="Acknowledged for demo execution.",evidence_path=sop_path if req.requirement_type=="DOCUMENT" else "",
+                    ))
+            result_steps={x.step_no for x in db.list_pm_results(execution.id)}
+            if 1 not in result_steps:
+                _run(errors,"PM result step 1",lambda: db.save_pm_result(execution.id,1,{
+                    "value_text":"Pass","value_numeric":None,"comment":"Seal condition acceptable for demo.",
+                    "evidence_path":"","entered_by":actor,
+                }))
+            if 2 not in result_steps:
+                _run(errors,"PM result step 2",lambda: db.save_pm_result(execution.id,2,{
+                    "value_text":"0.82","value_numeric":0.82,"comment":"Base pressure within specification.",
+                    "evidence_path":"","entered_by":actor,
+                }))
+
+    etch_task=next((x for x in seeded_tasks if x.pm_id=="DEMO-PM-ETCH-RF"),None)
+    if etch_task and not any(x.task_id==etch_task.id for x in db.list_pm_deferrals()):
+        _run(errors,"PM deferral",lambda: db.request_pm_deferral(
+            etch_task.id,etch_task.original_due_date+timedelta(days=5),
+            "Production campaign blocks the planned maintenance window.",
+            "RF system is stable; risk increases if the task extends beyond five days.",
+            "Daily RF trend review and immediate stop on reflected-power excursion.",
+            actor,DEMO_WORKSTATION,expected_task_version=etch_task.version,
+        ))
+
+    if not any(x.trigger_id=="DEMO-USAGE-PVD-WAFERS" for x in db.list_pm_usage_triggers("FAB-PVD-04")):
+        _run(errors,"usage PM trigger",lambda: db.save_pm_usage_trigger({
+            "trigger_id":"DEMO-USAGE-PVD-WAFERS","equipment_id":"FAB-PVD-04","pm_id":"DEMO-PM-PVD-USAGE",
+            "meter_code":"WAFER_COUNT","interval_value":100.0,"start_value":125300.0,"active":True,
+        }))
+    if not db.list_pm_usage_occurrences("DEMO-USAGE-PVD-WAFERS"):
+        meter=next((x for x in db.list_meters("FAB-PVD-04") if x.meter_code=="WAFER_COUNT"),None)
+        if meter and meter.current_value<125410.0:
+            _run(errors,"usage trigger occurrence",lambda meter=meter: db.record_meter_reading(
+                "FAB-PVD-04","WAFER_COUNT",125410.0,actor,
+                note="Demo reading crosses usage-PM threshold.",workstation=DEMO_WORKSTATION,
+                expected_version=meter.version,
+            ))
+
+    if not any(x.trigger_id=="DEMO-COND-CVD-VAC" for x in db.list_pm_condition_triggers("FAB-CVD-03")):
+        _run(errors,"condition PM trigger",lambda: db.save_pm_condition_trigger({
+            "trigger_id":"DEMO-COND-CVD-VAC","equipment_id":"FAB-CVD-03","pm_id":"DEMO-PM-CVD-CONDITION",
+            "meter_code":"VAC_PRESSURE","comparator":">","threshold":1.4,"reset_threshold":1.0,
+            "latched":False,"active":True,
+        }))
+    if not db.list_pm_condition_occurrences("DEMO-COND-CVD-VAC"):
+        meter=next((x for x in db.list_meters("FAB-CVD-03") if x.meter_code=="VAC_PRESSURE"),None)
+        if meter and meter.current_value<=1.4:
+            _run(errors,"condition trigger occurrence",lambda meter=meter: db.record_meter_reading(
+                "FAB-CVD-03","VAC_PRESSURE",1.6,actor,
+                note="Demo reading crosses condition-PM threshold.",workstation=DEMO_WORKSTATION,
+                expected_version=meter.version,
+            ))
 
     # Incidents/tickets with operational context, lots, RCA, investigations and actions.
     tickets = [
@@ -579,6 +678,24 @@ def seed_demo_data(db: Database, username: str = "") -> dict[str, Any]:
             actor,"DEMO","EMS demo dataset ready",
             "Representative records now span equipment, PM, incidents, work orders, qualification, release, inventory, documents and collaboration.",
             "INFO","EQUIPMENT","FAB-PVD-04","FAB-PVD-04","demo-fixture-ready",
+        ))
+
+    # User/workspace history and inventory transaction examples.
+    _run(errors,"demo preference",lambda: db.set_user_preference(actor,"demo.calendar.default_view","week"))
+    _run(errors,"demo favorite",lambda: db.set_favorite(
+        actor,"EQUIPMENT","FAB-PVD-04",True,"FAB-PVD-04 — PVD demo tool","FAB-PVD-04"
+    ))
+    _run(errors,"demo recent",lambda: db.record_recent_item(
+        actor,"TICKET","DEMO-ISSUE-001","DEMO-ISSUE-001 — Vacuum recovery timeout","FAB-PVD-04"
+    ))
+    if not any(x.part_number=="DEMO-O-RING-KIT" and x.transaction_type=="Consume" and x.related_ticket=="DEMO-ISSUE-001" for x in db.list_inventory_transactions(5000)):
+        _run(errors,"inventory consume transaction",lambda: db.consume_inventory(
+            "DEMO-O-RING-KIT","DEMO-STORES-A1",1.0,actor,"FAB-PVD-04","DEMO-ISSUE-001"
+        ))
+    if not any(x.database_type=="DEMO-SIMULATED" for x in db.list_recovery_drills(1000)):
+        _run(errors,"recovery drill history",lambda: db.record_recovery_drill(
+            "DEMO://backup/equipment_manager_demo.db","DEMO-SIMULATED",True,
+            "Simulated demo record only; no production restore was executed.",actor,DEMO_WORKSTATION,
         ))
 
     # Disabled integration/automation examples are safe for offline demonstration.
