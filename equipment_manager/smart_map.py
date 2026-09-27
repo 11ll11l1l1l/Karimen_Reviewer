@@ -204,6 +204,24 @@ class SmartLayoutPage(QWidget):
 
     def scope_key(self):return f"{self.building.currentText()}|{self.floor.currentText()}"
 
+    def reload_scope_options(self):
+        current_building=self.building.currentText()
+        current_floor=self.floor.currentText()
+        all_equipment=self.db.list_equipment()
+        buildings=sorted({e.building for e in all_equipment if e.building}) or ["FAB-A"]
+        floors=sorted({e.floor for e in all_equipment if e.floor}) or ["1F"]
+        self.building.blockSignals(True);self.floor.blockSignals(True)
+        try:
+            self.building.clear();self.building.addItems(buildings)
+            self.floor.clear();self.floor.addItems(floors)
+            if current_building in buildings:self.building.setCurrentText(current_building)
+            elif buildings:self.building.setCurrentIndex(0)
+            if current_floor in floors:self.floor.setCurrentText(current_floor)
+            elif floors:self.floor.setCurrentIndex(0)
+        finally:
+            self.building.blockSignals(False);self.floor.blockSignals(False)
+        self._scope_changed()
+
     def _scope_changed(self):
         building=self.building.currentText();floor=self.floor.currentText()
         areas=sorted({e.area for e in self.db.list_equipment() if (not building or e.building==building) and (not floor or e.floor==floor) and e.area})
