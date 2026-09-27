@@ -645,10 +645,17 @@ class SmartMainWindow(QMainWindow):
             self.work_order_workspace.set_work_order(entity_key)
             self.open_page("Work Orders")
             return
-        if entity_type in {"PM_TASK","PM_EXECUTION"}:
+        if entity_type=="PM_TASK":
             try:key=int(entity_key)
             except Exception:key=0
             self.pm_execution.set_task(key)
+            self.open_page("Technician PM Runner")
+            return
+        if entity_type=="PM_EXECUTION":
+            try:execution_id=int(entity_key)
+            except Exception:execution_id=0
+            execution=self.db.get_pm_execution(execution_id) if execution_id else None
+            if execution:self.pm_execution.set_task(execution.task_id)
             self.open_page("Technician PM Runner")
             return
         if entity_type=="PART":
