@@ -9,6 +9,9 @@ class ControlledDocumentTests(unittest.TestCase):
     def setUp(self):
         self.db=Database("sqlite:///:memory:")
         self.files=[]
+        self.db.create_user("author","Author","author-password-123","Document Controller")
+        self.db.create_user("controller","Controller","controller-password-123","Document Controller")
+        self.db.create_user("operator_user","Operator","operator-password-123","Operator")
         self.db.create_controlled_document({
             "document_id":"SOP-ETCH-001",
             "entity_type":"Equipment",
@@ -27,6 +30,13 @@ class ControlledDocumentTests(unittest.TestCase):
         fd,path=tempfile.mkstemp(suffix=".txt");os.close(fd)
         with open(path,"wb") as f:f.write(content)
         self.files.append(path);return path
+
+    def test_non_controller_cannot_create_or_approve_controlled_content(self):
+        with self.assertRaises(PermissionError):
+            self.db.create_controlled_document({
+                "document_id":"SOP-NOPE","entity_type":"General","entity_key":"",
+                "document_type":"SOP","title":"Unauthorized","owner":"Operations",
+            },"operator_user","CI")
 
     def test_author_cannot_approve_own_revision(self):
         path=self.make_file(b"revision A")
