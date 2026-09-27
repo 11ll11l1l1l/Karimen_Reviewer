@@ -439,9 +439,25 @@ class InventoryLogisticsWorkspace(QWidget):
         row=_selected(self.stock_table,self.stock)
         if not row:return
         raw=(row.compatible_equipment or "").strip()
-        if not raw:QMessageBox.information(self,"Equipment","No compatible equipment is recorded.");return
-        eq=raw.split(",")[0].strip()
-        if eq:self.open_entity.emit("EQUIPMENT",eq,eq)
+        if not raw:
+            QMessageBox.information(self,"Equipment","No compatible equipment is recorded.");return
+        tokens=[x.strip() for x in raw.replace("; ",",").replace(";",",").split(",") if x.strip()]
+        all_equipment=self.db.list_equipment()
+        candidates=[]
+        seen=set()
+        for eq in all_equipment:
+            if eq.equipment_id in tokens or eq.equipment_type in tokens:
+                if eq.equipment_id not in seen:candidates.append(eq);seen.add(eq.equipment_id)
+        if not candidates:
+            QMessageBox.information(self,"Equipment",f"No registered equipment matches compatibility value: {raw}");return
+        if len(candidates)==1:
+            eq=candidates[0]
+        else:
+            labels=[f"{x.equipment_id} — {x.name} ({x.equipment_type})" for x in candidates]
+            choice,ok=QInputDialog.getItem(self,"Compatible Equipment","Select registered equipment",labels,0,False)
+            if not ok:return
+            eq=candidates[labels.index(choice)]
+        self.open_entity.emit("EQUIPMENT",eq.equipment_id,eq.equipment_id)
 
     def load_reorder(self):
         self.reorder=self.db.inventory_reorder_queue()
