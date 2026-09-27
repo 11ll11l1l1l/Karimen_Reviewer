@@ -241,7 +241,7 @@ class MaintenancePlanningWorkspace(QWidget):
         super().__init__(parent);self.db=db;self.user=user;self.rows=[];self.filtered=[]
         root=QVBoxLayout(self)
         title_row=QHBoxLayout()
-        title=QLabel("Maintenance Planning");title.setStyleSheet("font-size:20pt;font-weight:800")
+        title=QLabel("Maintenance Calendar & Planning");title.setStyleSheet("font-size:20pt;font-weight:800")
         self.summary=QLabel();self.summary.setStyleSheet("color:#647581;")
         title_row.addWidget(title);title_row.addWidget(self.summary);title_row.addStretch(1)
         refresh=QPushButton("Refresh");refresh.clicked.connect(self.refresh);title_row.addWidget(refresh);root.addLayout(title_row)
@@ -259,18 +259,18 @@ class MaintenancePlanningWorkspace(QWidget):
         for w in [self.search,QLabel("Horizon"),self.horizon,QLabel("Start"),self.plan_dt,QLabel("End"),self.plan_end_dt,self.reason,assign,schedule,openpm]:controls.addWidget(w)
         controls.addStretch(1);root.addLayout(controls)
 
-        tabs=QTabWidget();root.addWidget(tabs,1)
+        tabs=QTabWidget();self.tabs=tabs;root.addWidget(tabs,1)
 
         board=QWidget();bv=QVBoxLayout(board)
         self.board=_table(["Task","Equipment","PM","Name","Controlled Due","Slot Start","Slot End","Slot h","Window","Parts","Certs","Status","Assigned","Std h","Priority","Ver"])
-        self.board.doubleClicked.connect(self.open_selected);self.board.itemSelectionChanged.connect(self.load_selected_slot);bv.addWidget(self.board);tabs.addTab(board,"Schedule board")
+        self.board.doubleClicked.connect(self.open_selected);self.board.itemSelectionChanged.connect(self.load_selected_slot);bv.addWidget(self.board);tabs.addTab(board,"List / Board")
 
         calendar=QWidget();cv=QHBoxLayout(calendar);split=QSplitter()
         self.calendar=QCalendarWidget();self.calendar.selectionChanged.connect(self.calendar_changed);split.addWidget(self.calendar)
         right=QWidget();rv=QVBoxLayout(right);self.day_label=QLabel();self.day_label.setStyleSheet("font-weight:700;font-size:12pt")
         self.day_table=_table(["Type","ID","Equipment","Activity","Start","End","Hours","Status","Owner","Priority / Window"])
         self.day_table.doubleClicked.connect(self.open_day_selected);rv.addWidget(self.day_label);rv.addWidget(self.day_table)
-        split.addWidget(right);split.setStretchFactor(1,2);cv.addWidget(split);tabs.addTab(calendar,"Month / Day")
+        split.addWidget(right);split.setStretchFactor(1,2);cv.addWidget(split);tabs.addTab(calendar,"Month Calendar / Day")
 
         week=QWidget();weekv=QVBoxLayout(week);weekbar=QHBoxLayout()
         prev_week=QPushButton("‹ Previous week");prev_week.clicked.connect(lambda:self.shift_week(-7))
