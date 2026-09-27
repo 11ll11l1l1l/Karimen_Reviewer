@@ -297,6 +297,7 @@ class SmartMainWindow(QMainWindow):
         self.shift_workspace.open_entity.connect(self.open_entity)
         self.analytics_workspace.open_entity.connect(self.open_entity)
         self.inventory_logistics.open_entity.connect(self.open_entity)
+        self.inventory_logistics.show_map_part.connect(self.show_part_map)
         self.incident_workspace.open_entity.connect(self.open_entity)
         self.troubleshooting_library.open_entity.connect(self.open_entity)
         self.alarm_page.open_incident.connect(lambda ticket,equipment:self.open_entity("TICKET",ticket,equipment))
@@ -666,8 +667,8 @@ class SmartMainWindow(QMainWindow):
         if entity_type=="INVENTORY_RESERVATION":
             try:reservation_id=int(entity_key)
             except Exception:reservation_id=0
-            reservation=next((x for x in self.db.list_reservations() if x.id==reservation_id),None)
-            if reservation:self.inventory_logistics.set_part(reservation.part_number)
+            if reservation_id and hasattr(self.inventory_logistics,"set_reservation"):
+                self.inventory_logistics.set_reservation(reservation_id)
             self.open_page("Parts / Inventory Logistics")
             return
         if entity_type=="DOCUMENT":
