@@ -101,11 +101,60 @@ class RotableTransitionDialog(QDialog):
         return {"target_status":self.status.currentText(),"location_code":self.location.currentText().strip(),"equipment_id":self.equipment.currentText().strip(),"component_id":self.component.text().strip(),"vendor":self.vendor.text().strip(),"reference":self.reference.text().strip(),"note":self.note.toPlainText().strip()}
 
 
+class StorageLocationDialog(QDialog):
+    def __init__(self,row=None,parent=None):
+        super().__init__(parent);self.row=row;self.setWindowTitle("Storage Location")
+        form=QFormLayout(self);self.fields={}
+        for key,label in [
+            ("location_code","Code"),("name","Name"),("site","Site"),("building","Building"),
+            ("floor","Floor"),("area","Area"),("cabinet","Cabinet"),("shelf","Shelf"),
+            ("drawer_bin","Drawer / Bin"),("image_path","Location image"),
+        ]:
+            w=QLineEdit(str(getattr(row,key,"") or "") if row else "");self.fields[key]=w;form.addRow(label,w)
+        if row:self.fields["location_code"].setReadOnly(True)
+        self.x=QDoubleSpinBox();self.x.setRange(-100000,100000);self.x.setDecimals(1);self.x.setValue(float(getattr(row,"map_x",0) or 0))
+        self.y=QDoubleSpinBox();self.y.setRange(-100000,100000);self.y.setDecimals(1);self.y.setValue(float(getattr(row,"map_y",0) or 0))
+        form.addRow("Map X",self.x);form.addRow("Map Y",self.y)
+        buttons=QDialogButtonBox(QDialogButtonBox.StandardButton.Save|QDialogButtonBox.StandardButton.Cancel)
+        buttons.accepted.connect(self.accept);buttons.rejected.connect(self.reject);form.addRow(buttons)
+    def data(self):
+        payload={key:w.text().strip() for key,w in self.fields.items()}
+        payload.update(map_x=self.x.value(),map_y=self.y.value())
+        return payload
+
+
+class StockRecordDialog(QDialog):
+    def __init__(self,row,parent=None):
+        super().__init__(parent);self.row=row;self.setWindowTitle(f"Stock Record — {row.part_number} @ {row.location_code}")
+        form=QFormLayout(self)
+        self.description=QLineEdit(row.description or "");self.category=QLineEdit(row.category or "")
+        self.manufacturer=QLineEdit(row.manufacturer or "");self.model=QLineEdit(row.model or "")
+        self.compatible=QLineEdit(row.compatible_equipment or "")
+        self.minimum=QDoubleSpinBox();self.minimum.setRange(0,1e12);self.minimum.setDecimals(3);self.minimum.setValue(float(row.min_quantity or 0))
+        self.unit=QLineEdit(row.unit or "ea")
+        self.condition=QComboBox();self.condition.setEditable(True);self.condition.addItems(["Available","Reserved","Installed","In Use","Repair","Quarantine","Inspection Required","Expired","Obsolete","Scrap","Vendor"]);self.condition.setCurrentText(row.condition or "Available")
+        self.image=QLineEdit(row.image_path or "");self.notes=QTextEdit(row.notes or "");self.notes.setMaximumHeight(90)
+        form.addRow("Part",QLabel(row.part_number));form.addRow("Location",QLabel(row.location_code));form.addRow("On hand",QLabel(f"{float(row.quantity or 0):g}"))
+        for label,w in [("Description",self.description),("Category",self.category),("Manufacturer",self.manufacturer),("Model",self.model),("Compatible equipment",self.compatible),("Minimum quantity",self.minimum),("Unit",self.unit),("Condition",self.condition),("Image path",self.image),("Notes",self.notes)]:form.addRow(label,w)
+        buttons=QDialogButtonBox(QDialogButtonBox.StandardButton.Save|QDialogButtonBox.StandardButton.Cancel);buttons.accepted.connect(self.accept);buttons.rejected.connect(self.reject);form.addRow(buttons)
+    def data(self):
+        return {
+            "part_number":self.row.part_number,"description":self.description.text().strip(),
+            "category":self.category.text().strip(),"manufacturer":self.manufacturer.text().strip(),
+            "model":self.model.text().strip(),"compatible_equipment":self.compatible.text().strip(),
+            "quantity":float(self.row.quantity or 0),"min_quantity":self.minimum.value(),
+            "unit":self.unit.text().strip() or "ea","condition":self.condition.currentText().strip() or "Available",
+            "location_code":self.row.location_code,"image_path":self.image.text().strip(),
+            "notes":self.notes.toPlainText().strip(),
+        }
+
+
 class InventoryLogisticsWorkspace(QWidget):
     open_entity=Signal(str,str,str)
+    show_map_part=Signal(str)
 
     def __init__(self,db,user,parent=None):
-        super().__init__(parent);self.db=db;self.user=user;self.stock=[];self.catalog=[];self.reorder=[];self.alternates=[];self.kit=None;self.orders=[];self.order_lines=[];self.rotables=[];self.rotable_events=[]
+        super().__init__(parent);self.db=db;self.user=user;self.stock=[];self.transactions=[];self.reservations=[];self.locations=[];self.catalog=[];self.reorder=[];self.alternates=[];self.kit=None;self.orders=[];self.order_lines=[];self.rotables=[];self.rotable_events=[]
         root=QVBoxLayout(self);head=QHBoxLayout()
         title=QLabel("Parts / Inventory Logistics");title.setStyleSheet("font-size:20pt;font-weight:800")
         self.scan=QLineEdit();self.scan.setPlaceholderText("Scan barcode / supplier PN / part number and press Enter");self.scan.setMinimumWidth(380);self.scan.returnPressed.connect(self.resolve_scan)
@@ -113,16 +162,23 @@ class InventoryLogisticsWorkspace(QWidget):
         head.addWidget(title);head.addStretch(1);head.addWidget(self.scan);head.addWidget(refresh);root.addLayout(head)
         self.scan_status=QLabel("Scanner input is treated like normal keyboard input; no dedicated scanner driver is required.");self.scan_status.setStyleSheet("color:#647581");root.addWidget(self.scan_status)
 
-        tabs=QTabWidget();root.addWidget(tabs,1)
+        tabs=QTabWidget();self.tabs=tabs;root.addWidget(tabs,1)
 
         stock=QWidget();sv=QVBoxLayout(stock);sh=QHBoxLayout()
         self.search=QLineEdit();self.search.setPlaceholderText("Filter part / description / location");self.search.textChanged.connect(self.load_stock)
         receive=QPushButton("Receive");receive.clicked.connect(self.receive)
+        edit_stock=QPushButton("Edit Stock");edit_stock.clicked.connect(self.edit_stock)
+        consume=QPushButton("Consume");consume.clicked.connect(self.consume_selected)
+        reserve_stock=QPushButton("Reserve");reserve_stock.clicked.connect(self.reserve_selected)
         transfer=QPushButton("Transfer");transfer.clicked.connect(self.transfer)
         count=QPushButton("Cycle Count");count.clicked.connect(self.cycle_count)
         show_eq=QPushButton("Open compatible equipment");show_eq.clicked.connect(self.open_compatible_equipment)
-        for w in [self.search,receive,transfer,count,show_eq]:sh.addWidget(w)
-        sv.addLayout(sh);self.stock_table=_table(["Part","Description","Qty","Min","Unit","Condition","Location","Compatible Equipment","Ver"]);sv.addWidget(self.stock_table);tabs.addTab(stock,"Stock / Transactions")
+        show_map=QPushButton("Show on FAB map");show_map.clicked.connect(self.show_selected_on_map)
+        can_edit=db.has_permission(user,"inventory.edit");edit_stock.setEnabled(can_edit);receive.setEnabled(can_edit)
+        consume.setEnabled(db.has_permission(user,"inventory.consume") or can_edit);reserve_stock.setEnabled(db.has_permission(user,"inventory.reserve"))
+        for w in [self.search,receive,edit_stock,consume,reserve_stock,transfer,count,show_eq,show_map]:sh.addWidget(w)
+        sv.addLayout(sh);self.stock_table=_table(["Part","Description","Qty","Min","Unit","Condition","Location","Compatible Equipment","Ver"]);self.stock_table.itemSelectionChanged.connect(self.load_transactions);sv.addWidget(self.stock_table,2)
+        sv.addWidget(QLabel("Recent stock transactions"));self.transaction_table=_table(["Time","Part","Location","Type","Qty","Equipment","Ticket","User","Note"]);sv.addWidget(self.transaction_table,1);tabs.addTab(stock,"Stock / Transactions")
 
         reorder=QWidget();rv=QVBoxLayout(reorder);self.reorder_summary=QLabel();rv.addWidget(self.reorder_summary)
         self.reorder_table=_table(["Part","Description","Location","On Hand","Reserved","Available","Minimum","Short to Min","Suggested Order","Supplier","Supplier PN","Lead Days"]);rv.addWidget(self.reorder_table);tabs.addTab(reorder,"Reorder Queue")
@@ -142,7 +198,20 @@ class InventoryLogisticsWorkspace(QWidget):
         self.kit_table=_table(["Part","Required","Reserved","Available Unreserved","Shortage","Ready","Approved Alternates"]);kv.addWidget(self.kit_table,2)
         self.res_table=_table(["Reservation","Part","Location","Qty","Status","Reserved By"]);kv.addWidget(QLabel("Reservations"));kv.addWidget(self.res_table,1)
         stagebar=QHBoxLayout();stage=QPushButton("Mark Kit Staged");issue=QPushButton("Issue Kit");complete=QPushButton("Complete Kit");stage.clicked.connect(lambda:self.set_kit_stage("Staged"));issue.clicked.connect(lambda:self.set_kit_stage("Issued"));complete.clicked.connect(lambda:self.set_kit_stage("Completed"));stagebar.addWidget(stage);stagebar.addWidget(issue);stagebar.addWidget(complete);stagebar.addStretch(1);kv.addLayout(stagebar)
-        self.stage_label=QLabel();self.stage_label.setStyleSheet("color:#647581");kv.addWidget(self.stage_label);tabs.addTab(kit,"PM Kits")
+        self.stage_label=QLabel();self.stage_label.setStyleSheet("color:#647581");kv.addWidget(self.stage_label);self.kit_tab_index=tabs.addTab(kit,"PM Kits")
+
+        reservations=QWidget();resv=QVBoxLayout(reservations);resh=QHBoxLayout()
+        release_res=QPushButton("Release Selected Reservation");release_res.clicked.connect(self.release_selected_reservation);release_res.setEnabled(db.has_permission(user,"inventory.reserve"))
+        open_res=QPushButton("Open Linked Record");open_res.clicked.connect(self.open_reservation_link)
+        resh.addWidget(release_res);resh.addWidget(open_res);resh.addStretch(1);resv.addLayout(resh)
+        self.reservation_table=_table(["ID","Part","Location","Qty","PM Task","Equipment","Status","Reserved By","Reserved At","Released At","Note","Ver"])
+        self.reservation_table.doubleClicked.connect(self.open_reservation_link);resv.addWidget(self.reservation_table);self.reservation_tab_index=tabs.addTab(reservations,"Reservations")
+
+        locations=QWidget();locv=QVBoxLayout(locations);loch=QHBoxLayout()
+        add_loc=QPushButton("Add Location");edit_loc=QPushButton("Edit Location");add_loc.clicked.connect(self.add_location);edit_loc.clicked.connect(self.edit_location)
+        add_loc.setEnabled(can_edit);edit_loc.setEnabled(can_edit);loch.addWidget(add_loc);loch.addWidget(edit_loc);loch.addStretch(1);locv.addLayout(loch)
+        self.location_table=_table(["Code","Name","Site","Building","Floor","Area","Cabinet","Shelf","Bin","Map X","Map Y","Ver"])
+        self.location_table.doubleClicked.connect(self.edit_location);locv.addWidget(self.location_table);self.location_tab_index=tabs.addTab(locations,"Storage Locations")
 
         po=QWidget();pov=QVBoxLayout(po);poh=QHBoxLayout();newpo=QPushButton("New / Edit PO");addline=QPushButton("Add / Edit Line");submit=QPushButton("Submit PO");receivepo=QPushButton("Receive Selected Line");cancelpo=QPushButton("Cancel PO")
         newpo.clicked.connect(self.edit_order);addline.clicked.connect(self.edit_order_line);submit.clicked.connect(self.submit_order);receivepo.clicked.connect(self.receive_order_line);cancelpo.clicked.connect(self.cancel_order)
@@ -158,7 +227,7 @@ class InventoryLogisticsWorkspace(QWidget):
         self.refresh()
 
     def refresh(self):
-        self.load_stock();self.load_reorder();self.load_catalog();self.load_orders();self.load_rotables()
+        self.load_stock();self.load_reorder();self.load_catalog();self.load_reservations();self.load_locations();self.load_orders();self.load_rotables()
         if self.task.value():self.load_kit()
 
     def resolve_scan(self):
@@ -173,12 +242,126 @@ class InventoryLogisticsWorkspace(QWidget):
     def set_part(self,part_number: str):
         self.search.setText(part_number);self.scan.setText(part_number);self.load_stock()
 
+    def set_reservation(self,reservation_id: int):
+        self.load_reservations()
+        reservation=next((x for x in self.reservations if x.id==int(reservation_id)),None)
+        if not reservation:return
+        if reservation.pm_task_id:
+            self.task.setValue(int(reservation.pm_task_id));self.load_kit();self.tabs.setCurrentIndex(self.kit_tab_index)
+            for i in range(self.res_table.rowCount()):
+                item=self.res_table.item(i,0)
+                if item and item.text()==str(reservation.id):
+                    self.res_table.selectRow(i);self.res_table.scrollToItem(item);return
+        self.tabs.setCurrentIndex(self.reservation_tab_index)
+        for i,row in enumerate(self.reservations):
+            if row.id==reservation.id:
+                self.reservation_table.selectRow(i)
+                item=self.reservation_table.item(i,0)
+                if item:self.reservation_table.scrollToItem(item)
+                break
+
     def load_stock(self):
         self.stock=self.db.list_inventory(self.search.text().strip())
         _fill(self.stock_table,self.stock,["part_number","description","quantity","min_quantity","unit","condition","location_code","compatible_equipment","version"])
+        self.load_transactions()
+
+    def load_transactions(self):
+        selected=_selected(self.stock_table,self.stock) if hasattr(self,"stock_table") else None
+        rows=self.db.list_inventory_transactions(500)
+        q=self.search.text().strip().lower() if hasattr(self,"search") else ""
+        if selected:
+            rows=[x for x in rows if x.part_number==selected.part_number]
+        elif q:
+            rows=[x for x in rows if q in " ".join([x.part_number or "",x.location_code or "",x.transaction_type or "",x.equipment_id or "",x.related_ticket or "",x.note or ""]).lower()]
+        self.transactions=rows[:200]
+        if hasattr(self,"transaction_table"):_fill(self.transaction_table,self.transactions,["created_at","part_number","location_code","transaction_type","quantity","equipment_id","related_ticket","user","note"])
+
+    def load_reservations(self):
+        self.reservations=self.db.list_reservations()
+        if hasattr(self,"reservation_table"):_fill(self.reservation_table,self.reservations,["id","part_number","location_code","quantity","pm_task_id","equipment_id","status","reserved_by","reserved_at","released_at","note","version"])
+
+    def load_locations(self):
+        self.locations=self.db.list_storage_locations()
+        if hasattr(self,"location_table"):_fill(self.location_table,self.locations,["location_code","name","site","building","floor","area","cabinet","shelf","drawer_bin","map_x","map_y","version"])
 
     def _locations(self):
         return [x.location_code for x in self.db.list_storage_locations()]
+
+    def edit_stock(self):
+        row=_selected(self.stock_table,self.stock)
+        if not row:return
+        dialog=StockRecordDialog(row,self)
+        if dialog.exec()!=QDialog.DialogCode.Accepted:return
+        try:self.db.save_inventory_item(dialog.data(),row.version);self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"Stock record",str(exc))
+
+    def consume_selected(self):
+        row=_selected(self.stock_table,self.stock)
+        if not row:return
+        qty,ok=QInputDialog.getDouble(self,"Consume Inventory",f"Quantity from {row.location_code}",1,0.0001,max(0.0001,float(row.quantity or 0)),3)
+        if not ok:return
+        equipment,ok=QInputDialog.getText(self,"Consume Inventory","Equipment ID (optional)")
+        if not ok:return
+        ticket,ok=QInputDialog.getText(self,"Consume Inventory","Related incident / ticket (optional)")
+        if not ok:return
+        try:
+            success,remaining=self.db.consume_inventory(row.part_number,row.location_code,qty,self.user["username"],equipment.strip(),ticket.strip())
+            if not success:QMessageBox.warning(self,"Consume Inventory",f"Insufficient stock. Available: {remaining:g}")
+            else:notify(f"Consumed {qty:g} {row.unit or ''} of {row.part_number}; {remaining:g} remain.")
+            self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"Consume Inventory",str(exc))
+
+    def reserve_selected(self):
+        row=_selected(self.stock_table,self.stock)
+        if not row:return
+        qty,ok=QInputDialog.getDouble(self,"Reserve Inventory",f"Reserve {row.part_number}",1,0.0001,1e9,3)
+        if not ok:return
+        task,ok=QInputDialog.getInt(self,"Reserve Inventory","PM task ID (0 for none)",0,0,100000000)
+        if not ok:return
+        equipment,ok=QInputDialog.getText(self,"Reserve Inventory","Equipment ID (optional)")
+        if not ok:return
+        note,ok=QInputDialog.getText(self,"Reserve Inventory","Reservation note")
+        if not ok:return
+        try:
+            success,value=self.db.reserve_inventory(row.part_number,qty,self.user["username"],task or None,equipment.strip(),row.location_code,note.strip())
+            if success:
+                notify(f"Reservation #{value} created for {row.part_number}.");self.refresh();self.set_reservation(int(value))
+            else:QMessageBox.warning(self,"Reserve Inventory",f"Insufficient unreserved stock. Available: {float(value):g}")
+        except Exception as exc:QMessageBox.critical(self,"Reserve Inventory",str(exc))
+
+    def release_selected_reservation(self):
+        row=_selected(self.reservation_table,self.reservations)
+        if not row:return
+        if row.status!="Reserved":
+            QMessageBox.information(self,"Reservation","Only active Reserved records can be released.");return
+        if QMessageBox.question(self,"Release Reservation",f"Release reservation #{row.id} for {row.part_number}?")!=QMessageBox.StandardButton.Yes:return
+        try:self.db.release_reservation(row.id,self.user["username"]);self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"Reservation",str(exc))
+
+    def open_reservation_link(self):
+        row=_selected(self.reservation_table,self.reservations)
+        if not row:return
+        if row.pm_task_id:self.open_entity.emit("PM_TASK",str(row.pm_task_id),row.equipment_id or "")
+        elif row.equipment_id:self.open_entity.emit("EQUIPMENT",row.equipment_id,row.equipment_id)
+        else:self.set_part(row.part_number)
+
+    def add_location(self):
+        dialog=StorageLocationDialog(parent=self)
+        if dialog.exec()!=QDialog.DialogCode.Accepted:return
+        try:self.db.save_storage_location(dialog.data());self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"Storage Location",str(exc))
+
+    def edit_location(self):
+        row=_selected(self.location_table,self.locations)
+        if not row:return
+        dialog=StorageLocationDialog(row,self)
+        if dialog.exec()!=QDialog.DialogCode.Accepted:return
+        try:self.db.save_storage_location(dialog.data(),row.version);self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"Storage Location",str(exc))
+
+    def show_selected_on_map(self):
+        row=_selected(self.stock_table,self.stock)
+        if row:self.show_map_part.emit(row.part_number)
 
     def receive(self):
         row=_selected(self.stock_table,self.stock);part=row.part_number if row else (self.db.resolve_part_scan(self.scan.text()) or self.search.text().strip())
