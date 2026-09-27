@@ -5270,6 +5270,7 @@ class Database:
             row=s.scalar(stmt)
             if not row:
                 raise ValueError("PM deferral request not found")
+            if user:self.assert_authorized(user,"pm.defer.approve",row.equipment_id)
             if expected_version is not None and row.version!=expected_version:
                 raise RuntimeError("CONFLICT: PM deferral changed by another user. Refresh and retry.")
             if row.status!="Pending":
@@ -6647,6 +6648,7 @@ class Database:
         if not protocol_id or not name:
             raise ValueError("Protocol ID and name are required.")
         normalized=self._normalize_qualification_checks(checks)
+        if user:self.assert_authorized(user,"qualification.edit",equipment_id.strip())
         with self.session() as s:
             if equipment_id and not s.scalar(select(Equipment).where(Equipment.equipment_id==equipment_id)):
                 raise ValueError("Qualification protocol equipment not found.")
@@ -6760,6 +6762,7 @@ class Database:
             if self.url.startswith("postgresql"):stmt=stmt.with_for_update()
             row=s.scalar(stmt)
             if not row:raise ValueError("Qualification run not found")
+            if user:self.assert_authorized(user,"qualification.execute",row.equipment_id)
             if expected_version is not None and row.version!=expected_version:
                 raise RuntimeError("CONFLICT: Qualification run changed by another user.")
             if row.status!="In Progress":
@@ -6788,6 +6791,7 @@ class Database:
             if self.url.startswith("postgresql"):stmt=stmt.with_for_update()
             row=s.scalar(stmt)
             if not row:raise ValueError("Qualification run not found")
+            if user:self.assert_authorized(user,"qualification.execute",row.equipment_id)
             if expected_version is not None and row.version!=expected_version:raise RuntimeError("CONFLICT: Qualification run changed by another user.")
             if row.status!="In Progress":raise ValueError("Qualification run is not In Progress.")
             checks=json.loads(row.frozen_checks_json or "[]")
@@ -6814,6 +6818,7 @@ class Database:
             if self.url.startswith("postgresql"):stmt=stmt.with_for_update()
             row=s.scalar(stmt)
             if not row:raise ValueError("Qualification run not found")
+            if user:self.assert_authorized(user,"qualification.verify",row.equipment_id)
             if expected_version is not None and row.version!=expected_version:raise RuntimeError("CONFLICT: Qualification run changed by another user.")
             if row.status!="Submitted":raise ValueError("Only Submitted qualification runs can be verified.")
             if user in {row.started_by,row.submitted_by}:raise ValueError("Independent verification required.")
@@ -6835,6 +6840,7 @@ class Database:
             if self.url.startswith("postgresql"):stmt=stmt.with_for_update()
             row=s.scalar(stmt)
             if not row:raise ValueError("Qualification run not found")
+            if user:self.assert_authorized(user,"qualification.approve",row.equipment_id)
             if expected_version is not None and row.version!=expected_version:raise RuntimeError("CONFLICT: Qualification run changed by another user.")
             if row.status!="Verified":raise ValueError("Only Verified qualification runs can be approved.")
             if user in {row.started_by,row.submitted_by,row.verified_by}:raise ValueError("Independent final approval required.")
@@ -6870,6 +6876,7 @@ class Database:
         with self.session() as s:
             row=s.get(QualificationRun,run_id)
             if not row:raise ValueError("Qualification run not found")
+            if user:self.assert_authorized(user,"qualification.verify",row.equipment_id)
             if expected_version is not None and row.version!=expected_version:raise RuntimeError("CONFLICT: Qualification run changed by another user.")
             if row.status not in {"Submitted","Verified"}:raise ValueError("Only Submitted or Verified runs can be rejected.")
             if user==row.started_by:raise ValueError("Independent rejection review required.")
@@ -8303,6 +8310,7 @@ class Database:
         payload["title"]=payload.get("title","").strip()
         if not payload["document_id"] or not payload["title"]:
             raise ValueError("Document ID and title are required.")
+        if user:self.assert_authorized(user,"document.control")
         with self.session() as s:
             if s.scalar(select(ControlledDocument).where(ControlledDocument.document_id==payload["document_id"])):
                 raise ValueError("Controlled document ID already exists.")
@@ -8336,6 +8344,7 @@ class Database:
             raise ValueError("Revision is required.")
         if not os.path.isfile(path):
             raise FileNotFoundError(path)
+        if user:self.assert_authorized(user,"document.control")
         digest=self._file_sha256(path)
         with self.session() as s:
             doc=s.scalar(select(ControlledDocument).where(ControlledDocument.document_id==document_id))
@@ -8380,6 +8389,7 @@ class Database:
             if self.url.startswith("postgresql"):stmt=stmt.with_for_update()
             row=s.scalar(stmt)
             if not row:raise ValueError("Controlled revision not found")
+            if user:self.assert_authorized(user,"document.control")
             if expected_version is not None and row.version!=expected_version:
                 raise RuntimeError("CONFLICT: Controlled revision changed by another user.")
             if row.status!="Draft":raise ValueError("Only Draft revisions can be approved.")
@@ -8407,6 +8417,7 @@ class Database:
         with self.session() as s:
             row=s.get(ControlledDocumentRevision,revision_id)
             if not row:raise ValueError("Controlled revision not found")
+            if user:self.assert_authorized(user,"document.control")
             if expected_version is not None and row.version!=expected_version:raise RuntimeError("CONFLICT: Controlled revision changed by another user.")
             if row.status!="Draft":raise ValueError("Only Draft revisions can be rejected.")
             if row.created_by==user:raise ValueError("Independent review required.")
