@@ -5396,6 +5396,10 @@ class Database:
                 comment_required=bool(spec.comment_required),
             ))
 
+    def get_pm_execution(self, execution_id: int):
+        with self.session() as s:
+            return s.get(PMExecution,int(execution_id))
+
     def get_pm_execution_for_task(self, task_id: int):
         with self.session() as s:
             return s.scalar(select(PMExecution).where(PMExecution.task_id==task_id))
@@ -7187,6 +7191,38 @@ class Database:
             if not wo:raise ValueError("Work order not found")
             self.assert_authorized(user,"worklog.edit",wo.equipment_id)
             et=entity_type.strip().upper();ek=str(entity_key).strip();rel=relation.strip().upper() or "RELATED"
+            if not ek:raise ValueError("Linked record key is required.")
+
+            target_equipment=""
+            found=False
+            if et=="TICKET":
+                target=s.scalar(select(Ticket).where(Ticket.ticket_no==ek));found=bool(target);target_equipment=target.equipment_id if target else ""
+            elif et=="PM_TASK":
+                target=s.get(PMTask,int(ek)) if ek.isdigit() else None;found=bool(target);target_equipment=target.equipment_id if target else ""
+            elif et=="PM_EXECUTION":
+                target=s.get(PMExecution,int(ek)) if ek.isdigit() else None;found=bool(target)
+                task=s.get(PMTask,target.task_id) if target else None;target_equipment=task.equipment_id if task else ""
+            elif et=="ALARM":
+                target=s.scalar(select(EquipmentAlarmEvent).where(EquipmentAlarmEvent.event_key==ek));found=bool(target);target_equipment=target.equipment_id if target else ""
+            elif et=="COMPONENT":
+                target=s.scalar(select(EquipmentComponent).where(EquipmentComponent.component_id==ek));found=bool(target);target_equipment=target.equipment_id if target else ""
+            elif et=="QUALIFICATION":
+                target=s.scalar(select(QualificationRun).where(QualificationRun.run_no==ek));found=bool(target);target_equipment=target.equipment_id if target else ""
+            elif et=="RELEASE":
+                target=s.get(EquipmentRelease,int(ek)) if ek.isdigit() else None;found=bool(target);target_equipment=target.equipment_id if target else ""
+            elif et=="INVENTORY_RESERVATION":
+                target=s.get(InventoryReservation,int(ek)) if ek.isdigit() else None;found=bool(target);target_equipment=(target.equipment_id or "") if target else ""
+                if target and not target_equipment and target.pm_task_id:
+                    task=s.get(PMTask,target.pm_task_id);target_equipment=task.equipment_id if task else ""
+            elif et=="DOCUMENT":
+                target=s.scalar(select(ControlledDocument).where(ControlledDocument.document_id==ek));found=bool(target)
+                if target and str(target.entity_type or "").strip().upper()=="EQUIPMENT":target_equipment=str(target.entity_key or "")
+            else:
+                raise ValueError(f"Unsupported work-order link type: {et}")
+            if not found:raise ValueError(f"Linked {et} record not found: {ek}")
+            if target_equipment and target_equipment!=wo.equipment_id:
+                raise ValueError(f"Linked {et} record belongs to {target_equipment}, not {wo.equipment_id}.")
+
             existing=s.scalar(select(WorkOrderLink).where(
                 WorkOrderLink.work_order_no==work_order_no,WorkOrderLink.entity_type==et,
                 WorkOrderLink.entity_key==ek,WorkOrderLink.relation==rel,
