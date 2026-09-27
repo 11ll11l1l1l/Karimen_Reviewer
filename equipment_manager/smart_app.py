@@ -755,11 +755,18 @@ def main():
     app = QApplication(sys.argv)
     app.setStyleSheet(SMART_STYLE)
     db = Database()
+    demo_password=os.getenv("EMS_DEMO_PASSWORD","DemoEMS2026!")
+    if DEMO_MODE and not db.has_users():
+        # Demo mode is isolated by START_DEMO_WINDOWS.bat and is intentionally turnkey.
+        db.create_user("demo_admin","Demo Administrator",demo_password,"Administrator")
     if not db.has_users():
         first = FirstAdminDialog(db)
         if first.exec() != QDialog.DialogCode.Accepted:
             return 1
     login = LoginDialog(db)
+    if DEMO_MODE:
+        login.username.setText("demo_admin")
+        login.password.setText(demo_password)
     if login.exec() != QDialog.DialogCode.Accepted:
         return 0
     demo_result = seed_demo_data(db, login.user["username"]) if DEMO_MODE else {"changed":False,"errors":[],"message":""}
