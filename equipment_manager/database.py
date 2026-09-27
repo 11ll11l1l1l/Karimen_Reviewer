@@ -3536,13 +3536,13 @@ class Database:
             userctx={"username":username,"role":user.role} if user else {"username":username,"role":"Read Only"}
             if self.has_permission(userctx,"release.approve"):
                 for rel in s.scalars(select(EquipmentRelease).where(EquipmentRelease.status=="Verified")):
-                    rows.append({"severity":"HIGH","kind":"APPROVAL","key":str(rel.id),"equipment_id":rel.equipment_id,"summary":"Release approval required","owner":username,"age_hours":0.0})
+                    rows.append({"severity":"HIGH","kind":"APPROVAL","key":str(rel.id),"entity_type":"RELEASE","entity_key":str(rel.id),"equipment_id":rel.equipment_id,"summary":"Release approval required","owner":username,"age_hours":0.0})
             if self.has_permission(userctx,"qualification.verify"):
                 for run in s.scalars(select(QualificationRun).where(QualificationRun.status=="Submitted")):
-                    rows.append({"severity":"HIGH","kind":"VERIFY","key":run.run_no,"equipment_id":run.equipment_id,"summary":f"Qualification verification — {run.protocol_name}","owner":username,"age_hours":0.0})
+                    rows.append({"severity":"HIGH","kind":"VERIFY","key":run.run_no,"entity_type":"QUALIFICATION","entity_key":run.run_no,"equipment_id":run.equipment_id,"summary":f"Qualification verification — {run.protocol_name}","owner":username,"age_hours":0.0})
             if self.has_permission(userctx,"qualification.approve"):
                 for run in s.scalars(select(QualificationRun).where(QualificationRun.status=="Verified")):
-                    rows.append({"severity":"HIGH","kind":"APPROVAL","key":run.run_no,"equipment_id":run.equipment_id,"summary":f"Qualification approval — {run.protocol_name}","owner":username,"age_hours":0.0})
+                    rows.append({"severity":"HIGH","kind":"APPROVAL","key":run.run_no,"entity_type":"QUALIFICATION","entity_key":run.run_no,"equipment_id":run.equipment_id,"summary":f"Qualification approval — {run.protocol_name}","owner":username,"age_hours":0.0})
         for mention,comment in self.list_unacknowledged_mentions(username,limit):
             rows.append({
                 "severity":"MEDIUM","kind":"MENTION","key":str(mention.id),
