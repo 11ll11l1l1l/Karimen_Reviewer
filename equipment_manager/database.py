@@ -7775,6 +7775,7 @@ class Database:
         with self.session() as s: return list(s.scalars(select(StorageLocation).order_by(StorageLocation.location_code)))
 
     def save_supplier_order(self, data: dict[str, Any], user: str, expected_version: int | None = None):
+        if user:self.assert_authorized(user,"inventory.edit")
         payload=dict(data);order_no=str(payload.get("order_no","")).strip();supplier=str(payload.get("supplier","")).strip()
         if not order_no or not supplier:raise ValueError("Order number and supplier are required.")
         payload["order_no"]=order_no;payload["supplier"]=supplier;payload.setdefault("created_by",user)
@@ -7797,6 +7798,7 @@ class Database:
             return list(s.scalars(stmt))
 
     def add_supplier_order_line(self, order_no: str, data: dict[str, Any], user: str, expected_version: int | None = None):
+        if user:self.assert_authorized(user,"inventory.edit")
         payload=dict(data);part=str(payload.get("part_number","")).strip();qty=float(payload.get("ordered_qty") or 0)
         if not part or qty<=0:raise ValueError("Part number and positive ordered quantity are required.")
         with self.session() as s:
@@ -7821,6 +7823,7 @@ class Database:
             return list(s.scalars(select(SupplierOrderLine).where(SupplierOrderLine.order_no==order_no).order_by(SupplierOrderLine.line_no)))
 
     def submit_supplier_order(self, order_no: str, user: str, expected_version: int | None = None):
+        if user:self.assert_authorized(user,"inventory.edit")
         with self.session() as s:
             stmt=select(SupplierOrder).where(SupplierOrder.order_no==order_no)
             if self.url.startswith("postgresql"):stmt=stmt.with_for_update()
@@ -7872,6 +7875,7 @@ class Database:
             s.flush();return line,order,tx
 
     def cancel_supplier_order(self, order_no: str, user: str, reason: str = ""):
+        if user:self.assert_authorized(user,"inventory.edit")
         with self.session() as s:
             order=s.scalar(select(SupplierOrder).where(SupplierOrder.order_no==order_no))
             if not order:raise ValueError("Supplier order not found")
@@ -7884,6 +7888,7 @@ class Database:
             s.flush();return order
 
     def register_rotable(self, data: dict[str, Any], user: str, expected_version: int | None = None):
+        if user:self.assert_authorized(user,"inventory.edit")
         payload=dict(data);asset_id=str(payload.get("asset_id","")).strip();part=str(payload.get("part_number","")).strip()
         if not asset_id or not part:raise ValueError("Rotable asset ID and part number are required.")
         with self.session() as s:
@@ -7912,6 +7917,7 @@ class Database:
 
     def transition_rotable(self, asset_id: str, target_status: str, user: str, *, location_code: str = "", equipment_id: str = "", component_id: str = "", vendor: str = "", reference: str = "", note: str = "", expected_version: int | None = None):
         target_status=target_status.strip()
+        if user:self.assert_authorized(user,"inventory.edit",equipment_id.strip() if target_status=="Installed" else "")
         allowed={
             "Stock":{"Installed","In Repair","Quarantine","Scrapped"},
             "Installed":{"Stock","In Repair","Quarantine","Scrapped"},
@@ -7958,6 +7964,7 @@ class Database:
         with self.session() as s:
             task=s.get(PMTask,task_id)
             if not task:raise ValueError("PM task not found")
+            if user:self.assert_authorized(user,"inventory.reserve",task.equipment_id)
             row=s.scalar(select(PMKitStage).where(PMKitStage.task_id==task_id))
             if row and expected_version is not None and row.version!=expected_version:raise RuntimeError("CONFLICT: PM kit stage changed.")
             if status in {"Staged","Issued"}:
