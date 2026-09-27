@@ -729,10 +729,13 @@ def main():
     login = LoginDialog(db)
     if login.exec() != QDialog.DialogCode.Accepted:
         return 0
-    seeded = seed_demo_data(db) if DEMO_MODE else False
+    demo_result = seed_demo_data(db, login.user["username"]) if DEMO_MODE else {"changed":False,"errors":[],"message":""}
     window = SmartMainWindow(db, login.user)
-    if seeded:
-        window.statusBar().showMessage("Demo FAB data created: 28 tools + 5 active issue scenarios")
+    if DEMO_MODE:
+        detail=demo_result.get("message") or "EMS demo dataset ready."
+        if demo_result.get("errors"):
+            detail+=f"  {len(demo_result['errors'])} seed warning(s); see console/log if needed."
+        window.statusBar().showMessage(detail)
     window.show()
     return app.exec()
 
