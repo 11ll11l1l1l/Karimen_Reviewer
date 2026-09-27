@@ -8514,7 +8514,7 @@ class Database:
                 .limit(cap)
             ))
             for tx in transactions:
-                add(tx.created_at,"PART",tx.id,f"{tx.transaction_type} {tx.quantity:g} × {tx.part_number} @ {tx.location_code}",tx.user,tx.transaction_type,"Inventory")
+                add(tx.created_at,"PART",f"{tx.part_number}@{tx.location_code}",f"{tx.transaction_type} {tx.quantity:g} × {tx.part_number} @ {tx.location_code}",tx.user,tx.transaction_type,"Inventory")
 
             attachments=list(s.scalars(
                 select(EntityAttachment)
