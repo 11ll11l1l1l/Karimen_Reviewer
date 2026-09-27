@@ -482,7 +482,7 @@ class Equipment360Workspace(QWidget):
 
     def open_current_pm(self):
         if self.current_pm:
-            row=self.current_pm[0];self.open_entity.emit("PM_EXECUTION",str(row.id),row.equipment_id)
+            row=self.current_pm[0];self.open_entity.emit("PM_TASK",str(row.id),row.equipment_id)
 
     def open_map(self):
         if self.eq:self.open_entity.emit("MAP",self.eq.equipment_id,self.eq.equipment_id)
