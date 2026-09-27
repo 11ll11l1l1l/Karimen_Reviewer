@@ -756,15 +756,17 @@ def main():
     app.setStyleSheet(SMART_STYLE)
     db = Database()
     demo_password=os.getenv("EMS_DEMO_PASSWORD","DemoEMS2026!")
-    if DEMO_MODE and not db.has_users():
-        # Demo mode is isolated by START_DEMO_WINDOWS.bat and is intentionally turnkey.
+    demo_override=os.getenv("EMS_ALLOW_DEMO_SEED","0").strip().lower() in {"1","true","yes","on"}
+    demo_isolated=DEMO_MODE and ("equipment_manager_demo.db" in str(db.url or "") or demo_override)
+    if demo_isolated and not db.has_users():
+        # Turnkey bootstrap is permitted only for the isolated demo DB (or an explicit override).
         db.create_user("demo_admin","Demo Administrator",demo_password,"Administrator")
     if not db.has_users():
         first = FirstAdminDialog(db)
         if first.exec() != QDialog.DialogCode.Accepted:
             return 1
     login = LoginDialog(db)
-    if DEMO_MODE:
+    if demo_isolated:
         login.username.setText("demo_admin")
         login.password.setText(demo_password)
     if login.exec() != QDialog.DialogCode.Accepted:
