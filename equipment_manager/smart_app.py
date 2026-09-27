@@ -51,17 +51,12 @@ from main import (
     WORKSTATION,
     AdminPage,
     AlarmPage,
-    ControlPage,
     DocumentPage,
     EndorsementPage,
     EquipmentPage,
     FirstAdminDialog,
-    InventoryPage,
     LoginDialog,
     PMPage,
-    QualificationPage,
-    ReliabilityPage,
-    TicketPage,
     WorkLogPage,
 )
 from smart_map import SmartLayoutPage
@@ -275,18 +270,13 @@ class SmartMainWindow(QMainWindow):
         self.pm_page=add("PM Configuration",PMPage(db,user))
         self.incident_workspace=add("Incident / RCA Workspace",IncidentWorkspace(db,user))
         self.troubleshooting_library=add("Troubleshooting History",TroubleshootingLibrary(db,user))
-        self.ticket_page=add("Ticket Lifecycle / Troubleshooting",TicketPage(db,user))
         self.alarm_page=add("Alarms / Events",AlarmPage(db,user))
         self.return_to_service=add("Return to Service",ReturnToServiceWorkspace(db,user))
-        self.qualification_page=add("Qualification (Legacy)",QualificationPage(db,user))
         self.analytics_workspace=add("Engineering Analytics",EngineeringAnalyticsWorkspace(db,user))
-        self.reliability_page=add("Reliability / MTBF (Legacy)",ReliabilityPage(db))
-        self.control_page=add("Disposition / Release (Legacy)",ControlPage(db,user))
         self.work_page=add("Work / Labor",WorkLogPage(db,user))
         self.shift_workspace=add("Shift Operations / Handover",ShiftHandoverWorkspace(db,user))
         self.endorsement_page=add("Handover Records",EndorsementPage(db,user))
         self.inventory_logistics=add("Parts / Inventory Logistics",InventoryLogisticsWorkspace(db,user))
-        self.inventory=add("Parts / Inventory (Legacy)",InventoryPage(db,user))
         self.document_page=add("SOPs / Documents",DocumentPage(db,user))
         self.automation_studio=add("Workflow Automation",WorkflowAutomationStudio(db,user))
         self.integration_studio=add("Integration Studio",IntegrationStudio(db,user))
@@ -297,6 +287,7 @@ class SmartMainWindow(QMainWindow):
         self.my_work.open_entity.connect(self.open_entity)
         self.notification_center.open_entity.connect(self.open_entity)
         self.equipment360.open_entity.connect(self.open_entity)
+        self.equipment_page.equipmentChanged.connect(self._equipment_registry_changed)
         self.layout_page.open_entity.connect(self.open_entity)
         self.layout_page.report_issue.connect(self.open_quick_create_for_equipment)
         self.maintenance_planner.open_entity.connect(self.open_entity)
@@ -309,7 +300,6 @@ class SmartMainWindow(QMainWindow):
         self.incident_workspace.open_entity.connect(self.open_entity)
         self.troubleshooting_library.open_entity.connect(self.open_entity)
         self.alarm_page.open_incident.connect(lambda ticket,equipment:self.open_entity("TICKET",ticket,equipment))
-        self.inventory.show_map_part.connect(self.show_part_map)
         self.nav.currentRowChanged.connect(self.stack.setCurrentIndex)
         self.nav.currentRowChanged.connect(self._on_nav_changed)
         self._apply_role_navigation()
@@ -392,7 +382,7 @@ class SmartMainWindow(QMainWindow):
             },
             "Inventory Controller":{
                 "Global Search","Notifications","Live FAB Map","Equipment Workspaces",
-                "Parts / Inventory Logistics","Parts / Inventory (Legacy)","SOPs / Documents",
+                "Parts / Inventory Logistics","SOPs / Documents",
             },
             "Document Controller":{
                 "Global Search","Notifications","Equipment Workspaces","SOPs / Documents",
@@ -644,13 +634,17 @@ class SmartMainWindow(QMainWindow):
             self.incident_workspace.set_ticket(entity_key)
             self.open_page("Incident / RCA Workspace")
             return
+        if entity_type=="ALARM":
+            if hasattr(self.alarm_page,"select_alarm"):self.alarm_page.select_alarm(entity_key)
+            self.open_page("Alarms / Events")
+            return
+        if entity_type=="COMPONENT":
+            if hasattr(self.equipment_page,"select_component"):self.equipment_page.select_component(entity_key,equipment_id)
+            self.open_page("Equipment Registry")
+            return
         if entity_type=="WORK_ORDER":
             self.work_order_workspace.set_work_order(entity_key)
             self.open_page("Work Orders")
-            return
-        if entity_type=="TICKET_LEGACY":
-            if hasattr(self.ticket_page,"select_ticket"):self.ticket_page.select_ticket(entity_key)
-            self.open_page("Ticket Lifecycle / Troubleshooting")
             return
         if entity_type in {"PM_TASK","PM_EXECUTION"}:
             try:key=int(entity_key)
@@ -658,15 +652,16 @@ class SmartMainWindow(QMainWindow):
             self.pm_execution.set_task(key)
             self.open_page("Technician PM Runner")
             return
-        if entity_type=="PM_LEGACY":
-            try:key=int(entity_key)
-            except Exception:key=0
-            if hasattr(self.pm_page,"select_task"):self.pm_page.select_task(key)
-            self.open_page("PM Configuration")
-            return
         if entity_type=="PART":
             part=entity_key.split("@",1)[0]
             self.inventory_logistics.set_part(part)
+            self.open_page("Parts / Inventory Logistics")
+            return
+        if entity_type=="INVENTORY_RESERVATION":
+            try:reservation_id=int(entity_key)
+            except Exception:reservation_id=0
+            reservation=next((x for x in self.db.list_reservations() if x.id==reservation_id),None)
+            if reservation:self.inventory_logistics.set_part(reservation.part_number)
             self.open_page("Parts / Inventory Logistics")
             return
         if entity_type=="DOCUMENT":
@@ -681,6 +676,26 @@ class SmartMainWindow(QMainWindow):
             self.equipment360.set_equipment(equipment_id);self.open_page("Equipment Workspaces")
             return
         self.open_page("Global Search")
+
+    def _equipment_registry_changed(self,equipment_id: str):
+        equipment_id=(equipment_id or "").strip()
+        if not equipment_id:return
+        self.equipment360.refresh_equipment(equipment_id)
+        for page in [self.layout_page,self.dashboard,self.maintenance_planner,self.analytics_workspace]:
+            if hasattr(page,"refresh"):
+                try:page.refresh()
+                except Exception:pass
+        if getattr(self.return_to_service,"equipment_id","")==equipment_id:
+            try:self.return_to_service.refresh()
+            except Exception:pass
+        ticket=getattr(self.incident_workspace,"ticket",None)
+        if ticket and getattr(ticket,"equipment_id","")==equipment_id:
+            try:self.incident_workspace.refresh()
+            except Exception:pass
+        work_order=getattr(self.work_order_workspace,"work_order",None)
+        if work_order and getattr(work_order,"equipment_id","")==equipment_id:
+            try:self.work_order_workspace.refresh()
+            except Exception:pass
 
     def show_part_map(self, part):
         self.layout_page.highlight_inventory(part)
