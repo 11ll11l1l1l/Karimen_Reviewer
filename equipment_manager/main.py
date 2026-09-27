@@ -323,6 +323,8 @@ class MeterReadingDialog(QDialog):
 
 
 class EquipmentPage(QWidget):
+    equipmentChanged=Signal(str)
+
     def __init__(self, db, user):
         super().__init__(); self.db=db; self.user=user; self.rows=[]; self.history=[]; self.components=[]; self.component_events=[]; self.meters=[]; self.meter_readings=[]
         v=QVBoxLayout(self); h=QHBoxLayout(); self.search=QLineEdit(); self.search.setPlaceholderText("Search equipment..."); self.search.textChanged.connect(self.refresh)
@@ -390,7 +392,7 @@ class EquipmentPage(QWidget):
                 "criticality":value if field=="Criticality" else row.criticality,
                 "map_x":row.map_x,"map_y":row.map_y,
             }
-            try:self.db.save_equipment(data,row.version,user=self.user["username"],workstation=WORKSTATION);updated+=1
+            try:self.db.save_equipment(data,row.version,user=self.user["username"],workstation=WORKSTATION);updated+=1;self.equipmentChanged.emit(row.equipment_id)
             except Exception as exc:failures.append(f"{row.equipment_id}: {exc}")
         self.refresh()
         text=f"Updated {updated}/{len(rows)} equipment record(s)."
@@ -416,7 +418,7 @@ class EquipmentPage(QWidget):
             if action["status"]=="UNCHANGED":continue
             data=action["data"];current=action["current"]
             try:
-                self.db.save_equipment(data,current.version if current else None,user=self.user["username"],workstation=WORKSTATION);imported+=1
+                self.db.save_equipment(data,current.version if current else None,user=self.user["username"],workstation=WORKSTATION);imported+=1;self.equipmentChanged.emit(data.get("equipment_id",""))
             except Exception as exc:failures.append(f"{data.get('equipment_id')}: {exc}")
         self.refresh();detail=f"Applied {imported} equipment create/update row(s). Source warnings: {len(errors)}. Failures: {len(failures)}."
         if failures:detail+="\n"+"\n".join(failures[:12])
@@ -448,6 +450,24 @@ class EquipmentPage(QWidget):
                 self.load_details()
                 break
 
+    def select_component(self,component_id: str,equipment_id: str=""):
+        component_id=(component_id or "").strip()
+        if not component_id:return
+        if equipment_id:
+            self.select_equipment(equipment_id)
+        else:
+            match=next((x for x in self.db.list_components() if x.component_id==component_id),None)
+            if not match:return
+            self.select_equipment(match.equipment_id)
+        self.load_details()
+        for i,row in enumerate(self.components):
+            if row.component_id==component_id:
+                self.component_table.selectRow(i)
+                item=self.component_table.item(i,0)
+                if item:self.component_table.scrollToItem(item)
+                self.load_component_events()
+                break
+
     def add_from_template(self):
         templates=self.db.list_entity_templates("EQUIPMENT")
         if not templates:
@@ -462,7 +482,7 @@ class EquipmentPage(QWidget):
         if d.exec()==QDialog.DialogCode.Accepted:
             try:
                 row=self.db.save_equipment(d.data(),user=self.user["username"],workstation=WORKSTATION)
-                self.db.audit(self.user["username"],"CREATE_FROM_TEMPLATE","EQUIPMENT",row.equipment_id,template.template_id,WORKSTATION);self.refresh()
+                self.db.audit(self.user["username"],"CREATE_FROM_TEMPLATE","EQUIPMENT",row.equipment_id,template.template_id,WORKSTATION);self.refresh();self.equipmentChanged.emit(row.equipment_id)
             except Exception as exc:QMessageBox.critical(self,"Equipment",str(exc))
 
     def add(self):
@@ -471,7 +491,7 @@ class EquipmentPage(QWidget):
             try:
                 row=self.db.save_equipment(d.data(), user=self.user["username"], workstation=WORKSTATION)
                 self.db.audit(self.user["username"],"CREATE","EQUIPMENT",row.equipment_id,workstation=WORKSTATION)
-                self.refresh()
+                self.refresh();self.equipmentChanged.emit(row.equipment_id)
             except Exception as exc: QMessageBox.critical(self,"Equipment",str(exc))
 
     def edit(self):
@@ -482,7 +502,7 @@ class EquipmentPage(QWidget):
             try:
                 self.db.save_equipment(d.data(),row.version,user=self.user["username"],workstation=WORKSTATION)
                 self.db.audit(self.user["username"],"UPDATE_MASTER","EQUIPMENT",row.equipment_id,workstation=WORKSTATION)
-                self.refresh()
+                self.refresh();self.equipmentChanged.emit(row.equipment_id)
             except Exception as exc: QMessageBox.critical(self,"Equipment",str(exc))
 
     def change_state(self):
@@ -498,7 +518,7 @@ class EquipmentPage(QWidget):
                     expected_version=row.version,
                     **d.data(),
                 )
-                self.refresh()
+                self.refresh();self.equipmentChanged.emit(row.equipment_id)
             except Exception as exc:
                 QMessageBox.critical(self,"Equipment State",str(exc))
 
@@ -525,7 +545,7 @@ class EquipmentPage(QWidget):
         if d.exec()==QDialog.DialogCode.Accepted:
             try:
                 self.db.save_component(d.data(),user=self.user["username"],workstation=WORKSTATION)
-                self.load_details()
+                self.load_details();self.equipmentChanged.emit(equipment.equipment_id)
             except Exception as exc:QMessageBox.critical(self,"Component",str(exc))
 
     def edit_component(self):
@@ -535,7 +555,7 @@ class EquipmentPage(QWidget):
         if d.exec()==QDialog.DialogCode.Accepted:
             try:
                 self.db.save_component(d.data(),row.version,user=self.user["username"],workstation=WORKSTATION)
-                self.load_details()
+                self.load_details();self.equipmentChanged.emit(row.equipment_id)
             except Exception as exc:QMessageBox.critical(self,"Component",str(exc))
 
     def remove_component(self):
@@ -553,7 +573,7 @@ class EquipmentPage(QWidget):
                     workstation=WORKSTATION,
                     expected_version=row.version,
                 )
-                self.load_details()
+                self.load_details();self.equipmentChanged.emit(row.equipment_id)
             except Exception as exc:QMessageBox.critical(self,"Component",str(exc))
 
     def load_meter_readings(self):
@@ -567,7 +587,7 @@ class EquipmentPage(QWidget):
         if not equipment:return
         d=MeterDialog(equipment.equipment_id,parent=self)
         if d.exec()==QDialog.DialogCode.Accepted:
-            try:self.db.save_meter(d.data());self.load_details()
+            try:self.db.save_meter(d.data());self.load_details();self.equipmentChanged.emit(equipment.equipment_id)
             except Exception as exc:QMessageBox.critical(self,"Meter",str(exc))
 
     def record_meter(self,reset=False):
@@ -580,7 +600,7 @@ class EquipmentPage(QWidget):
                     meter.equipment_id,meter.meter_code,d.value.value(),self.user["username"],
                     note=d.note.toPlainText().strip(),reset=reset,workstation=WORKSTATION,expected_version=meter.version,
                 )
-                self.load_details()
+                self.load_details();self.equipmentChanged.emit(meter.equipment_id)
                 if tasks:QMessageBox.information(self,"Usage PM",f"Created {len(tasks)} PM task(s) from usage threshold.")
             except Exception as exc:QMessageBox.critical(self,"Meter Reading",str(exc))
 
@@ -2549,6 +2569,20 @@ class AlarmPage(QWidget):
         qualifying=sum(1 for b in self.bursts if b.count>=self.burst_count.value() and self.db._alarm_severity_rank(b.severity)>=self.db._alarm_severity_rank(self.burst_severity.currentText()))
         self.burst_policy_status.setText(f"Plant burst policy: {self.burst_count.value()} alarms within {self.burst_window.value()} s · min {self.burst_severity.currentText()} · auto workflow {'ON' if self.burst_auto.isChecked() else 'OFF'} · {qualifying} displayed burst(s) meet threshold")
         self.load_attachment()
+
+    def select_alarm(self,event_key: str):
+        event_key=(event_key or "").strip()
+        if not event_key:return
+        self.active_only.setChecked(False)
+        self.eq.setText("")
+        self.refresh()
+        for i,row in enumerate(self.rows):
+            if row.event_key==event_key:
+                self.table.selectRow(i)
+                item=self.table.item(i,0)
+                if item:self.table.scrollToItem(item)
+                self.load_attachment()
+                break
 
     def save_burst_policy(self):
         try:
