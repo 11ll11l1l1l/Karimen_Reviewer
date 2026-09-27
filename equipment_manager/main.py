@@ -355,6 +355,11 @@ class EquipmentPage(QWidget):
         self.meter_table=make_table(["Code","Name","Unit","Current","Last Reading","Active","Ver"]);self.meter_table.itemSelectionChanged.connect(self.load_meter_readings);vm.addWidget(self.meter_table,1)
         self.meter_reading_table=make_table(["Meter","Value","Type","Note","Recorded By","Time"]);vm.addWidget(self.meter_reading_table,1)
         tabs.addTab(wm,"Usage / Counters")
+
+        wd=QWidget();vd=QVBoxLayout(wd)
+        self.dependency_summary=QLabel("Select equipment to verify downstream workflow links.");self.dependency_summary.setWordWrap(True);self.dependency_summary.setStyleSheet("color:#5a6670")
+        self.dependency_table=make_table(["Connected Domain","Records","Status / Notes"])
+        vd.addWidget(self.dependency_summary);vd.addWidget(self.dependency_table);tabs.addTab(wd,"Connected Records")
         v.addWidget(tabs,1); self.refresh()
 
     def refresh(self):
@@ -528,6 +533,27 @@ class EquipmentPage(QWidget):
         fill_table(self.history_table,self.history,["from_state","to_state","state_class","reason_code","reason_text","related_ticket","related_pm_task_id","owner","changed_by","changed_at"])
         fill_table(self.component_table,self.components,["component_id","parent_component_id","name","component_type","part_number","serial_number","status","life_limit_value","life_limit_unit","usage_value","installed_at","removed_at","version"])
         fill_table(self.meter_table,self.meters,["meter_code","name","unit","current_value","last_reading_at","active","version"])
+        if row:
+            try:
+                snapshot=self.db.equipment_dependency_snapshot(row.equipment_id)
+                domains=snapshot["domains"]
+                self.dependency_table.setRowCount(len(domains)+1)
+                for i,item in enumerate(domains):
+                    self.dependency_table.setItem(i,0,ti(item["domain"]))
+                    self.dependency_table.setItem(i,1,ti(item["count"]))
+                    self.dependency_table.setItem(i,2,ti("Linked" if item["count"] else "No records"))
+                i=len(domains)
+                self.dependency_table.setItem(i,0,ti("Factory hierarchy"))
+                self.dependency_table.setItem(i,1,ti(1 if snapshot["actual_location_node"] else 0))
+                self.dependency_table.setItem(i,2,ti(f"{snapshot['location_status']} · {snapshot['actual_location_node'] or 'unassigned'}"))
+                self.dependency_summary.setText(
+                    f"{snapshot['linked_total']} linked downstream record(s) · "
+                    f"factory hierarchy {snapshot['location_status']} · stable key {row.equipment_id}"
+                )
+            except Exception as exc:
+                self.dependency_table.setRowCount(0);self.dependency_summary.setText(f"Dependency check unavailable: {exc}")
+        else:
+            self.dependency_table.setRowCount(0);self.dependency_summary.setText("Select equipment to verify downstream workflow links.")
         self.load_component_events();self.load_meter_readings()
 
     def load_component_events(self):
