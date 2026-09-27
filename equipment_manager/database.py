@@ -3653,8 +3653,18 @@ class Database:
         workstation: str = "",
     ):
         payload = dict(data)
+        equipment_id=str(payload.get("equipment_id","")).strip()
+        if not equipment_id:raise ValueError("Equipment ID is required.")
+        payload["equipment_id"]=equipment_id
+        if user:self.assert_authorized(user,"equipment.edit",equipment_id)
+        master_fields=[
+            "name","equipment_type","manufacturer","model","serial_number","asset_number",
+            "site","building","floor","area","line_cell","owner","criticality","map_x","map_y",
+        ]
         with self.session() as s:
-            item = s.scalar(select(Equipment).where(Equipment.equipment_id == payload["equipment_id"]))
+            item = s.scalar(select(Equipment).where(Equipment.equipment_id == equipment_id))
+            created=item is None
+            before={field:getattr(item,field,None) for field in master_fields} if item else {}
             if item:
                 # Operational state and disposition are governed workflows, not editable master-data fields.
                 payload.pop("status", None)
@@ -3668,7 +3678,7 @@ class Database:
                 item = Equipment(**payload)
                 s.add(item)
                 s.add(EquipmentStateEvent(
-                    equipment_id=payload["equipment_id"],
+                    equipment_id=equipment_id,
                     from_state="",
                     to_state=payload["status"],
                     state_class=STATE_CLASS[payload["status"]],
@@ -3681,6 +3691,22 @@ class Database:
                 ))
             s.flush()
             self._sync_equipment_location_from_master_in_session(s,item,user,workstation)
+            after={field:getattr(item,field,None) for field in master_fields}
+            changes={
+                field:{"from":before.get(field),"to":after.get(field)}
+                for field in master_fields if created or before.get(field)!=after.get(field)
+            }
+            action="EQUIPMENT_MASTER_CREATE" if created else "EQUIPMENT_MASTER_UPDATE"
+            s.add(AuditLog(
+                user=user or "system",action=action,entity_type="EQUIPMENT",entity_key=equipment_id,
+                detail=json.dumps({"changes":changes},default=str,sort_keys=True),workstation=workstation,
+            ))
+            self._queue_integration_event(s,"equipment.master.created" if created else "equipment.master.changed","EQUIPMENT",equipment_id,{
+                "equipment_id":equipment_id,"created":created,"changes":changes,
+                "name":item.name,"equipment_type":item.equipment_type,"site":item.site,
+                "building":item.building,"floor":item.floor,"area":item.area,"line_cell":item.line_cell,
+                "owner":item.owner,"criticality":item.criticality,"changed_by":user or "system",
+            })
             s.flush()
             return item
 
