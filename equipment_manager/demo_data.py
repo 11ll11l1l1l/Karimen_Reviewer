@@ -680,6 +680,39 @@ def seed_demo_data(db: Database, username: str = "") -> dict[str, Any]:
             "INFO","EQUIPMENT","FAB-PVD-04","FAB-PVD-04","demo-fixture-ready",
         ))
 
+    # Evidence/attachment examples across the major record surfaces.
+    attachment_specs=[
+        ("EQUIPMENT","FAB-PVD-04","FAB-PVD-04",troubleshooting_path,"Troubleshooting Evidence","Vacuum recovery troubleshooting reference","vacuum,rca,demo"),
+        ("TICKET","DEMO-ISSUE-001","FAB-PVD-04",troubleshooting_path,"Incident Evidence","Pressure-recovery investigation notes","incident,vacuum,demo"),
+        ("WORK_ORDER","DEMO-WO-001","FAB-PVD-04",sop_path,"Work Package","Controlled work-package reference","repair,work-order,demo"),
+        ("QUALIFICATION","DEMO-QUAL-RUN-001","FAB-PVD-04",sop_path,"Qualification Evidence","Qualification reference procedure","qualification,demo"),
+        ("ENDORSEMENT","DEMO-HO-001","FAB-PVD-04",troubleshooting_path,"Handover Evidence","Shift handover troubleshooting reference","handover,demo"),
+    ]
+    if pvd_task:
+        execution=db.get_pm_execution_for_task(pvd_task.id)
+        if execution:
+            attachment_specs.append(("PM_EXECUTION",str(execution.id),"FAB-PVD-04",sop_path,"PM Evidence","PM execution controlled reference","pm,evidence,demo"))
+    releases=db.list_release_requests("FAB-WET-06")
+    if releases:
+        attachment_specs.append(("RELEASE",str(releases[0].id),"FAB-WET-06",sop_path,"Release Evidence","Return-to-service reference","release,demo"))
+    for entity_type,entity_key,equipment_id,path,category,caption,tags in attachment_specs:
+        if not db.list_attachments(entity_type,entity_key):
+            _run(errors,f"attachment {entity_type}:{entity_key}",lambda entity_type=entity_type,entity_key=entity_key,equipment_id=equipment_id,path=path,category=category,caption=caption,tags=tags: db.add_attachment(
+                entity_type,entity_key,path,original_name=Path(path).name,media_type="text/markdown",
+                category=category,caption=caption,tags=tags,equipment_id=equipment_id,created_by=actor,
+            ))
+
+    # Persisted unsaved-work example for the Incident draft recovery UX.
+    if not db.get_user_draft(actor,"TICKET","DEMO-ISSUE-001","summary"):
+        _run(errors,"incident draft",lambda: db.save_user_draft(
+            actor,"TICKET","DEMO-ISSUE-001",{
+                "description":"DEMO DRAFT: added note pending incident-summary save.",
+                "root_cause":"DEMO DRAFT: seal wear remains the leading cause; verify after replacement.",
+                "corrective_action":"DEMO DRAFT: replace seal, leak-check, then run qualification.",
+                "verification":"DEMO DRAFT: monitor wafer and alarm recurrence review pending.",
+            },"summary",
+        ))
+
     # User/workspace history and inventory transaction examples.
     _run(errors,"demo preference",lambda: db.set_user_preference(actor,"demo.calendar.default_view","week"))
     _run(errors,"demo favorite",lambda: db.set_favorite(
