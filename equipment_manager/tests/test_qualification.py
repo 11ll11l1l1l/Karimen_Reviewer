@@ -97,6 +97,12 @@ class QualificationWorkflowTests(unittest.TestCase):
         self.assertEqual(run.status,"Approved")
         self.assertEqual(self.db.latest_valid_qualification("ETCH-01").run_no,run.run_no)
 
+    def test_role_permissions_are_enforced_below_ui_layer(self):
+        self.db.create_user("operator_user","Operator","operator-password-123","Operator")
+        run=self._complete_run()
+        with self.assertRaises(PermissionError):
+            self.db.verify_qualification_run(run.id,"operator_user",expected_version=run.version)
+
     def test_release_from_qualification_requires_approved_run(self):
         eq=self.db.get_equipment("ETCH-01")
         self.db.transition_equipment_state(
