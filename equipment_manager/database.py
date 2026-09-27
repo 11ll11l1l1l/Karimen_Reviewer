@@ -8082,27 +8082,73 @@ class Database:
             return max(0.0, stock-float(s.scalar(rstmt) or 0.0))
 
     def reserve_inventory(self, part_number: str, qty: float, user: str, pm_task_id: int | None=None, equipment_id: str="", location_code: str="", note: str=""):
-        if qty<=0: raise ValueError("Quantity must be positive")
+        part_number=(part_number or "").strip();location_code=(location_code or "").strip()
+        equipment_id=(equipment_id or "").strip()
+        if not part_number:raise ValueError("Part number is required.")
+        if qty<=0:raise ValueError("Quantity must be positive")
+        if pm_task_id:
+            with self.session() as s:
+                task=s.get(PMTask,int(pm_task_id))
+                if not task:raise ValueError("PM task not found.")
+                if equipment_id and equipment_id!=task.equipment_id:
+                    raise ValueError(f"PM task belongs to {task.equipment_id}, not {equipment_id}.")
+                equipment_id=task.equipment_id
+        if equipment_id:
+            with self.session() as s:
+                if not s.scalar(select(Equipment).where(Equipment.equipment_id==equipment_id)):
+                    raise ValueError("Reservation equipment not found.")
+        if user:self.assert_authorized(user,"inventory.reserve",equipment_id)
         with self.session() as s:
             stmt=select(InventoryItem).where(InventoryItem.part_number==part_number,InventoryItem.condition=="Available")
-            if location_code: stmt=stmt.where(InventoryItem.location_code==location_code)
-            if not self.url.startswith("sqlite"): stmt=stmt.with_for_update()
+            if location_code:stmt=stmt.where(InventoryItem.location_code==location_code)
+            if not self.url.startswith("sqlite"):stmt=stmt.with_for_update()
             stock=list(s.scalars(stmt))
-            total=sum(x.quantity for x in stock)
-            rstmt=select(func.sum(InventoryReservation.quantity)).where(InventoryReservation.part_number==part_number,InventoryReservation.status=="Reserved")
-            if location_code: rstmt=rstmt.where(InventoryReservation.location_code==location_code)
-            reserved=float(s.scalar(rstmt) or 0.0)
-            if total-reserved < qty: return False, max(0.0,total-reserved)
-            loc=location_code or (stock[0].location_code if len(stock)==1 else "")
-            r=InventoryReservation(part_number=part_number,location_code=loc,quantity=qty,pm_task_id=pm_task_id,equipment_id=equipment_id,reserved_by=user,note=note)
-            s.add(r); s.flush(); return True,r.id
+            if not stock:return False,0.0
+            if not location_code and len({x.location_code for x in stock})>1:
+                raise ValueError("Select a storage location when the part is stocked in multiple locations.")
+            loc=location_code or stock[0].location_code
+            total=sum(float(x.quantity or 0) for x in stock if x.location_code==loc)
+            reserved=float(s.scalar(select(func.sum(InventoryReservation.quantity)).where(
+                InventoryReservation.part_number==part_number,
+                InventoryReservation.location_code==loc,
+                InventoryReservation.status=="Reserved",
+            )) or 0.0)
+            available=max(0.0,total-reserved)
+            if available<qty:return False,available
+            r=InventoryReservation(
+                part_number=part_number,location_code=loc,quantity=qty,pm_task_id=pm_task_id,
+                equipment_id=equipment_id,reserved_by=user,note=note.strip(),
+            )
+            s.add(r);s.flush()
+            s.add(AuditLog(
+                user=user or "system",action="INVENTORY_RESERVE",entity_type="INVENTORY_RESERVATION",
+                entity_key=str(r.id),detail=json.dumps({
+                    "part_number":part_number,"location_code":loc,"quantity":qty,
+                    "pm_task_id":pm_task_id,"equipment_id":equipment_id,
+                },sort_keys=True),
+            ))
+            return True,r.id
 
     def release_reservation(self, reservation_id: int, user: str):
         with self.session() as s:
             r=s.get(InventoryReservation,reservation_id)
-            if not r: raise ValueError("Reservation not found")
-            if r.status=="Reserved": r.status="Released"; r.released_at=datetime.utcnow(); r.note=(r.note+f"\nReleased by {user}").strip(); r.version+=1
-            s.flush(); return r
+            if not r:raise ValueError("Reservation not found")
+            equipment_id=(r.equipment_id or "").strip()
+            if not equipment_id and r.pm_task_id:
+                task=s.get(PMTask,r.pm_task_id);equipment_id=task.equipment_id if task else ""
+        if user:self.assert_authorized(user,"inventory.reserve",equipment_id)
+        with self.session() as s:
+            r=s.get(InventoryReservation,reservation_id)
+            if not r:raise ValueError("Reservation not found")
+            if r.status=="Reserved":
+                r.status="Released";r.released_at=datetime.utcnow()
+                r.note=(r.note+f"\nReleased by {user}").strip();r.version+=1
+                s.add(AuditLog(
+                    user=user or "system",action="INVENTORY_RESERVATION_RELEASE",
+                    entity_type="INVENTORY_RESERVATION",entity_key=str(r.id),
+                    detail=json.dumps({"part_number":r.part_number,"location_code":r.location_code,"quantity":r.quantity},sort_keys=True),
+                ))
+            s.flush();return r
 
     def list_reservations(self, active_only: bool=False):
         with self.session() as s:
