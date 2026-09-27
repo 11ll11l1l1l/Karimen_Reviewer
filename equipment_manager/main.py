@@ -2698,14 +2698,14 @@ class MainWindow(QMainWindow):
 
 
 def main():
-    configure_logging("ems-main");install_exception_hook("ems-main")
-    app=QApplication(sys.argv);app.setStyleSheet(STYLE);db=Database()
-    if not db.has_users():
-        first=FirstAdminDialog(db)
-        if first.exec()!=QDialog.DialogCode.Accepted:return 1
-    login=LoginDialog(db)
-    if login.exec()!=QDialog.DialogCode.Accepted:return 0
-    w=MainWindow(db,login.user);w.show();return app.exec()
+    """Compatibility entry point.
+
+    The legacy shell is intentionally no longer launchable.  Reusable page/dialog
+    classes remain in this module while the application entry point is the modern
+    SmartMainWindow in smart_app.py.
+    """
+    from smart_app import main as modern_main
+    return modern_main()
 
 
 if __name__=="__main__":raise SystemExit(main())
