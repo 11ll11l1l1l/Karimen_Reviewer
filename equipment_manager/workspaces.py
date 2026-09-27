@@ -644,6 +644,16 @@ class EquipmentWorkspaceTabs(QWidget):
     def set_equipment(self,equipment_id: str):
         self.open_equipment(equipment_id)
 
+    def refresh_equipment(self,equipment_id: str):
+        equipment_id=(equipment_id or "").strip()
+        page=self.by_equipment.get(equipment_id)
+        if page is None:return
+        page.refresh()
+        eq=self.db.get_equipment(equipment_id)
+        if eq:
+            index=self.tabs.indexOf(page)
+            if index>=0:self.tabs.setTabToolTip(index,f"{equipment_id} — {eq.name}")
+
     def close_tab(self,index: int):
         page=self.tabs.widget(index)
         if page is None:return
