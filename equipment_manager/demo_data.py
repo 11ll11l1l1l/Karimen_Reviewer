@@ -232,15 +232,16 @@ def seed_demo_data(db: Database, username: str = "") -> dict[str, Any]:
         if (row["part_number"],row["location_code"]) not in inventory_keys:
             _run(errors, f"inventory {row['part_number']}", lambda row=row: db.save_inventory_item(row))
 
-    if not db.list_part_alternates("DEMO-O-RING-KIT"):
-        _run(errors, "part alternate", lambda: db.save_part_alternate(
-            "DEMO-O-RING-KIT","DEMO-O-RING-KIT-ALT",actor,True,"Approved demo alternate."
-        ))
+    if "DEMO-O-RING-KIT-ALT" not in {x.part_number for x in db.list_part_catalog()}:
         _run(errors, "alternate catalog", lambda: db.save_part_catalog({
             "part_number":"DEMO-O-RING-KIT-ALT","description":"Alternate chamber seal kit","category":"Consumable",
             "manufacturer":"Demo Seal B","supplier":"Backup Supplier","supplier_part_number":"ALT-OR-100",
             "barcode":"4900000000042","lead_time_days":10,"reorder_qty":5.0,"notes":"Approved alternate part","active":True,
         }))
+    if not db.list_part_alternates("DEMO-O-RING-KIT"):
+        _run(errors, "part alternate", lambda: db.save_part_alternate(
+            "DEMO-O-RING-KIT","DEMO-O-RING-KIT-ALT",actor,True,"Approved demo alternate."
+        ))
 
     if not any(x.asset_id=="DEMO-ROT-RF-001" for x in db.list_rotables()):
         _run(errors, "rotable", lambda: db.register_rotable({
@@ -549,9 +550,9 @@ def seed_demo_data(db: Database, username: str = "") -> dict[str, Any]:
             "sort_order":50,"columns":2,"collapsible":True,"active":True,
         }))
     field_rows=[
-        {"field_id":"DEMO_PROCESS_FAMILY","entity_type":"EQUIPMENT","applies_to":"","label":"Process Family","field_type":"CHOICE","options_json":["Logic","Memory","R&D"],"required":True,"sort_order":10,"active":True},
-        {"field_id":"DEMO_CHAMBER_COUNT","entity_type":"EQUIPMENT","applies_to":"","label":"Chamber Count","field_type":"NUMBER","options_json":[],"required":False,"sort_order":20,"active":True},
-        {"field_id":"DEMO_GOLDEN_TOOL","entity_type":"EQUIPMENT","applies_to":"","label":"Golden Tool","field_type":"BOOLEAN","options_json":[],"required":False,"sort_order":30,"active":True},
+        {"field_id":"DEMO_PROCESS_FAMILY","entity_type":"EQUIPMENT","applies_to":"PVD Cluster","label":"Process Family","field_type":"CHOICE","options_json":["Logic","Memory","R&D"],"required":True,"sort_order":10,"active":True},
+        {"field_id":"DEMO_CHAMBER_COUNT","entity_type":"EQUIPMENT","applies_to":"PVD Cluster","label":"Chamber Count","field_type":"NUMBER","options_json":[],"required":False,"sort_order":20,"active":True},
+        {"field_id":"DEMO_GOLDEN_TOOL","entity_type":"EQUIPMENT","applies_to":"PVD Cluster","label":"Golden Tool","field_type":"BOOLEAN","options_json":[],"required":False,"sort_order":30,"active":True},
     ]
     existing_fields={x.field_id for x in db.list_custom_field_definitions("EQUIPMENT",active_only=False)}
     for row in field_rows:
