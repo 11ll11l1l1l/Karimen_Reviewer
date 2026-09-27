@@ -3493,6 +3493,30 @@ class Database:
                 InventoryItem.part_number.ilike(like),InventoryItem.description.ilike(like),InventoryItem.location_code.ilike(like),
             )).limit(max_each)):
                 add("PART",f"{row.part_number}@{row.location_code}",row.part_number,f"{row.description} · {row.location_code}")
+            for row in s.scalars(select(InventoryReservation).where(or_(
+                InventoryReservation.part_number.ilike(like),InventoryReservation.location_code.ilike(like),
+                InventoryReservation.equipment_id.ilike(like),InventoryReservation.reserved_by.ilike(like),
+                InventoryReservation.status.ilike(like),InventoryReservation.note.ilike(like),
+            )).order_by(InventoryReservation.reserved_at.desc()).limit(max_each)):
+                add("INVENTORY_RESERVATION",row.id,f"Reservation #{row.id} — {row.part_number}",f"{row.status} · {row.location_code} · PM {row.pm_task_id or '—'}",row.equipment_id)
+            for row in s.scalars(select(SupplierOrder).where(or_(
+                SupplierOrder.order_no.ilike(like),SupplierOrder.supplier.ilike(like),
+                SupplierOrder.status.ilike(like),SupplierOrder.external_reference.ilike(like),
+                SupplierOrder.notes.ilike(like),
+            )).order_by(SupplierOrder.order_date.desc()).limit(max_each)):
+                add("SUPPLIER_ORDER",row.order_no,f"{row.order_no} — {row.supplier}",f"{row.status} · expected {row.expected_at or '—'}")
+            for row in s.scalars(select(RotableAsset).where(or_(
+                RotableAsset.asset_id.ilike(like),RotableAsset.part_number.ilike(like),
+                RotableAsset.serial_number.ilike(like),RotableAsset.description.ilike(like),
+                RotableAsset.equipment_id.ilike(like),RotableAsset.vendor.ilike(like),
+            )).limit(max_each)):
+                add("ROTABLE",row.asset_id,f"{row.asset_id} — {row.description or row.part_number}",f"{row.status} · {row.part_number} · {row.current_location or row.equipment_id}",row.equipment_id)
+            for row in s.scalars(select(EquipmentRelease).where(or_(
+                EquipmentRelease.equipment_id.ilike(like),EquipmentRelease.related_ticket.ilike(like),
+                EquipmentRelease.status.ilike(like),EquipmentRelease.requested_by.ilike(like),
+                EquipmentRelease.verified_by.ilike(like),EquipmentRelease.approved_by.ilike(like),
+            )).order_by(EquipmentRelease.requested_at.desc()).limit(max_each)):
+                add("RELEASE",row.id,f"Release #{row.id} — {row.equipment_id}",f"{row.status} · ticket {row.related_ticket or '—'}",row.equipment_id)
             for row in s.scalars(select(ControlledDocument).where(or_(
                 ControlledDocument.document_id.ilike(like),ControlledDocument.title.ilike(like),ControlledDocument.entity_key.ilike(like),
             )).limit(max_each)):
