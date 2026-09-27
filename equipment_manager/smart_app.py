@@ -687,8 +687,14 @@ class SmartMainWindow(QMainWindow):
         equipment_id=(equipment_id or "").strip()
         if not equipment_id:return
         self.equipment360.refresh_equipment(equipment_id)
+        if hasattr(self.layout_page,"reload_scope_options"):
+            try:self.layout_page.reload_scope_options()
+            except Exception:pass
+        elif hasattr(self.layout_page,"refresh"):
+            try:self.layout_page.refresh()
+            except Exception:pass
         for page in [
-            self.layout_page,self.dashboard,self.maintenance_planner,self.analytics_workspace,
+            self.dashboard,self.maintenance_planner,self.analytics_workspace,
             self.shift_workspace,self.search_workspace,self.my_work,
         ]:
             if hasattr(page,"refresh"):
