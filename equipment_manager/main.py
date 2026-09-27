@@ -1794,7 +1794,7 @@ class WorkLogPage(QWidget):
                 break
 
     def start(self):
-        entity_type,ok=QInputDialog.getItem(self,"Start Work","Linked work type",["PM_TASK","TICKET","QUALIFICATION","EQUIPMENT","OTHER"],0,False)
+        entity_type,ok=QInputDialog.getItem(self,"Start Work","Linked work type",["WORK_ORDER","PM_TASK","PM_EXECUTION","TICKET","QUALIFICATION","EQUIPMENT","OTHER"],0,False)
         if not ok:return
         key,ok=QInputDialog.getText(self,"Start Work","Linked entity key / ID")
         if not ok:return
