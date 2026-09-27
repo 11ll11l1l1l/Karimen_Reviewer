@@ -98,6 +98,18 @@ class InventoryLogisticsTests(unittest.TestCase):
         self.assertTrue(ok)
         self.assertEqual(remaining,4.0)
 
+    def test_low_privilege_user_cannot_mutate_supply_or_rotable_workflows(self):
+        self.db.create_user("operator_user","Operator","operator-password-123","Operator")
+        with self.assertRaises(PermissionError):
+            self.db.save_supplier_order({
+                "order_no":"PO-NOPE","supplier":"Supplier A","notes":"Unauthorized",
+            },"operator_user")
+        with self.assertRaises(PermissionError):
+            self.db.register_rotable({
+                "asset_id":"ROT-NOPE","part_number":"FILTER-A","serial_number":"X",
+                "description":"Unauthorized asset","current_location":"STOCK-A","notes":"",
+            },"operator_user")
+
     def test_approved_alternate_is_exposed_to_pm_kit(self):
         self.db.save_part_alternate("FILTER-A","FILTER-B","manager",True,"Engineering approved")
         self.db.save_equipment({"equipment_id":"ETCH-KIT","name":"Kit Etcher"},user="manager")
