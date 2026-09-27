@@ -57,6 +57,47 @@ class InventoryLogisticsTests(unittest.TestCase):
         self.assertEqual(row["suggested_order_qty"],20.0)
         self.assertEqual(row["supplier"],"Supplier A")
 
+    def test_reservation_rejects_ambiguous_location_and_cross_equipment_pm(self):
+        self.db.save_inventory_item({
+            "part_number":"FILTER-A","description":"Chamber filter","category":"Consumable",
+            "manufacturer":"Vendor A","model":"","compatible_equipment":"","quantity":5.0,
+            "min_quantity":0.0,"unit":"pcs","condition":"Available","location_code":"STOCK-A",
+            "image_path":"","notes":"",
+        })
+        self.db.save_inventory_item({
+            "part_number":"FILTER-A","description":"Chamber filter","category":"Consumable",
+            "manufacturer":"Vendor A","model":"","compatible_equipment":"","quantity":5.0,
+            "min_quantity":0.0,"unit":"pcs","condition":"Available","location_code":"STOCK-B",
+            "image_path":"","notes":"",
+        })
+        with self.assertRaises(ValueError):
+            self.db.reserve_inventory("FILTER-A",1,"manager")
+
+        self.db.save_equipment({"equipment_id":"EQ-A","name":"A"},user="manager")
+        self.db.save_equipment({"equipment_id":"EQ-B","name":"B"},user="manager")
+        task=self.db.upsert_pm_task({
+            "equipment_id":"EQ-A","pm_id":"PM-X","pm_name":"Test PM","status":"Scheduled",
+            "assigned_to":"manager","estimated_hours":1.0,"priority":"Normal",
+        })
+        with self.assertRaises(ValueError):
+            self.db.reserve_inventory("FILTER-A",1,"manager",pm_task_id=task.id,equipment_id="EQ-B",location_code="STOCK-A")
+
+    def test_ad_hoc_consumption_cannot_take_reserved_stock(self):
+        self.db.save_inventory_item({
+            "part_number":"FILTER-A","description":"Chamber filter","category":"Consumable",
+            "manufacturer":"Vendor A","model":"","compatible_equipment":"","quantity":5.0,
+            "min_quantity":0.0,"unit":"pcs","condition":"Available","location_code":"STOCK-A",
+            "image_path":"","notes":"",
+        })
+        ok,_=self.db.reserve_inventory("FILTER-A",4,"manager",location_code="STOCK-A")
+        self.assertTrue(ok)
+        ok,available=self.db.consume_inventory("FILTER-A","STOCK-A",2,"manager")
+        self.assertFalse(ok)
+        self.assertEqual(available,1.0)
+        ok,remaining=self.db.consume_inventory("FILTER-A","STOCK-A",1,"manager")
+        self.assertTrue(ok)
+        self.assertEqual(remaining,4.0)
+
     def test_approved_alternate_is_exposed_to_pm_kit(self):
         self.db.save_part_alternate("FILTER-A","FILTER-B","manager",True,"Engineering approved")
         self.db.save_equipment({"equipment_id":"ETCH-KIT","name":"Kit Etcher"},user="manager")
