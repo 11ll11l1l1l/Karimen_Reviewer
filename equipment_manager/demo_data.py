@@ -138,6 +138,8 @@ def seed_demo_data(db: Database, username: str = "") -> dict[str, Any]:
         ("demo_tech","Demo Technician","Technician"),
         ("demo_engineer","Demo Equipment Engineer","Equipment Engineer"),
         ("demo_supervisor","Demo Supervisor","Supervisor"),
+        ("demo_manager","Demo Manager","Manager"),
+        ("demo_document","Demo Document Controller","Document Controller"),
         ("demo_inventory","Demo Inventory Controller","Inventory Controller"),
     ]:
         if demo_user not in existing_users:
@@ -576,6 +578,37 @@ def seed_demo_data(db: Database, username: str = "") -> dict[str, Any]:
             "FAB-PVD-04","DEMO-QUAL-PVD",actor,run_no="DEMO-QUAL-RUN-001",workstation=DEMO_WORKSTATION
         ))
 
+    if not any(x.protocol_id=="DEMO-QUAL-MET" for x in db.list_qualification_protocols(active_only=False)):
+        _run(errors,"metrology qualification protocol",lambda: db.save_qualification_protocol(
+            "DEMO-QUAL-MET","Metrology Post-Service Verification",
+            [
+                {"check_id":"M01","label":"Reference wafer repeatability","acceptance":"Pass"},
+                {"check_id":"M02","label":"Recipe matching within control limit","acceptance":"Pass"},
+            ],actor,equipment_type="Metrology",workstation=DEMO_WORKSTATION,
+        ))
+    met_run=next((x for x in db.list_qualification_runs("FAB-MET-07") if x.run_no=="DEMO-QUAL-RUN-VERIFIED"),None)
+    if not met_run:
+        met_run=_run(errors,"verified qualification start",lambda: db.start_qualification_run(
+            "FAB-MET-07","DEMO-QUAL-MET",actor,run_no="DEMO-QUAL-RUN-VERIFIED",workstation=DEMO_WORKSTATION
+        ))
+    if met_run and met_run.status=="In Progress":
+        for check_id in ["M01","M02"]:
+            met_run=_run(errors,f"qualification result {check_id}",lambda met_run=met_run,check_id=check_id: db.save_qualification_result(
+                met_run.id,check_id,"PASS","Demo measurement accepted.",actor,
+                evidence_path=troubleshooting_path,workstation=DEMO_WORKSTATION,
+                expected_version=met_run.version,
+            )) or met_run
+        if met_run.status=="In Progress":
+            met_run=_run(errors,"qualification submit",lambda met_run=met_run: db.submit_qualification_run(
+                met_run.id,actor,"Demo checks complete; independent verification requested.",
+                workstation=DEMO_WORKSTATION,expected_version=met_run.version,
+            )) or met_run
+    if met_run and met_run.status=="Submitted":
+        _run(errors,"qualification verify",lambda met_run=met_run: db.verify_qualification_run(
+            met_run.id,"demo_engineer","Independent review complete; awaiting final approval.",
+            workstation=DEMO_WORKSTATION,expected_version=met_run.version,
+        ))
+
     if not db.list_dispositions(active_only=True,equipment_id="FAB-CVD-19"):
         _run(errors,"disposition",lambda: db.set_disposition({
             "equipment_id":"FAB-CVD-19","state":"Hold","reason":"Particle excursion containment",
@@ -590,6 +623,14 @@ def seed_demo_data(db: Database, username: str = "") -> dict[str, Any]:
                 "maintenance_complete":True,"measurements_pass":True,"calibration_valid":True,
                 "safety_check":True,"verification_run":False,"critical_tickets_cleared":True,
             },"Demo release request awaiting independent verification.",actor,DEMO_WORKSTATION,
+        ))
+    wet_release=next(iter(db.list_release_requests("FAB-WET-06")),None)
+    if wet_release and wet_release.status=="Pending Verification":
+        _run(errors,"release verification",lambda wet_release=wet_release: db.verify_release(
+            wet_release.id,{
+                "maintenance_complete":True,"measurements_pass":True,"calibration_valid":True,
+                "safety_check":True,"verification_run":True,"critical_tickets_cleared":True,
+            },"demo_supervisor",expected_version=wet_release.version,workstation=DEMO_WORKSTATION,
         ))
 
     # Shift handover records.
@@ -624,6 +665,14 @@ def seed_demo_data(db: Database, username: str = "") -> dict[str, Any]:
             _run(errors,"controlled revision",lambda: db.add_controlled_revision(
                 doc.document_id,"A",sop_path,"Initial bilingual-ready demo PM procedure.",actor,DEMO_WORKSTATION
             ))
+    demo_revisions=db.list_controlled_revisions("DEMO-SOP-PM-001")
+    draft_revision=next((x for x in demo_revisions if x.status=="Draft"),None)
+    if draft_revision:
+        _run(errors,"controlled revision approval",lambda draft_revision=draft_revision: db.approve_controlled_revision(
+            draft_revision.id,"demo_document",effective_at=now-timedelta(days=1),
+            expires_at=now+timedelta(days=365),workstation=DEMO_WORKSTATION,
+            expected_version=draft_revision.version,
+        ))
     if not any(x.title=="Vacuum Recovery Troubleshooting — Demo" for x in db.list_documents("Equipment","FAB-PVD-04")):
         _run(errors,"document link",lambda: db.add_document({
             "entity_type":"Equipment","entity_key":"FAB-PVD-04","document_type":"Troubleshooting Guide",
