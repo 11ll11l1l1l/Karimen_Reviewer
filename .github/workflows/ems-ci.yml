@@ -140,7 +140,7 @@ jobs:
 
 
   ems-compact-smoke:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -158,6 +158,7 @@ jobs:
         working-directory: equipment_manager_compact
         env:
           QT_QPA_PLATFORM: offscreen
+        shell: bash
         run: |
           python - <<'PY'
           from loader import bundled_module_names, install
@@ -178,6 +179,7 @@ jobs:
         working-directory: equipment_manager_compact
         env:
           QT_QPA_PLATFORM: offscreen
+        shell: bash
         run: |
           python - <<'PY'
           from pathlib import Path
