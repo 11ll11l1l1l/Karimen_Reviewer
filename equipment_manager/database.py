@@ -2118,7 +2118,7 @@ class Database:
                     # The rejected transaction never committed. Refresh now so
                     # the next user retry starts from the winning workstation's
                     # authoritative revision rather than a stale screen/database.
-                    self.shared_workspace.refresh_local(self.engine)
+                    self.shared_workspace.refresh_local(self.engine, force=True)
                 raise
             finally:
                 if not closed:
@@ -2134,7 +2134,7 @@ class Database:
         if self.shared_workspace is None:
             return False
         with self._session_lock:
-            return self.shared_workspace.refresh_local(self.engine)
+            return self.shared_workspace.refresh_local(self.engine, force=True)
 
     def shared_recovery_conflicts(self) -> list[dict]:
         if self.shared_workspace is None:

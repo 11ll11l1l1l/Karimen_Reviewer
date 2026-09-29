@@ -43,7 +43,8 @@ class SharedFolderDatabaseIntegrationTests(unittest.TestCase):
                 user="admin",
             )
 
-            # db_a refreshes from the manifest at the start of its next session.
+            # Explicit refresh bypasses the bounded background manifest poll.
+            self.assertTrue(db_a.refresh_shared_state())
             self.assertEqual(db_a.get_equipment("ETCH-01").name,"Etcher B")
             self.assertEqual(
                 db_a.shared_sync_status()["local_revision"],

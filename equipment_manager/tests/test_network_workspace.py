@@ -91,8 +91,52 @@ class SharedFolderWorkspaceTests(unittest.TestCase):
 
             self.assertFalse(restarted.pending_path.exists())
             self.assertEqual(restarted.status()["shared_revision"],2)
-            self.assertEqual(_read_value(restarted.canonical_db),"committed-before-crash")
+            checkpoint = restarted.state_root / restarted._manifest()["checkpoint_file"]
+            self.assertEqual(_read_value(checkpoint),"committed-before-crash")
             self.assertEqual(_read_value(restarted.local_db),"committed-before-crash")
+
+    def test_large_replica_uses_small_update_files_and_incremental_pull(self):
+        with tempfile.TemporaryDirectory() as root:
+            root=Path(root)
+            a=SharedFolderWorkspace(root/"share",local_root=root/"a")
+            b=SharedFolderWorkspace(root/"share",local_root=root/"b")
+            a.prepare_local_database()
+            _write_value(a.local_db,"initial")
+            with sqlite3.connect(a.local_db) as conn:
+                conn.execute("CREATE TABLE padding (id INTEGER PRIMARY KEY, value BLOB)")
+                conn.execute("INSERT INTO padding(value) VALUES (?)",(b"x"*1024*1024,))
+            a.initialize_authoritative_if_missing()
+            b.prepare_local_database()
+            with a.guarded_publish():
+                _write_value(a.local_db,"changed")
+            manifest=a._manifest()
+            self.assertEqual(len(manifest["deltas"]),1)
+            update=a.delta_root / manifest["deltas"][0]["file"]
+            self.assertLess(update.stat().st_size, a.local_db.stat().st_size//10)
+            self.assertTrue(b.refresh_local(force=True))
+            self.assertEqual(_read_value(b.local_db),"changed")
+            self.assertEqual(b.local_revision(),2)
+
+    def test_checkpoint_and_multiple_updates_restore_a_lagging_workstation(self):
+        with tempfile.TemporaryDirectory() as root:
+            root=Path(root)
+            a=SharedFolderWorkspace(root/"share",local_root=root/"a")
+            a.checkpoint_interval=2
+            b=SharedFolderWorkspace(root/"share",local_root=root/"b")
+            a.prepare_local_database()
+            _write_value(a.local_db,"initial")
+            with sqlite3.connect(a.local_db) as conn:
+                conn.execute("CREATE TABLE padding (value BLOB)")
+                conn.execute("INSERT INTO padding VALUES (?)",(b"x"*1024*1024,))
+            a.initialize_authoritative_if_missing()
+            b.prepare_local_database()
+            for value in ("one","two","three","four"):
+                with a.guarded_publish():
+                    _write_value(a.local_db,value)
+            self.assertGreater(a._manifest()["checkpoint_revision"],1)
+            self.assertTrue(b.refresh_local(force=True))
+            self.assertEqual(_read_value(b.local_db),"four")
+            self.assertEqual(b.local_revision(),5)
 
     def test_restart_conflict_preserves_unsynchronized_database_before_pulling_new_shared_state(self):
         with tempfile.TemporaryDirectory() as root:

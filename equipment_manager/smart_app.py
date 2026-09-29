@@ -278,15 +278,11 @@ class SmartMainWindow(QMainWindow):
         self.ticket_page=add("Ticket Lifecycle / Troubleshooting",TicketPage(db,user))
         self.alarm_page=add("Alarms / Events",AlarmPage(db,user))
         self.return_to_service=add("Return to Service",ReturnToServiceWorkspace(db,user))
-        self.qualification_page=add("Qualification (Legacy)",QualificationPage(db,user))
         self.analytics_workspace=add("Engineering Analytics",EngineeringAnalyticsWorkspace(db,user))
-        self.reliability_page=add("Reliability / MTBF (Legacy)",ReliabilityPage(db))
-        self.control_page=add("Disposition / Release (Legacy)",ControlPage(db,user))
         self.work_page=add("Work / Labor",WorkLogPage(db,user))
         self.shift_workspace=add("Shift Operations / Handover",ShiftHandoverWorkspace(db,user))
         self.endorsement_page=add("Handover Records",EndorsementPage(db,user))
         self.inventory_logistics=add("Parts / Inventory Logistics",InventoryLogisticsWorkspace(db,user))
-        self.inventory=add("Parts / Inventory (Legacy)",InventoryPage(db,user))
         self.document_page=add("SOPs / Documents",DocumentPage(db,user))
         self.automation_studio=add("Workflow Automation",WorkflowAutomationStudio(db,user))
         self.integration_studio=add("Integration Studio",IntegrationStudio(db,user))
@@ -309,7 +305,6 @@ class SmartMainWindow(QMainWindow):
         self.incident_workspace.open_entity.connect(self.open_entity)
         self.troubleshooting_library.open_entity.connect(self.open_entity)
         self.alarm_page.open_incident.connect(lambda ticket,equipment:self.open_entity("TICKET",ticket,equipment))
-        self.inventory.show_map_part.connect(self.show_part_map)
         self.nav.currentRowChanged.connect(self.stack.setCurrentIndex)
         self.nav.currentRowChanged.connect(self._on_nav_changed)
         self._apply_role_navigation()
@@ -392,7 +387,7 @@ class SmartMainWindow(QMainWindow):
             },
             "Inventory Controller":{
                 "Global Search","Notifications","Live FAB Map","Equipment Workspaces",
-                "Parts / Inventory Logistics","Parts / Inventory (Legacy)","SOPs / Documents",
+                "Parts / Inventory Logistics","SOPs / Documents",
             },
             "Document Controller":{
                 "Global Search","Notifications","Equipment Workspaces","SOPs / Documents",
