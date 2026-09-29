@@ -151,6 +151,9 @@ class SharedFolderWorkspaceTests(unittest.TestCase):
             b.prepare_local_database()
 
             _write_value(b.local_db,"pc-b-committed-locally")
+            with sqlite3.connect(str(b.local_db)) as conn:
+                conn.execute("INSERT INTO probe(id,value) VALUES(2,'unpublished-local-row')")
+                conn.commit()
             b.pending_path.write_text(
                 json.dumps(
                     {
@@ -175,6 +178,10 @@ class SharedFolderWorkspaceTests(unittest.TestCase):
             self.assertTrue(conflicts[0]["recovery_exists"])
             self.assertEqual(_read_value(Path(conflicts[0]["recovery_database"])),"pc-b-committed-locally")
             self.assertEqual(_read_value(restarted_b.local_db),"pc-a-newer-shared")
+            with sqlite3.connect(str(restarted_b.local_db)) as conn:
+                self.assertIsNone(conn.execute("SELECT id FROM probe WHERE id=2").fetchone())
+            with sqlite3.connect(conflicts[0]["recovery_database"]) as conn:
+                self.assertIsNotNone(conn.execute("SELECT id FROM probe WHERE id=2").fetchone())
             self.assertEqual(restarted_b.local_revision(),2)
 
     def test_status_exposes_recovery_count_and_paths(self):

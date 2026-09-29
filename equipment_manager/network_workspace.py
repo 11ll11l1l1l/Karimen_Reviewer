@@ -237,7 +237,7 @@ class SharedFolderWorkspace:
         self._pull_snapshot(manifest, engine=engine)
         return True
 
-    def _pull_snapshot(self, manifest: dict, engine=None) -> None:
+    def _pull_snapshot(self, manifest: dict, engine=None, *, force_checkpoint: bool = False) -> None:
         if not self.canonical_db.is_file():
             return
         if engine is not None:
@@ -248,7 +248,8 @@ class SharedFolderWorkspace:
             raise SharedFolderUnavailable("Invalid EMS checkpoint path.")
         local_revision = self.local_revision()
         temp = self.local_db.with_name(f".{self.local_db.name}.{uuid.uuid4().hex}.tmp")
-        if self.local_db.is_file() and checkpoint_revision <= local_revision < int(manifest.get("revision") or 0):
+        if (not force_checkpoint and self.local_db.is_file()
+                and checkpoint_revision <= local_revision < int(manifest.get("revision") or 0)):
             shutil.copy2(self.local_db, temp)
             start = local_revision
         else:
@@ -511,7 +512,7 @@ class SharedFolderWorkspace:
             except FileNotFoundError:
                 pass
             if self.canonical_db.is_file():
-                self._pull_snapshot(manifest, engine=engine)
+                self._pull_snapshot(manifest, engine=engine, force_checkpoint=True)
 
     def recovery_conflicts(self) -> list[dict]:
         rows: list[dict] = []
