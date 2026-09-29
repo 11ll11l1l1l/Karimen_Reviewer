@@ -47,7 +47,7 @@ def store_attachment_file(source_path: str, root: str, entity_type: str, entity_
         raise FileNotFoundError(source_path)
     folder=entity_attachment_dir(root,entity_type,entity_key)
     stamp=datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-    dst=folder/f"{stamp}_{_safe_segment(src.name)}"
+    dst=folder/f"{stamp}_{uuid.uuid4().hex[:12]}_{_safe_segment(src.name)}"
     _atomic_copy(src,dst)
     media_type=mimetypes.guess_type(src.name)[0] or "application/octet-stream"
     return {
@@ -60,7 +60,7 @@ def store_attachment_file(source_path: str, root: str, entity_type: str, entity_
 def store_clipboard_image(image, root: str, entity_type: str, entity_key: str) -> dict:
     folder=entity_attachment_dir(root,entity_type,entity_key)
     stamp=datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-    dst=folder/f"{stamp}_screenshot.png"
+    dst=folder/f"{stamp}_{uuid.uuid4().hex[:12]}_screenshot.png"
     temp=dst.with_name(f".{dst.name}.{uuid.uuid4().hex}.tmp")
     try:
         if not image.save(str(temp),"PNG"):

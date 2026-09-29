@@ -111,6 +111,10 @@ This prevents an old workstation from silently replacing newer shared state afte
 Attachments, clipboard screenshots and other evidence are stored under `Files`.
 
 Writes use a temporary sibling file followed by `os.replace`, so other workstations do not see a half-written screenshot/document with its final name.
+Each attachment gets a unique filename, allowing different users to write
+separate files concurrently. The small database transaction that records an
+attachment still takes the shared write lease. Independent file writes do not
+require copying or refreshing the database.
 
 The database stores the shared path, size and SHA-256 as before.
 

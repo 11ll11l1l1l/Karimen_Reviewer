@@ -326,10 +326,11 @@ class EquipmentPage(QWidget):
     def __init__(self, db, user):
         super().__init__(); self.db=db; self.user=user; self.rows=[]; self.history=[]; self.components=[]; self.component_events=[]; self.meters=[]; self.meter_readings=[]
         v=QVBoxLayout(self); h=QHBoxLayout(); self.search=QLineEdit(); self.search.setPlaceholderText("Search equipment..."); self.search.textChanged.connect(self.refresh)
-        add=QPushButton("Add");template=QPushButton("Add from Template");edit=QPushButton("Edit Master Data"); transition=QPushButton("Change State");imp=QPushButton("Import Excel/CSV");paste=QPushButton("Paste from Excel");bulk=QPushButton("Bulk Edit Selected")
-        add.clicked.connect(self.add);template.clicked.connect(self.add_from_template); edit.clicked.connect(self.edit); transition.clicked.connect(self.change_state);imp.clicked.connect(self.import_equipment);paste.clicked.connect(self.paste_equipment);bulk.clicked.connect(self.bulk_edit)
+        add=QPushButton("Add");template=QPushButton("Add from Template");edit=QPushButton("Edit Master Data");create_pm=QPushButton("Create PM + First Schedule"); transition=QPushButton("Change State");imp=QPushButton("Import Excel/CSV");paste=QPushButton("Paste from Excel");bulk=QPushButton("Bulk Edit Selected")
+        add.clicked.connect(self.add);template.clicked.connect(self.add_from_template); edit.clicked.connect(self.edit);create_pm.clicked.connect(self.create_pm_for_selected); transition.clicked.connect(self.change_state);imp.clicked.connect(self.import_equipment);paste.clicked.connect(self.paste_equipment);bulk.clicked.connect(self.bulk_edit)
         canedit=db.has_permission(user,"equipment.edit");add.setEnabled(canedit);template.setEnabled(canedit);edit.setEnabled(canedit);imp.setEnabled(canedit);paste.setEnabled(canedit);bulk.setEnabled(canedit);transition.setEnabled(db.has_permission(user,"equipment.transition"))
-        h.addWidget(self.search,1); h.addWidget(add);h.addWidget(template); h.addWidget(edit);h.addWidget(imp);h.addWidget(paste);h.addWidget(bulk); h.addWidget(transition); v.addLayout(h)
+        create_pm.setEnabled(db.has_permission(user,"pm.edit"))
+        h.addWidget(self.search,1); h.addWidget(add);h.addWidget(template); h.addWidget(edit);h.addWidget(create_pm);h.addWidget(imp);h.addWidget(paste);h.addWidget(bulk); h.addWidget(transition); v.addLayout(h)
         self.table=make_table(["ID","Name","Type","Area","Line/Cell","Status","Disposition","Owner","Criticality","Ver"])
         self.table.doubleClicked.connect(self.edit); self.table.itemSelectionChanged.connect(self.load_details); v.addWidget(self.table,2)
 
@@ -473,6 +474,23 @@ class EquipmentPage(QWidget):
                 self.db.audit(self.user["username"],"CREATE","EQUIPMENT",row.equipment_id,workstation=WORKSTATION)
                 self.refresh()
             except Exception as exc: QMessageBox.critical(self,"Equipment",str(exc))
+
+    def create_pm_for_selected(self):
+        equipment=selected_row(self.table,self.rows)
+        if not equipment:
+            QMessageBox.information(self,"PM","Select registered equipment first.");return
+        dialog=PMDefinitionDialog(parent=self,initial={"equipment_id":equipment.equipment_id})
+        if dialog.exec()!=QDialog.DialogCode.Accepted:return
+        due_text,ok=QInputDialog.getText(self,"First PM schedule",
+            "First due date and time (YYYY-MM-DD HH:MM)",text=datetime.now().strftime("%Y-%m-%d 09:00"))
+        if not ok:return
+        try:
+            due=datetime.strptime(due_text.strip(),"%Y-%m-%d %H:%M")
+            task=self.db.create_equipment_pm(equipment.equipment_id,dialog.data(),due,
+                self.user["username"],workstation=WORKSTATION)
+            QMessageBox.information(self,"PM",f"PM created and task #{task.id} scheduled. Open Maintenance Planner to adjust its slot.")
+            self.refresh()
+        except Exception as exc:QMessageBox.critical(self,"PM",str(exc))
 
     def edit(self):
         row=selected_row(self.table,self.rows)
@@ -915,7 +933,7 @@ class PMPage(QWidget):
         else:
             due=calculate_next_due(d.schedule_type,d.frequency_value,d.frequency_unit,d.anchor_mode,last.original_due_date,last.last_completion_date or last.original_due_date)
         if not due:QMessageBox.warning(self,"PM","Could not calculate next due date.");return
-        try:self.db.upsert_pm_task({"equipment_id":d.equipment_id or (last.equipment_id if last else ""),"pm_id":d.pm_id,"pm_name":d.name,"original_due_date":due,"scheduled_date":due,"status":"Scheduled","estimated_hours":d.estimated_hours,"priority":"Normal","sop_path":d.sop_path});self.refresh()
+        try:self.db.generate_next_pm_task(d.pm_id,due,self.user["username"],WORKSTATION);self.refresh()
         except Exception as exc:QMessageBox.critical(self,"PM",str(exc))
     def parts_ready(self):
         d=selected_row(self.def_table,self.defs)
