@@ -292,7 +292,5 @@ def readonly_open_copy(path: str) -> str:
 
 
 def copy_clipboard_image(image, root: str, entity_type: str, entity_key: str) -> str:
-    folder = Path(root)/"Attachments"/entity_type/entity_key; folder.mkdir(parents=True, exist_ok=True)
-    path = folder/f"{datetime.now():%Y%m%d_%H%M%S_%f}_clipboard.png"
-    if not image.save(str(path), "PNG"): raise IOError("Could not save clipboard image")
-    return str(path)
+    from attachment_store import store_clipboard_image
+    return store_clipboard_image(image,root,entity_type,entity_key)["stored_path"]

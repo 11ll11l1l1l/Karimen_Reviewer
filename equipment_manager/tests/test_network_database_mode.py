@@ -1,6 +1,7 @@
 import os
 import tempfile
 import unittest
+from datetime import datetime, timedelta
 from pathlib import Path
 from unittest.mock import patch
 
@@ -22,6 +23,28 @@ def _shared_database(shared_root: Path, local_root: Path) -> Database:
 
 
 class SharedFolderDatabaseIntegrationTests(unittest.TestCase):
+    def test_equipment_pm_and_calendar_are_visible_on_second_workstation(self):
+        with tempfile.TemporaryDirectory() as root:
+            root=Path(root)
+            shared=root/"share"
+            a=_shared_database(shared,root/"a")
+            a.create_user("planner","Planner","strong-password-123","Equipment Engineer")
+            a.save_equipment({"equipment_id":"ETCH-01","name":"Etcher"},user="planner")
+            due=datetime(2026,10,10,9)
+            task=a.create_equipment_pm("ETCH-01",{
+                "pm_id":"PM-ETCH","name":"Chamber PM","schedule_type":"Interval",
+                "frequency_value":30,"frequency_unit":"days","anchor_mode":"Original Due",
+                "early_window_days":2,"estimated_hours":2.0,"active":True,
+            },due,"planner")
+            b=_shared_database(shared,root/"b")
+            self.assertEqual(b.get_equipment("ETCH-01").name,"Etcher")
+            self.assertEqual(b.get_pm_task(task.id).pm_id,"PM-ETCH")
+            self.assertEqual(b.get_pm_task_schedule(task.id).scheduled_end_at,due+timedelta(hours=2))
+            b.schedule_pm_task(task.id,"planner",start_at=due-timedelta(days=1),
+                expected_task_version=b.get_pm_task(task.id).version)
+            a.refresh_shared_state()
+            self.assertEqual(a.get_pm_task(task.id).scheduled_date,due-timedelta(days=1))
+
     def test_two_database_instances_exchange_committed_records_without_opening_sqlite_on_share(self):
         with tempfile.TemporaryDirectory() as root:
             root=Path(root)
@@ -43,7 +66,8 @@ class SharedFolderDatabaseIntegrationTests(unittest.TestCase):
                 user="admin",
             )
 
-            # db_a refreshes from the manifest at the start of its next session.
+            # Explicit refresh bypasses the bounded background manifest poll.
+            self.assertTrue(db_a.refresh_shared_state())
             self.assertEqual(db_a.get_equipment("ETCH-01").name,"Etcher B")
             self.assertEqual(
                 db_a.shared_sync_status()["local_revision"],

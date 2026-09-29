@@ -30,8 +30,10 @@ set EMS_BACKUP_ROOT=\\FILESERVER\EquipmentManagement\Backups
 ```text
 \\FILESERVER\EquipmentManagement
 ├─ SharedState
-│  ├─ ems.sqlite              authoritative synchronized snapshot
-│  ├─ manifest.json           revision, SHA-256, publisher and publish time
+│  ├─ ems.sqlite              initial shared checkpoint
+│  ├─ ems-checkpoint-*.sqlite immutable periodic checkpoints
+│  ├─ Updates/*.delta         compressed changed SQLite blocks
+│  ├─ manifest.json           revision, checkpoint, update hashes and publisher
 │  └─ .write-lock\            short-lived cross-workstation write lease
 ├─ Files
 │  ├─ Attachments
@@ -52,10 +54,10 @@ Recovery\                     preserved unsynchronized conflict copies
 
 ## Read flow
 
-1. EMS checks the shared manifest before opening a database session.
+1. EMS checks the small shared manifest at most once every two seconds per workstation. F5 forces an immediate check.
 2. If the shared revision is newer, the SQLAlchemy pool is disposed.
-3. The authoritative shared snapshot is copied into a temporary local file.
-4. SHA-256 is verified against the shared manifest.
+3. EMS copies its local replica (or the latest checkpoint when it fell behind) and applies only missing update files.
+4. Each update and the final replica are verified with SHA-256.
 5. The local file is atomically replaced.
 6. The user reads from the local SQLite replica.
 
@@ -69,10 +71,9 @@ The normal UI therefore reads from a fast local file rather than continuously qu
 4. If the shared revision changed since the local transaction began, the transaction is cancelled before commit and the caller receives a conflict/retry error.
 5. If the revision still matches, the local SQLite transaction commits.
 6. EMS disposes local database connections.
-7. The committed local database is copied to a temporary file in `SharedState`.
-8. The temporary file is atomically renamed to `ems.sqlite`.
-9. `manifest.json` is replaced **last** with the incremented revision and new SHA-256.
-10. The write lease is released.
+7. Changed 4 KiB blocks are compressed into one immutable update file. If the update exceeds half the database size or 16 updates have accumulated, EMS publishes a new immutable checkpoint instead.
+8. `manifest.json` is replaced **last** with the incremented revision, file hashes and checkpoint pointer.
+9. The write lease is released. Old immutable updates and checkpoints are retained for at least a day.
 
 This deliberately serializes committed writes. Reads remain local.
 
@@ -110,6 +111,10 @@ This prevents an old workstation from silently replacing newer shared state afte
 Attachments, clipboard screenshots and other evidence are stored under `Files`.
 
 Writes use a temporary sibling file followed by `os.replace`, so other workstations do not see a half-written screenshot/document with its final name.
+Each attachment gets a unique filename, allowing different users to write
+separate files concurrently. The small database transaction that records an
+attachment still takes the shared write lease. Independent file writes do not
+require copying or refreshing the database.
 
 The database stores the shared path, size and SHA-256 as before.
 
@@ -121,13 +126,9 @@ A workstation may keep its most recent local replica, but the production UI shou
 
 ## Performance envelope
 
-The current implementation publishes a complete SQLite snapshot per committed transaction. This is simple and auditable and is appropriate for the initial plant deployment while the database remains moderate in size.
+Normal writes publish changed compressed blocks; readers pull only missing revisions. Full checkpoints bound replay cost and handle large database changes. This is a file-level delta, not a SQL merge: a stale writer still must retry. Large binary evidence remains outside the database.
 
-Future optimization, only if measured site data requires it:
-
-- batch low-value audit/activity writes;
-- maintain periodic full snapshots plus an append-only delta journal;
-- move large binary evidence out of database state (already true);
+Tuning: `EMS_SYNC_POLL_SECONDS=2` and `EMS_SYNC_CHECKPOINT_INTERVAL=16`. A forced refresh bypasses the poll interval.
 - compact/archive old operational history while retaining governed audit records.
 
 Do not introduce delta replication until the snapshot model is measured on the real LAN; correctness is the priority.

@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import secrets
 import threading
 from contextlib import contextmanager
@@ -1548,6 +1549,7 @@ class Database:
     def __init__(self, url: str | None = None):
         self.shared_workspace = None
         self._session_lock = threading.RLock()
+        self._session_depth = 0
         data_mode = os.getenv("EMS_DATA_MODE", "").strip().lower()
         shared_root = os.getenv("EMS_SHARED_ROOT", "").strip()
         shared_enabled = url is None and (data_mode in {"network-folder", "shared-folder", "serverless"} or bool(shared_root))
@@ -2086,8 +2088,10 @@ class Database:
         # never replace the SQLite file while another thread owns a connection.
         lock = self._session_lock if self.shared_workspace is not None else _NullLock()
         with lock:
-            if self.shared_workspace is not None:
+            if self.shared_workspace is not None and self._session_depth == 0:
                 self.shared_workspace.refresh_local(self.engine)
+            if self.shared_workspace is not None:
+                self._session_depth += 1
             s = self.Session()
             closed = False
             try:
@@ -2118,11 +2122,13 @@ class Database:
                     # The rejected transaction never committed. Refresh now so
                     # the next user retry starts from the winning workstation's
                     # authoritative revision rather than a stale screen/database.
-                    self.shared_workspace.refresh_local(self.engine)
+                    self.shared_workspace.refresh_local(self.engine, force=True)
                 raise
             finally:
                 if not closed:
                     s.close()
+                if self.shared_workspace is not None:
+                    self._session_depth -= 1
 
     def shared_sync_status(self) -> dict | None:
         if self.shared_workspace is None:
@@ -2134,7 +2140,7 @@ class Database:
         if self.shared_workspace is None:
             return False
         with self._session_lock:
-            return self.shared_workspace.refresh_local(self.engine)
+            return self.shared_workspace.refresh_local(self.engine, force=True)
 
     def shared_recovery_conflicts(self) -> list[dict]:
         if self.shared_workspace is None:
@@ -4565,10 +4571,86 @@ class Database:
 
     def save_pm_definition(self, data: dict[str, Any], expected_version: int | None = None):
         with self.session() as s:
+            equipment_id=str(data.get("equipment_id") or "").strip()
+            if not str(data.get("pm_id") or "").strip() or not str(data.get("name") or "").strip():
+                raise ValueError("PM ID and name are required.")
+            if equipment_id and not s.scalar(select(Equipment.id).where(Equipment.equipment_id==equipment_id)):
+                raise ValueError(f"Equipment {equipment_id} is not registered.")
             item = s.scalar(select(PMDefinition).where(PMDefinition.pm_id == data["pm_id"]))
-            if item: self._update_versioned(item, data, expected_version, "PM definition")
+            if item:
+                if item.equipment_id != equipment_id and s.scalar(select(PMTask.id).where(PMTask.pm_id==item.pm_id)):
+                    raise ValueError("PM has scheduled tasks. Create a new PM ID for another equipment.")
+                self._update_versioned(item, data, expected_version, "PM definition")
             else: item = PMDefinition(**data); s.add(item)
             s.flush(); return item
+
+    def create_equipment_pm(
+        self, equipment_id: str, definition: dict[str, Any], due: datetime,
+        user: str, *, start_at: datetime | None = None, workstation: str = "",
+    ) -> PMTask:
+        """Register a PM definition, first task and calendar slot together."""
+        equipment_id=equipment_id.strip()
+        pm_id=str(definition.get("pm_id") or "").strip()
+        if not equipment_id or not pm_id or not due:
+            raise ValueError("Equipment, PM ID and first due date are required.")
+        self.assert_authorized(user,"pm.edit",equipment_id)
+        with self.session() as s:
+            if not s.scalar(select(Equipment.id).where(Equipment.equipment_id==equipment_id)):
+                raise ValueError(f"Equipment {equipment_id} is not registered.")
+            if s.scalar(select(PMDefinition.id).where(PMDefinition.pm_id==pm_id)):
+                raise ValueError(f"PM ID {pm_id} already exists. Use PM Configuration to edit it.")
+            payload=dict(definition)
+            payload["equipment_id"]=equipment_id
+            payload["pm_id"]=pm_id
+            definition_row=PMDefinition(**payload)
+            s.add(definition_row)
+            start=start_at or due
+            if start>due+timedelta(days=max(0,definition_row.grace_days or 0)):
+                raise ValueError("First slot is after the PM grace window.")
+            hours=max(float(definition_row.estimated_hours or 0),0.5)
+            task=PMTask(
+                equipment_id=equipment_id,pm_id=pm_id,pm_name=definition_row.name,
+                original_due_date=due,scheduled_date=start,status="Scheduled",
+                estimated_hours=definition_row.estimated_hours,
+                sop_path=definition_row.sop_path,
+            )
+            s.add(task);s.flush()
+            end=start+timedelta(hours=hours)
+            s.add(PMTaskSchedule(task_id=task.id,baseline_start_at=due,
+                scheduled_start_at=start,scheduled_end_at=end,planned_hours=hours,updated_by=user))
+            s.add(PMTaskScheduleEvent(task_id=task.id,new_start_at=start,
+                new_end_at=end,new_assignee="",reason="Initial PM schedule",changed_by=user))
+            s.add(AuditLog(user=user,action="PM_PROGRAM_CREATE",entity_type="PM_TASK",
+                entity_key=str(task.id),detail=f"{equipment_id} / {pm_id}",workstation=workstation))
+            return task
+
+    def generate_next_pm_task(self, pm_id: str, due: datetime, user: str,
+                              workstation: str = "") -> PMTask:
+        """Create one next task without modifying an existing completed occurrence."""
+        with self.session() as s:
+            definition=s.scalar(select(PMDefinition).where(PMDefinition.pm_id==pm_id))
+            if not definition or not definition.active:
+                raise ValueError("Active PM definition not found.")
+            if not definition.equipment_id or not s.scalar(select(Equipment.id).where(Equipment.equipment_id==definition.equipment_id)):
+                raise ValueError("Assign this PM to a registered equipment before generating a task.")
+            self.assert_authorized(user,"pm.edit",definition.equipment_id)
+            existing=s.scalar(select(PMTask).where(PMTask.equipment_id==definition.equipment_id,
+                PMTask.pm_id==pm_id,PMTask.original_due_date==due))
+            if existing:
+                raise ValueError("A PM task already exists for this equipment and due date.")
+            task=PMTask(equipment_id=definition.equipment_id,pm_id=pm_id,pm_name=definition.name,
+                original_due_date=due,scheduled_date=due,status="Scheduled",
+                estimated_hours=definition.estimated_hours,sop_path=definition.sop_path)
+            s.add(task);s.flush()
+            hours=max(float(task.estimated_hours or 0),0.5)
+            s.add(PMTaskSchedule(task_id=task.id,baseline_start_at=due,
+                scheduled_start_at=due,scheduled_end_at=due+timedelta(hours=hours),
+                planned_hours=hours,updated_by=user))
+            s.add(PMTaskScheduleEvent(task_id=task.id,new_start_at=due,
+                new_end_at=due+timedelta(hours=hours),reason="Generated PM schedule",changed_by=user))
+            s.add(AuditLog(user=user,action="PM_TASK_GENERATE",entity_type="PM_TASK",
+                entity_key=str(task.id),detail=pm_id,workstation=workstation))
+            return task
 
     def apply_pm_template_bundle(
         self,

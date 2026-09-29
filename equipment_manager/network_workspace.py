@@ -8,6 +8,8 @@ import socket
 import sqlite3
 import time
 import uuid
+import base64
+import zlib
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
@@ -74,6 +76,7 @@ class SharedFolderWorkspace:
         self.shared_root = Path(shared_root)
         self.state_root = self.shared_root / "SharedState"
         self.canonical_db = self.state_root / "ems.sqlite"
+        self.delta_root = self.state_root / "Updates"
         self.manifest_path = self.state_root / "manifest.json"
         self.lock_dir = self.state_root / ".write-lock"
 
@@ -88,6 +91,10 @@ class SharedFolderWorkspace:
         self.replica_path = self.local_root / "replica.json"
         self.pending_path = self.local_root / "pending_publish.json"
         self.recovery_root = self.local_root / "Recovery"
+        self.base_path = self.local_root / "publish_base.sqlite"
+        self.refresh_interval_seconds = max(0.0, float(os.getenv("EMS_SYNC_POLL_SECONDS", "2")))
+        self.checkpoint_interval = max(2, int(os.getenv("EMS_SYNC_CHECKPOINT_INTERVAL", "16")))
+        self._last_manifest_check = 0.0
 
         self.lock_timeout_seconds = max(1.0, float(lock_timeout_seconds))
         self.stale_lock_seconds = max(30.0, float(stale_lock_seconds))
@@ -139,6 +146,27 @@ class SharedFolderWorkspace:
             )
         return data
 
+    def _delta(self, before: Path, after: Path) -> bytes:
+        # Fixed blocks let changed SQLite pages travel without the whole DB.
+        block = 4096
+        changes = []
+        with before.open("rb") as old, after.open("rb") as new:
+            index = 0
+            while (current := new.read(block)):
+                if current != old.read(block):
+                    changes.append([index, base64.b64encode(current).decode("ascii")])
+                index += 1
+        payload = {"size": after.stat().st_size, "blocks": changes}
+        return zlib.compress(json.dumps(payload, separators=(",", ":")).encode(), 6)
+
+    def _apply_delta(self, db: Path, patch: Path) -> None:
+        data = json.loads(zlib.decompress(patch.read_bytes()))
+        with db.open("r+b") as handle:
+            for index, content in data["blocks"]:
+                handle.seek(int(index) * 4096)
+                handle.write(base64.b64decode(content))
+            handle.truncate(int(data["size"]))
+
     def local_revision(self) -> int:
         return int(self._read_json(self.replica_path).get("revision") or 0)
 
@@ -149,13 +177,7 @@ class SharedFolderWorkspace:
         manifest = self._manifest()
         if self.canonical_db.is_file():
             expected_hash = str(manifest.get("sha256") or "")
-            needs_copy = not self.local_db.is_file() or self.local_revision() != int(manifest.get("revision") or 0)
-            if not needs_copy and expected_hash:
-                try:
-                    needs_copy = _sha256(self.local_db) != expected_hash
-                except Exception:
-                    needs_copy = True
-            if needs_copy:
+            if not self.local_db.is_file() or self.local_revision() != int(manifest.get("revision") or 0) or (expected_hash and _sha256(self.local_db) != expected_hash):
                 self._pull_snapshot(manifest)
         return self.local_db
 
@@ -199,9 +221,13 @@ class SharedFolderWorkspace:
             pass
         return True
 
-    def refresh_local(self, engine=None) -> bool:
+    def refresh_local(self, engine=None, *, force: bool = False) -> bool:
         if self.pending_path.exists():
             self._recover_pending_publish_if_possible(engine=engine)
+        now = time.monotonic()
+        if not force and now - self._last_manifest_check < self.refresh_interval_seconds:
+            return False
+        self._last_manifest_check = now
         manifest = self._manifest()
         if not self.canonical_db.is_file():
             return False
@@ -211,12 +237,37 @@ class SharedFolderWorkspace:
         self._pull_snapshot(manifest, engine=engine)
         return True
 
-    def _pull_snapshot(self, manifest: dict, engine=None) -> None:
+    def _pull_snapshot(self, manifest: dict, engine=None, *, force_checkpoint: bool = False) -> None:
         if not self.canonical_db.is_file():
             return
         if engine is not None:
             engine.dispose()
-        _atomic_copy(self.canonical_db, self.local_db)
+        checkpoint_revision = int(manifest.get("checkpoint_revision") or manifest.get("revision") or 0)
+        checkpoint_name = str(manifest.get("checkpoint_file") or "ems.sqlite")
+        if Path(checkpoint_name).name != checkpoint_name:
+            raise SharedFolderUnavailable("Invalid EMS checkpoint path.")
+        local_revision = self.local_revision()
+        temp = self.local_db.with_name(f".{self.local_db.name}.{uuid.uuid4().hex}.tmp")
+        if (not force_checkpoint and self.local_db.is_file()
+                and checkpoint_revision <= local_revision < int(manifest.get("revision") or 0)):
+            shutil.copy2(self.local_db, temp)
+            start = local_revision
+        else:
+            shutil.copy2(self.state_root / checkpoint_name, temp)
+            start = checkpoint_revision
+        try:
+            for item in manifest.get("deltas", []):
+                if int(item["revision"]) > start:
+                    patch = self.delta_root / item["file"]
+                    if _sha256(patch) != item["sha256"]:
+                        raise SharedFolderUnavailable("EMS update file hash mismatch.")
+                    self._apply_delta(temp, patch)
+            expected_hash = str(manifest.get("sha256") or "")
+            if expected_hash and _sha256(temp) != expected_hash:
+                raise SharedFolderUnavailable("Shared EMS update chain hash mismatch.")
+            os.replace(temp, self.local_db)
+        finally:
+            temp.unlink(missing_ok=True)
         expected_hash = str(manifest.get("sha256") or "")
         actual_hash = _sha256(self.local_db)
         if expected_hash and actual_hash != expected_hash:
@@ -327,6 +378,7 @@ class SharedFolderWorkspace:
             )
             completed_local_commit = False
             try:
+                _atomic_copy(self.local_db, self.base_path)
                 yield
                 completed_local_commit = True
                 if engine is not None:
@@ -339,6 +391,8 @@ class SharedFolderWorkspace:
                     except FileNotFoundError:
                         pass
                 raise
+            finally:
+                self.base_path.unlink(missing_ok=True)
 
     def _publish_locked(self, base_revision: int) -> dict:
         if not self.local_db.is_file():
@@ -350,7 +404,26 @@ class SharedFolderWorkspace:
                 f"Shared EMS revision advanced to {remote_revision} before publish."
             )
         digest = _sha256(self.local_db)
-        _atomic_copy(self.local_db, self.canonical_db)
+        deltas = list(manifest.get("deltas") or [])
+        checkpoint_revision = int(manifest.get("checkpoint_revision") or remote_revision)
+        patch = self._delta(self.base_path, self.local_db) if self.base_path.is_file() else b""
+        checkpoint = (not patch or len(deltas) >= self.checkpoint_interval
+                      or len(patch) >= self.local_db.stat().st_size // 2)
+        if checkpoint:
+            checkpoint_file = f"ems-checkpoint-{remote_revision + 1:012d}-{uuid.uuid4().hex}.sqlite"
+            _atomic_copy(self.local_db, self.state_root / checkpoint_file)
+            checkpoint_revision = remote_revision + 1
+            deltas = []
+        else:
+            checkpoint_file = str(manifest.get("checkpoint_file") or "ems.sqlite")
+        if not checkpoint:
+            self.delta_root.mkdir(parents=True, exist_ok=True)
+            name = f"{remote_revision + 1:012d}-{uuid.uuid4().hex}.delta"
+            path = self.delta_root / name
+            temp = path.with_suffix(".tmp")
+            temp.write_bytes(patch)
+            os.replace(temp, path)
+            deltas.append({"revision": remote_revision + 1, "file": name, "sha256": _sha256(path)})
         next_manifest = {
             "schema": self.MANIFEST_SCHEMA,
             "revision": remote_revision + 1,
@@ -358,6 +431,9 @@ class SharedFolderWorkspace:
             "size_bytes": self.local_db.stat().st_size,
             "published_at": _utc_now(),
             "publisher": self.workstation,
+            "checkpoint_revision": checkpoint_revision,
+            "checkpoint_file": checkpoint_file,
+            "deltas": deltas,
         }
         _atomic_json(self.manifest_path, next_manifest)
         self._write_replica_marker(next_manifest)
@@ -365,7 +441,26 @@ class SharedFolderWorkspace:
             self.pending_path.unlink()
         except FileNotFoundError:
             pass
+        if checkpoint:
+            try:
+                self._prune_old_updates(next_manifest)
+            except OSError:
+                pass  # Cleanup must never turn a committed write into a failure.
         return next_manifest
+
+    def _prune_old_updates(self, manifest: dict) -> None:
+        # Keep old manifests' immutable files available for slow readers and
+        # interrupted clients. Collect only files older than one day.
+        cutoff = time.time() - 86400
+        keep = {item["file"] for item in manifest.get("deltas", [])}
+        if self.delta_root.is_dir():
+            for path in self.delta_root.glob("*.delta"):
+                if path.name not in keep and path.stat().st_mtime < cutoff:
+                    path.unlink(missing_ok=True)
+        active = str(manifest.get("checkpoint_file") or "ems.sqlite")
+        for path in self.state_root.glob("ems-checkpoint-*.sqlite"):
+            if path.name != active and path.stat().st_mtime < cutoff:
+                path.unlink(missing_ok=True)
 
     def _recover_pending_publish_if_possible(self, engine=None) -> None:
         pending = self._read_json(self.pending_path)
@@ -382,6 +477,10 @@ class SharedFolderWorkspace:
             manifest = self._manifest()
             remote_revision = int(manifest.get("revision") or 0)
             base_revision = int(pending.get("base_revision") or 0)
+            if remote_revision == base_revision + 1 and manifest.get("sha256") == _sha256(self.local_db):
+                self._write_replica_marker(manifest)
+                self.pending_path.unlink(missing_ok=True)
+                return
             if remote_revision == base_revision:
                 if engine is not None:
                     engine.dispose()
@@ -413,7 +512,7 @@ class SharedFolderWorkspace:
             except FileNotFoundError:
                 pass
             if self.canonical_db.is_file():
-                self._pull_snapshot(manifest, engine=engine)
+                self._pull_snapshot(manifest, engine=engine, force_checkpoint=True)
 
     def recovery_conflicts(self) -> list[dict]:
         rows: list[dict] = []
@@ -442,7 +541,7 @@ class SharedFolderWorkspace:
         return {
             "mode": "network-folder",
             "shared_root": str(self.shared_root),
-            "canonical_db": str(self.canonical_db),
+            "canonical_db": str(self.state_root / str(manifest.get("checkpoint_file") or "ems.sqlite")),
             "local_db": str(self.local_db),
             "shared_revision": int(manifest.get("revision") or 0),
             "local_revision": self.local_revision(),
