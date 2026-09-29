@@ -1,8 +1,10 @@
 import json
+import hashlib
 import os
 import sqlite3
 import tempfile
 import unittest
+import zlib
 from pathlib import Path
 
 from network_workspace import SharedFolderConflict, SharedFolderUnavailable, SharedFolderWorkspace
@@ -229,6 +231,46 @@ class SharedFolderWorkspaceTests(unittest.TestCase):
             self.assertIn("update file",b._last_refresh_error.lower())
             self.assertEqual(_read_value(b.local_db),"initial")
             self.assertEqual(b.local_revision(),1)
+
+    def test_new_client_can_read_legacy_delta_from_an_older_workstation(self):
+        with tempfile.TemporaryDirectory() as root:
+            root=Path(root)
+            a=SharedFolderWorkspace(root/"share",local_root=root/"a")
+            b=SharedFolderWorkspace(root/"share",local_root=root/"b")
+            a.prepare_local_database()
+            _write_value(a.local_db,"initial")
+            a.initialize_authoritative_if_missing()
+            b.prepare_local_database()
+            with a.guarded_publish():
+                _write_value(a.local_db,"legacy-client-update")
+
+            manifest=a._manifest()
+            patch_path=a.delta_root/manifest["deltas"][0]["file"]
+            payload=json.loads(zlib.decompress(patch_path.read_bytes()))
+            payload.pop("format")
+            payload.pop("block_size")
+            payload.pop("sha256")
+            patch_path.write_bytes(zlib.compress(json.dumps(payload,separators=(",",":")).encode(),6))
+            manifest["deltas"][0]["sha256"]=hashlib.sha256(patch_path.read_bytes()).hexdigest()
+            a.manifest_path.write_text(json.dumps(manifest),encoding="utf-8")
+
+            self.assertTrue(b.refresh_local(force=True))
+            self.assertEqual(_read_value(b.local_db),"legacy-client-update")
+            self.assertEqual(b.local_revision(),2)
+
+    def test_malformed_manifest_does_not_break_local_reads(self):
+        with tempfile.TemporaryDirectory() as root:
+            root=Path(root)
+            workspace=SharedFolderWorkspace(root/"share",local_root=root/"pc")
+            workspace.prepare_local_database()
+            _write_value(workspace.local_db,"verified-local")
+            workspace.initialize_authoritative_if_missing()
+            manifest=workspace._manifest()
+            manifest["deltas"]="not-a-list"
+            workspace.manifest_path.write_text(json.dumps(manifest),encoding="utf-8")
+
+            self.assertFalse(workspace.refresh_local(force=True))
+            self.assertEqual(_read_value(workspace.local_db),"verified-local")
 
     def test_manifest_read_failure_keeps_local_database_available(self):
         with tempfile.TemporaryDirectory() as root:

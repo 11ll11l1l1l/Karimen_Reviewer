@@ -144,6 +144,23 @@ class SharedFolderWorkspace:
                     raise SharedFolderUnavailable(
                         f"Unsupported EMS shared manifest schema: {data.get('schema')!r}"
                     )
+                try:
+                    revision = int(data.get("revision") or 0)
+                    deltas = data.get("deltas") or []
+                    if revision < 0 or not isinstance(deltas, list):
+                        raise ValueError("invalid revision or update list")
+                    for item in deltas:
+                        if not isinstance(item, dict) or int(item.get("revision") or 0) < 1:
+                            raise ValueError("invalid update entry")
+                        name = str(item.get("file") or "")
+                        digest = str(item.get("sha256") or "")
+                        if Path(name).name != name or len(digest) != 64:
+                            raise ValueError("invalid update file name or checksum")
+                        int(digest, 16)
+                    data["revision"] = revision
+                    data["deltas"] = deltas
+                except (TypeError, ValueError) as exc:
+                    raise SharedFolderUnavailable(f"Invalid EMS shared manifest: {exc}") from exc
                 return data
             except SharedFolderUnavailable:
                 raise
@@ -186,7 +203,14 @@ class SharedFolderWorkspace:
             data = json.loads(zlib.decompress(patch.read_bytes()))
         except Exception as exc:
             raise SharedFolderUnavailable(f"EMS update file is incomplete or corrupt: {exc}") from exc
-        if not isinstance(data, dict) or data.get("format") != "ems-block-delta-v2" or int(data.get("block_size") or 0) != self.BLOCK_SIZE:
+        if not isinstance(data, dict):
+            raise SharedFolderUnavailable("Unsupported EMS update format; full checkpoint required.")
+        format_version = data.get("format", "ems-block-delta-v1")
+        try:
+            block_size = int(data.get("block_size") or self.BLOCK_SIZE)
+        except (TypeError, ValueError) as exc:
+            raise SharedFolderUnavailable("Invalid EMS update block size.") from exc
+        if format_version not in {"ems-block-delta-v1", "ems-block-delta-v2"} or block_size != self.BLOCK_SIZE:
             raise SharedFolderUnavailable("Unsupported EMS update format; full checkpoint required.")
         try:
             blocks = data["blocks"]
@@ -204,7 +228,7 @@ class SharedFolderWorkspace:
                 handle.truncate(size)
         except Exception as exc:
             raise SharedFolderUnavailable(f"EMS update file is incomplete or corrupt: {exc}") from exc
-        if verify_result and _sha256(db) != str(data.get("sha256") or ""):
+        if format_version == "ems-block-delta-v2" and verify_result and _sha256(db) != str(data.get("sha256") or ""):
             raise SharedFolderUnavailable("EMS update result hash mismatch; local replica was not accepted.")
 
     def local_revision(self) -> int:
@@ -314,14 +338,14 @@ class SharedFolderWorkspace:
             raise SharedFolderUnavailable("Invalid EMS checkpoint path.")
         local_revision = self.local_revision()
         temp = self.local_db.with_name(f".{self.local_db.name}.{uuid.uuid4().hex}.tmp")
-        if (not force_checkpoint and self.local_db.is_file()
-                and checkpoint_revision <= local_revision < int(manifest.get("revision") or 0)):
-            shutil.copy2(self.local_db, temp)
-            start = local_revision
-        else:
-            shutil.copy2(self.state_root / checkpoint_name, temp)
-            start = checkpoint_revision
         try:
+            if (not force_checkpoint and self.local_db.is_file()
+                    and checkpoint_revision <= local_revision < int(manifest.get("revision") or 0)):
+                shutil.copy2(self.local_db, temp)
+                start = local_revision
+            else:
+                shutil.copy2(self.state_root / checkpoint_name, temp)
+                start = checkpoint_revision
             target_revision = int(manifest.get("revision") or 0)
             expected_revisions = list(range(start + 1, target_revision + 1))
             available = {int(item["revision"]): item for item in manifest.get("deltas", [])}
@@ -367,7 +391,10 @@ class SharedFolderWorkspace:
     def _lock_is_stale(self) -> bool:
         meta = self._lock_metadata()
         owner = str(meta.get("workstation") or "")
-        owner_pid = int(meta.get("pid") or 0)
+        try:
+            owner_pid = int(meta.get("pid") or 0)
+        except (TypeError, ValueError):
+            owner_pid = 0
         # A remote owner cannot be probed safely, but its heartbeat distinguishes
         # an active slow transfer from a dead/stalled lock holder.
         heartbeat = str(meta.get("heartbeat_at") or meta.get("created_at") or "")
@@ -433,8 +460,10 @@ class SharedFolderWorkspace:
         heartbeat_stop = threading.Event()
         heartbeat_thread = None
         while True:
+            acquired = False
             try:
                 os.mkdir(self.lock_dir)
+                acquired = True
                 _atomic_json(
                     self.lock_dir / "owner.json",
                     {
@@ -472,6 +501,8 @@ class SharedFolderWorkspace:
                     )
                 time.sleep(0.2)
             except OSError as exc:
+                if acquired:
+                    shutil.rmtree(self.lock_dir, ignore_errors=True)
                 raise SharedFolderUnavailable(f"Cannot acquire EMS shared-folder write lease: {exc}") from exc
         try:
             yield
