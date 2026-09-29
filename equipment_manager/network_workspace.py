@@ -6,6 +6,7 @@ import os
 import shutil
 import socket
 import sqlite3
+import threading
 import time
 import uuid
 import base64
@@ -64,6 +65,8 @@ class SharedFolderWorkspace:
     """
 
     MANIFEST_SCHEMA = "ems-shared-folder-v1"
+    BLOCK_SIZE = 4096
+    IO_RETRIES = 3
 
     def __init__(
         self,
@@ -94,6 +97,8 @@ class SharedFolderWorkspace:
         self.base_path = self.local_root / "publish_base.sqlite"
         self.refresh_interval_seconds = max(0.0, float(os.getenv("EMS_SYNC_POLL_SECONDS", "2")))
         self.checkpoint_interval = max(2, int(os.getenv("EMS_SYNC_CHECKPOINT_INTERVAL", "16")))
+        self.max_delta_ratio = min(0.9, max(0.05, float(os.getenv("EMS_SYNC_MAX_DELTA_RATIO", "0.5"))))
+        self._last_refresh_error = ""
         self._last_manifest_check = 0.0
 
         self.lock_timeout_seconds = max(1.0, float(lock_timeout_seconds))
@@ -129,43 +134,78 @@ class SharedFolderWorkspace:
             return {}
 
     def _manifest(self) -> dict:
-        data = self._read_json(self.manifest_path)
-        if not data:
-            if self.canonical_db.is_file():
-                return {
-                    "schema": self.MANIFEST_SCHEMA,
-                    "revision": 0,
-                    "sha256": _sha256(self.canonical_db),
-                    "published_at": "",
-                    "publisher": "",
-                }
-            return {"schema": self.MANIFEST_SCHEMA, "revision": 0, "sha256": ""}
-        if data.get("schema") != self.MANIFEST_SCHEMA:
-            raise SharedFolderUnavailable(
-                f"Unsupported EMS shared manifest schema: {data.get('schema')!r}"
-            )
-        return data
+        last_error = None
+        for attempt in range(self.IO_RETRIES):
+            try:
+                data = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+                if not isinstance(data, dict):
+                    raise ValueError("manifest root must be an object")
+                if data.get("schema") != self.MANIFEST_SCHEMA:
+                    raise SharedFolderUnavailable(
+                        f"Unsupported EMS shared manifest schema: {data.get('schema')!r}"
+                    )
+                return data
+            except SharedFolderUnavailable:
+                raise
+            except FileNotFoundError as exc:
+                last_error = exc
+                if attempt + 1 < self.IO_RETRIES:
+                    time.sleep(0.05 * (attempt + 1))
+                    continue
+                if self.canonical_db.is_file():
+                    raise SharedFolderUnavailable("EMS shared manifest is missing; keeping local replica.") from exc
+                return {"schema": self.MANIFEST_SCHEMA, "revision": 0, "sha256": ""}
+            except (OSError, UnicodeError, json.JSONDecodeError, ValueError) as exc:
+                last_error = exc
+                if attempt + 1 < self.IO_RETRIES:
+                    time.sleep(0.05 * (attempt + 1))
+        raise SharedFolderUnavailable(f"Cannot read EMS shared manifest: {last_error}")
 
-    def _delta(self, before: Path, after: Path) -> bytes:
-        # Fixed blocks let changed SQLite pages travel without the whole DB.
-        block = 4096
+    def _delta(self, before: Path, after: Path) -> tuple[bytes, str]:
+        # Fixed SQLite-sized blocks keep ordinary updates small, with each result hashed.
         changes = []
+        after_hash = hashlib.sha256()
         with before.open("rb") as old, after.open("rb") as new:
             index = 0
-            while (current := new.read(block)):
-                if current != old.read(block):
+            while (current := new.read(self.BLOCK_SIZE)):
+                after_hash.update(current)
+                if current != old.read(self.BLOCK_SIZE):
                     changes.append([index, base64.b64encode(current).decode("ascii")])
                 index += 1
-        payload = {"size": after.stat().st_size, "blocks": changes}
-        return zlib.compress(json.dumps(payload, separators=(",", ":")).encode(), 6)
+        payload = {
+            "format": "ems-block-delta-v2",
+            "block_size": self.BLOCK_SIZE,
+            "size": after.stat().st_size,
+            "sha256": after_hash.hexdigest(),
+            "blocks": changes,
+        }
+        return zlib.compress(json.dumps(payload, separators=(",", ":")).encode(), 3), after_hash.hexdigest()
 
-    def _apply_delta(self, db: Path, patch: Path) -> None:
-        data = json.loads(zlib.decompress(patch.read_bytes()))
-        with db.open("r+b") as handle:
-            for index, content in data["blocks"]:
-                handle.seek(int(index) * 4096)
-                handle.write(base64.b64decode(content))
-            handle.truncate(int(data["size"]))
+    def _apply_delta(self, db: Path, patch: Path, *, verify_result: bool = True) -> None:
+        try:
+            data = json.loads(zlib.decompress(patch.read_bytes()))
+        except Exception as exc:
+            raise SharedFolderUnavailable(f"EMS update file is incomplete or corrupt: {exc}") from exc
+        if not isinstance(data, dict) or data.get("format") != "ems-block-delta-v2" or int(data.get("block_size") or 0) != self.BLOCK_SIZE:
+            raise SharedFolderUnavailable("Unsupported EMS update format; full checkpoint required.")
+        try:
+            blocks = data["blocks"]
+            size = int(data["size"])
+            if size < 0 or not isinstance(blocks, list):
+                raise ValueError("invalid update size or block list")
+            with db.open("r+b") as handle:
+                for index, content in blocks:
+                    index = int(index)
+                    block = base64.b64decode(content, validate=True)
+                    if index < 0 or len(block) > self.BLOCK_SIZE:
+                        raise ValueError("invalid update block")
+                    handle.seek(index * self.BLOCK_SIZE)
+                    handle.write(block)
+                handle.truncate(size)
+        except Exception as exc:
+            raise SharedFolderUnavailable(f"EMS update file is incomplete or corrupt: {exc}") from exc
+        if verify_result and _sha256(db) != str(data.get("sha256") or ""):
+            raise SharedFolderUnavailable("EMS update result hash mismatch; local replica was not accepted.")
 
     def local_revision(self) -> int:
         return int(self._read_json(self.replica_path).get("revision") or 0)
@@ -173,12 +213,22 @@ class SharedFolderWorkspace:
     def prepare_local_database(self) -> Path:
         self.state_root.mkdir(parents=True, exist_ok=True)
         self.local_root.mkdir(parents=True, exist_ok=True)
-        self._recover_pending_publish_if_possible()
-        manifest = self._manifest()
+        try:
+            self._recover_pending_publish_if_possible()
+            manifest = self._manifest()
+        except SharedFolderUnavailable:
+            if self.local_db.is_file():
+                return self.local_db
+            raise
         if self.canonical_db.is_file():
             expected_hash = str(manifest.get("sha256") or "")
             if not self.local_db.is_file() or self.local_revision() != int(manifest.get("revision") or 0) or (expected_hash and _sha256(self.local_db) != expected_hash):
-                self._pull_snapshot(manifest)
+                try:
+                    self._pull_snapshot(manifest)
+                except (SharedFolderUnavailable, OSError) as exc:
+                    self._last_refresh_error = str(exc)
+                    if not self.local_db.is_file():
+                        raise SharedFolderUnavailable(f"Cannot initialize local EMS replica: {exc}") from exc
         return self.local_db
 
     def initialize_authoritative_if_missing(self, engine=None) -> None:
@@ -223,19 +273,35 @@ class SharedFolderWorkspace:
 
     def refresh_local(self, engine=None, *, force: bool = False) -> bool:
         if self.pending_path.exists():
-            self._recover_pending_publish_if_possible(engine=engine)
+            try:
+                self._recover_pending_publish_if_possible(engine=engine)
+            except SharedFolderUnavailable as exc:
+                self._last_refresh_error = str(exc)
+                if self.local_db.is_file():
+                    return False
+                raise
         now = time.monotonic()
         if not force and now - self._last_manifest_check < self.refresh_interval_seconds:
             return False
         self._last_manifest_check = now
-        manifest = self._manifest()
+        try:
+            manifest = self._manifest()
+        except SharedFolderUnavailable as exc:
+            self._last_refresh_error = str(exc)
+            return False
         if not self.canonical_db.is_file():
             return False
         revision = int(manifest.get("revision") or 0)
         if revision <= self.local_revision() and self.local_db.is_file():
             return False
-        self._pull_snapshot(manifest, engine=engine)
-        return True
+        try:
+            self._pull_snapshot(manifest, engine=engine)
+            return True
+        except (SharedFolderUnavailable, OSError) as exc:
+            self._last_refresh_error = str(exc)
+            if self.local_db.is_file():
+                return False
+            raise SharedFolderUnavailable(f"Cannot initialize local EMS replica: {exc}") from exc
 
     def _pull_snapshot(self, manifest: dict, engine=None, *, force_checkpoint: bool = False) -> None:
         if not self.canonical_db.is_file():
@@ -256,27 +322,32 @@ class SharedFolderWorkspace:
             shutil.copy2(self.state_root / checkpoint_name, temp)
             start = checkpoint_revision
         try:
-            for item in manifest.get("deltas", []):
-                if int(item["revision"]) > start:
-                    patch = self.delta_root / item["file"]
-                    if _sha256(patch) != item["sha256"]:
-                        raise SharedFolderUnavailable("EMS update file hash mismatch.")
-                    self._apply_delta(temp, patch)
+            target_revision = int(manifest.get("revision") or 0)
+            expected_revisions = list(range(start + 1, target_revision + 1))
+            available = {int(item["revision"]): item for item in manifest.get("deltas", [])}
+            if any(revision not in available for revision in expected_revisions):
+                raise SharedFolderUnavailable("EMS update history is incomplete; retry after a checkpoint is published.")
+            for revision in expected_revisions:
+                item = available[revision]
+                patch = self.delta_root / item["file"]
+                try:
+                    patch_hash = _sha256(patch)
+                except OSError as exc:
+                    raise SharedFolderUnavailable(f"EMS update file is unavailable: {item['file']}") from exc
+                if patch_hash != item["sha256"]:
+                    raise SharedFolderUnavailable("EMS update file hash mismatch.")
+                self._apply_delta(temp, patch, verify_result=revision == target_revision)
             expected_hash = str(manifest.get("sha256") or "")
-            if expected_hash and _sha256(temp) != expected_hash:
+            actual_hash = _sha256(temp)
+            if expected_hash and actual_hash != expected_hash:
                 raise SharedFolderUnavailable("Shared EMS update chain hash mismatch.")
             os.replace(temp, self.local_db)
         finally:
             temp.unlink(missing_ok=True)
-        expected_hash = str(manifest.get("sha256") or "")
-        actual_hash = _sha256(self.local_db)
-        if expected_hash and actual_hash != expected_hash:
-            raise SharedFolderUnavailable(
-                "Shared EMS snapshot hash mismatch. The local replica was not accepted."
-            )
         normalized = dict(manifest)
         normalized["sha256"] = actual_hash
         self._write_replica_marker(normalized)
+        self._last_refresh_error = ""
 
     def _write_replica_marker(self, manifest: dict) -> None:
         _atomic_json(
@@ -295,13 +366,22 @@ class SharedFolderWorkspace:
 
     def _lock_is_stale(self) -> bool:
         meta = self._lock_metadata()
+        owner = str(meta.get("workstation") or "")
+        owner_pid = int(meta.get("pid") or 0)
+        # A remote owner cannot be probed safely, but its heartbeat distinguishes
+        # an active slow transfer from a dead/stalled lock holder.
+        heartbeat = str(meta.get("heartbeat_at") or meta.get("created_at") or "")
         created = str(meta.get("created_at") or "")
-        if created:
+        if heartbeat:
             try:
-                stamp = datetime.fromisoformat(created)
+                stamp = datetime.fromisoformat(heartbeat)
                 if stamp.tzinfo is None:
                     stamp = stamp.replace(tzinfo=timezone.utc)
                 age = (datetime.now(timezone.utc) - stamp).total_seconds()
+                if owner == self.workstation and owner_pid:
+                    if self._pid_is_alive(owner_pid):
+                        return False
+                    return True
                 return age >= self.stale_lock_seconds
             except Exception:
                 pass
@@ -309,6 +389,30 @@ class SharedFolderWorkspace:
             age = time.time() - self.lock_dir.stat().st_mtime
             return age >= self.stale_lock_seconds
         except Exception:
+            return False
+
+    @staticmethod
+    def _pid_is_alive(pid: int) -> bool:
+        if pid == os.getpid():
+            return True
+        if os.name == "nt":
+            try:
+                import ctypes
+                process = ctypes.windll.kernel32.OpenProcess(0x1000, False, pid)
+                if not process:
+                    return False
+                ctypes.windll.kernel32.CloseHandle(process)
+                return True
+            except Exception:
+                return False
+        try:
+            os.kill(pid, 0)
+            return True
+        except ProcessLookupError:
+            return False
+        except PermissionError:
+            return True
+        except OSError:
             return False
 
     def _break_stale_lock(self) -> bool:
@@ -326,6 +430,8 @@ class SharedFolderWorkspace:
     def write_lease(self):
         self.state_root.mkdir(parents=True, exist_ok=True)
         deadline = time.monotonic() + self.lock_timeout_seconds
+        heartbeat_stop = threading.Event()
+        heartbeat_thread = None
         while True:
             try:
                 os.mkdir(self.lock_dir)
@@ -335,8 +441,24 @@ class SharedFolderWorkspace:
                         "workstation": self.workstation,
                         "pid": os.getpid(),
                         "created_at": _utc_now(),
+                        "heartbeat_at": _utc_now(),
                     },
                 )
+                def heartbeat():
+                    interval = max(2.0, min(15.0, self.stale_lock_seconds / 4))
+                    owner_path = self.lock_dir / "owner.json"
+                    while not heartbeat_stop.wait(interval):
+                        current = self._lock_metadata()
+                        if current.get("workstation") != self.workstation or int(current.get("pid") or 0) != os.getpid():
+                            return
+                        current["heartbeat_at"] = _utc_now()
+                        try:
+                            _atomic_json(owner_path, current)
+                        except OSError:
+                            # A brief SMB interruption must not abort the protected write.
+                            continue
+                heartbeat_thread = threading.Thread(target=heartbeat, name="ems-share-lock-heartbeat", daemon=True)
+                heartbeat_thread.start()
                 break
             except FileExistsError:
                 if self._break_stale_lock():
@@ -354,7 +476,12 @@ class SharedFolderWorkspace:
         try:
             yield
         finally:
-            shutil.rmtree(self.lock_dir, ignore_errors=True)
+            heartbeat_stop.set()
+            if heartbeat_thread is not None:
+                heartbeat_thread.join(timeout=1)
+            owner = self._lock_metadata()
+            if owner.get("workstation") == self.workstation and int(owner.get("pid") or 0) == os.getpid():
+                shutil.rmtree(self.lock_dir, ignore_errors=True)
 
     @contextmanager
     def guarded_publish(self, engine=None):
@@ -394,21 +521,32 @@ class SharedFolderWorkspace:
             finally:
                 self.base_path.unlink(missing_ok=True)
 
-    def _publish_locked(self, base_revision: int) -> dict:
+    def _prepare_publish(self, base_revision: int) -> dict:
+        """Compute expensive local hashing/compression before taking the share lease."""
         if not self.local_db.is_file():
             raise SharedFolderUnavailable("Local EMS replica does not exist.")
+        if self.base_path.is_file():
+            patch, digest = self._delta(self.base_path, self.local_db)
+        else:
+            digest = _sha256(self.local_db)
+            patch = b""
+        return {"digest": digest, "patch": patch, "size_bytes": self.local_db.stat().st_size}
+
+    def _publish_locked(self, base_revision: int, prepared: dict | None = None) -> dict:
+        if prepared is None:
+            prepared = self._prepare_publish(base_revision)
         manifest = self._manifest()
         remote_revision = int(manifest.get("revision") or 0)
         if self.canonical_db.is_file() and remote_revision != int(base_revision):
             raise SharedFolderConflict(
                 f"Shared EMS revision advanced to {remote_revision} before publish."
             )
-        digest = _sha256(self.local_db)
+        digest = prepared["digest"]
         deltas = list(manifest.get("deltas") or [])
         checkpoint_revision = int(manifest.get("checkpoint_revision") or remote_revision)
-        patch = self._delta(self.base_path, self.local_db) if self.base_path.is_file() else b""
+        patch = prepared["patch"]
         checkpoint = (not patch or len(deltas) >= self.checkpoint_interval
-                      or len(patch) >= self.local_db.stat().st_size // 2)
+                      or len(patch) >= int(prepared["size_bytes"] * self.max_delta_ratio))
         if checkpoint:
             checkpoint_file = f"ems-checkpoint-{remote_revision + 1:012d}-{uuid.uuid4().hex}.sqlite"
             _atomic_copy(self.local_db, self.state_root / checkpoint_file)
@@ -428,7 +566,7 @@ class SharedFolderWorkspace:
             "schema": self.MANIFEST_SCHEMA,
             "revision": remote_revision + 1,
             "sha256": digest,
-            "size_bytes": self.local_db.stat().st_size,
+            "size_bytes": prepared["size_bytes"],
             "published_at": _utc_now(),
             "publisher": self.workstation,
             "checkpoint_revision": checkpoint_revision,
@@ -491,7 +629,8 @@ class SharedFolderWorkspace:
                     conn.close()
                 if not result or result[0] != "ok":
                     raise SharedFolderUnavailable("Pending local EMS replica failed SQLite integrity_check.")
-                self._publish_locked(base_revision)
+                prepared = self._prepare_publish(base_revision)
+                self._publish_locked(base_revision, prepared)
                 return
 
             self.recovery_root.mkdir(parents=True, exist_ok=True)

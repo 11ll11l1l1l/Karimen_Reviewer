@@ -1,10 +1,11 @@
 import json
+import os
 import sqlite3
 import tempfile
 import unittest
 from pathlib import Path
 
-from network_workspace import SharedFolderConflict, SharedFolderWorkspace
+from network_workspace import SharedFolderConflict, SharedFolderUnavailable, SharedFolderWorkspace
 
 
 def _write_value(path: Path, value: str) -> None:
@@ -209,6 +210,75 @@ class SharedFolderWorkspaceTests(unittest.TestCase):
             self.assertEqual(status["recovery_conflicts"],1)
             self.assertEqual(Path(status["recovery_root"]),workspace.recovery_root)
             self.assertEqual(workspace.recovery_conflicts()[0]["shared_revision"],4)
+
+    def test_corrupt_update_is_rejected_without_replacing_local_replica(self):
+        with tempfile.TemporaryDirectory() as root:
+            root=Path(root)
+            a=SharedFolderWorkspace(root/"share",local_root=root/"a")
+            b=SharedFolderWorkspace(root/"share",local_root=root/"b")
+            a.prepare_local_database()
+            _write_value(a.local_db,"initial")
+            a.initialize_authoritative_if_missing()
+            b.prepare_local_database()
+            with a.guarded_publish():
+                _write_value(a.local_db,"new-shared-value")
+            manifest=a._manifest()
+            (a.delta_root/manifest["deltas"][0]["file"]).write_bytes(b"truncated-network-write")
+
+            self.assertFalse(b.refresh_local(force=True))
+            self.assertIn("update file",b._last_refresh_error.lower())
+            self.assertEqual(_read_value(b.local_db),"initial")
+            self.assertEqual(b.local_revision(),1)
+
+    def test_manifest_read_failure_keeps_local_database_available(self):
+        with tempfile.TemporaryDirectory() as root:
+            root=Path(root)
+            workspace=SharedFolderWorkspace(root/"share",local_root=root/"pc")
+            workspace.prepare_local_database()
+            _write_value(workspace.local_db,"local-copy")
+            workspace.initialize_authoritative_if_missing()
+            workspace.manifest_path.write_text("{truncated",encoding="utf-8")
+
+            self.assertFalse(workspace.refresh_local(force=True))
+            self.assertEqual(_read_value(workspace.local_db),"local-copy")
+            self.assertIn("manifest",workspace._last_refresh_error.lower())
+
+    def test_missing_delta_revision_does_not_publish_partial_replica(self):
+        with tempfile.TemporaryDirectory() as root:
+            root=Path(root)
+            a=SharedFolderWorkspace(root/"share",local_root=root/"a")
+            b=SharedFolderWorkspace(root/"share",local_root=root/"b")
+            a.prepare_local_database()
+            _write_value(a.local_db,"initial")
+            a.initialize_authoritative_if_missing()
+            b.prepare_local_database()
+            for value in ("revision-two","revision-three"):
+                with a.guarded_publish():
+                    _write_value(a.local_db,value)
+            manifest=a._manifest()
+            removed=a.delta_root/manifest["deltas"][0]["file"]
+            removed.unlink()
+
+            self.assertFalse(b.refresh_local(force=True))
+            self.assertIn("update file",b._last_refresh_error.lower())
+            self.assertEqual(_read_value(b.local_db),"initial")
+            self.assertEqual(b.local_revision(),1)
+
+    def test_slow_live_writer_lock_is_not_reclaimed_while_owner_process_is_alive(self):
+        with tempfile.TemporaryDirectory() as root:
+            workspace=SharedFolderWorkspace(Path(root)/"share",local_root=Path(root)/"pc")
+            workspace.state_root.mkdir(parents=True)
+            workspace.lock_dir.mkdir()
+            (workspace.lock_dir/"owner.json").write_text(
+                json.dumps({
+                    "workstation":workspace.workstation,
+                    "pid":os.getpid(),
+                    "created_at":"2020-01-01T00:00:00+00:00",
+                    "heartbeat_at":"2020-01-01T00:00:00+00:00",
+                }),
+                encoding="utf-8",
+            )
+            self.assertFalse(workspace._lock_is_stale())
 
 
 if __name__=="__main__":

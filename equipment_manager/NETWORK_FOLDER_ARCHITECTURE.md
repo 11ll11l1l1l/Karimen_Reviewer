@@ -54,11 +54,11 @@ Recovery\                     preserved unsynchronized conflict copies
 
 ## Read flow
 
-1. EMS checks the small shared manifest at most once every two seconds per workstation. F5 forces an immediate check.
+1. EMS checks the small shared manifest at most once every two seconds per workstation by default (`EMS_SYNC_POLL_SECONDS`). F5 forces an immediate check.
 2. If the shared revision is newer, the SQLAlchemy pool is disposed.
 3. EMS copies its local replica (or the latest checkpoint when it fell behind) and applies only missing update files.
-4. Each update and the final replica are verified with SHA-256.
-5. The local file is atomically replaced.
+4. Each update and reconstructed result are verified with SHA-256. Corrupt, missing or partial updates leave the previous local database intact and retry on the next refresh.
+5. The new local file is atomically replaced only after the complete chain passes verification.
 6. The user reads from the local SQLite replica.
 
 The normal UI therefore reads from a fast local file rather than continuously querying a database across SMB.
@@ -71,8 +71,8 @@ The normal UI therefore reads from a fast local file rather than continuously qu
 4. If the shared revision changed since the local transaction began, the transaction is cancelled before commit and the caller receives a conflict/retry error.
 5. If the revision still matches, the local SQLite transaction commits.
 6. EMS disposes local database connections.
-7. Changed 4 KiB blocks are compressed into one immutable update file. If the update exceeds half the database size or 16 updates have accumulated, EMS publishes a new immutable checkpoint instead.
-8. `manifest.json` is replaced **last** with the incremented revision, file hashes and checkpoint pointer.
+7. Changed 4 KiB blocks are compressed into one immutable update file at a speed-oriented compression level. The update includes its resulting database hash. If the update exceeds `EMS_SYNC_MAX_DELTA_RATIO` (default 0.5) or the checkpoint interval is reached, EMS publishes a new immutable checkpoint instead.
+8. `manifest.json` is replaced **last** with the incremented revision, file hashes and checkpoint pointer. Readers require a complete consecutive revision chain before applying updates.
 9. The write lease is released. Old immutable updates and checkpoints are retained for at least a day.
 
 This deliberately serializes committed writes. Reads remain local.
@@ -82,17 +82,18 @@ This deliberately serializes committed writes. Reads remain local.
 This topology favors correctness over last-writer-wins behavior.
 
 - Two users can browse and prepare work concurrently.
-- Only the short publish phase is globally serialized.
+- The database commit and its small publication phase are globally serialized to prevent concurrent stale writes.
 - Existing record-level optimistic `version` checks still protect equipment, tickets and other governed records.
 - If another workstation publishes during a local transaction, the stale transaction is rejected instead of overwriting newer data.
 - A busy shared write lease waits briefly and then returns a retryable error rather than hanging indefinitely.
-- A lock older than the configured stale threshold may be reclaimed.
+- A live publisher heartbeats its lease so a slow transfer is not mistaken for a dead lock. Remote abandoned leases are reclaimed after the heartbeat exceeds the configured stale threshold.
 
 Default synchronization controls:
 
 ```text
 EMS_SYNC_LOCK_TIMEOUT_SECONDS=15
 EMS_SYNC_STALE_LOCK_SECONDS=300
+EMS_SYNC_MAX_DELTA_RATIO=0.5
 ```
 
 ## Crash and interruption recovery
@@ -128,10 +129,7 @@ A workstation may keep its most recent local replica, but the production UI shou
 
 Normal writes publish changed compressed blocks; readers pull only missing revisions. Full checkpoints bound replay cost and handle large database changes. This is a file-level delta, not a SQL merge: a stale writer still must retry. Large binary evidence remains outside the database.
 
-Tuning: `EMS_SYNC_POLL_SECONDS=2` and `EMS_SYNC_CHECKPOINT_INTERVAL=16`. A forced refresh bypasses the poll interval.
-- compact/archive old operational history while retaining governed audit records.
-
-Do not introduce delta replication until the snapshot model is measured on the real LAN; correctness is the priority.
+Tuning: `EMS_SYNC_POLL_SECONDS=2`, `EMS_SYNC_CHECKPOINT_INTERVAL=16` and `EMS_SYNC_MAX_DELTA_RATIO=0.5`. A forced refresh bypasses the poll interval. Transient failed share reads keep the last verified local copy available; writes require the shared lease and must be retried after reconnection.
 
 ## Backup
 
@@ -147,7 +145,7 @@ RC4-G foundation implements:
 - shared manifest/revision tracking;
 - cross-workstation write lease;
 - stale-write conflict rejection;
-- atomic full-snapshot publishing;
+- atomic verified delta and checkpoint publishing;
 - SHA-256 validation;
 - pending-publish crash recovery;
 - preserved recovery copies for irreconcilable restart conflicts;
