@@ -13,9 +13,9 @@ Local Windows desktop equipment-management system isolated under `equipment_mana
 
 ## Current build
 
-## M14/M15 production-readiness candidate
+## RC4 production-readiness candidate
 
-RC3 adds bounded large-history loading, model/view rendering for high-volume operational surfaces, background PostgreSQL dashboard reads, responsive/high-DPI shell behavior, accessibility labeling, non-blocking success feedback, a 100k-event CI performance gate, and Windows navigation/resize soak coverage.
+RC4 keeps the RC3 performance and production-hardening work, and adds local-first shared-folder operation for small multi-user deployments: each workstation reads its local SQLite replica, checks a lightweight manifest on a bounded interval, pulls compressed changed blocks instead of re-reading the whole database, publishes conflict-safe serialized database writes, and stores independent evidence files under unique atomic names. Equipment Registry is now directly linked to PM definition + first schedule creation, Maintenance Planner provides month/day and week-calendar scheduling, and the compact transfer package is maintained as exactly 10 Python files plus the reconstruction text.
 
 Site validation is executable rather than a prose-only checklist:
 

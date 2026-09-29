@@ -4,11 +4,11 @@ This file is the persistent progress tracker for the full-production roadmap.
 
 ## Current baseline
 
-**Program state:** RC4 Frontline Operations + RC4-G no-server synchronization coding wave — M15 site validation intentionally deferred until coding freeze
+**Program state:** RC4 coding freeze candidate — frontline operations and local-first no-server synchronization integrated; M15 physical site validation remains pending
 
 **Canonical base main:** `288f7b9ab1d1d425dad96297e9dd0b8f7e519caa`
 
-**Active development wave:** `ems/rc4-network-folder-sync` (parent `ems/rc4-frontline-a@6fe40cb5`)
+**Canonical RC4 branch:** `ems/rc4-network-folder-sync`
 
 **RC4 detailed tracker:** `FRONTLINE_OPERATIONS_ROADMAP.md`
 
@@ -37,11 +37,11 @@ The production backend remains intact while the user-facing product is being reb
 
 ## Immediate execution order
 
-1. Continue RC4 coding first: complete no-server shared-folder operation and remaining frontline UX/polish.
-2. Keep M15 site UAT/pilot pending; do not block RC4 coding on physical plant testing.
-3. Freeze one exact RC4 code-bearing head after the network-folder and frontline waves are substantially complete.
-4. Run one consolidated EMS validation cycle covering serverless two-workstation synchronization plus the existing SQLite/PostgreSQL/Windows gates.
-5. Merge only after the exact code-bearing head is green; then resume physical M15 pilot/UAT.
+1. Hold the canonical RC4 branch as the software freeze candidate; add code only for release-blocking defects.
+2. Keep the exact RC4 head green through SQLite/PostgreSQL core tests, 100k-history performance, compact-runtime smoke, Windows GUI soak and Windows package build.
+3. Verify the versioned Windows package reports `1.0.0-rc4` and the 10-file compact reconstruction artifact remains aligned with source.
+4. Run representative two-workstation SMB timing, interruption/reconnect and recovery exercises at the deployment site.
+5. Complete M15 plant UAT, restore/rollback, integration certification, training/support ownership and human signoff before declaring Production.
 
 
 ## RC4-G no-server deployment status
@@ -53,8 +53,10 @@ The production backend remains intact while the user-facing product is being reb
 - **CODED:** atomic shared evidence/screenshot publication and centralized evidence-root resolution.
 - **CODED:** synchronized backup/preflight defaults and smart-shell sync badge/manual refresh.
 - **FIXED:** malformed Quick Create import that could prevent the smart shell from importing the module.
-- **REMAINING CODING:** Recovery/conflict administration workflow, final local-path sweep, serverless regression fixtures and release/version notes.
-- **VALIDATION DEFERRED:** representative SMB two-workstation timing, interruption/reconnect and full consolidated Windows regression.
+- **CODED:** administrator Shared Sync / Recovery view lists preserved conflict copies and can copy the recovery database path without auto-merging data.
+- **CODED:** focused serverless regression coverage, RC4 release version metadata and the compact reconstruction text are aligned with the canonical branch.
+- **IN-REPO VALIDATION:** SQLite/PostgreSQL core, 100k-history, compact runtime, Windows GUI smoke/resize soak and versioned Windows packaging run through `ems-ci.yml`.
+- **SITE VALIDATION PENDING:** representative SMB two-workstation timing, interruption/reconnect, recovery exercise and plant UAT.
 
 ## EMS development execution policy
 
