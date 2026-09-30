@@ -272,6 +272,24 @@ class SharedFolderWorkspaceTests(unittest.TestCase):
             self.assertFalse(workspace.refresh_local(force=True))
             self.assertEqual(_read_value(workspace.local_db),"verified-local")
 
+    def test_failed_manifest_poll_backs_off_automatic_reads(self):
+        with tempfile.TemporaryDirectory() as root:
+            workspace=SharedFolderWorkspace(Path(root)/"share",local_root=Path(root)/"pc")
+            workspace.refresh_interval_seconds=0
+            workspace.error_backoff_seconds=60
+            calls={"count":0}
+
+            def unavailable_manifest():
+                calls["count"]+=1
+                raise SharedFolderUnavailable("share offline")
+
+            workspace._manifest=unavailable_manifest
+            self.assertFalse(workspace.refresh_local())
+            self.assertFalse(workspace.refresh_local())
+            self.assertEqual(calls["count"],1)
+            self.assertFalse(workspace.refresh_local(force=True))
+            self.assertEqual(calls["count"],2)
+
     def test_manifest_read_failure_keeps_local_database_available(self):
         with tempfile.TemporaryDirectory() as root:
             root=Path(root)
