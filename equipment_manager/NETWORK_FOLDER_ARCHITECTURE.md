@@ -54,7 +54,7 @@ Recovery\                     preserved unsynchronized conflict copies
 
 ## Read flow
 
-1. EMS checks the small shared manifest at most once every two seconds per workstation by default (`EMS_SYNC_POLL_SECONDS`). F5 forces an immediate check.
+1. EMS checks the small shared manifest at most once every two seconds per workstation by default (`EMS_SYNC_POLL_SECONDS`). After a failed share read, automatic checks back off for `EMS_SYNC_ERROR_BACKOFF_SECONDS` (default 15 seconds) while local reads continue; F5 forces an immediate check.
 2. If the shared revision is newer, the SQLAlchemy pool is disposed.
 3. EMS copies its local replica (or the latest checkpoint when it fell behind) and applies only missing update files.
 4. Each update and reconstructed result are verified with SHA-256. Corrupt, missing or partial updates leave the previous local database intact and retry on the next refresh.
@@ -129,7 +129,7 @@ A workstation may keep its most recent local replica, but the production UI shou
 
 Normal writes publish changed compressed blocks; readers pull only missing revisions. Full checkpoints bound replay cost and handle large database changes. This is a file-level delta, not a SQL merge: a stale writer still must retry. Large binary evidence remains outside the database.
 
-Tuning: `EMS_SYNC_POLL_SECONDS=2`, `EMS_SYNC_CHECKPOINT_INTERVAL=16` and `EMS_SYNC_MAX_DELTA_RATIO=0.5`. A forced refresh bypasses the poll interval. Transient failed share reads keep the last verified local copy available; writes require the shared lease and must be retried after reconnection.
+Tuning: `EMS_SYNC_POLL_SECONDS=2`, `EMS_SYNC_ERROR_BACKOFF_SECONDS=15`, `EMS_SYNC_CHECKPOINT_INTERVAL=16` and `EMS_SYNC_MAX_DELTA_RATIO=0.5`. A forced refresh bypasses polling/backoff. Transient failed share reads keep the last verified local copy available; bulk equipment edits/imports commit through one local transaction and one shared publish instead of one publish per row. Writes still require the shared lease and must be retried after reconnection.
 
 ## Backup
 
