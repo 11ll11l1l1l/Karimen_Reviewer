@@ -96,10 +96,15 @@ class SharedFolderWorkspace:
         self.recovery_root = self.local_root / "Recovery"
         self.base_path = self.local_root / "publish_base.sqlite"
         self.refresh_interval_seconds = max(0.0, float(os.getenv("EMS_SYNC_POLL_SECONDS", "2")))
+        self.error_backoff_seconds = max(
+            self.refresh_interval_seconds,
+            max(1.0, float(os.getenv("EMS_SYNC_ERROR_BACKOFF_SECONDS", "15"))),
+        )
         self.checkpoint_interval = max(2, int(os.getenv("EMS_SYNC_CHECKPOINT_INTERVAL", "16")))
         self.max_delta_ratio = min(0.9, max(0.05, float(os.getenv("EMS_SYNC_MAX_DELTA_RATIO", "0.5"))))
         self._last_refresh_error = ""
         self._last_manifest_check = 0.0
+        self._next_manifest_attempt = 0.0
 
         self.lock_timeout_seconds = max(1.0, float(lock_timeout_seconds))
         self.stale_lock_seconds = max(30.0, float(stale_lock_seconds))
@@ -305,16 +310,23 @@ class SharedFolderWorkspace:
                     return False
                 raise
         now = time.monotonic()
-        if not force and now - self._last_manifest_check < self.refresh_interval_seconds:
-            return False
+        if not force:
+            if now < self._next_manifest_attempt:
+                return False
+            if now - self._last_manifest_check < self.refresh_interval_seconds:
+                return False
         self._last_manifest_check = now
         try:
             manifest = self._manifest()
         except SharedFolderUnavailable as exc:
             self._last_refresh_error = str(exc)
+            self._next_manifest_attempt = now + self.error_backoff_seconds
             return False
-        if not self.canonical_db.is_file():
-            return False
+
+        # A successful manifest read proves the share is reachable. Avoid a
+        # second SMB stat of ems.sqlite on every foreground database session.
+        self._next_manifest_attempt = 0.0
+        self._last_refresh_error = ""
         revision = int(manifest.get("revision") or 0)
         if revision <= self.local_revision() and self.local_db.is_file():
             return False
@@ -323,10 +335,10 @@ class SharedFolderWorkspace:
             return True
         except (SharedFolderUnavailable, OSError) as exc:
             self._last_refresh_error = str(exc)
+            self._next_manifest_attempt = time.monotonic() + self.error_backoff_seconds
             if self.local_db.is_file():
                 return False
             raise SharedFolderUnavailable(f"Cannot initialize local EMS replica: {exc}") from exc
-
     def _pull_snapshot(self, manifest: dict, engine=None, *, force_checkpoint: bool = False) -> None:
         if not self.canonical_db.is_file():
             return
@@ -520,7 +532,7 @@ class SharedFolderWorkspace:
             manifest = self._manifest()
             remote_revision = int(manifest.get("revision") or 0)
             base_revision = self.local_revision()
-            if self.canonical_db.is_file() and remote_revision != base_revision:
+            if remote_revision != base_revision:
                 raise SharedFolderConflict(
                     f"Shared EMS data changed from revision {base_revision} to {remote_revision}. "
                     "The local transaction was cancelled; retry on the refreshed data."
@@ -551,7 +563,6 @@ class SharedFolderWorkspace:
                 raise
             finally:
                 self.base_path.unlink(missing_ok=True)
-
     def _prepare_publish(self, base_revision: int) -> dict:
         """Compute expensive local hashing/compression before taking the share lease."""
         if not self.local_db.is_file():
@@ -568,7 +579,7 @@ class SharedFolderWorkspace:
             prepared = self._prepare_publish(base_revision)
         manifest = self._manifest()
         remote_revision = int(manifest.get("revision") or 0)
-        if self.canonical_db.is_file() and remote_revision != int(base_revision):
+        if remote_revision != int(base_revision):
             raise SharedFolderConflict(
                 f"Shared EMS revision advanced to {remote_revision} before publish."
             )
@@ -616,7 +627,6 @@ class SharedFolderWorkspace:
             except OSError:
                 pass  # Cleanup must never turn a committed write into a failure.
         return next_manifest
-
     def _prune_old_updates(self, manifest: dict) -> None:
         # Keep old manifests' immutable files available for slow readers and
         # interrupted clients. Collect only files older than one day.
@@ -720,4 +730,5 @@ class SharedFolderWorkspace:
             "pending_publish": self.pending_path.exists(),
             "recovery_root": str(self.recovery_root),
             "recovery_conflicts": len(self.recovery_conflicts()),
+            "last_refresh_error": self._last_refresh_error,
         }
