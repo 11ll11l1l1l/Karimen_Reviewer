@@ -114,11 +114,14 @@ class SharedFolderWorkspaceTests(unittest.TestCase):
                 _write_value(a.local_db,"changed")
             manifest=a._manifest()
             self.assertEqual(len(manifest["deltas"]),1)
+            self.assertTrue(a.base_path.is_file())
+            self.assertEqual(a._publish_base_revision(),2)
             update=a.delta_root / manifest["deltas"][0]["file"]
             self.assertLess(update.stat().st_size, a.local_db.stat().st_size//10)
             self.assertTrue(b.refresh_local(force=True))
             self.assertEqual(_read_value(b.local_db),"changed")
             self.assertEqual(b.local_revision(),2)
+            self.assertEqual(b._publish_base_revision(),2)
 
     def test_checkpoint_and_multiple_updates_restore_a_lagging_workstation(self):
         with tempfile.TemporaryDirectory() as root:
