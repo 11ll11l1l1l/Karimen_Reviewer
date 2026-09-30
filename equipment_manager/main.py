@@ -381,7 +381,7 @@ class EquipmentPage(QWidget):
             value,ok=QInputDialog.getItem(self,"Bulk edit equipment","Criticality",values,values.index("Normal") if "Normal" in values else 0,False)
         if not ok:return
         if QMessageBox.question(self,"Confirm bulk edit",f"Update {field} on {len(rows)} equipment record(s)?")!=QMessageBox.StandardButton.Yes:return
-        failures=[];updated=0
+        batch=[]
         for row in rows:
             data={
                 "equipment_id":row.equipment_id,"name":row.name,"equipment_type":row.equipment_type,
@@ -391,13 +391,23 @@ class EquipmentPage(QWidget):
                 "criticality":value if field=="Criticality" else row.criticality,
                 "map_x":row.map_x,"map_y":row.map_y,
             }
-            try:self.db.save_equipment(data,row.version,user=self.user["username"],workstation=WORKSTATION);updated+=1
-            except Exception as exc:failures.append(f"{row.equipment_id}: {exc}")
+            batch.append({
+                "data":data,
+                "expected_version":row.version,
+                "audit_action":"BULK_UPDATE_MASTER",
+                "audit_detail":field,
+            })
+        try:
+            updated=len(self.db.save_equipment_batch(
+                batch,user=self.user["username"],workstation=WORKSTATION
+            ))
+            failures=[]
+        except Exception as exc:
+            updated=0;failures=[f"Batch rolled back: {exc}"]
         self.refresh()
         text=f"Updated {updated}/{len(rows)} equipment record(s)."
         if failures:text+="\n"+"\n".join(failures[:12])
         QMessageBox.information(self,"Bulk edit",text)
-
     def _equipment_import_df(self,df):
         fields=[
             ("equipment_id","Equipment ID"),("name","Name"),("equipment_type","Equipment type"),("manufacturer","Manufacturer"),
@@ -412,17 +422,26 @@ class EquipmentPage(QWidget):
         if not any(x["status"] in {"CREATE","UPDATE"} for x in actions):
             QMessageBox.information(self,"Equipment import","No changes detected.");return
         if not confirm_reconciliation(self,"Equipment Master Reconciliation",actions):return
-        imported=0;failures=[]
+        batch=[]
         for action in actions:
             if action["status"]=="UNCHANGED":continue
             data=action["data"];current=action["current"]
-            try:
-                self.db.save_equipment(data,current.version if current else None,user=self.user["username"],workstation=WORKSTATION);imported+=1
-            except Exception as exc:failures.append(f"{data.get('equipment_id')}: {exc}")
+            batch.append({
+                "data":data,
+                "expected_version":current.version if current else None,
+                "audit_action":"IMPORT_"+action["status"],
+                "audit_detail":"Equipment Master Import Studio",
+            })
+        try:
+            imported=len(self.db.save_equipment_batch(
+                batch,user=self.user["username"],workstation=WORKSTATION
+            ))
+            failures=[]
+        except Exception as exc:
+            imported=0;failures=[f"Batch rolled back: {exc}"]
         self.refresh();detail=f"Applied {imported} equipment create/update row(s). Source warnings: {len(errors)}. Failures: {len(failures)}."
         if failures:detail+="\n"+"\n".join(failures[:12])
         QMessageBox.information(self,"Equipment import",detail)
-
     def import_equipment(self):
         path,_=QFileDialog.getOpenFileName(self,"Import Equipment Master","","Excel/CSV (*.xlsx *.xlsm *.csv)")
         if not path:return
@@ -462,19 +481,22 @@ class EquipmentPage(QWidget):
         d=EquipmentDialog(parent=self,db=self.db,initial=initial)
         if d.exec()==QDialog.DialogCode.Accepted:
             try:
-                row=self.db.save_equipment(d.data(),user=self.user["username"],workstation=WORKSTATION)
-                self.db.audit(self.user["username"],"CREATE_FROM_TEMPLATE","EQUIPMENT",row.equipment_id,template.template_id,WORKSTATION);self.refresh()
+                self.db.save_equipment(
+                    d.data(),user=self.user["username"],workstation=WORKSTATION,
+                    audit_action="CREATE_FROM_TEMPLATE",audit_detail=template.template_id,
+                )
+                self.refresh()
             except Exception as exc:QMessageBox.critical(self,"Equipment",str(exc))
-
     def add(self):
         d=EquipmentDialog(parent=self,db=self.db)
         if d.exec()==QDialog.DialogCode.Accepted:
             try:
-                row=self.db.save_equipment(d.data(), user=self.user["username"], workstation=WORKSTATION)
-                self.db.audit(self.user["username"],"CREATE","EQUIPMENT",row.equipment_id,workstation=WORKSTATION)
+                self.db.save_equipment(
+                    d.data(),user=self.user["username"],workstation=WORKSTATION,
+                    audit_action="CREATE",
+                )
                 self.refresh()
             except Exception as exc: QMessageBox.critical(self,"Equipment",str(exc))
-
     def create_pm_for_selected(self):
         equipment=selected_row(self.table,self.rows)
         if not equipment:
@@ -498,11 +520,12 @@ class EquipmentPage(QWidget):
         d=EquipmentDialog(row,self,db=self.db)
         if d.exec()==QDialog.DialogCode.Accepted:
             try:
-                self.db.save_equipment(d.data(),row.version,user=self.user["username"],workstation=WORKSTATION)
-                self.db.audit(self.user["username"],"UPDATE_MASTER","EQUIPMENT",row.equipment_id,workstation=WORKSTATION)
+                self.db.save_equipment(
+                    d.data(),row.version,user=self.user["username"],workstation=WORKSTATION,
+                    audit_action="UPDATE_MASTER",
+                )
                 self.refresh()
             except Exception as exc: QMessageBox.critical(self,"Equipment",str(exc))
-
     def change_state(self):
         row=selected_row(self.table,self.rows)
         if not row:return
