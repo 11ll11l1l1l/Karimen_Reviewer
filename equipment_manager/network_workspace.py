@@ -95,6 +95,7 @@ class SharedFolderWorkspace:
         self.pending_path = self.local_root / "pending_publish.json"
         self.recovery_root = self.local_root / "Recovery"
         self.base_path = self.local_root / "publish_base.sqlite"
+        self.base_meta_path = self.local_root / "publish_base.json"
         self.refresh_interval_seconds = max(0.0, float(os.getenv("EMS_SYNC_POLL_SECONDS", "2")))
         self.error_backoff_seconds = max(
             self.refresh_interval_seconds,
@@ -239,6 +240,28 @@ class SharedFolderWorkspace:
     def local_revision(self) -> int:
         return int(self._read_json(self.replica_path).get("revision") or 0)
 
+    def _publish_base_revision(self) -> int:
+        meta = self._read_json(self.base_meta_path)
+        try:
+            return int(meta.get("revision"))
+        except (TypeError, ValueError):
+            return -1
+
+    def _sync_publish_base(self, manifest: dict) -> None:
+        """Keep an exact local baseline for the revision used to build deltas."""
+        if not self.local_db.is_file():
+            return
+        _atomic_copy(self.local_db, self.base_path)
+        _atomic_json(
+            self.base_meta_path,
+            {
+                "schema": self.MANIFEST_SCHEMA,
+                "revision": int(manifest.get("revision") or 0),
+                "sha256": str(manifest.get("sha256") or ""),
+                "synced_at": _utc_now(),
+            },
+        )
+
     def prepare_local_database(self) -> Path:
         self.state_root.mkdir(parents=True, exist_ok=True)
         self.local_root.mkdir(parents=True, exist_ok=True)
@@ -258,8 +281,14 @@ class SharedFolderWorkspace:
                     self._last_refresh_error = str(exc)
                     if not self.local_db.is_file():
                         raise SharedFolderUnavailable(f"Cannot initialize local EMS replica: {exc}") from exc
+        if self.local_db.is_file() and self._publish_base_revision() != self.local_revision():
+            try:
+                self._sync_publish_base(manifest)
+            except OSError:
+                # A missing/stale local baseline only forces the next write to use
+                # a full checkpoint; it must not make the local read replica unusable.
+                pass
         return self.local_db
-
     def initialize_authoritative_if_missing(self, engine=None) -> None:
         if self.canonical_db.is_file() and self.manifest_path.is_file():
             return
@@ -283,7 +312,7 @@ class SharedFolderWorkspace:
             }
             _atomic_json(self.manifest_path, manifest)
             self._write_replica_marker(manifest)
-
+            self._sync_publish_base(manifest)
     def publish_startup_changes(self, engine=None) -> bool:
         """Publish schema/bootstrap changes made locally during application startup."""
         if not self.local_db.is_file():
@@ -340,8 +369,6 @@ class SharedFolderWorkspace:
                 return False
             raise SharedFolderUnavailable(f"Cannot initialize local EMS replica: {exc}") from exc
     def _pull_snapshot(self, manifest: dict, engine=None, *, force_checkpoint: bool = False) -> None:
-        if not self.canonical_db.is_file():
-            return
         if engine is not None:
             engine.dispose()
         checkpoint_revision = int(manifest.get("checkpoint_revision") or manifest.get("revision") or 0)
@@ -383,8 +410,8 @@ class SharedFolderWorkspace:
         normalized = dict(manifest)
         normalized["sha256"] = actual_hash
         self._write_replica_marker(normalized)
+        self._sync_publish_base(normalized)
         self._last_refresh_error = ""
-
     def _write_replica_marker(self, manifest: dict) -> None:
         _atomic_json(
             self.replica_path,
@@ -528,6 +555,7 @@ class SharedFolderWorkspace:
 
     @contextmanager
     def guarded_publish(self, engine=None):
+        published_manifest = None
         with self.write_lease():
             manifest = self._manifest()
             remote_revision = int(manifest.get("revision") or 0)
@@ -548,12 +576,11 @@ class SharedFolderWorkspace:
             )
             completed_local_commit = False
             try:
-                _atomic_copy(self.local_db, self.base_path)
                 yield
                 completed_local_commit = True
                 if engine is not None:
                     engine.dispose()
-                self._publish_locked(base_revision)
+                published_manifest = self._publish_locked(base_revision)
             except Exception:
                 if not completed_local_commit:
                     try:
@@ -561,19 +588,22 @@ class SharedFolderWorkspace:
                     except FileNotFoundError:
                         pass
                 raise
-            finally:
-                self.base_path.unlink(missing_ok=True)
+        if published_manifest is not None:
+            # Local-only baseline maintenance happens after releasing the shared
+            # lease so large databases do not block other workstations needlessly.
+            self._sync_publish_base(published_manifest)
     def _prepare_publish(self, base_revision: int) -> dict:
-        """Compute expensive local hashing/compression before taking the share lease."""
+        """Compute local hashing/compression from an exact revision baseline."""
         if not self.local_db.is_file():
             raise SharedFolderUnavailable("Local EMS replica does not exist.")
-        if self.base_path.is_file():
+        if self.base_path.is_file() and self._publish_base_revision() == int(base_revision):
             patch, digest = self._delta(self.base_path, self.local_db)
         else:
+            # If the baseline was lost or is from another revision, publish a
+            # checkpoint rather than risk constructing a delta from stale bytes.
             digest = _sha256(self.local_db)
             patch = b""
         return {"digest": digest, "patch": patch, "size_bytes": self.local_db.stat().st_size}
-
     def _publish_locked(self, base_revision: int, prepared: dict | None = None) -> dict:
         if prepared is None:
             prepared = self._prepare_publish(base_revision)
@@ -658,6 +688,7 @@ class SharedFolderWorkspace:
             base_revision = int(pending.get("base_revision") or 0)
             if remote_revision == base_revision + 1 and manifest.get("sha256") == _sha256(self.local_db):
                 self._write_replica_marker(manifest)
+                self._sync_publish_base(manifest)
                 self.pending_path.unlink(missing_ok=True)
                 return
             if remote_revision == base_revision:
@@ -671,7 +702,8 @@ class SharedFolderWorkspace:
                 if not result or result[0] != "ok":
                     raise SharedFolderUnavailable("Pending local EMS replica failed SQLite integrity_check.")
                 prepared = self._prepare_publish(base_revision)
-                self._publish_locked(base_revision, prepared)
+                recovered_manifest = self._publish_locked(base_revision, prepared)
+                self._sync_publish_base(recovered_manifest)
                 return
 
             self.recovery_root.mkdir(parents=True, exist_ok=True)
@@ -693,7 +725,6 @@ class SharedFolderWorkspace:
                 pass
             if self.canonical_db.is_file():
                 self._pull_snapshot(manifest, engine=engine, force_checkpoint=True)
-
     def recovery_conflicts(self) -> list[dict]:
         rows: list[dict] = []
         if not self.recovery_root.is_dir():
