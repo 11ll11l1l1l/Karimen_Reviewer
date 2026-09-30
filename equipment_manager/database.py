@@ -3603,43 +3603,107 @@ class Database:
     def get_equipment(self, equipment_id: str):
         with self.session() as s: return s.scalar(select(Equipment).where(Equipment.equipment_id == equipment_id))
 
-    def save_equipment(
+    def _save_equipment_in_session(
         self,
+        s,
         data: dict[str, Any],
         expected_version: int | None = None,
         user: str = "",
         workstation: str = "",
     ):
         payload = dict(data)
+        item = s.scalar(select(Equipment).where(Equipment.equipment_id == payload["equipment_id"]))
+        if item:
+            payload.pop("status", None)
+            payload.pop("disposition", None)
+            self._update_versioned(item, payload, expected_version, "Equipment")
+        else:
+            payload["status"] = payload.get("status") or "Available"
+            payload["disposition"] = payload.get("disposition") or "Released"
+            if payload["status"] not in EQUIPMENT_STATES:
+                raise ValueError(f"Unknown equipment state: {payload['status']}")
+            item = Equipment(**payload)
+            s.add(item)
+            s.add(EquipmentStateEvent(
+                equipment_id=payload["equipment_id"],
+                from_state="",
+                to_state=payload["status"],
+                state_class=STATE_CLASS[payload["status"]],
+                downtime=payload["status"] in DOWNTIME_STATES,
+                reason_code="INITIAL_STATE",
+                reason_text="Equipment record created",
+                owner=payload.get("owner", ""),
+                changed_by=user,
+                workstation=workstation,
+            ))
+        s.flush()
+        return item
+
+    def save_equipment(
+        self,
+        data: dict[str, Any],
+        expected_version: int | None = None,
+        user: str = "",
+        workstation: str = "",
+        *,
+        audit_action: str = "",
+        audit_detail: str = "",
+    ):
         with self.session() as s:
-            item = s.scalar(select(Equipment).where(Equipment.equipment_id == payload["equipment_id"]))
-            if item:
-                # Operational state and disposition are governed workflows, not editable master-data fields.
-                payload.pop("status", None)
-                payload.pop("disposition", None)
-                self._update_versioned(item, payload, expected_version, "Equipment")
-            else:
-                payload["status"] = payload.get("status") or "Available"
-                payload["disposition"] = payload.get("disposition") or "Released"
-                if payload["status"] not in EQUIPMENT_STATES:
-                    raise ValueError(f"Unknown equipment state: {payload['status']}")
-                item = Equipment(**payload)
-                s.add(item)
-                s.add(EquipmentStateEvent(
-                    equipment_id=payload["equipment_id"],
-                    from_state="",
-                    to_state=payload["status"],
-                    state_class=STATE_CLASS[payload["status"]],
-                    downtime=payload["status"] in DOWNTIME_STATES,
-                    reason_code="INITIAL_STATE",
-                    reason_text="Equipment record created",
-                    owner=payload.get("owner", ""),
-                    changed_by=user,
+            item = self._save_equipment_in_session(
+                s, data, expected_version, user=user, workstation=workstation
+            )
+            if audit_action:
+                s.add(AuditLog(
+                    user=user,
+                    action=audit_action,
+                    entity_type="EQUIPMENT",
+                    entity_key=item.equipment_id,
+                    detail=audit_detail,
                     workstation=workstation,
                 ))
-            s.flush()
             return item
 
+    def save_equipment_batch(
+        self,
+        actions: list[dict[str, Any]],
+        *,
+        user: str = "",
+        workstation: str = "",
+    ) -> list[Equipment]:
+        """Apply equipment master creates/updates in one atomic publish.
+
+        Shared-folder mode uses one write lease and one delta for the full batch
+        instead of one network publish per row.
+        """
+        actions = list(actions or [])
+        if not actions:
+            return []
+        rows: list[Equipment] = []
+        with self.session() as s:
+            for action in actions:
+                data = action.get("data")
+                if not isinstance(data, dict):
+                    raise ValueError("Each equipment batch action requires a data mapping.")
+                item = self._save_equipment_in_session(
+                    s,
+                    data,
+                    action.get("expected_version"),
+                    user=user,
+                    workstation=workstation,
+                )
+                audit_action = str(action.get("audit_action") or "")
+                if audit_action:
+                    s.add(AuditLog(
+                        user=user,
+                        action=audit_action,
+                        entity_type="EQUIPMENT",
+                        entity_key=item.equipment_id,
+                        detail=str(action.get("audit_detail") or ""),
+                        workstation=workstation,
+                    ))
+                rows.append(item)
+        return rows
     def alarm_burst_policy(self) -> dict[str, Any]:
         defaults={"window_seconds":300,"threshold_count":3,"min_severity":"WARNING","auto_trigger":False}
         with self.session() as s:
