@@ -2202,7 +2202,9 @@ class Database:
                 yield self
                 if s.info.get("ems_had_writes") or s.new or s.dirty or s.deleted:
                     raise RuntimeError("Read batch attempted to modify EMS data.")
-                s.rollback()
+                # expire_on_commit=False keeps loaded ORM rows usable by the UI
+                # after this shared read session is closed.
+                s.commit()
             finally:
                 try:
                     del self._read_batch_state.session
