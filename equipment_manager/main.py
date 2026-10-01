@@ -712,9 +712,27 @@ class LayoutPage(QWidget):
         self.scene.setSceneRect(self.scene.itemsBoundingRect().adjusted(-100,-100,300,300))
     def save_positions(self):
         try:
-            for n in self.nodes:self.db.update_map_position(n.entity_type,n.key,n.pos().x(),n.pos().y(),n.version)
-            self.db.audit(self.user["username"],"UPDATE","LAYOUT",self.scope_key(),workstation=WORKSTATION); self.refresh(); QMessageBox.information(self,"Layout","Positions saved.")
-        except Exception as exc: QMessageBox.critical(self,"Layout",str(exc)); self.refresh()
+            positions=[
+                {
+                    "entity_type":n.entity_type,
+                    "key":n.key,
+                    "x":n.pos().x(),
+                    "y":n.pos().y(),
+                    "expected_version":n.version,
+                }
+                for n in self.nodes
+            ]
+            self.db.update_map_positions_batch(
+                positions,
+                user=self.user["username"],
+                layout_key=self.scope_key(),
+                workstation=WORKSTATION,
+            )
+            self.refresh()
+            QMessageBox.information(self,"Layout","Positions saved.")
+        except Exception as exc:
+            QMessageBox.critical(self,"Layout",str(exc))
+            self.refresh()
     def set_background(self):
         path,_=QFileDialog.getOpenFileName(self,"Layout background","","Images (*.png *.jpg *.jpeg *.bmp)")
         if path:self.db.set_layout_background(self.scope_key(),path,self.user["username"]); self.refresh()
