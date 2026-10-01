@@ -98,7 +98,8 @@ def fill_table(table: QTableWidget, rows: list[Any], fields: list[str]):
     for obj in rows:
         values=[]
         for field in fields:
-            text=_table_text(getattr(obj,field,""))
+            value=obj.get(field,"") if isinstance(obj,dict) else getattr(obj,field,"")
+            text=_table_text(value)
             values.append(text)
             raw=text.encode("utf-8","surrogatepass")
             digest.update(len(raw).to_bytes(4,"little"));digest.update(raw)
@@ -805,16 +806,37 @@ class PMExecutionDialog(QDialog):
         with self.db.read_batch():
             self.results={r.step_no:r for r in self.db.list_pm_results(self.execrow.id)}
             self.acks={a.requirement_id:a for a in self.db.list_pm_requirement_acks(self.execrow.id)}
-        self.table.setRowCount(len(self.specs))
-        for r,s in enumerate(self.specs):
-            res=self.results.get(s.step_no);vals=[s.step_no,s.activity,s.input_type,s.target,s.spec_low,s.spec_high,res.value_text if res else "",res.result if res else "",Path(res.evidence_path).name if res and res.evidence_path else ""]
-            for col,val in enumerate(vals):self.table.setItem(r,col,ti(val))
-        self.req_table.setRowCount(len(self.requirements))
-        for r,req in enumerate(self.requirements):
+        step_rows=[]
+        for s in self.specs:
+            res=self.results.get(s.step_no)
+            step_rows.append({
+                "step_no":s.step_no,
+                "activity":s.activity,
+                "input_type":s.input_type,
+                "target":s.target,
+                "spec_low":s.spec_low,
+                "spec_high":s.spec_high,
+                "value":res.value_text if res else "",
+                "result":res.result if res else "",
+                "evidence":Path(res.evidence_path).name if res and res.evidence_path else "",
+            })
+        fill_table(self.table,step_rows,["step_no","activity","input_type","target","spec_low","spec_high","value","result","evidence"])
+        requirement_rows=[]
+        for req in self.requirements:
             ack=self.acks.get(req.requirement_id)
             status="AUTO-VALIDATED" if req.requirement_type=="CERTIFICATION" else ("ACKNOWLEDGED" if ack else "PENDING")
-            vals=[req.requirement_id,req.requirement_type,req.requirement_key,req.description,req.quantity,req.mandatory,status,ack.acknowledged_by if ack else "",Path(ack.evidence_path).name if ack and ack.evidence_path else ""]
-            for col,val in enumerate(vals):self.req_table.setItem(r,col,ti(val))
+            requirement_rows.append({
+                "requirement_id":req.requirement_id,
+                "requirement_type":req.requirement_type,
+                "requirement_key":req.requirement_key,
+                "description":req.description,
+                "quantity":req.quantity,
+                "mandatory":req.mandatory,
+                "status":status,
+                "acknowledged_by":ack.acknowledged_by if ack else "",
+                "evidence":Path(ack.evidence_path).name if ack and ack.evidence_path else "",
+            })
+        fill_table(self.req_table,requirement_rows,["requirement_id","requirement_type","requirement_key","description","quantity","mandatory","status","acknowledged_by","evidence"])
 
     def selected_spec(self):
         r=self.table.currentRow();return self.specs[r] if 0<=r<len(self.specs) else None
@@ -1704,16 +1726,28 @@ class QualificationPage(QWidget):
 
     def load_checks(self):
         row=self.selected_run()
+        fields=["check_id","label","acceptance","result","comment","evidence_path","entered_by"]
         if not row:
-            self.check_rows=[];self.check_results={};self.ctable.setRowCount(0);self.attachments.set_entity("","");return
+            self.check_rows=[];self.check_results={}
+            fill_table(self.ctable,[],fields)
+            self.attachments.set_entity("","")
+            return
         self.attachments.set_entity("QUALIFICATION",row.run_no,row.equipment_id)
         try:self.check_rows,self.check_results=self.db.qualification_run_checks(row.id)
         except Exception:self.check_rows=[];self.check_results={}
-        self.ctable.setRowCount(len(self.check_rows))
-        for r,check in enumerate(self.check_rows):
+        display_rows=[]
+        for check in self.check_rows:
             res=self.check_results.get(check["check_id"],{})
-            vals=[check.get("check_id"),check.get("label"),check.get("acceptance"),res.get("result",""),res.get("comment",""),res.get("evidence_path",""),res.get("entered_by","")]
-            for col,val in enumerate(vals):self.ctable.setItem(r,col,ti(val))
+            display_rows.append({
+                "check_id":check.get("check_id"),
+                "label":check.get("label"),
+                "acceptance":check.get("acceptance"),
+                "result":res.get("result",""),
+                "comment":res.get("comment",""),
+                "evidence_path":res.get("evidence_path",""),
+                "entered_by":res.get("entered_by",""),
+            })
+        fill_table(self.ctable,display_rows,fields)
 
     def enter_result(self):
         run=self.selected_run();idx=self.ctable.currentRow()
@@ -2718,13 +2752,19 @@ class AlarmPage(QWidget):
             self.pareto=self.db.alarm_pareto(30,equipment)
         fill_table(self.table,self.rows,["event_key","equipment_id","alarm_code","severity","message","source","state","occurred_at","acknowledged_by","acknowledged_at","cleared_at","related_ticket"])
         self.bursts=correlate_alarm_bursts([{"id":row.event_key,"equipment_id":row.equipment_id,"alarm_code":row.alarm_code,"severity":row.severity,"occurred_at":row.occurred_at} for row in self.rows],window_seconds=self.burst_window.value())
-        self.burst_table.setRowCount(len(self.bursts))
-        for r,burst in enumerate(self.bursts):
-            values=[burst.burst_key,burst.equipment_id,burst.alarm_code,burst.severity,burst.count,burst.first_seen,burst.last_seen,f"{burst.duration_seconds:.0f}",", ".join(burst.alarm_ids)]
-            for col,value in enumerate(values):self.burst_table.setItem(r,col,ti(value))
-        self.pareto_table.setRowCount(len(self.pareto))
-        for r,row in enumerate(self.pareto):
-            for col,key in enumerate(["alarm_code","message","count"]):self.pareto_table.setItem(r,col,ti(row.get(key,"")))
+        burst_rows=[{
+            "burst_key":burst.burst_key,
+            "equipment_id":burst.equipment_id,
+            "alarm_code":burst.alarm_code,
+            "severity":burst.severity,
+            "count":burst.count,
+            "first_seen":burst.first_seen,
+            "last_seen":burst.last_seen,
+            "duration":f"{burst.duration_seconds:.0f}",
+            "alarm_ids":", ".join(burst.alarm_ids),
+        } for burst in self.bursts]
+        fill_table(self.burst_table,burst_rows,["burst_key","equipment_id","alarm_code","severity","count","first_seen","last_seen","duration","alarm_ids"])
+        fill_table(self.pareto_table,self.pareto,["alarm_code","message","count"])
         qualifying=sum(1 for b in self.bursts if b.count>=self.burst_count.value() and self.db._alarm_severity_rank(b.severity)>=self.db._alarm_severity_rank(self.burst_severity.currentText()))
         self.burst_policy_status.setText(f"Plant burst policy: {self.burst_count.value()} alarms within {self.burst_window.value()} s · min {self.burst_severity.currentText()} · auto workflow {'ON' if self.burst_auto.isChecked() else 'OFF'} · {qualifying} displayed burst(s) meet threshold")
         self.load_attachment()
