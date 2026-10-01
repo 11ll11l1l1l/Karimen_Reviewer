@@ -106,6 +106,7 @@ class SharedFolderWorkspace:
         self._last_refresh_error = ""
         self._last_manifest_check = 0.0
         self._next_manifest_attempt = 0.0
+        self._last_verified_manifest: dict = {}
 
         self.lock_timeout_seconds = max(1.0, float(lock_timeout_seconds))
         self.stale_lock_seconds = max(30.0, float(stale_lock_seconds))
@@ -329,6 +330,15 @@ class SharedFolderWorkspace:
             pass
         return True
 
+    def refresh_due(self) -> bool:
+        """Return whether an automatic refresh is due without touching SMB."""
+        if self.pending_path.exists():
+            return True
+        now=time.monotonic()
+        if now<self._next_manifest_attempt:
+            return False
+        return now-self._last_manifest_check>=self.refresh_interval_seconds
+
     def refresh_local(self, engine=None, *, force: bool = False) -> bool:
         if self.pending_path.exists():
             try:
@@ -352,8 +362,7 @@ class SharedFolderWorkspace:
             self._next_manifest_attempt = now + self.error_backoff_seconds
             return False
 
-        # A successful manifest read proves the share is reachable. Avoid a
-        # second SMB stat of ems.sqlite on every foreground database session.
+        self._last_verified_manifest=dict(manifest)
         self._next_manifest_attempt = 0.0
         self._last_refresh_error = ""
         revision = int(manifest.get("revision") or 0)
@@ -413,17 +422,21 @@ class SharedFolderWorkspace:
         self._sync_publish_base(normalized)
         self._last_refresh_error = ""
     def _write_replica_marker(self, manifest: dict) -> None:
+        normalized=dict(manifest)
+        self._last_verified_manifest=normalized
         _atomic_json(
             self.replica_path,
             {
                 "schema": self.MANIFEST_SCHEMA,
-                "revision": int(manifest.get("revision") or 0),
-                "sha256": str(manifest.get("sha256") or ""),
+                "revision": int(normalized.get("revision") or 0),
+                "sha256": str(normalized.get("sha256") or ""),
                 "synced_at": _utc_now(),
                 "source": str(self.canonical_db),
+                "publisher": str(normalized.get("publisher") or ""),
+                "published_at": str(normalized.get("published_at") or ""),
+                "checkpoint_file": str(normalized.get("checkpoint_file") or "ems.sqlite"),
             },
         )
-
     def _lock_metadata(self) -> dict:
         return self._read_json(self.lock_dir / "owner.json")
 
@@ -656,6 +669,9 @@ class SharedFolderWorkspace:
                 self._prune_old_updates(next_manifest)
             except OSError:
                 pass  # Cleanup must never turn a committed write into a failure.
+        self._last_verified_manifest=dict(next_manifest)
+        self._last_manifest_check=time.monotonic()
+        self._next_manifest_attempt=0.0
         return next_manifest
     def _prune_old_updates(self, manifest: dict) -> None:
         # Keep old manifests' immutable files available for slow readers and
@@ -747,8 +763,20 @@ class SharedFolderWorkspace:
             )
         return rows
 
-    def status(self) -> dict:
-        manifest = self._manifest()
+    def status(self, *, live: bool = True) -> dict:
+        if live:
+            manifest=self._manifest()
+            self._last_verified_manifest=dict(manifest)
+        else:
+            manifest=dict(self._last_verified_manifest or self._read_json(self.replica_path))
+            if not manifest:
+                manifest={
+                    "schema":self.MANIFEST_SCHEMA,
+                    "revision":self.local_revision(),
+                    "publisher":"",
+                    "published_at":"",
+                    "checkpoint_file":"ems.sqlite",
+                }
         return {
             "mode": "network-folder",
             "shared_root": str(self.shared_root),
@@ -762,4 +790,5 @@ class SharedFolderWorkspace:
             "recovery_root": str(self.recovery_root),
             "recovery_conflicts": len(self.recovery_conflicts()),
             "last_refresh_error": self._last_refresh_error,
+            "status_source": "live" if live else "last-verified",
         }
