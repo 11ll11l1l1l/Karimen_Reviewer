@@ -600,13 +600,15 @@ class EquipmentPage(QWidget):
 
     def load_details(self):
         row=selected_row(self.table,self.rows)
-        self.history=self.db.list_equipment_state_events(row.equipment_id) if row else []
-        self.components=self.db.list_components(row.equipment_id) if row else []
-        self.meters=self.db.list_meters(row.equipment_id) if row else []
-        fill_table(self.history_table,self.history,["from_state","to_state","state_class","reason_code","reason_text","related_ticket","related_pm_task_id","owner","changed_by","changed_at"])
-        fill_table(self.component_table,self.components,["component_id","parent_component_id","name","component_type","part_number","serial_number","status","life_limit_value","life_limit_unit","usage_value","installed_at","removed_at","version"])
-        fill_table(self.meter_table,self.meters,["meter_code","name","unit","current_value","last_reading_at","active","version"])
-        self.load_component_events();self.load_meter_readings()
+        with self.db.read_batch():
+            self.history=self.db.list_equipment_state_events(row.equipment_id) if row else []
+            self.components=self.db.list_components(row.equipment_id) if row else []
+            self.meters=self.db.list_meters(row.equipment_id) if row else []
+            fill_table(self.history_table,self.history,["from_state","to_state","state_class","reason_code","reason_text","related_ticket","related_pm_task_id","owner","changed_by","changed_at"])
+            fill_table(self.component_table,self.components,["component_id","parent_component_id","name","component_type","part_number","serial_number","status","life_limit_value","life_limit_unit","usage_value","installed_at","removed_at","version"])
+            fill_table(self.meter_table,self.meters,["meter_code","name","unit","current_value","last_reading_at","active","version"])
+            self.load_component_events()
+            self.load_meter_readings()
 
     def load_component_events(self):
         component=selected_row(self.component_table,self.components)
@@ -800,7 +802,9 @@ class PMExecutionDialog(QDialog):
         h=QHBoxLayout();complete=QPushButton("Complete PM");complete.clicked.connect(self.complete);h.addStretch(1);h.addWidget(complete);v.addLayout(h);self.refresh()
 
     def refresh(self):
-        self.results={r.step_no:r for r in self.db.list_pm_results(self.execrow.id)};self.acks={a.requirement_id:a for a in self.db.list_pm_requirement_acks(self.execrow.id)}
+        with self.db.read_batch():
+            self.results={r.step_no:r for r in self.db.list_pm_results(self.execrow.id)}
+            self.acks={a.requirement_id:a for a in self.db.list_pm_requirement_acks(self.execrow.id)}
         self.table.setRowCount(len(self.specs))
         for r,s in enumerate(self.specs):
             res=self.results.get(s.step_no);vals=[s.step_no,s.activity,s.input_type,s.target,s.spec_low,s.spec_high,res.value_text if res else "",res.result if res else "",Path(res.evidence_path).name if res and res.evidence_path else ""]
@@ -1437,16 +1441,22 @@ class TicketPage(QWidget):
         d=TicketDialog(parent=self,db=self.db,initial=initial)
         if d.exec()==QDialog.DialogCode.Accepted:
             try:
-                row=self.db.save_ticket(d.data(self.user["username"]),workstation=WORKSTATION)
-                self.db.audit(self.user["username"],"CREATE_FROM_TEMPLATE","TICKET",row.ticket_no,template.template_id,WORKSTATION);self.refresh()
+                row=self.db.save_ticket(
+                    d.data(self.user["username"]),workstation=WORKSTATION,
+                    audit_action="CREATE_FROM_TEMPLATE",audit_detail=template.template_id,
+                    audit_user=self.user["username"],
+                )
+                self.refresh()
             except Exception as exc:QMessageBox.critical(self,"Ticket",str(exc))
 
     def add(self):
         d=TicketDialog(parent=self,db=self.db)
         if d.exec()==QDialog.DialogCode.Accepted:
             try:
-                row=self.db.save_ticket(d.data(self.user["username"]),workstation=WORKSTATION)
-                self.db.audit(self.user["username"],"CREATE","TICKET",row.ticket_no,workstation=WORKSTATION)
+                row=self.db.save_ticket(
+                    d.data(self.user["username"]),workstation=WORKSTATION,
+                    audit_action="CREATE",audit_user=self.user["username"],
+                )
                 self.refresh()
             except Exception as exc:QMessageBox.critical(self,"Ticket",str(exc))
 
@@ -1456,8 +1466,10 @@ class TicketPage(QWidget):
         d=TicketDialog(row,self,db=self.db)
         if d.exec()==QDialog.DialogCode.Accepted:
             try:
-                self.db.save_ticket(d.data(self.user["username"]),row.version,workstation=WORKSTATION)
-                self.db.audit(self.user["username"],"UPDATE_DETAILS","TICKET",row.ticket_no,workstation=WORKSTATION)
+                self.db.save_ticket(
+                    d.data(self.user["username"]),row.version,workstation=WORKSTATION,
+                    audit_action="UPDATE_DETAILS",audit_user=self.user["username"],
+                )
                 self.refresh()
             except Exception as exc:QMessageBox.critical(self,"Ticket",str(exc))
 
@@ -1483,10 +1495,11 @@ class TicketPage(QWidget):
 
     def load_details(self):
         row=selected_row(self.table,self.rows)
-        self.inv=self.db.list_ticket_investigations(row.ticket_no) if row else []
-        self.lifecycle=self.db.list_ticket_state_events(row.ticket_no) if row else []
-        self.control=self.db.ticket_operational_control(row.ticket_no) if row else None
-        self.escalations=self.db.list_ticket_escalations(row.ticket_no) if row else []
+        with self.db.read_batch():
+            self.inv=self.db.list_ticket_investigations(row.ticket_no) if row else []
+            self.lifecycle=self.db.list_ticket_state_events(row.ticket_no) if row else []
+            self.control=self.db.ticket_operational_control(row.ticket_no) if row else None
+            self.escalations=self.db.list_ticket_escalations(row.ticket_no) if row else []
         fill_table(self.invtable,self.inv,["sequence","observation","check_performed","result","conclusion","action","entered_by","entered_at"])
         fill_table(self.lifetable,self.lifecycle,["from_state","to_state","reason_code","note","owner","changed_by","changed_at"])
         controls=[self.control] if self.control else []
@@ -1579,15 +1592,16 @@ class QualificationPage(QWidget):
         self.refresh()
 
     def refresh(self):
-        self.protocols=self.db.list_qualification_protocols(active_only=False)
-        fill_table(self.ptable,self.protocols,["protocol_id","revision","name","equipment_id","equipment_type","active","created_by","created_at","version"])
-        current=selected_row(self.rtable,self.runs);run_no=current.run_no if current else ""
-        self.runs=self.db.list_qualification_runs()
-        fill_table(self.rtable,self.runs,["run_no","equipment_id","protocol_id","protocol_revision","status","started_by","submitted_by","verified_by","approved_by","expires_at","version"])
-        if run_no:
-            for i,row in enumerate(self.runs):
-                if row.run_no==run_no:self.rtable.selectRow(i);break
-        self.load_checks()
+        with self.db.read_batch():
+            self.protocols=self.db.list_qualification_protocols(active_only=False)
+            fill_table(self.ptable,self.protocols,["protocol_id","revision","name","equipment_id","equipment_type","active","created_by","created_at","version"])
+            current=selected_row(self.rtable,self.runs);run_no=current.run_no if current else ""
+            self.runs=self.db.list_qualification_runs()
+            fill_table(self.rtable,self.runs,["run_no","equipment_id","protocol_id","protocol_revision","status","started_by","submitted_by","verified_by","approved_by","expires_at","version"])
+            if run_no:
+                for i,row in enumerate(self.runs):
+                    if row.run_no==run_no:self.rtable.selectRow(i);break
+            self.load_checks()
 
     def selected_protocol(self):return selected_row(self.ptable,self.protocols)
     def selected_run(self):return selected_row(self.rtable,self.runs)
@@ -1809,9 +1823,12 @@ class ControlPage(QWidget):
         wd=QWidget();vd=QVBoxLayout(wd);bd=QPushButton("New Disposition");bd.clicked.connect(self.new_disp);bd.setEnabled(db.has_permission(user,"disposition.edit"));vd.addWidget(bd);self.dtable=make_table(["Equipment","State","Reason","Restrictions","Criteria","Ticket","Created By","Approved By","Effective"]);vd.addWidget(self.dtable);tabs.addTab(wd,"Disposition")
         wr=QWidget();vr=QVBoxLayout(wr);hr=QHBoxLayout();new=QPushButton("New Release Request");verify=QPushButton("Verify Selected");approve=QPushButton("Approve / Release");ppt=QPushButton("Release PPTX");xlsx=QPushButton("Release Excel");pdfrel=QPushButton("Release PDF");new.clicked.connect(self.new_release);verify.clicked.connect(self.verify_release);approve.clicked.connect(self.approve_release);ppt.clicked.connect(self.export_release_pptx);xlsx.clicked.connect(self.export_release_xlsx);pdfrel.clicked.connect(self.export_release_pdf);new.setEnabled(db.has_permission(user,"release.verify") or db.has_permission(user,"disposition.edit"));verify.setEnabled(db.has_permission(user,"release.verify"));approve.setEnabled(db.has_permission(user,"release.approve"));hr.addWidget(new);hr.addWidget(verify);hr.addWidget(approve);hr.addWidget(ppt);hr.addWidget(xlsx);hr.addWidget(pdfrel);hr.addStretch(1);vr.addLayout(hr);self.rtable=make_table(["ID","Equipment","Ticket","Status","Requested By","Verified By","Approved By","Requested","Ver"]);self.rtable.itemSelectionChanged.connect(self.load_release_attachment);vr.addWidget(self.rtable,2);self.release_attachments=AttachmentPanel(db,user);vr.addWidget(self.release_attachments,1);tabs.addTab(wr,"Release Verification");self.refresh()
     def refresh(self):
-        self.disp=self.db.list_dispositions();fill_table(self.dtable,self.disp,["equipment_id","state","reason","restrictions","release_criteria","related_ticket","created_by","approved_by","effective_at"])
+        with self.db.read_batch():
+            self.disp=self.db.list_dispositions()
+            self.rel=self.db.list_release_requests()
+        fill_table(self.dtable,self.disp,["equipment_id","state","reason","restrictions","release_criteria","related_ticket","created_by","approved_by","effective_at"])
         current=selected_row(self.rtable,self.rel);rid=current.id if current else None
-        self.rel=self.db.list_release_requests();fill_table(self.rtable,self.rel,["id","equipment_id","related_ticket","status","requested_by","verified_by","approved_by","requested_at","version"])
+        fill_table(self.rtable,self.rel,["id","equipment_id","related_ticket","status","requested_by","verified_by","approved_by","requested_at","version"])
         if rid is not None:
             for i,row in enumerate(self.rel):
                 if row.id==rid:self.rtable.selectRow(i);break
@@ -2165,9 +2182,12 @@ class DocumentPage(QWidget):
 
     def refresh(self):
         et=self.type.text().strip();ek=self.key.text().strip()
-        self.rows=self.db.list_documents(et,ek);fill_table(self.table,self.rows,["entity_type","entity_key","document_type","title","revision","status","path","added_by","added_at"])
-        self.cdocs=self.db.list_controlled_documents(et,ek);fill_table(self.cdoc_table,self.cdocs,["document_id","entity_type","entity_key","document_type","title","owner","status","current_revision","created_by","version"])
-        self.load_revisions()
+        with self.db.read_batch():
+            self.rows=self.db.list_documents(et,ek)
+            self.cdocs=self.db.list_controlled_documents(et,ek)
+            fill_table(self.table,self.rows,["entity_type","entity_key","document_type","title","revision","status","path","added_by","added_at"])
+            fill_table(self.cdoc_table,self.cdocs,["document_id","entity_type","entity_key","document_type","title","owner","status","current_revision","created_by","version"])
+            self.load_revisions()
 
     def select_document(self,document_id: str):
         target=next((x for x in self.db.list_controlled_documents() if x.document_id==document_id),None)
@@ -2693,9 +2713,10 @@ class AlarmPage(QWidget):
 
     def refresh(self):
         equipment=self.eq.text().strip()
-        self.rows=self.db.list_alarms(equipment,active_only=self.active_only.isChecked())
+        with self.db.read_batch():
+            self.rows=self.db.list_alarms(equipment,active_only=self.active_only.isChecked())
+            self.pareto=self.db.alarm_pareto(30,equipment)
         fill_table(self.table,self.rows,["event_key","equipment_id","alarm_code","severity","message","source","state","occurred_at","acknowledged_by","acknowledged_at","cleared_at","related_ticket"])
-        self.pareto=self.db.alarm_pareto(30,equipment)
         self.bursts=correlate_alarm_bursts([{"id":row.event_key,"equipment_id":row.equipment_id,"alarm_code":row.alarm_code,"severity":row.severity,"occurred_at":row.occurred_at} for row in self.rows],window_seconds=self.burst_window.value())
         self.burst_table.setRowCount(len(self.bursts))
         for r,burst in enumerate(self.bursts):
