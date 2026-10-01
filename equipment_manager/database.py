@@ -2182,7 +2182,6 @@ class Database:
             self.assert_equipment_scope(username,equipment_id,permission)
 
     @contextmanager
-    @contextmanager
     def read_batch(self):
         """Reuse one local SQLAlchemy session for a logical UI refresh."""
         existing=getattr(self._read_batch_state,"session",None)
@@ -2213,6 +2212,7 @@ class Database:
                 if self.shared_workspace is not None:
                     self._session_depth-=1
 
+    @contextmanager
     def session(self):
         batch_session=getattr(self._read_batch_state,"session",None)
         if batch_session is not None:
