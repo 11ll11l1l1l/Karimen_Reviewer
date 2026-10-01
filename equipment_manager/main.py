@@ -182,9 +182,11 @@ class DashboardPage(QWidget):
         self.refresh()
 
     def refresh(self):
-        counts=self.db.dashboard_counts()
+        self.db.evaluate_ticket_escalations_if_due()
+        with self.db.read_batch():
+            counts=self.db.dashboard_counts()
+            self.attention=self.db.operations_attention_queue(evaluate_escalations=False)
         for key,card in self.cards.items():card.value.setText(str(counts.get(key,0)))
-        self.attention=self.db.operations_attention_queue()
         self.attention_table.setRowCount(len(self.attention))
         fields=["severity","kind","equipment_id","key","summary","owner","age_hours"]
         for r,row in enumerate(self.attention):
@@ -639,17 +641,22 @@ class LayoutPage(QWidget):
         v.addLayout(h); self.scene=QGraphicsScene(); self.view=QGraphicsView(self.scene); self.view.setDragMode(QGraphicsView.DragMode.RubberBandDrag); v.addWidget(self.view); self.refresh()
     def scope_key(self): return f"{self.building.text().strip()}|{self.floor.text().strip()}"
     def refresh(self):
-        self.scene.clear(); self.nodes=[]; building=self.building.text().strip(); floor=self.floor.text().strip(); bgpath=self.db.get_layout_background(self.scope_key())
+        self.scene.clear(); self.nodes=[]; building=self.building.text().strip(); floor=self.floor.text().strip()
+        with self.db.read_batch():
+            bgpath=self.db.get_layout_background(self.scope_key())
+            inventory=self.db.list_inventory(self.highlight_part) if self.highlight_part else []
+            equipment=self.db.list_equipment()
+            storage=self.db.list_storage_locations()
         if bgpath and Path(bgpath).exists():
             pix=QPixmap(bgpath); item=QGraphicsPixmapItem(pix); item.setZValue(-20); self.scene.addItem(item)
         matching_locs=set()
         if self.highlight_part:
-            matching_locs={i.location_code for i in self.db.list_inventory(self.highlight_part) if self.highlight_part.lower() in (i.part_number or "").lower()}
-        for e in self.db.list_equipment():
+            matching_locs={i.location_code for i in inventory if self.highlight_part.lower() in (i.part_number or "").lower()}
+        for e in equipment:
             if building and e.building!=building:continue
             if floor and e.floor!=floor:continue
             brush=QBrush(QColor("#dceaf3")); n=MapNode("equipment",e.equipment_id,e.version,e.map_x,e.map_y,f"{e.equipment_id}\n{e.status}",brush); self.scene.addItem(n); self.nodes.append(n)
-        for s in self.db.list_storage_locations():
+        for s in storage:
             if building and s.building!=building:continue
             if floor and s.floor!=floor:continue
             brush=QBrush(QColor("#f3dfb6" if s.location_code not in matching_locs else "#f7a35c")); n=MapNode("storage",s.location_code,s.version,s.map_x,s.map_y,f"{s.location_code}\nStorage",brush); self.scene.addItem(n); self.nodes.append(n)
@@ -850,15 +857,23 @@ class PMPage(QWidget):
         self.condition_occurrence_table=make_table(["Trigger","Task ID","Equipment","PM","Meter","Threshold","Reading","Event","Created"]);vcnd.addWidget(self.condition_occurrence_table,1);self.tabs.addTab(wcnd,"Condition Triggers")
         self.refresh()
     def refresh(self):
-        self.defs=self.db.list_pm_definitions(); fill_table(self.def_table,self.defs,["pm_id","name","equipment_id","schedule_type","frequency_value","frequency_unit","anchor_mode","early_window_days","grace_days","estimated_hours","required_parts","version"])
-        self.tasks=self.db.list_pm_tasks(); fill_table(self.task_table,self.tasks,["equipment_id","pm_id","pm_name","original_due_date","scheduled_date","status","assigned_to","estimated_hours","priority","version"])
-        self.specrows=self.db.list_pm_specs(); fill_table(self.spec_table,self.specrows,["pm_id","step_no","activity","method","input_type","unit","target","control_low","control_high","spec_low","spec_high","revision"])
-        self.requirements=self.db.list_pm_requirements(active_only=False);fill_table(self.requirement_table,self.requirements,["requirement_id","pm_id","requirement_type","requirement_key","description","quantity","mandatory","revision","active"])
-        self.deferrals=self.db.list_pm_deferrals(); fill_table(self.deferral_table,self.deferrals,["id","equipment_id","pm_id","original_due_date","requested_due_date","status","requested_by","reviewed_by","review_note","version"])
-        self.usage_triggers=self.db.list_pm_usage_triggers(); fill_table(self.usage_trigger_table,self.usage_triggers,["trigger_id","equipment_id","pm_id","meter_code","interval_value","last_trigger_value","next_trigger_value","active","version"])
-        self.load_usage_occurrences()
-        self.condition_triggers=self.db.list_pm_condition_triggers();fill_table(self.condition_trigger_table,self.condition_triggers,["trigger_id","equipment_id","pm_id","meter_code","comparator","threshold","reset_threshold","latched","active","version"])
-        self.load_condition_occurrences()
+        with self.db.read_batch():
+            self.defs=self.db.list_pm_definitions()
+            self.tasks=self.db.list_pm_tasks()
+            self.specrows=self.db.list_pm_specs()
+            self.requirements=self.db.list_pm_requirements(active_only=False)
+            self.deferrals=self.db.list_pm_deferrals()
+            self.usage_triggers=self.db.list_pm_usage_triggers()
+            self.condition_triggers=self.db.list_pm_condition_triggers()
+            self.load_usage_occurrences()
+            self.load_condition_occurrences()
+        fill_table(self.def_table,self.defs,["pm_id","name","equipment_id","schedule_type","frequency_value","frequency_unit","anchor_mode","early_window_days","grace_days","estimated_hours","required_parts","version"])
+        fill_table(self.task_table,self.tasks,["equipment_id","pm_id","pm_name","original_due_date","scheduled_date","status","assigned_to","estimated_hours","priority","version"])
+        fill_table(self.spec_table,self.specrows,["pm_id","step_no","activity","method","input_type","unit","target","control_low","control_high","spec_low","spec_high","revision"])
+        fill_table(self.requirement_table,self.requirements,["requirement_id","pm_id","requirement_type","requirement_key","description","quantity","mandatory","revision","active"])
+        fill_table(self.deferral_table,self.deferrals,["id","equipment_id","pm_id","original_due_date","requested_due_date","status","requested_by","reviewed_by","review_note","version"])
+        fill_table(self.usage_trigger_table,self.usage_triggers,["trigger_id","equipment_id","pm_id","meter_code","interval_value","last_trigger_value","next_trigger_value","active","version"])
+        fill_table(self.condition_trigger_table,self.condition_triggers,["trigger_id","equipment_id","pm_id","meter_code","comparator","threshold","reset_threshold","latched","active","version"])
     def select_task(self,task_id: int):
         self.refresh();self.tabs.setCurrentIndex(1)
         for i,row in enumerate(self.tasks):
@@ -1920,7 +1935,14 @@ class InventoryPage(QWidget):
         wi=QWidget();vi=QVBoxLayout(wi);hi=QHBoxLayout();self.search=QLineEdit();self.search.setPlaceholderText("Search part / description / location");self.search.textChanged.connect(self.refresh);add=QPushButton("Add Item");edit=QPushButton("Edit");imp=QPushButton("Import Excel/CSV");paste=QPushButton("Paste from Excel");bulk=QPushButton("Bulk Edit Selected");consume=QPushButton("Consume");reserve=QPushButton("Reserve");show=QPushButton("Show on Map");add.clicked.connect(self.add_item);edit.clicked.connect(self.edit_item);imp.clicked.connect(self.import_inventory);paste.clicked.connect(self.paste_inventory);bulk.clicked.connect(self.bulk_edit_inventory);consume.clicked.connect(self.consume);reserve.clicked.connect(self.reserve);show.clicked.connect(self.map_item);canedit=db.has_permission(user,"inventory.edit");add.setEnabled(canedit);edit.setEnabled(canedit);imp.setEnabled(canedit);paste.setEnabled(canedit);bulk.setEnabled(canedit);consume.setEnabled(db.has_permission(user,"inventory.consume") or canedit);reserve.setEnabled(db.has_permission(user,"inventory.reserve"));hi.addWidget(self.search,1);[hi.addWidget(x) for x in [add,edit,imp,paste,bulk,consume,reserve,show]];vi.addLayout(hi);self.itable=make_table(["Part","Description","Qty","Min","Unit","Condition","Location","Image","Ver"]);vi.addWidget(self.itable);tabs.addTab(wi,"Inventory")
         wl=QWidget();vl=QVBoxLayout(wl);addl=QPushButton("Add Storage Location");addl.clicked.connect(self.add_loc);addl.setEnabled(db.has_permission(user,"inventory.edit"));vl.addWidget(addl);self.ltable=make_table(["Code","Name","Building","Floor","Area","Cabinet","Shelf","Bin","Image","Ver"]);vl.addWidget(self.ltable);tabs.addTab(wl,"Storage Locations")
         wr=QWidget();vr=QVBoxLayout(wr);rel=QPushButton("Release Selected Reservation");rel.clicked.connect(self.release_res);rel.setEnabled(db.has_permission(user,"inventory.reserve"));vr.addWidget(rel);self.rtable=make_table(["ID","Part","Location","Qty","PM Task","Equipment","Status","Reserved By","Time","Ver"]);vr.addWidget(self.rtable);tabs.addTab(wr,"Reservations");self.refresh()
-    def refresh(self):self.items=self.db.list_inventory(self.search.text().strip());fill_table(self.itable,self.items,["part_number","description","quantity","min_quantity","unit","condition","location_code","image_path","version"]);self.locs=self.db.list_storage_locations();fill_table(self.ltable,self.locs,["location_code","name","building","floor","area","cabinet","shelf","drawer_bin","image_path","version"]);self.res=self.db.list_reservations();fill_table(self.rtable,self.res,["id","part_number","location_code","quantity","pm_task_id","equipment_id","status","reserved_by","reserved_at","version"])
+    def refresh(self):
+        with self.db.read_batch():
+            self.items=self.db.list_inventory(self.search.text().strip())
+            self.locs=self.db.list_storage_locations()
+            self.res=self.db.list_reservations()
+        fill_table(self.itable,self.items,["part_number","description","quantity","min_quantity","unit","condition","location_code","image_path","version"])
+        fill_table(self.ltable,self.locs,["location_code","name","building","floor","area","cabinet","shelf","drawer_bin","image_path","version"])
+        fill_table(self.rtable,self.res,["id","part_number","location_code","quantity","pm_task_id","equipment_id","status","reserved_by","reserved_at","version"])
     def bulk_edit_inventory(self):
         selected=sorted({idx.row() for idx in self.itable.selectedIndexes()})
         rows=[self.items[i] for i in selected if 0<=i<len(self.items)]
@@ -2261,30 +2283,36 @@ class AdminPage(QWidget):
         v.addWidget(tabs);self.refresh()
 
     def refresh(self):
-        self.rows=self.db.list_users();fill_table(self.table,self.rows,["username","display_name","role","active","last_login","created_at"])
-        self.attempts=self.db.list_login_attempts(limit=500);fill_table(self.attempt_table,self.attempts,["username","success","reason","workstation","attempted_at"])
+        with self.db.read_batch():
+            self.rows=self.db.list_users()
+            self.attempts=self.db.list_login_attempts(limit=500)
+            access=self.db.user_access_snapshot([u.username for u in self.rows])
+            self.cert_rows=self.db.list_technician_certifications()
+            self.integration_endpoints=self.db.list_integration_endpoints()
+            self.integration_deliveries=self.db.integration_delivery_rows()
+            self.inbound_endpoints=self.db.list_inbound_endpoints()
+            self.inbound_receipts=self.db.list_inbound_receipts(limit=1000)
+
+        fill_table(self.table,self.rows,["username","display_name","role","active","last_login","created_at"])
+        fill_table(self.attempt_table,self.attempts,["username","success","reason","workstation","attempted_at"])
         self.scope_rows=[]
         for u in self.rows:
-            policy=self.db.user_access_policy(u.username);mode=policy.scope_mode if policy else "UNRESTRICTED"
-            scopes=self.db.list_user_scopes(u.username)
+            item=access.get(u.username,{})
+            policy=item.get("policy");mode=policy.scope_mode if policy else "UNRESTRICTED"
+            scopes=item.get("scopes") or []
             if scopes:
                 for s in scopes:self.scope_rows.append({"username":u.username,"mode":mode,"scope_type":s.scope_type,"scope_key":s.scope_key,"permission":s.permission})
             else:self.scope_rows.append({"username":u.username,"mode":mode,"scope_type":"","scope_key":"","permission":""})
         self.scope_table.setRowCount(len(self.scope_rows))
         for r,row in enumerate(self.scope_rows):
             for col,key in enumerate(["username","mode","scope_type","scope_key","permission"]):self.scope_table.setItem(r,col,ti(row.get(key,"")))
-        self.cert_rows=self.db.list_technician_certifications()
         fill_table(self.cert_table,self.cert_rows,["username","cert_code","issuer","issued_at","expires_at","active","note","version"])
-        self.integration_endpoints=self.db.list_integration_endpoints()
         fill_table(self.integration_table,self.integration_endpoints,["endpoint_id","name","adapter_type","target","topics","auth_env","enabled","version"])
-        self.integration_deliveries=self.db.integration_delivery_rows()
         self.delivery_table.setRowCount(len(self.integration_deliveries))
         fields=["id","topic","entity_type","entity_key","endpoint_id","adapter_type","target","status","attempts","next_attempt_at","last_error","sent_at"]
         for r,row in enumerate(self.integration_deliveries):
             for col,key in enumerate(fields):self.delivery_table.setItem(r,col,ti(row.get(key,"")))
-        self.inbound_endpoints=self.db.list_inbound_endpoints()
         fill_table(self.inbound_table,self.inbound_endpoints,["endpoint_id","name","adapter_type","entity_type","source_path","file_pattern","archive_path","quarantine_path","enabled","version"])
-        self.inbound_receipts=self.db.list_inbound_receipts(limit=1000)
         fill_table(self.receipt_table,self.inbound_receipts,["id","endpoint_id","source_name","status","records_total","records_applied","records_rejected","error","processed_at"])
         self.refresh_shared_sync()
 
