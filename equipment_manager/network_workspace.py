@@ -339,6 +339,42 @@ class SharedFolderWorkspace:
             return False
         return now-self._last_manifest_check>=self.refresh_interval_seconds
 
+    def probe_remote(self, *, force: bool = False) -> dict | None:
+        """Read only the small shared manifest; never replace the local database."""
+        now=time.monotonic()
+        if not force:
+            if now<self._next_manifest_attempt:
+                return None
+            if now-self._last_manifest_check<self.refresh_interval_seconds:
+                return None
+        self._last_manifest_check=now
+        try:
+            manifest=self._manifest()
+        except SharedFolderUnavailable as exc:
+            self._last_refresh_error=str(exc)
+            self._next_manifest_attempt=now+self.error_backoff_seconds
+            return None
+        self._last_verified_manifest=dict(manifest)
+        self._next_manifest_attempt=0.0
+        self._last_refresh_error=""
+        if int(manifest.get("revision") or 0)<=self.local_revision():
+            return None
+        return manifest
+
+    def apply_remote_manifest(self, manifest: dict, engine=None) -> bool:
+        """Install an already-verified newer manifest under the caller's DB lock."""
+        if int(manifest.get("revision") or 0)<=self.local_revision():
+            return False
+        try:
+            self._pull_snapshot(manifest,engine=engine)
+            return True
+        except (SharedFolderUnavailable,OSError) as exc:
+            self._last_refresh_error=str(exc)
+            self._next_manifest_attempt=time.monotonic()+self.error_backoff_seconds
+            if self.local_db.is_file():
+                return False
+            raise SharedFolderUnavailable(f"Cannot initialize local EMS replica: {exc}") from exc
+
     def refresh_local(self, engine=None, *, force: bool = False) -> bool:
         if self.pending_path.exists():
             try:
@@ -348,35 +384,10 @@ class SharedFolderWorkspace:
                 if self.local_db.is_file():
                     return False
                 raise
-        now = time.monotonic()
-        if not force:
-            if now < self._next_manifest_attempt:
-                return False
-            if now - self._last_manifest_check < self.refresh_interval_seconds:
-                return False
-        self._last_manifest_check = now
-        try:
-            manifest = self._manifest()
-        except SharedFolderUnavailable as exc:
-            self._last_refresh_error = str(exc)
-            self._next_manifest_attempt = now + self.error_backoff_seconds
+        manifest=self.probe_remote(force=force)
+        if manifest is None:
             return False
-
-        self._last_verified_manifest=dict(manifest)
-        self._next_manifest_attempt = 0.0
-        self._last_refresh_error = ""
-        revision = int(manifest.get("revision") or 0)
-        if revision <= self.local_revision() and self.local_db.is_file():
-            return False
-        try:
-            self._pull_snapshot(manifest, engine=engine)
-            return True
-        except (SharedFolderUnavailable, OSError) as exc:
-            self._last_refresh_error = str(exc)
-            self._next_manifest_attempt = time.monotonic() + self.error_backoff_seconds
-            if self.local_db.is_file():
-                return False
-            raise SharedFolderUnavailable(f"Cannot initialize local EMS replica: {exc}") from exc
+        return self.apply_remote_manifest(manifest,engine=engine)
     def _pull_snapshot(self, manifest: dict, engine=None, *, force_checkpoint: bool = False) -> None:
         if engine is not None:
             engine.dispose()
