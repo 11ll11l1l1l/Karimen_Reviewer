@@ -6,6 +6,7 @@ import os
 import re
 import secrets
 import threading
+import time
 from contextlib import contextmanager
 from datetime import datetime, timedelta
 from typing import Any
@@ -31,6 +32,8 @@ class TrackingSession(SASession):
 @event.listens_for(TrackingSession, "before_flush")
 def _mark_tracking_session_write(session, flush_context, instances):
     if session.new or session.dirty or session.deleted:
+        if session.info.get("ems_read_only"):
+            raise RuntimeError("Read batch attempted to modify EMS data.")
         session.info["ems_had_writes"] = True
 
 
@@ -1550,6 +1553,13 @@ class Database:
         self.shared_workspace = None
         self._session_lock = threading.RLock()
         self._session_depth = 0
+        self._read_batch_state = threading.local()
+        self._defer_shared_publish = False
+        self._last_escalation_check = 0.0
+        self._escalation_check_interval = max(
+            5.0, float(os.getenv("EMS_ESCALATION_CHECK_SECONDS", "30"))
+        )
+        self._escalation_check_lock = threading.Lock()
         data_mode = os.getenv("EMS_DATA_MODE", "").strip().lower()
         shared_root = os.getenv("EMS_SHARED_ROOT", "").strip()
         shared_enabled = url is None and (data_mode in {"network-folder", "shared-folder", "serverless"} or bool(shared_root))
@@ -1560,8 +1570,31 @@ class Database:
             self.url = self.shared_workspace.database_url()
         else:
             self.url = url or os.getenv("EMS_DATABASE_URL", "sqlite:///equipment_manager.db")
-        args = {"check_same_thread": False} if self.url.startswith("sqlite") else {}
-        self.engine = create_engine(self.url, future=True, pool_pre_ping=True, connect_args=args)
+
+        is_sqlite = self.url.startswith("sqlite")
+        args = {"check_same_thread": False, "timeout": 5.0} if is_sqlite else {}
+        # Local SQLite does not need pool_pre_ping; removing that round-trip matters
+        # because the desktop UI intentionally uses many short read sessions.
+        self.engine = create_engine(
+            self.url, future=True, pool_pre_ping=not is_sqlite, connect_args=args
+        )
+        if is_sqlite:
+            cache_mb = max(8, min(256, int(os.getenv("EMS_SQLITE_CACHE_MB", "64"))))
+            mmap_mb = max(0, min(1024, int(os.getenv("EMS_SQLITE_MMAP_MB", "128"))))
+            busy_ms = max(1000, min(60000, int(os.getenv("EMS_SQLITE_BUSY_TIMEOUT_MS", "5000"))))
+
+            @event.listens_for(self.engine, "connect")
+            def _configure_local_sqlite(dbapi_connection, connection_record):
+                cursor = dbapi_connection.cursor()
+                try:
+                    cursor.execute("PRAGMA foreign_keys=ON")
+                    cursor.execute("PRAGMA temp_store=MEMORY")
+                    cursor.execute(f"PRAGMA cache_size={-cache_mb * 1024}")
+                    cursor.execute(f"PRAGMA mmap_size={mmap_mb * 1024 * 1024}")
+                    cursor.execute(f"PRAGMA busy_timeout={busy_ms}")
+                finally:
+                    cursor.close()
+
         self.Session = sessionmaker(
             bind=self.engine,
             class_=TrackingSession,
@@ -1578,12 +1611,17 @@ class Database:
             SchemaMigration.__table__.create(self.engine,checkfirst=True)
             self._apply_schema_migrations()
         self._assert_schema_compatible()
-        self._bootstrap_legacy_event_history()
-        self._bootstrap_factory_hierarchy()
-        self._bootstrap_configuration_catalog()
+
+        # Legacy backfills/default seeding are versioned data bootstrap work, not
+        # per-launch work. Defer network publishing so the first upgraded launch
+        # still emits only one shared-folder update.
+        self._defer_shared_publish = True
+        try:
+            self._run_startup_data_bootstrap()
+        finally:
+            self._defer_shared_publish = False
         if self.shared_workspace is not None:
             self.shared_workspace.publish_startup_changes(self.engine)
-
     @staticmethod
     def _migration_checksum(revision: str, description: str) -> str:
         return hashlib.sha256(f"{revision}|{description}".encode("utf-8")).hexdigest()
@@ -1741,6 +1779,42 @@ class Database:
             return True,"Schema matches application model"
         except Exception as exc:
             return False,str(exc)
+
+    def _migration_performance_indexes(self):
+        statements=[
+            "CREATE INDEX IF NOT EXISTS ix_pm_task_status_due ON pm_tasks (status, original_due_date)",
+            "CREATE INDEX IF NOT EXISTS ix_pm_task_status_scheduled ON pm_tasks (status, scheduled_date)",
+            "CREATE INDEX IF NOT EXISTS ix_ticket_status_priority_created ON tickets (status, priority, created_at)",
+            "CREATE INDEX IF NOT EXISTS ix_alarm_state_equipment_time ON equipment_alarm_events (state, equipment_id, occurred_at)",
+            "CREATE INDEX IF NOT EXISTS ix_audit_entity_key_time ON audit_log (entity_type, entity_key, created_at)",
+            "CREATE INDEX IF NOT EXISTS ix_location_active_equipment ON equipment_location_assignments (active, equipment_id)",
+        ]
+        with self.engine.begin() as conn:
+            for sql in statements:
+                conn.exec_driver_sql(sql)
+
+    def _run_startup_data_bootstrap(self) -> bool:
+        revision="20261001_perf_bootstrap_v1"
+        description="One-time legacy backfill, catalog seed, hierarchy seed, and operational indexes"
+        expected=self._migration_checksum(revision,description)
+        with self.Session() as s:
+            row=s.scalar(select(SchemaMigration).where(SchemaMigration.revision==revision))
+            if row:
+                if row.checksum!=expected:
+                    raise RuntimeError(f"DATABASE MIGRATION CHECKSUM MISMATCH for {revision}.")
+                return False
+
+        self._bootstrap_legacy_event_history()
+        self._bootstrap_factory_hierarchy()
+        self._bootstrap_configuration_catalog()
+        self._migration_performance_indexes()
+        with self.Session.begin() as s:
+            s.add(SchemaMigration(
+                revision=revision,
+                checksum=expected,
+                description=description,
+            ))
+        return True
 
     def _bootstrap_legacy_event_history(self):
         """Backfill baseline event history for databases created before governed workflows.
@@ -1994,6 +2068,31 @@ class Database:
             ))
             s.flush();return row
 
+    def user_access_snapshot(self, usernames: list[str] | None = None) -> dict[str,dict[str,Any]]:
+        names=[str(x).strip() for x in (usernames or []) if str(x).strip()]
+        with self.session() as s:
+            p_stmt=select(UserAccessPolicy)
+            s_stmt=select(UserEquipmentScope).where(UserEquipmentScope.active.is_(True))
+            if names:
+                p_stmt=p_stmt.where(UserAccessPolicy.username.in_(names))
+                s_stmt=s_stmt.where(UserEquipmentScope.username.in_(names))
+            policies={row.username:row for row in s.scalars(p_stmt)}
+            scopes: dict[str,list[UserEquipmentScope]]={}
+            for row in s.scalars(s_stmt.order_by(
+                UserEquipmentScope.username,
+                UserEquipmentScope.scope_type,
+                UserEquipmentScope.scope_key,
+            )):
+                scopes.setdefault(row.username,[]).append(row)
+        keys=set(names) | set(policies) | set(scopes)
+        return {
+            username:{
+                "policy":policies.get(username),
+                "scopes":scopes.get(username,[]),
+            }
+            for username in keys
+        }
+
     def user_access_policy(self, username: str):
         with self.session() as s:
             return s.scalar(select(UserAccessPolicy).where(UserAccessPolicy.username==username))
@@ -2083,7 +2182,43 @@ class Database:
             self.assert_equipment_scope(username,equipment_id,permission)
 
     @contextmanager
+    @contextmanager
+    def read_batch(self):
+        """Reuse one local SQLAlchemy session for a logical UI refresh."""
+        existing=getattr(self._read_batch_state,"session",None)
+        if existing is not None:
+            yield self
+            return
+
+        lock=self._session_lock if self.shared_workspace is not None else _NullLock()
+        with lock:
+            if self.shared_workspace is not None and self._session_depth==0:
+                self.shared_workspace.refresh_local(self.engine)
+            if self.shared_workspace is not None:
+                self._session_depth+=1
+            s=self.Session()
+            s.info["ems_read_only"]=True
+            self._read_batch_state.session=s
+            try:
+                yield self
+                if s.info.get("ems_had_writes") or s.new or s.dirty or s.deleted:
+                    raise RuntimeError("Read batch attempted to modify EMS data.")
+                s.rollback()
+            finally:
+                try:
+                    del self._read_batch_state.session
+                except AttributeError:
+                    pass
+                s.close()
+                if self.shared_workspace is not None:
+                    self._session_depth-=1
+
     def session(self):
+        batch_session=getattr(self._read_batch_state,"session",None)
+        if batch_session is not None:
+            yield batch_session
+            return
+
         # Network-folder mode serializes local sessions so a replica refresh can
         # never replace the SQLite file while another thread owns a connection.
         lock = self._session_lock if self.shared_workspace is not None else _NullLock()
@@ -2102,7 +2237,7 @@ class Database:
                     or s.dirty
                     or s.deleted
                 )
-                if self.shared_workspace is not None and had_writes:
+                if self.shared_workspace is not None and had_writes and not self._defer_shared_publish:
                     with self.shared_workspace.guarded_publish(self.engine):
                         s.commit()
                         s.close()
@@ -2119,9 +2254,6 @@ class Database:
                     if not closed:
                         s.close()
                         closed = True
-                    # The rejected transaction never committed. Refresh now so
-                    # the next user retry starts from the winning workstation's
-                    # authoritative revision rather than a stale screen/database.
                     self.shared_workspace.refresh_local(self.engine, force=True)
                 raise
             finally:
@@ -2129,7 +2261,6 @@ class Database:
                     s.close()
                 if self.shared_workspace is not None:
                     self._session_depth -= 1
-
     def shared_sync_status(self) -> dict | None:
         if self.shared_workspace is None:
             return None
@@ -6345,10 +6476,12 @@ class Database:
         now=now or datetime.utcnow()
         escalated=[]
         with self.session() as s:
-            controls=list(s.scalars(select(TicketOperationalControl)))
-            for control in controls:
-                ticket=s.scalar(select(Ticket).where(Ticket.ticket_no==control.ticket_no))
-                if not ticket or ticket.status in {"Closed","Cancelled"}:continue
+            pairs=s.execute(
+                select(TicketOperationalControl,Ticket)
+                .join(Ticket,Ticket.ticket_no==TicketOperationalControl.ticket_no)
+                .where(Ticket.status.notin_(["Closed","Cancelled"]))
+            ).all()
+            for control,ticket in pairs:
                 reasons=[]
                 target=control.escalation_level
                 if control.response_due_at and now>control.response_due_at and ticket.status=="Open":
@@ -6382,14 +6515,22 @@ class Database:
             s.flush()
         return escalated
 
+    def evaluate_ticket_escalations_if_due(self, *, force: bool = False):
+        now=time.monotonic()
+        with self._escalation_check_lock:
+            if not force and now-self._last_escalation_check<self._escalation_check_interval:
+                return []
+            self._last_escalation_check=now
+        return self.evaluate_ticket_escalations()
     def list_ticket_escalations(self, ticket_no: str = ""):
         with self.session() as s:
             stmt=select(TicketEscalationEvent).order_by(TicketEscalationEvent.occurred_at.desc())
             if ticket_no:stmt=stmt.where(TicketEscalationEvent.ticket_no==ticket_no)
             return list(s.scalars(stmt))
 
-    def operations_attention_queue(self, limit: int = 200):
-        self.evaluate_ticket_escalations()
+    def operations_attention_queue(self, limit: int = 200, *, evaluate_escalations: bool = True):
+        if evaluate_escalations:
+            self.evaluate_ticket_escalations_if_due()
         now=datetime.utcnow()
         rows=[]
         with self.session() as s:
@@ -6403,8 +6544,12 @@ class Database:
                     due=task.scheduled_date or task.original_due_date
                     age=(now-due).total_seconds()/3600 if due else 0
                     rows.append({"severity":"HIGH","kind":"PM","key":str(task.id),"equipment_id":task.equipment_id,"summary":f"{task.pm_id} {task.status}","owner":task.assigned_to,"age_hours":age})
-            for ticket in s.scalars(select(Ticket).where(Ticket.status.notin_(["Closed","Cancelled"]))):
-                control=s.scalar(select(TicketOperationalControl).where(TicketOperationalControl.ticket_no==ticket.ticket_no))
+            ticket_pairs=s.execute(
+                select(Ticket,TicketOperationalControl)
+                .outerjoin(TicketOperationalControl,TicketOperationalControl.ticket_no==Ticket.ticket_no)
+                .where(Ticket.status.notin_(["Closed","Cancelled"]))
+            ).all()
+            for ticket,control in ticket_pairs:
                 level=control.escalation_level if control else 0
                 if ticket.priority in {"P1","P2"} or level>0:
                     age=(now-ticket.created_at).total_seconds()/3600 if ticket.created_at else 0
@@ -6418,7 +6563,6 @@ class Database:
         rank={"CRITICAL":0,"HIGH":1,"MEDIUM":2,"LOW":3}
         rows.sort(key=lambda x:(rank.get(x["severity"],9),-float(x.get("age_hours") or 0)))
         return rows[:max(1,min(int(limit),1000))]
-
     def list_ticket_state_events(self, ticket_no: str, limit: int = 250):
         with self.session() as s:
             stmt = (
