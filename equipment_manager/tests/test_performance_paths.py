@@ -151,6 +151,21 @@ class PerformancePathTests(unittest.TestCase):
             self.assertEqual([row.equipment_id for row in equipment],["ETCH-A"])
             self.assertEqual([row.location_code for row in storage],["ST-A"])
 
+    def test_unchanged_layout_position_does_not_increment_version(self):
+        with tempfile.TemporaryDirectory() as root:
+            db=Database(f"sqlite:///{Path(root)/'ems.db'}")
+            eq=db.save_equipment({
+                "equipment_id":"ETCH-01","name":"Etcher","map_x":10.0,"map_y":20.0
+            })
+            original_version=eq.version
+            row=db.update_map_position(
+                "equipment","ETCH-01",10.0,20.0,expected_version=original_version
+            )
+            self.assertEqual(row.version,original_version)
+            persisted=db.get_equipment("ETCH-01")
+            self.assertEqual(persisted.version,original_version)
+            self.assertEqual((persisted.map_x,persisted.map_y),(10.0,20.0))
+
     def test_layout_position_batch_is_atomic(self):
         with tempfile.TemporaryDirectory() as root:
             db=Database(f"sqlite:///{Path(root)/'ems.db'}")
