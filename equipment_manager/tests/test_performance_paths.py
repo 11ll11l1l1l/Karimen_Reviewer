@@ -24,6 +24,15 @@ class PerformancePathTests(unittest.TestCase):
                 db.list_inventory()
             self.assertEqual(calls["count"],1)
 
+    def test_read_batch_rows_remain_usable_after_close(self):
+        with tempfile.TemporaryDirectory() as root:
+            db=Database(f"sqlite:///{Path(root)/'ems.db'}")
+            db.save_equipment({"equipment_id":"ETCH-01","name":"Etcher"})
+            with db.read_batch():
+                rows=db.list_equipment()
+            self.assertEqual(rows[0].equipment_id,"ETCH-01")
+            self.assertEqual(rows[0].name,"Etcher")
+
     def test_local_sqlite_performance_pragmas_are_applied(self):
         with tempfile.TemporaryDirectory() as root:
             db=Database(f"sqlite:///{Path(root)/'ems.db'}")
