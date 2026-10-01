@@ -2187,7 +2187,7 @@ class Database:
 
     @contextmanager
     def _request_shared_refresh(self) -> bool:
-        """Schedule a due shared refresh without blocking the caller."""
+        """Schedule a due shared refresh without blocking foreground reads."""
         workspace=self.shared_workspace
         if not self._background_refresh_enabled or workspace is None or not workspace.refresh_due():
             return False
@@ -2198,8 +2198,18 @@ class Database:
 
             def worker():
                 try:
+                    # Crash-recovery publishing changes local/shared state and must
+                    # remain serialized. Normal polling probes only manifest.json
+                    # without holding the database lock.
+                    if workspace.pending_path.exists():
+                        with self._session_lock:
+                            workspace.refresh_local(self.engine)
+                        return
+                    manifest=workspace.probe_remote()
+                    if manifest is None:
+                        return
                     with self._session_lock:
-                        workspace.refresh_local(self.engine)
+                        workspace.apply_remote_manifest(manifest,self.engine)
                 except Exception as exc:
                     workspace._last_refresh_error=str(exc)
 
@@ -2211,7 +2221,6 @@ class Database:
             self._background_refresh_thread=thread
             thread.start()
             return True
-
     def read_batch(self):
         """Reuse one local SQLAlchemy session for a logical UI refresh."""
         existing=getattr(self._read_batch_state,"session",None)
