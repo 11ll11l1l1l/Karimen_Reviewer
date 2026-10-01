@@ -1,0 +1,79 @@
+import sqlite3
+import tempfile
+import unittest
+from pathlib import Path
+
+from database import Database
+
+
+class PerformancePathTests(unittest.TestCase):
+    def test_read_batch_reuses_one_session_for_multiple_queries(self):
+        with tempfile.TemporaryDirectory() as root:
+            db=Database(f"sqlite:///{Path(root)/'ems.db'}")
+            original=db.Session
+            calls={"count":0}
+
+            def counted_session(*args,**kwargs):
+                calls["count"]+=1
+                return original(*args,**kwargs)
+
+            db.Session=counted_session
+            with db.read_batch():
+                db.list_equipment()
+                db.list_pm_tasks()
+                db.list_inventory()
+            self.assertEqual(calls["count"],1)
+
+    def test_local_sqlite_performance_pragmas_are_applied(self):
+        with tempfile.TemporaryDirectory() as root:
+            db=Database(f"sqlite:///{Path(root)/'ems.db'}")
+            with db.engine.connect() as conn:
+                cache_size=int(conn.exec_driver_sql("PRAGMA cache_size").scalar_one())
+                temp_store=int(conn.exec_driver_sql("PRAGMA temp_store").scalar_one())
+                busy_timeout=int(conn.exec_driver_sql("PRAGMA busy_timeout").scalar_one())
+            self.assertLess(cache_size,0)
+            self.assertEqual(temp_store,2)
+            self.assertGreaterEqual(busy_timeout,1000)
+
+    def test_startup_data_bootstrap_is_version_gated(self):
+        with tempfile.TemporaryDirectory() as root:
+            path=Path(root)/"ems.db"
+            Database(f"sqlite:///{path}")
+            with sqlite3.connect(path) as conn:
+                before=conn.execute(
+                    "SELECT count(*) FROM schema_migrations WHERE revision='20261001_perf_bootstrap_v1'"
+                ).fetchone()[0]
+                config_before=conn.execute("SELECT count(*) FROM config_options").fetchone()[0]
+                indexes={
+                    row[1] for row in conn.execute("PRAGMA index_list('pm_tasks')").fetchall()
+                }
+            self.assertEqual(before,1)
+            self.assertIn("ix_pm_task_status_due",indexes)
+
+            Database(f"sqlite:///{path}")
+            with sqlite3.connect(path) as conn:
+                after=conn.execute(
+                    "SELECT count(*) FROM schema_migrations WHERE revision='20261001_perf_bootstrap_v1'"
+                ).fetchone()[0]
+                config_after=conn.execute("SELECT count(*) FROM config_options").fetchone()[0]
+            self.assertEqual(after,1)
+            self.assertEqual(config_after,config_before)
+
+    def test_escalation_evaluation_is_throttled(self):
+        with tempfile.TemporaryDirectory() as root:
+            db=Database(f"sqlite:///{Path(root)/'ems.db'}")
+            calls={"count":0}
+            def fake_evaluate(now=None):
+                calls["count"]+=1
+                return []
+            db.evaluate_ticket_escalations=fake_evaluate
+            db._escalation_check_interval=60
+            db.evaluate_ticket_escalations_if_due()
+            db.evaluate_ticket_escalations_if_due()
+            self.assertEqual(calls["count"],1)
+            db.evaluate_ticket_escalations_if_due(force=True)
+            self.assertEqual(calls["count"],2)
+
+
+if __name__=="__main__":
+    unittest.main()
