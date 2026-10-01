@@ -98,6 +98,52 @@ class SharedFolderWorkspaceTests(unittest.TestCase):
             self.assertEqual(_read_value(checkpoint),"committed-before-crash")
             self.assertEqual(_read_value(restarted.local_db),"committed-before-crash")
 
+    def test_manifest_probe_does_not_replace_local_replica_until_applied(self):
+        with tempfile.TemporaryDirectory() as root:
+            root=Path(root)
+            shared=root/"share"
+            a=SharedFolderWorkspace(shared,local_root=root/"a")
+            b=SharedFolderWorkspace(shared,local_root=root/"b")
+            a.prepare_local_database()
+            _write_value(a.local_db,"initial")
+            a.initialize_authoritative_if_missing()
+            b.prepare_local_database()
+            self.assertEqual(b.local_revision(),1)
+
+            with a.guarded_publish():
+                _write_value(a.local_db,"newer")
+
+            manifest=b.probe_remote(force=True)
+            self.assertIsNotNone(manifest)
+            self.assertEqual(int(manifest["revision"]),2)
+            self.assertEqual(b.local_revision(),1)
+            self.assertEqual(_read_value(b.local_db),"initial")
+
+            self.assertTrue(b.apply_remote_manifest(manifest))
+            self.assertEqual(b.local_revision(),2)
+            self.assertEqual(_read_value(b.local_db),"newer")
+
+    def test_cached_status_uses_last_verified_local_marker(self):
+        with tempfile.TemporaryDirectory() as root:
+            root=Path(root)
+            shared=root/"share"
+            a=SharedFolderWorkspace(shared,local_root=root/"a")
+            b=SharedFolderWorkspace(shared,local_root=root/"b")
+            a.prepare_local_database()
+            _write_value(a.local_db,"initial")
+            a.initialize_authoritative_if_missing()
+            b.prepare_local_database()
+            with a.guarded_publish():
+                _write_value(a.local_db,"newer")
+
+            cached=b.status(live=False)
+            self.assertEqual(cached["status_source"],"last-verified")
+            self.assertEqual(cached["shared_revision"],1)
+            live=b.status(live=True)
+            self.assertEqual(live["status_source"],"live")
+            self.assertEqual(live["shared_revision"],2)
+            self.assertEqual(b.local_revision(),1)
+
     def test_large_replica_uses_small_update_files_and_incremental_pull(self):
         with tempfile.TemporaryDirectory() as root:
             root=Path(root)
