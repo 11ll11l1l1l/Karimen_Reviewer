@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import socket
@@ -72,15 +73,67 @@ QListWidget::item:selected { background: #2a6f9e; }
 """
 
 
+def _table_text(value: Any) -> str:
+    if isinstance(value, datetime):
+        return value.strftime("%Y-%m-%d %H:%M")
+    return "" if value is None else str(value)
+
+
 def ti(value: Any) -> QTableWidgetItem:
-    if isinstance(value, datetime): return QTableWidgetItem(value.strftime("%Y-%m-%d %H:%M"))
-    return QTableWidgetItem("" if value is None else str(value))
+    return QTableWidgetItem(_table_text(value))
 
 
 def fill_table(table: QTableWidget, rows: list[Any], fields: list[str]):
-    table.setRowCount(len(rows))
-    for r, obj in enumerate(rows):
-        for c, field in enumerate(fields): table.setItem(r, c, ti(getattr(obj, field, "")))
+    """Populate large Qt tables without repaint/sort churn.
+
+    A small display digest avoids rebuilding an unchanged table on repeated
+    refreshes. When data did change, existing QTableWidgetItems are reused where
+    possible and painting/signals/sorting are suspended until the batch ends.
+    """
+    display_rows=[]
+    digest=hashlib.blake2b(digest_size=16)
+    for field in fields:
+        raw=field.encode("utf-8","surrogatepass")
+        digest.update(len(raw).to_bytes(4,"little"));digest.update(raw)
+    for obj in rows:
+        values=[]
+        for field in fields:
+            text=_table_text(getattr(obj,field,""))
+            values.append(text)
+            raw=text.encode("utf-8","surrogatepass")
+            digest.update(len(raw).to_bytes(4,"little"));digest.update(raw)
+        display_rows.append(values)
+    signature=(len(display_rows),len(fields),digest.digest())
+    if getattr(table,"_ems_fill_signature",None)==signature:
+        return
+
+    current_row=table.currentRow()
+    scroll=table.verticalScrollBar().value()
+    sorting=table.isSortingEnabled()
+    signals_blocked=table.blockSignals(True)
+    table.setUpdatesEnabled(False)
+    if sorting:
+        table.setSortingEnabled(False)
+    try:
+        table.setRowCount(len(display_rows))
+        for r,values in enumerate(display_rows):
+            for col,text in enumerate(values):
+                item=table.item(r,col)
+                if item is None:
+                    table.setItem(r,col,QTableWidgetItem(text))
+                elif item.text()!=text:
+                    item.setText(text)
+        table._ems_fill_signature=signature
+    finally:
+        if sorting:
+            table.setSortingEnabled(True)
+        table.blockSignals(signals_blocked)
+        table.setUpdatesEnabled(True)
+
+    if 0<=current_row<table.rowCount():
+        table.selectRow(current_row)
+    table.verticalScrollBar().setValue(scroll)
+    table.viewport().update()
 
 
 def selected_row(table: QTableWidget, rows: list[Any]):
@@ -645,20 +698,16 @@ class LayoutPage(QWidget):
         with self.db.read_batch():
             bgpath=self.db.get_layout_background(self.scope_key())
             inventory=self.db.list_inventory(self.highlight_part) if self.highlight_part else []
-            equipment=self.db.list_equipment()
-            storage=self.db.list_storage_locations()
+            equipment=self.db.list_equipment(building=building,floor=floor)
+            storage=self.db.list_storage_locations(building=building,floor=floor)
         if bgpath and Path(bgpath).exists():
             pix=QPixmap(bgpath); item=QGraphicsPixmapItem(pix); item.setZValue(-20); self.scene.addItem(item)
         matching_locs=set()
         if self.highlight_part:
             matching_locs={i.location_code for i in inventory if self.highlight_part.lower() in (i.part_number or "").lower()}
         for e in equipment:
-            if building and e.building!=building:continue
-            if floor and e.floor!=floor:continue
             brush=QBrush(QColor("#dceaf3")); n=MapNode("equipment",e.equipment_id,e.version,e.map_x,e.map_y,f"{e.equipment_id}\n{e.status}",brush); self.scene.addItem(n); self.nodes.append(n)
         for s in storage:
-            if building and s.building!=building:continue
-            if floor and s.floor!=floor:continue
             brush=QBrush(QColor("#f3dfb6" if s.location_code not in matching_locs else "#f7a35c")); n=MapNode("storage",s.location_code,s.version,s.map_x,s.map_y,f"{s.location_code}\nStorage",brush); self.scene.addItem(n); self.nodes.append(n)
         self.scene.setSceneRect(self.scene.itemsBoundingRect().adjusted(-100,-100,300,300))
     def save_positions(self):
