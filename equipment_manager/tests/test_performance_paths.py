@@ -78,30 +78,28 @@ class PerformancePathTests(unittest.TestCase):
             self.assertEqual(temp_store,2)
             self.assertGreaterEqual(busy_timeout,1000)
 
-    def test_startup_data_bootstrap_is_version_gated(self):
+    def test_startup_bootstrap_is_idempotent_and_indexes_exist(self):
         with tempfile.TemporaryDirectory() as root:
             path=Path(root)/"ems.db"
-            Database(f"sqlite:///{path}")
+            db=Database(f"sqlite:///{path}")
             with sqlite3.connect(path) as conn:
-                before=conn.execute(
-                    "SELECT count(*) FROM schema_migrations WHERE revision='20261001_perf_bootstrap_v1'"
-                ).fetchone()[0]
                 config_before=conn.execute("SELECT count(*) FROM config_options").fetchone()[0]
                 indexes={
                     row[1] for row in conn.execute("PRAGMA index_list('pm_tasks')").fetchall()
                 }
-            self.assertEqual(before,1)
+                migration_before=conn.execute("SELECT count(*) FROM schema_migrations").fetchone()[0]
             self.assertIn("ix_pm_task_status_due",indexes)
 
-            Database(f"sqlite:///{path}")
+            reopened=Database(f"sqlite:///{path}")
             with sqlite3.connect(path) as conn:
-                after=conn.execute(
-                    "SELECT count(*) FROM schema_migrations WHERE revision='20261001_perf_bootstrap_v1'"
-                ).fetchone()[0]
                 config_after=conn.execute("SELECT count(*) FROM config_options").fetchone()[0]
-            self.assertEqual(after,1)
+                migration_after=conn.execute("SELECT count(*) FROM schema_migrations").fetchone()[0]
             self.assertEqual(config_after,config_before)
-
+            self.assertEqual(migration_after,migration_before)
+            self.assertEqual(
+                [x.revision for x in reopened.list_schema_migrations()],
+                [revision for revision,_description,_apply in reopened._migration_plan()],
+            )
     def test_pm_kit_status_batches_inventory_and_alternate_queries(self):
         with tempfile.TemporaryDirectory() as root:
             db=Database(f"sqlite:///{Path(root)/'ems.db'}")
