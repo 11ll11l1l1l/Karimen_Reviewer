@@ -4807,15 +4807,19 @@ class Database:
             raise ValueError("Unknown map entity")
         if not item:
             raise ValueError("Map entity not found")
+
+        new_x=float(x);new_y=float(y)
+        if abs(float(item.map_x or 0.0)-new_x)<1e-6 and abs(float(item.map_y or 0.0)-new_y)<1e-6:
+            return item
+
         self._update_versioned(
             item,
-            {"map_x":float(x),"map_y":float(y)},
+            {"map_x":new_x,"map_y":new_y},
             expected_version,
             label,
         )
         s.flush()
         return item
-
     def update_map_position(
         self,
         entity_type: str,
