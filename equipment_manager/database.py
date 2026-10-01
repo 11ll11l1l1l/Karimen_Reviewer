@@ -1555,6 +1555,9 @@ class Database:
         self._session_depth = 0
         self._read_batch_state = threading.local()
         self._defer_shared_publish = False
+        self._background_refresh_enabled = False
+        self._background_refresh_lock = threading.Lock()
+        self._background_refresh_thread = None
         self._last_escalation_check = 0.0
         self._escalation_check_interval = max(
             5.0, float(os.getenv("EMS_ESCALATION_CHECK_SECONDS", "30"))
@@ -1622,6 +1625,7 @@ class Database:
             self._defer_shared_publish = False
         if self.shared_workspace is not None:
             self.shared_workspace.publish_startup_changes(self.engine)
+        self._background_refresh_enabled = True
     @staticmethod
     def _migration_checksum(revision: str, description: str) -> str:
         return hashlib.sha256(f"{revision}|{description}".encode("utf-8")).hexdigest()
@@ -2182,6 +2186,32 @@ class Database:
             self.assert_equipment_scope(username,equipment_id,permission)
 
     @contextmanager
+    def _request_shared_refresh(self) -> bool:
+        """Schedule a due shared refresh without blocking the caller."""
+        workspace=self.shared_workspace
+        if not self._background_refresh_enabled or workspace is None or not workspace.refresh_due():
+            return False
+        with self._background_refresh_lock:
+            current=self._background_refresh_thread
+            if current is not None and current.is_alive():
+                return False
+
+            def worker():
+                try:
+                    with self._session_lock:
+                        workspace.refresh_local(self.engine)
+                except Exception as exc:
+                    workspace._last_refresh_error=str(exc)
+
+            thread=threading.Thread(
+                target=worker,
+                name="ems-shared-refresh",
+                daemon=True,
+            )
+            self._background_refresh_thread=thread
+            thread.start()
+            return True
+
     def read_batch(self):
         """Reuse one local SQLAlchemy session for a logical UI refresh."""
         existing=getattr(self._read_batch_state,"session",None)
@@ -2191,8 +2221,6 @@ class Database:
 
         lock=self._session_lock if self.shared_workspace is not None else _NullLock()
         with lock:
-            if self.shared_workspace is not None and self._session_depth==0:
-                self.shared_workspace.refresh_local(self.engine)
             if self.shared_workspace is not None:
                 self._session_depth+=1
             s=self.Session()
@@ -2202,8 +2230,6 @@ class Database:
                 yield self
                 if s.info.get("ems_had_writes") or s.new or s.dirty or s.deleted:
                     raise RuntimeError("Read batch attempted to modify EMS data.")
-                # expire_on_commit=False keeps loaded ORM rows usable by the UI
-                # after this shared read session is closed.
                 s.commit()
             finally:
                 try:
@@ -2213,7 +2239,7 @@ class Database:
                 s.close()
                 if self.shared_workspace is not None:
                     self._session_depth-=1
-
+        self._request_shared_refresh()
     @contextmanager
     def session(self):
         batch_session=getattr(self._read_batch_state,"session",None)
@@ -2221,12 +2247,9 @@ class Database:
             yield batch_session
             return
 
-        # Network-folder mode serializes local sessions so a replica refresh can
-        # never replace the SQLite file while another thread owns a connection.
         lock = self._session_lock if self.shared_workspace is not None else _NullLock()
+        had_writes=False
         with lock:
-            if self.shared_workspace is not None and self._session_depth == 0:
-                self.shared_workspace.refresh_local(self.engine)
             if self.shared_workspace is not None:
                 self._session_depth += 1
             s = self.Session()
@@ -2263,12 +2286,13 @@ class Database:
                     s.close()
                 if self.shared_workspace is not None:
                     self._session_depth -= 1
-    def shared_sync_status(self) -> dict | None:
+        if not had_writes:
+            self._request_shared_refresh()
+    def shared_sync_status(self, *, live: bool = False) -> dict | None:
         if self.shared_workspace is None:
             return None
         with self._session_lock:
-            return self.shared_workspace.status()
-
+            return self.shared_workspace.status(live=live)
     def refresh_shared_state(self) -> bool:
         if self.shared_workspace is None:
             return False
