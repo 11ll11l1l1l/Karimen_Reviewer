@@ -2328,7 +2328,7 @@ class AdminPage(QWidget):
                 self.sync_status_label.setText(
                     f"Shared root: {status.get('shared_root','')}  |  "
                     f"Local revision: {status.get('local_revision',0)}  |  "
-                    f"Shared revision: {status.get('shared_revision',0)}  |  "
+                    f"Last verified shared revision: {status.get('shared_revision',0)}  |  "
                     f"Pending publish: {'YES' if status.get('pending_publish') else 'No'}  |  "
                     f"Preserved conflicts: {len(self.sync_recovery_rows)}"
                 )
