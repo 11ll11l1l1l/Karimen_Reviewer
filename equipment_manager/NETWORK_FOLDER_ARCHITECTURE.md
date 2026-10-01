@@ -63,6 +63,8 @@ Recovery\                     preserved unsynchronized conflict copies
 
 The normal UI therefore reads from a fast local file rather than continuously querying a database across SMB.
 
+Automatic manifest polling is also non-blocking for normal UI reads. A background worker probes only the small shared manifest without holding the local database/session lock. If there is no new revision, the foreground never waits on SMB. When a newer revision is detected, installation is serialized against local sessions before the local replica is atomically replaced. The Admin synchronization status uses the last verified local marker; the explicit Pull Latest action performs a synchronous live refresh.
+
 ## Write flow
 
 1. The user works against the current local replica.
