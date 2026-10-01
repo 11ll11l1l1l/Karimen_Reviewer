@@ -256,6 +256,60 @@ class PerformancePathTests(unittest.TestCase):
             self.assertEqual(len(result["reservations"]),1)
             self.assertEqual(result["reservations"][0]["part_number"],"P1")
 
+    def test_ticket_save_audit_is_atomic_with_ticket_write(self):
+        with tempfile.TemporaryDirectory() as root:
+            path=Path(root)/"ems.db"
+            db=Database(f"sqlite:///{path}")
+            created=db.save_ticket(
+                {
+                    "ticket_no":"INC-001",
+                    "equipment_id":"",
+                    "title":"Initial issue",
+                    "created_by":"planner",
+                },
+                workstation="TEST-PC",
+                audit_action="CREATE",
+                audit_user="planner",
+            )
+            updated=db.save_ticket(
+                {
+                    "ticket_no":"INC-001",
+                    "equipment_id":"",
+                    "title":"Updated issue",
+                    "created_by":"planner",
+                },
+                expected_version=created.version,
+                workstation="TEST-PC",
+                audit_action="UPDATE_DETAILS",
+                audit_user="planner",
+            )
+            self.assertEqual(updated.title,"Updated issue")
+
+            with self.assertRaises(RuntimeError):
+                db.save_ticket(
+                    {
+                        "ticket_no":"INC-001",
+                        "equipment_id":"",
+                        "title":"Stale overwrite",
+                        "created_by":"planner",
+                    },
+                    expected_version=created.version,
+                    workstation="TEST-PC",
+                    audit_action="UPDATE_DETAILS",
+                    audit_user="planner",
+                )
+
+            with sqlite3.connect(path) as conn:
+                title,version=conn.execute(
+                    "SELECT title,version FROM tickets WHERE ticket_no='INC-001'"
+                ).fetchone()
+                audits=conn.execute(
+                    "SELECT action FROM audit_log WHERE entity_type='TICKET' AND entity_key='INC-001' ORDER BY id"
+                ).fetchall()
+            self.assertEqual(title,"Updated issue")
+            self.assertEqual(version,updated.version)
+            self.assertEqual([row[0] for row in audits],["CREATE","UPDATE_DETAILS"])
+
     def test_escalation_evaluation_is_throttled(self):
         with tempfile.TemporaryDirectory() as root:
             db=Database(f"sqlite:///{Path(root)/'ems.db'}")
