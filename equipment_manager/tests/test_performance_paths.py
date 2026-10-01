@@ -151,6 +151,46 @@ class PerformancePathTests(unittest.TestCase):
             self.assertEqual([row.equipment_id for row in equipment],["ETCH-A"])
             self.assertEqual([row.location_code for row in storage],["ST-A"])
 
+    def test_layout_position_batch_is_atomic(self):
+        with tempfile.TemporaryDirectory() as root:
+            db=Database(f"sqlite:///{Path(root)/'ems.db'}")
+            eq=db.save_equipment({"equipment_id":"ETCH-01","name":"Etcher"})
+            loc=db.save_storage_location({"location_code":"ST-01","name":"Storage"})
+            db.update_map_positions_batch([
+                {
+                    "entity_type":"equipment","key":"ETCH-01",
+                    "x":10,"y":20,"expected_version":eq.version,
+                },
+                {
+                    "entity_type":"storage","key":"ST-01",
+                    "x":30,"y":40,"expected_version":loc.version,
+                },
+            ],user="planner",layout_key="FAB-1/1F",workstation="TEST-PC")
+
+            eq_after=db.get_equipment("ETCH-01")
+            loc_after=db.list_storage_locations()[0]
+            self.assertEqual((eq_after.map_x,eq_after.map_y),(10.0,20.0))
+            self.assertEqual((loc_after.map_x,loc_after.map_y),(30.0,40.0))
+
+            stale_equipment_version=eq.version
+            storage_version=loc_after.version
+            with self.assertRaises(RuntimeError):
+                db.update_map_positions_batch([
+                    {
+                        "entity_type":"equipment","key":"ETCH-01",
+                        "x":100,"y":200,"expected_version":stale_equipment_version,
+                    },
+                    {
+                        "entity_type":"storage","key":"ST-01",
+                        "x":300,"y":400,"expected_version":storage_version,
+                    },
+                ],user="planner",layout_key="FAB-1/1F",workstation="TEST-PC")
+
+            eq_final=db.get_equipment("ETCH-01")
+            loc_final=db.list_storage_locations()[0]
+            self.assertEqual((eq_final.map_x,eq_final.map_y),(10.0,20.0))
+            self.assertEqual((loc_final.map_x,loc_final.map_y),(30.0,40.0))
+
     def test_pm_kit_status_batches_inventory_and_alternate_queries(self):
         with tempfile.TemporaryDirectory() as root:
             db=Database(f"sqlite:///{Path(root)/'ems.db'}")
