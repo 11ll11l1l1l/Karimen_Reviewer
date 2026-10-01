@@ -16,6 +16,11 @@ on:
       - 'equipment_manager_compact/**'
       - '.github/workflows/ems-ci.yml'
 
+
+concurrency:
+  group: ems-ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   ems-core:
     runs-on: ubuntu-latest
