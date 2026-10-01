@@ -683,7 +683,22 @@ class EquipmentPage(QWidget):
 
 class MapNode(QGraphicsRectItem):
     def __init__(self, entity_type, key, version, x, y, label, brush):
-        super().__init__(0,0,130,52); self.entity_type=entity_type; self.key=key; self.version=version; self.setPos(x,y); self.setBrush(brush); self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable,True); self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable,True); text=QGraphicsTextItem(label,self); text.setPos(5,5)
+        super().__init__(0,0,130,52)
+        self.entity_type=entity_type
+        self.key=key
+        self.version=version
+        self._original_x=float(x or 0.0)
+        self._original_y=float(y or 0.0)
+        self.setPos(self._original_x,self._original_y)
+        self.setBrush(brush)
+        self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable,True)
+        self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable,True)
+        text=QGraphicsTextItem(label,self)
+        text.setPos(5,5)
+
+    def position_changed(self) -> bool:
+        pos=self.pos()
+        return abs(pos.x()-self._original_x)>=1e-6 or abs(pos.y()-self._original_y)>=1e-6
 
 
 class LayoutPage(QWidget):
@@ -721,7 +736,11 @@ class LayoutPage(QWidget):
                     "expected_version":n.version,
                 }
                 for n in self.nodes
+                if n.position_changed()
             ]
+            if not positions:
+                QMessageBox.information(self,"Layout","No position changes to save.")
+                return
             self.db.update_map_positions_batch(
                 positions,
                 user=self.user["username"],
@@ -729,7 +748,9 @@ class LayoutPage(QWidget):
                 workstation=WORKSTATION,
             )
             self.refresh()
-            QMessageBox.information(self,"Layout","Positions saved.")
+            QMessageBox.information(
+                self,"Layout",f"Saved {len(positions)} position change(s)."
+            )
         except Exception as exc:
             QMessageBox.critical(self,"Layout",str(exc))
             self.refresh()
