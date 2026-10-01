@@ -1798,43 +1798,27 @@ class Database:
                 conn.exec_driver_sql(sql)
 
     def _run_startup_data_bootstrap(self) -> bool:
-        revision="20261001_perf_bootstrap_v1"
-        description="One-time legacy backfill, catalog seed, hierarchy seed, and operational indexes"
-        expected=self._migration_checksum(revision,description)
-        with self.Session() as s:
-            row=s.scalar(select(SchemaMigration).where(SchemaMigration.revision==revision))
-            if row:
-                if row.checksum!=expected:
-                    raise RuntimeError(f"DATABASE MIGRATION CHECKSUM MISMATCH for {revision}.")
-                return False
+        """Run cheap idempotent startup repair/seed checks.
 
+        These checks intentionally remain available on every launch so imported
+        legacy records or missing baseline history can self-heal. Each helper is
+        set-based to avoid the former per-record query pattern.
+        """
         self._bootstrap_legacy_event_history()
         self._bootstrap_factory_hierarchy()
         self._bootstrap_configuration_catalog()
         self._migration_performance_indexes()
-        with self.Session.begin() as s:
-            s.add(SchemaMigration(
-                revision=revision,
-                checksum=expected,
-                description=description,
-            ))
         return True
-
     def _bootstrap_legacy_event_history(self):
-        """Backfill baseline event history for databases created before governed workflows.
-
-        New installations already create events at record creation. This only acts
-        on records that have no event history at all, so it is idempotent.
-        """
+        """Backfill only records that have no governed lifecycle history."""
         legacy_ticket_states={"In Progress":"Investigation","Completed":"Closed"}
         with self.session() as s:
-            equipment=list(s.scalars(select(Equipment)))
+            equipment=list(s.scalars(
+                select(Equipment).where(
+                    Equipment.equipment_id.notin_(select(EquipmentStateEvent.equipment_id))
+                )
+            ))
             for eq in equipment:
-                exists=s.scalar(select(func.count()).select_from(EquipmentStateEvent).where(
-                    EquipmentStateEvent.equipment_id==eq.equipment_id
-                ))
-                if exists:
-                    continue
                 state=eq.status if eq.status in EQUIPMENT_STATES else "Available"
                 if eq.status!=state:
                     eq.status=state
@@ -1854,13 +1838,12 @@ class Database:
                     changed_at=occurred,
                 ))
 
-            tickets=list(s.scalars(select(Ticket)))
+            tickets=list(s.scalars(
+                select(Ticket).where(
+                    Ticket.ticket_no.notin_(select(TicketStateEvent.ticket_no))
+                )
+            ))
             for ticket in tickets:
-                exists=s.scalar(select(func.count()).select_from(TicketStateEvent).where(
-                    TicketStateEvent.ticket_no==ticket.ticket_no
-                ))
-                if exists:
-                    continue
                 state=legacy_ticket_states.get(ticket.status,ticket.status)
                 if state not in TICKET_STATES:
                     state="Open"
@@ -1879,7 +1862,6 @@ class Database:
                     workstation="DATABASE-UPGRADE",
                     changed_at=occurred,
                 ))
-
     @staticmethod
     def _factory_code(parent: str, node_type: str, name: str) -> str:
         clean="".join(ch if ch.isalnum() else "-" for ch in (name or "").strip().upper()).strip("-") or "UNSPECIFIED"
@@ -1888,7 +1870,14 @@ class Database:
 
     def _bootstrap_factory_hierarchy(self):
         with self.session() as s:
-            for eq in s.scalars(select(Equipment)):
+            equipment=list(s.scalars(select(Equipment)))
+            existing_nodes=set(s.scalars(select(FactoryNode.node_code)))
+            active_assignments=set(s.scalars(
+                select(EquipmentLocationAssignment.equipment_id).where(
+                    EquipmentLocationAssignment.active.is_(True)
+                )
+            ))
+            for eq in equipment:
                 parent=""
                 levels=[
                     ("Site",eq.site),
@@ -1902,22 +1891,19 @@ class Database:
                     if not (name or "").strip():
                         continue
                     code=self._factory_code(parent,node_type,name)
-                    if not s.scalar(select(FactoryNode).where(FactoryNode.node_code==code)):
-                        s.add(FactoryNode(node_code=code,parent_code=parent,node_type=node_type,name=name.strip()))
-                        s.flush()
+                    if code not in existing_nodes:
+                        s.add(FactoryNode(
+                            node_code=code,parent_code=parent,node_type=node_type,name=name.strip()
+                        ))
+                        existing_nodes.add(code)
                     parent=code
                     deepest=code
-                if deepest:
-                    active=s.scalar(select(EquipmentLocationAssignment).where(
-                        EquipmentLocationAssignment.equipment_id==eq.equipment_id,
-                        EquipmentLocationAssignment.active.is_(True),
+                if deepest and eq.equipment_id not in active_assignments:
+                    s.add(EquipmentLocationAssignment(
+                        equipment_id=eq.equipment_id,node_code=deepest,active=True,
+                        assigned_by="system-migration",
                     ))
-                    if not active:
-                        s.add(EquipmentLocationAssignment(
-                            equipment_id=eq.equipment_id,node_code=deepest,active=True,
-                            assigned_by="system-migration",
-                        ))
-
+                    active_assignments.add(eq.equipment_id)
     def list_factory_nodes(self, active_only: bool = True):
         with self.session() as s:
             stmt=select(FactoryNode).order_by(FactoryNode.node_code)
@@ -2221,6 +2207,7 @@ class Database:
             self._background_refresh_thread=thread
             thread.start()
             return True
+    @contextmanager
     def read_batch(self):
         """Reuse one local SQLAlchemy session for a logical UI refresh."""
         existing=getattr(self._read_batch_state,"session",None)
@@ -2483,11 +2470,16 @@ class Database:
             "TICKET_REASON_LABEL":list(TICKET_REASON_CODES.items()),
         }
         with self.session() as s:
+            existing={(x.category,x.code) for x in s.scalars(select(ConfigOption))}
             for category,items in defaults.items():
                 for order,(code,label) in enumerate(items,10):
-                    row=s.scalar(select(ConfigOption).where(ConfigOption.category==category,ConfigOption.code==code))
-                    if not row:s.add(ConfigOption(category=category,code=code,label=label,sort_order=order,active=True,system_locked=True))
-
+                    key=(category,code)
+                    if key not in existing:
+                        s.add(ConfigOption(
+                            category=category,code=code,label=label,
+                            sort_order=order,active=True,system_locked=True,
+                        ))
+                        existing.add(key)
     def list_config_options(self, category: str, active_only: bool = True):
         with self.session() as s:
             stmt=select(ConfigOption).where(ConfigOption.category==category.strip().upper()).order_by(ConfigOption.sort_order,ConfigOption.label)
