@@ -6054,6 +6054,10 @@ class Database:
         data: dict[str, Any],
         expected_version: int | None = None,
         workstation: str = "",
+        *,
+        audit_action: str = "",
+        audit_detail: str = "",
+        audit_user: str = "",
     ):
         payload = dict(data)
         equipment_id=str(payload.get("equipment_id","")).strip()
@@ -6099,9 +6103,17 @@ class Database:
                         containment_due_at=now+timedelta(minutes=sla["containment_minutes"]) if sla.get("containment_minutes") else None,
                         resolution_due_at=now+timedelta(minutes=sla["resolution_minutes"]) if sla.get("resolution_minutes") else None,
                     ))
+            if audit_action:
+                s.add(AuditLog(
+                    user=audit_user or str(data.get("created_by") or ""),
+                    action=audit_action,
+                    entity_type="TICKET",
+                    entity_key=ticket_no,
+                    detail=audit_detail,
+                    workstation=workstation,
+                ))
             s.flush()
             return item
-
     def list_incident_whys(self, ticket_no: str):
         with self.session() as s:
             return list(s.scalars(select(IncidentWhy).where(IncidentWhy.ticket_no==ticket_no).order_by(IncidentWhy.sequence)))
