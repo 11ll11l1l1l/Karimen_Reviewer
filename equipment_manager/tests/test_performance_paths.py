@@ -5,6 +5,8 @@ import time
 import unittest
 from pathlib import Path
 
+from sqlalchemy import event
+
 from database import (
     Database, Equipment, PMDefinition, PMTask, PMRequirement,
     InventoryItem, InventoryReservation, PartAlternate,
@@ -89,6 +91,11 @@ class PerformancePathTests(unittest.TestCase):
                 }
                 migration_before=conn.execute("SELECT count(*) FROM schema_migrations").fetchone()[0]
             self.assertIn("ix_pm_task_status_due",indexes)
+            with sqlite3.connect(path) as conn:
+                equipment_indexes={row[1] for row in conn.execute("PRAGMA index_list('equipment')").fetchall()}
+                storage_indexes={row[1] for row in conn.execute("PRAGMA index_list('storage_locations')").fetchall()}
+            self.assertIn("ix_equipment_building_floor_area",equipment_indexes)
+            self.assertIn("ix_storage_building_floor_area",storage_indexes)
 
             reopened=Database(f"sqlite:///{path}")
             with sqlite3.connect(path) as conn:
@@ -100,6 +107,50 @@ class PerformancePathTests(unittest.TestCase):
                 [x.revision for x in reopened.list_schema_migrations()],
                 [revision for revision,_description,_apply in reopened._migration_plan()],
             )
+    def test_dashboard_counts_use_one_select_statement(self):
+        with tempfile.TemporaryDirectory() as root:
+            db=Database(f"sqlite:///{Path(root)/'ems.db'}")
+            db.save_equipment({"equipment_id":"ETCH-01","name":"Etcher"})
+            statements=[]
+
+            def before_cursor_execute(conn,cursor,statement,parameters,context,executemany):
+                if statement.lstrip().upper().startswith("SELECT"):
+                    statements.append(statement)
+
+            event.listen(db.engine,"before_cursor_execute",before_cursor_execute)
+            try:
+                counts=db.dashboard_counts()
+            finally:
+                event.remove(db.engine,"before_cursor_execute",before_cursor_execute)
+
+            self.assertEqual(counts["equipment_total"],1)
+            self.assertEqual(len(statements),1)
+
+    def test_layout_queries_filter_in_sqlite(self):
+        with tempfile.TemporaryDirectory() as root:
+            db=Database(f"sqlite:///{Path(root)/'ems.db'}")
+            db.save_equipment({
+                "equipment_id":"ETCH-A","name":"Etcher A",
+                "building":"FAB-1","floor":"1F","area":"ETCH",
+            })
+            db.save_equipment({
+                "equipment_id":"CMP-B","name":"Polisher B",
+                "building":"FAB-2","floor":"2F","area":"CMP",
+            })
+            db.save_storage_location({
+                "location_code":"ST-A","name":"Storage A",
+                "building":"FAB-1","floor":"1F","area":"ETCH",
+            })
+            db.save_storage_location({
+                "location_code":"ST-B","name":"Storage B",
+                "building":"FAB-2","floor":"2F","area":"CMP",
+            })
+
+            equipment=db.list_equipment(building="FAB-1",floor="1F")
+            storage=db.list_storage_locations(building="FAB-1",floor="1F")
+            self.assertEqual([row.equipment_id for row in equipment],["ETCH-A"])
+            self.assertEqual([row.location_code for row in storage],["ST-A"])
+
     def test_pm_kit_status_batches_inventory_and_alternate_queries(self):
         with tempfile.TemporaryDirectory() as root:
             db=Database(f"sqlite:///{Path(root)/'ems.db'}")
