@@ -1,5 +1,7 @@
 import sqlite3
 import tempfile
+import threading
+import time
 import unittest
 from pathlib import Path
 
@@ -32,6 +34,35 @@ class PerformancePathTests(unittest.TestCase):
                 rows=db.list_equipment()
             self.assertEqual(rows[0].equipment_id,"ETCH-01")
             self.assertEqual(rows[0].name,"Etcher")
+
+    def test_foreground_read_does_not_wait_for_background_manifest_probe(self):
+        with tempfile.TemporaryDirectory() as root:
+            db=Database(f"sqlite:///{Path(root)/'ems.db'}")
+            started=threading.Event()
+            release=threading.Event()
+
+            class SlowProbe:
+                def __init__(self):
+                    self.pending_path=Path(root)/"no-pending.json"
+                    self._last_refresh_error=""
+                def refresh_due(self):
+                    return True
+                def probe_remote(self):
+                    started.set()
+                    release.wait(2)
+                    return None
+
+            db.shared_workspace=SlowProbe()
+            db._background_refresh_enabled=True
+            t0=time.monotonic()
+            db.list_equipment()
+            elapsed=time.monotonic()-t0
+            self.assertLess(elapsed,0.5)
+            self.assertTrue(started.wait(1))
+            release.set()
+            thread=db._background_refresh_thread
+            if thread is not None:
+                thread.join(1)
 
     def test_local_sqlite_performance_pragmas_are_applied(self):
         with tempfile.TemporaryDirectory() as root:
