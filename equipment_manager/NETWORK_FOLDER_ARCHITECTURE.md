@@ -165,3 +165,7 @@ Remaining before production certification:
 - Recovery-folder reconciliation/admin workflow;
 - LAN performance measurement at representative database size;
 - consolidated Windows/PySide6 regression and packaging certification.
+
+Local response-time tuning also includes a 64 MiB SQLite page cache, 128 MiB memory mapping, in-memory temporary tables, a local busy timeout, and no SQLite pool pre-ping. These are configurable with `EMS_SQLITE_CACHE_MB`, `EMS_SQLITE_MMAP_MB`, and `EMS_SQLITE_BUSY_TIMEOUT_MS`. Multi-query UI refreshes reuse one read-only SQLAlchemy session, common operational filters have composite indexes, ticket/control dashboard reads avoid per-ticket lookups, and escalation evaluation is throttled by `EMS_ESCALATION_CHECK_SECONDS` (default 30 seconds).
+
+The dashboard counter card set is produced by one SQL statement rather than one count query per card. Layout/map reads filter equipment and storage locations inside SQLite with building/floor/area indexes. Large Qt tables calculate a display digest and skip unchanged redraws; changed tables suspend painting, sorting, and signals while updating and reuse existing cells. Saving a layout is also batched: all moved equipment/storage positions plus the audit record commit atomically through one shared publish instead of one publish per node.
