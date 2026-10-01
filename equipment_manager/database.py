@@ -5144,12 +5144,14 @@ class Database:
                 PMRequirement.mandatory.is_(True),
             )))
             definition=s.scalar(select(PMDefinition).where(PMDefinition.pm_id==task.pm_id))
-            reservations=list(s.scalars(select(InventoryReservation).where(
+            task_reservations=list(s.scalars(select(InventoryReservation).where(
                 InventoryReservation.pm_task_id==task.id,
                 InventoryReservation.status=="Reserved",
             )))
             reserved_by_part={}
-            for r in reservations:reserved_by_part[r.part_number]=reserved_by_part.get(r.part_number,0.0)+float(r.quantity or 0)
+            for r in task_reservations:
+                reserved_by_part[r.part_number]=reserved_by_part.get(r.part_number,0.0)+float(r.quantity or 0)
+
             part_requirements={}
             cert_codes=[]
             for req in reqs:
@@ -5160,16 +5162,43 @@ class Database:
             if definition and (definition.required_skill or "").strip():
                 cert_codes.append(definition.required_skill.strip())
             cert_codes=list(dict.fromkeys(x for x in cert_codes if x))
+
+            part_numbers=list(part_requirements)
+            stock_by_part={}
+            reserved_all_by_part={}
+            if part_numbers:
+                stock_rows=s.execute(
+                    select(InventoryItem.part_number,func.sum(InventoryItem.quantity))
+                    .where(
+                        InventoryItem.part_number.in_(part_numbers),
+                        InventoryItem.condition=="Available",
+                    )
+                    .group_by(InventoryItem.part_number)
+                ).all()
+                stock_by_part={part:float(qty or 0.0) for part,qty in stock_rows}
+                reserved_rows=s.execute(
+                    select(InventoryReservation.part_number,func.sum(InventoryReservation.quantity))
+                    .where(
+                        InventoryReservation.part_number.in_(part_numbers),
+                        InventoryReservation.status=="Reserved",
+                    )
+                    .group_by(InventoryReservation.part_number)
+                ).all()
+                reserved_all_by_part={part:float(qty or 0.0) for part,qty in reserved_rows}
+
             assigned=(task.assigned_to or "").strip()
             cert_rows=list(s.scalars(select(TechnicianCertification).where(
                 TechnicianCertification.username==assigned,
                 TechnicianCertification.active.is_(True),
             ))) if assigned else []
             valid_certs={x.cert_code for x in cert_rows if x.expires_at is None or x.expires_at>now}
+
         parts=[];shortages=[]
         for part,qty in sorted(part_requirements.items()):
             reserved=float(reserved_by_part.get(part,0.0))
-            unreserved_available=float(self.inventory_available(part))
+            stock=float(stock_by_part.get(part,0.0))
+            reserved_all=float(reserved_all_by_part.get(part,0.0))
+            unreserved_available=max(0.0,stock-reserved_all)
             total_covered=reserved+unreserved_available
             short=max(0.0,qty-total_covered)
             row={"part_number":part,"required":qty,"reserved":reserved,"available_unreserved":unreserved_available,"shortage":short,"ready":short<=0}
@@ -5187,7 +5216,6 @@ class Database:
             "missing_certifications":missing_certs,
             "certification_status":"NONE" if not cert_codes else ("UNASSIGNED" if not assigned else ("READY" if not missing_certs else "MISSING")),
         }
-
     def reserve_pm_required_parts(self, task_id: int, user: str, workstation: str = "") -> list[InventoryReservation]:
         with self.session() as s:
             task_stmt=select(PMTask).where(PMTask.id==task_id)
@@ -8238,15 +8266,31 @@ class Database:
 
     def pm_kit_status(self, task_id: int) -> dict[str, Any]:
         readiness=self.pm_task_readiness(task_id)
-        reservations=[x for x in self.list_reservations() if x.pm_task_id==task_id]
+        part_numbers=[x["part_number"] for x in readiness["parts"]]
+        with self.session() as s:
+            reservations=list(s.scalars(
+                select(InventoryReservation)
+                .where(InventoryReservation.pm_task_id==task_id)
+                .order_by(InventoryReservation.reserved_at.desc())
+            ))
+            alternates_by_part={}
+            if part_numbers:
+                for row in s.scalars(
+                    select(PartAlternate)
+                    .where(
+                        PartAlternate.part_number.in_(part_numbers),
+                        PartAlternate.approved.is_(True),
+                    )
+                    .order_by(PartAlternate.part_number,PartAlternate.alternate_part_number)
+                ):
+                    alternates_by_part.setdefault(row.part_number,[]).append(row.alternate_part_number)
         for part in readiness["parts"]:
-            part["alternates"]=[x.alternate_part_number for x in self.list_part_alternates(part["part_number"],True)]
+            part["alternates"]=alternates_by_part.get(part["part_number"],[])
         readiness["reservations"]=[{
             "id":x.id,"part_number":x.part_number,"location_code":x.location_code,
             "quantity":x.quantity,"status":x.status,"reserved_by":x.reserved_by,
         } for x in reservations]
         return readiness
-
     def save_inventory_item(self, data: dict[str, Any], expected_version: int | None = None):
         with self.session() as s:
             item=s.scalar(select(InventoryItem).where(InventoryItem.part_number==data["part_number"],InventoryItem.location_code==data["location_code"]))
