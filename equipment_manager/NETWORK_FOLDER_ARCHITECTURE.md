@@ -131,6 +131,8 @@ Normal writes publish changed compressed blocks; readers pull only missing revis
 
 Tuning: `EMS_SYNC_POLL_SECONDS=2`, `EMS_SYNC_ERROR_BACKOFF_SECONDS=15`, `EMS_SYNC_CHECKPOINT_INTERVAL=16` and `EMS_SYNC_MAX_DELTA_RATIO=0.5`. A forced refresh bypasses polling/backoff. Transient failed share reads keep the last verified local copy available; bulk equipment edits/imports commit through one local transaction and one shared publish instead of one publish per row. Writes still require the shared lease and must be retried after reconnection.
 
+Local response-time tuning now also includes a 64 MiB SQLite page cache, 128 MiB memory mapping, in-memory temporary tables, a local busy timeout, and no SQLite pool pre-ping. These are configurable with `EMS_SQLITE_CACHE_MB`, `EMS_SQLITE_MMAP_MB`, and `EMS_SQLITE_BUSY_TIMEOUT_MS`. Multi-query UI refreshes reuse one read-only SQLAlchemy session, common operational filters have composite indexes, ticket/control dashboard reads avoid per-ticket lookups, and escalation evaluation is throttled by `EMS_ESCALATION_CHECK_SECONDS` (default 30 seconds). Legacy hierarchy/configuration backfills are version-gated so they do not rescan the database on every application launch.
+
 ## Backup
 
 `BACKUP_WINDOWS.bat` resolves the synchronized local replica and writes verified SQLite backups to `EMS_BACKUP_ROOT` (default: `<EMS_SHARED_ROOT>\Backups`).
