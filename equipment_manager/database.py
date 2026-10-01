@@ -4788,17 +4788,80 @@ class Database:
             s.flush()
             return eq, event
 
-    def update_map_position(self, entity_type: str, key: str, x: float, y: float, expected_version: int | None = None):
-        with self.session() as s:
-            if entity_type == "equipment":
-                item = s.scalar(select(Equipment).where(Equipment.equipment_id == key)); label = "Equipment layout"
-            elif entity_type == "storage":
-                item = s.scalar(select(StorageLocation).where(StorageLocation.location_code == key)); label = "Storage layout"
-            else: raise ValueError("Unknown map entity")
-            if not item: raise ValueError("Map entity not found")
-            self._update_versioned(item, {"map_x": float(x), "map_y": float(y)}, expected_version, label)
-            s.flush(); return item
+    def _update_map_position_in_session(
+        self,
+        s,
+        entity_type: str,
+        key: str,
+        x: float,
+        y: float,
+        expected_version: int | None = None,
+    ):
+        if entity_type=="equipment":
+            item=s.scalar(select(Equipment).where(Equipment.equipment_id==key))
+            label="Equipment layout"
+        elif entity_type=="storage":
+            item=s.scalar(select(StorageLocation).where(StorageLocation.location_code==key))
+            label="Storage layout"
+        else:
+            raise ValueError("Unknown map entity")
+        if not item:
+            raise ValueError("Map entity not found")
+        self._update_versioned(
+            item,
+            {"map_x":float(x),"map_y":float(y)},
+            expected_version,
+            label,
+        )
+        s.flush()
+        return item
 
+    def update_map_position(
+        self,
+        entity_type: str,
+        key: str,
+        x: float,
+        y: float,
+        expected_version: int | None = None,
+    ):
+        with self.session() as s:
+            return self._update_map_position_in_session(
+                s,entity_type,key,x,y,expected_version
+            )
+
+    def update_map_positions_batch(
+        self,
+        positions: list[dict[str,Any]],
+        *,
+        user: str = "",
+        layout_key: str = "",
+        workstation: str = "",
+    ):
+        """Persist one layout edit as a single atomic transaction/publish."""
+        positions=list(positions or [])
+        if not positions:
+            return []
+        rows=[]
+        with self.session() as s:
+            for position in positions:
+                rows.append(self._update_map_position_in_session(
+                    s,
+                    str(position.get("entity_type") or ""),
+                    str(position.get("key") or ""),
+                    float(position.get("x") or 0.0),
+                    float(position.get("y") or 0.0),
+                    position.get("expected_version"),
+                ))
+            if user:
+                s.add(AuditLog(
+                    user=user,
+                    action="UPDATE",
+                    entity_type="LAYOUT",
+                    entity_key=layout_key,
+                    detail=f"{len(rows)} position(s)",
+                    workstation=workstation,
+                ))
+        return rows
     def set_layout_background(self, scope_key: str, image_path: str, user: str):
         with self.session() as s:
             item = s.scalar(select(LayoutBackground).where(LayoutBackground.scope_key == scope_key))
