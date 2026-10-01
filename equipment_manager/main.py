@@ -865,8 +865,6 @@ class PMPage(QWidget):
             self.deferrals=self.db.list_pm_deferrals()
             self.usage_triggers=self.db.list_pm_usage_triggers()
             self.condition_triggers=self.db.list_pm_condition_triggers()
-            self.load_usage_occurrences()
-            self.load_condition_occurrences()
         fill_table(self.def_table,self.defs,["pm_id","name","equipment_id","schedule_type","frequency_value","frequency_unit","anchor_mode","early_window_days","grace_days","estimated_hours","required_parts","version"])
         fill_table(self.task_table,self.tasks,["equipment_id","pm_id","pm_name","original_due_date","scheduled_date","status","assigned_to","estimated_hours","priority","version"])
         fill_table(self.spec_table,self.specrows,["pm_id","step_no","activity","method","input_type","unit","target","control_low","control_high","spec_low","spec_high","revision"])
@@ -874,6 +872,9 @@ class PMPage(QWidget):
         fill_table(self.deferral_table,self.deferrals,["id","equipment_id","pm_id","original_due_date","requested_due_date","status","requested_by","reviewed_by","review_note","version"])
         fill_table(self.usage_trigger_table,self.usage_triggers,["trigger_id","equipment_id","pm_id","meter_code","interval_value","last_trigger_value","next_trigger_value","active","version"])
         fill_table(self.condition_trigger_table,self.condition_triggers,["trigger_id","equipment_id","pm_id","meter_code","comparator","threshold","reset_threshold","latched","active","version"])
+        with self.db.read_batch():
+            self.load_usage_occurrences()
+            self.load_condition_occurrences()
     def select_task(self,task_id: int):
         self.refresh();self.tabs.setCurrentIndex(1)
         for i,row in enumerate(self.tasks):
