@@ -1792,6 +1792,8 @@ class Database:
             "CREATE INDEX IF NOT EXISTS ix_alarm_state_equipment_time ON equipment_alarm_events (state, equipment_id, occurred_at)",
             "CREATE INDEX IF NOT EXISTS ix_audit_entity_key_time ON audit_log (entity_type, entity_key, created_at)",
             "CREATE INDEX IF NOT EXISTS ix_location_active_equipment ON equipment_location_assignments (active, equipment_id)",
+            "CREATE INDEX IF NOT EXISTS ix_equipment_building_floor_area ON equipment (building, floor, area, equipment_id)",
+            "CREATE INDEX IF NOT EXISTS ix_storage_building_floor_area ON storage_locations (building, floor, area, location_code)",
         ]
         with self.engine.begin() as conn:
             for sql in statements:
@@ -3750,14 +3752,31 @@ class Database:
             if hasattr(item, k) and k not in {"id", "version"}: setattr(item, k, v)
         item.version += 1
 
-    def list_equipment(self, search_text: str = ""):
+    def list_equipment(
+        self,
+        search_text: str = "",
+        *,
+        building: str = "",
+        floor: str = "",
+        area: str = "",
+    ):
         with self.session() as s:
-            stmt = select(Equipment).order_by(Equipment.equipment_id)
+            stmt = select(Equipment)
             if search_text:
                 q = f"%{search_text}%"
-                stmt = stmt.where(Equipment.equipment_id.ilike(q) | Equipment.name.ilike(q) | Equipment.area.ilike(q) | Equipment.status.ilike(q))
-            return list(s.scalars(stmt))
-
+                stmt = stmt.where(
+                    Equipment.equipment_id.ilike(q)
+                    | Equipment.name.ilike(q)
+                    | Equipment.area.ilike(q)
+                    | Equipment.status.ilike(q)
+                )
+            if building:
+                stmt=stmt.where(Equipment.building==building)
+            if floor:
+                stmt=stmt.where(Equipment.floor==floor)
+            if area:
+                stmt=stmt.where(Equipment.area==area)
+            return list(s.scalars(stmt.order_by(Equipment.equipment_id)))
     def get_equipment(self, equipment_id: str):
         with self.session() as s: return s.scalar(select(Equipment).where(Equipment.equipment_id == equipment_id))
 
@@ -7907,9 +7926,22 @@ class Database:
             else: item=StorageLocation(**data); s.add(item)
             s.flush(); return item
 
-    def list_storage_locations(self):
-        with self.session() as s: return list(s.scalars(select(StorageLocation).order_by(StorageLocation.location_code)))
-
+    def list_storage_locations(
+        self,
+        *,
+        building: str = "",
+        floor: str = "",
+        area: str = "",
+    ):
+        with self.session() as s:
+            stmt=select(StorageLocation)
+            if building:
+                stmt=stmt.where(StorageLocation.building==building)
+            if floor:
+                stmt=stmt.where(StorageLocation.floor==floor)
+            if area:
+                stmt=stmt.where(StorageLocation.area==area)
+            return list(s.scalars(stmt.order_by(StorageLocation.location_code)))
     def save_supplier_order(self, data: dict[str, Any], user: str, expected_version: int | None = None):
         payload=dict(data);order_no=str(payload.get("order_no","")).strip();supplier=str(payload.get("supplier","")).strip()
         if not order_no or not supplier:raise ValueError("Order number and supplier are required.")
@@ -9080,18 +9112,32 @@ class Database:
 
     def dashboard_counts(self):
         with self.session() as s:
-            c=lambda model,*w: int(s.scalar(select(func.count()).select_from(model).where(*w)) or 0)
-            return {
-                "equipment_total":c(Equipment), "equipment_down":c(Equipment,Equipment.status=="Down"),
-                "equipment_hold":c(Equipment,Equipment.disposition.ilike("%Hold%")),
-                "pm_open":c(PMTask,PMTask.status.in_(["Pending","Scheduled","In Progress","Overdue"])),
-                "pm_overdue":c(PMTask,PMTask.status=="Overdue"),
-                "tickets_open":c(Ticket,Ticket.status.notin_(["Closed","Cancelled"])),
-                "alarms_active":c(EquipmentAlarmEvent,EquipmentAlarmEvent.state=="ACTIVE"),
-                "tickets_critical":c(Ticket,Ticket.priority.in_(["P1","P2"]),Ticket.status.notin_(["Closed","Cancelled"])),
-                "inventory_low":c(InventoryItem,InventoryItem.quantity<=InventoryItem.min_quantity),
-                "endorsements_open":c(Endorsement,Endorsement.status.in_(["Open","Acknowledged"])),
-                "dispositions_active":c(Disposition,Disposition.active.is_(True)),
-                "release_pending":c(EquipmentRelease,EquipmentRelease.status.in_(["Pending Verification","Verified","Verification Failed"])),
-                "reservations_active":c(InventoryReservation,InventoryReservation.status=="Reserved"),
-            }
+            def count_sq(model,*where):
+                stmt=select(func.count()).select_from(model)
+                if where:
+                    stmt=stmt.where(*where)
+                return stmt.scalar_subquery()
+
+            row=s.execute(select(
+                count_sq(Equipment).label("equipment_total"),
+                count_sq(Equipment,Equipment.status=="Down").label("equipment_down"),
+                count_sq(Equipment,Equipment.disposition.ilike("%Hold%")).label("equipment_hold"),
+                count_sq(PMTask,PMTask.status.in_(["Pending","Scheduled","In Progress","Overdue"])).label("pm_open"),
+                count_sq(PMTask,PMTask.status=="Overdue").label("pm_overdue"),
+                count_sq(Ticket,Ticket.status.notin_(["Closed","Cancelled"])).label("tickets_open"),
+                count_sq(EquipmentAlarmEvent,EquipmentAlarmEvent.state=="ACTIVE").label("alarms_active"),
+                count_sq(
+                    Ticket,
+                    Ticket.priority.in_(["P1","P2"]),
+                    Ticket.status.notin_(["Closed","Cancelled"]),
+                ).label("tickets_critical"),
+                count_sq(InventoryItem,InventoryItem.quantity<=InventoryItem.min_quantity).label("inventory_low"),
+                count_sq(Endorsement,Endorsement.status.in_(["Open","Acknowledged"])).label("endorsements_open"),
+                count_sq(Disposition,Disposition.active.is_(True)).label("dispositions_active"),
+                count_sq(
+                    EquipmentRelease,
+                    EquipmentRelease.status.in_(["Pending Verification","Verified","Verification Failed"]),
+                ).label("release_pending"),
+                count_sq(InventoryReservation,InventoryReservation.status=="Reserved").label("reservations_active"),
+            )).mappings().one()
+            return {key:int(value or 0) for key,value in row.items()}
