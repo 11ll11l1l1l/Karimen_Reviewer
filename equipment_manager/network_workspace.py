@@ -728,7 +728,14 @@ class SharedFolderWorkspace:
                     conn.close()
                 if not result or result[0] != "ok":
                     raise SharedFolderUnavailable("Pending local EMS replica failed SQLite integrity_check.")
-                prepared = self._prepare_publish(base_revision)
+                # Recovery favors an authoritative full checkpoint over a
+                # delta. This is rare, simplifies restart semantics, and ensures
+                # the shared checkpoint itself contains the recovered commit.
+                prepared = {
+                    "digest": _sha256(self.local_db),
+                    "patch": b"",
+                    "size_bytes": self.local_db.stat().st_size,
+                }
                 recovered_manifest = self._publish_locked(base_revision, prepared)
                 self._sync_publish_base(recovered_manifest)
                 return
