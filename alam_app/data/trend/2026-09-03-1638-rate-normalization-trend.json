@@ -73,6 +73,13 @@
       "url": "https://www.boj.or.jp/statistics/tk/yoshi/tk2609.htm",
       "published_at": "2026-10-01",
       "source_type": "official"
+    },
+    {
+      "publisher": "Statistics Bureau of Japan",
+      "title": "Consumer Price Index, Ku-area of Tokyo, September 2026 (preliminary)",
+      "url": "https://www.stat.go.jp/data/cpi/sokuhou/tsuki/index-z.html",
+      "published_at": "2026-10-02",
+      "source_type": "official"
     }
   ],
   "claims": [
@@ -185,6 +192,14 @@
         7
       ],
       "basis": "Synthesis of realized BOJ policy and September Tankan."
+    },
+    {
+      "kind": "FACT",
+      "text": "Tokyo's September 2026 core CPI excluding fresh food rose 2.7% year on year, accelerating from the previous month; the index excluding fresh food and energy rose 3.0%.",
+      "source_refs": [
+        8
+      ],
+      "basis": "Statistics Bureau of Japan September 2026 preliminary Tokyo CPI release."
     }
   ],
   "editorial_visual": {
@@ -206,7 +221,8 @@
       "The September Tankan's all-industry employment DI was -38 and firms expected -41 by December, showing persistent labor scarcity.",
       "Small manufacturers still reported strong selling-price pressure (+41) and expected it to intensify to +47 by December.",
       "FY2026 all-industry capital spending including software/R&D but excluding land was planned at +9.3% year on year.",
-      "The BOJ explicitly said underlying inflation is approaching 2% and that further rate increases may be appropriate depending on the outlook and risks."
+      "The BOJ explicitly said underlying inflation is approaching 2% and that further rate increases may be appropriate depending on the outlook and risks.",
+      "Tokyo's September core CPI accelerated to 2.7% year on year excluding fresh food, while the measure excluding fresh food and energy was 3.0%, adding a fresh price-pressure signal after the September BOJ hike."
     ],
     "evidence_against": [
       "Japan's August nationwide core CPI was only 1.7% year on year, so headline disinflation can still slow or interrupt further tightening.",
@@ -218,7 +234,7 @@
     "alternative_explanation": "A common global inflation-and-bond shock could explain much of the move without requiring a uniquely Japanese regime shift. Positioning around intervention and the September BOJ meeting could also exaggerate the yen signal temporarily.",
     "watch_next": [
       "The December Tankan: whether the expected labor-shortage DI of -41 and higher small-manufacturer selling-price DI actually materialize.",
-      "Nationwide CPI through late 2026: whether core inflation moves clearly back above 2% as the BOJ expects.",
+      "Nationwide CPI through late 2026: whether Tokyo's September re-acceleration (2.7% core; 3.0% excluding fresh food and energy) is confirmed more broadly.",
       "Deposit, variable-mortgage and corporate-loan repricing after the 1.25% policy-rate change.",
       "The next BOJ meetings: whether the Bank follows its stated bias toward further hikes or pauses as growth and inflation data evolve.",
       "Whether capital-spending plans remain near the Tankan's +9.3% all-industry FY2026 pace despite higher financing costs."
@@ -322,6 +338,6 @@
       "invalidation": "Sustained sub-2% underlying inflation combined with a clear labor-market deterioration, investment cuts and a BOJ shift toward easing would invalidate this base case."
     }
   },
-  "updated_at": "2026-10-04T11:49:00+09:00",
-  "change_summary": "Material update: the BOJ actually raised the overnight call-rate target to around 1.25% effective September 24, while the September Tankan shows persistent labor shortages, continued price-setting pressure and stronger FY2026 capital-spending plans. The normalization thesis has moved from market repricing to realized policy plus corporate evidence."
+  "updated_at": "2026-10-04T15:44:00+09:00",
+  "change_summary": "Material update: the BOJ raised the overnight call-rate target to around 1.25% effective September 24; the September Tankan still shows persistent labor shortages, price-setting pressure and strong FY2026 investment plans; and Tokyo's September core CPI re-accelerated to 2.7%, with the fresh-food-and-energy-excluded measure at 3.0%."
 }
