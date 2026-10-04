@@ -1,0 +1,177 @@
+[
+  {
+    "id": "japan-education-training-benefit-course-expansion-2026-10",
+    "agent": "discover",
+    "created_at": "2026-10-04T15:55:00+09:00",
+    "published_at": "2026-10-04T15:55:00+09:00",
+    "type": "career",
+    "title": "Japan quietly expanded subsidized career training from October 1",
+    "summary": "May bagong batch ng government-designated career courses na active mula October 1: 138 new Professional Practical courses and 151 new Specified General courses. For eligible workers, this matters because designated training can qualify for Employment Insurance-funded tuition support.",
+    "why_it_matters": "Hindi lang ito list update. The Professional Practical catalog now totals 3,485 designated courses, while the Specified General catalog totals 1,532, giving workers more officially recognized routes for reskilling in areas including digital skills, nursing and care-related qualifications.",
+    "importance": 84,
+    "confidence": 98,
+    "tags": [
+      "Japan",
+      "Career",
+      "Reskilling",
+      "Education Training Benefit",
+      "Digital Skills",
+      "Healthcare"
+    ],
+    "geography": [
+      "Japan"
+    ],
+    "status": "NEW",
+    "sources": [
+      {
+        "publisher": "Ministry of Health, Labour and Welfare",
+        "title": "専門実践教育訓練の指定講座を公表しました（令和８年10月１日付け指定）",
+        "url": "https://www.mhlw.go.jp/stf/newpage_75305.html",
+        "published_at": "2026-08-06",
+        "source_type": "official"
+      },
+      {
+        "publisher": "Ministry of Health, Labour and Welfare",
+        "title": "特定一般教育訓練の指定講座を公表しました（令和８年10月１日付け指定）",
+        "url": "https://www.mhlw.go.jp/stf/newpage_75309.html",
+        "published_at": "2026-08-06",
+        "source_type": "official"
+      },
+      {
+        "publisher": "Ministry of Health, Labour and Welfare",
+        "title": "教育訓練給付金",
+        "url": "https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/koyou_roudou/jinzaikaihatsu/kyouiku.html",
+        "published_at": "2026-10-04",
+        "source_type": "official"
+      }
+    ],
+    "claims": [
+      {
+        "kind": "FACT",
+        "text": "MHLW designated 138 new Professional Practical Education and Training courses effective October 1, 2026, bringing that category to 3,485 designated courses.",
+        "source_refs": [
+          1
+        ],
+        "basis": "MHLW's October 1 designation announcement."
+      },
+      {
+        "kind": "FACT",
+        "text": "Among the 138 new Professional Practical courses, 58 are online, 7 are evening courses and 16 are weekend courses.",
+        "source_refs": [
+          1
+        ],
+        "basis": "MHLW breakdown of newly designated courses."
+      },
+      {
+        "kind": "FACT",
+        "text": "MHLW also designated 151 new Specified General Education and Training courses effective October 1, bringing that category to 1,532 designated courses; 90 of the new courses are online.",
+        "source_refs": [
+          2
+        ],
+        "basis": "MHLW's October 1 designation announcement."
+      },
+      {
+        "kind": "FACT",
+        "text": "For eligible Professional Practical training, the benefit can pay 50% of training costs up to ¥400,000 per year, with additional benefits under specified qualification/employment and wage-increase conditions.",
+        "source_refs": [
+          1
+        ],
+        "basis": "MHLW explanation of the Professional Practical Education and Training Benefit."
+      },
+      {
+        "kind": "INFERENCE",
+        "text": "The unusually useful signal for working adults is not merely the higher course count but the continued addition of online options, which can lower the scheduling barrier to retraining while employed.",
+        "source_refs": [
+          1,
+          2
+        ],
+        "basis": "Both October designation releases separately report substantial online-course additions."
+      }
+    ],
+    "content": {
+      "key_message": "If you are considering a paid qualification or serious reskilling course in Japan, re-check the official designated-course search before paying: the eligible catalog changed on October 1.",
+      "whats_new": "Two subsidized-training categories received new October 1 designations: 138 Professional Practical courses and 151 Specified General courses. The additions include digital-skills programs, nursing and care-related qualifications, with many online options.",
+      "why_it_matters": "A course being government-designated can change the effective cost for a worker who separately meets the Employment Insurance benefit requirements. But designation alone does not prove that a particular person is eligible.",
+      "what_to_do_or_watch": "Before enrolling, search the current MHLW Education and Training Benefit course database for the exact course and confirm personal eligibility with the responsible Hello Work office. The official search system is scheduled for maintenance October 5 and 6 from 13:30 to 17:30.",
+      "bottom_line": "A quiet October catalog update created more potentially subsidized reskilling choices, especially online—but verify both the course and your own eligibility before spending.",
+      "skeptical_view": "This is an expansion of designated supply, not evidence that workers will use the courses, complete them or receive a benefit. The releases also do not establish that every newly designated course is cheaper or better than alternatives.",
+      "what_next": "Watch whether the larger catalog translates into higher take-up and whether future designation rounds continue expanding strategic and social-infrastructure fields.",
+      "what_would_change_mind": "If subsequent MHLW data show low utilization or widespread course cancellations, the practical significance of the catalog expansion would be weaker than the designation counts suggest.",
+      "recommendation": "WATCH",
+      "usefulness": 88,
+      "novelty": 82,
+      "confidence_reason": "High confidence on course counts, effective date and benefit structure because all core facts come directly from MHLW; actual individual eligibility and take-up remain person-specific or unknown.",
+      "impact": {
+        "money": "MED",
+        "family": "LOW",
+        "career": "HIGH",
+        "japan": "MED",
+        "urgency": "LOW"
+      },
+      "connection_tags": [
+        "reskilling",
+        "education-benefit",
+        "labor-shortage",
+        "online-training"
+      ],
+      "reading_levels": {
+        "30_sec": [
+          "What happened: 289 new courses across two benefit categories became designated from October 1.",
+          "Why it matters: eligible workers may receive Employment Insurance-funded support for designated training.",
+          "What to do/watch: search the exact course and verify your own eligibility before paying.",
+          "Bottom line: more subsidized reskilling options exist, but course designation is not automatic personal eligibility."
+        ]
+      },
+      "learning": {
+        "outcomes": [
+          "Explain what a government-designated Education and Training Benefit course means.",
+          "Know why course designation and personal benefit eligibility are two separate checks."
+        ],
+        "background": "Japan's Education and Training Benefit system uses Employment Insurance to reimburse part of eligible training costs when both the worker and the course satisfy the program rules. MHLW periodically designates qualifying courses. The October 1 update matters because a course that was not previously in the designated catalog may now be included.",
+        "terms": [
+          {
+            "term": "Professional Practical Education and Training",
+            "meaning": "A benefit category for training intended to support medium- to long-term career development, including certain advanced digital and professional qualification programs.",
+            "why_it_matters": "For eligible participants, MHLW says the base benefit is 50% of training costs up to ¥400,000 per year, with possible additional benefits when specified conditions are met."
+          },
+          {
+            "term": "Specified General Education and Training",
+            "meaning": "A separate designated-training category focused on courses linked to quicker employment and career effects, including certain professional and practical qualifications.",
+            "why_it_matters": "It has its own benefit rules, so readers should not assume the Professional Practical percentages apply to it."
+          }
+        ],
+        "how_it_works": [
+          {
+            "title": "First check the course",
+            "explanation": "The exact course must appear in MHLW's current designated-course system for the relevant benefit category."
+          },
+          {
+            "title": "Then check the person",
+            "explanation": "A designated course does not automatically make every enrollee eligible. Benefit eligibility depends on the Employment Insurance rules and application procedure that apply to the individual."
+          },
+          {
+            "title": "Only then compare the real cost",
+            "explanation": "Once both checks are confirmed, compare tuition, benefit amount, schedule and the value of the qualification rather than choosing a course only because it carries a designation."
+          }
+        ],
+        "example": "Example: seeing an online course in the October designated list tells you the course cleared the program's designation step. It does not by itself tell you that your own tuition will be reimbursed; your personal eligibility still needs confirmation.",
+        "takeaways": [
+          "289 new courses were designated across the two highlighted categories for October 1.",
+          "Professional Practical training now has 3,485 designated courses; Specified General has 1,532.",
+          "Online options are a meaningful part of the new batch.",
+          "Designation and personal eligibility are separate checks.",
+          "Verify before paying tuition."
+        ]
+      },
+      "editorial_visual": {
+        "style": "editorial",
+        "motif": "document",
+        "secondary_motif": "robot",
+        "scene": "a large official course catalog opening like a doorway while small workers choose between digital, nursing and care training paths",
+        "caption": "More doors opened in Japan's reskilling catalog",
+        "silliness": 38,
+        "exaggeration": 68
+      }
+    }
+  }
+]
