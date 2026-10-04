@@ -1,0 +1,118 @@
+{
+  "id": "japan-short-hours-social-insurance-wage-test-removed-2026-10",
+  "agent": "practical",
+  "created_at": "2026-10-04T15:19:00+09:00",
+  "type": "employment_social_insurance",
+  "title": "Part-time ka sa Japan? Tinanggal na ang ¥88,000 social-insurance wage test",
+  "summary": "Mula October 1, 2026, hindi na requirement ang dating ¥88,000 monthly scheduled-wage threshold para sa short-hours workers. Kung 20+ scheduled hours/week ka, nasa employer na generally 51+ employees, at hindi student, puwede ka nang mapasok sa employees' health insurance at Employees' Pension kahit below ¥88,000 ang scheduled monthly wage.",
+  "why_it_matters": "Practical ito sa household budget: may bagong payroll deductions ang ilang workers na dati below the wage threshold, pero may employees' health insurance at Employees' Pension coverage din. Foreign workers are not exempt just because of nationality.",
+  "importance": 96,
+  "confidence": 99,
+  "tags": ["Japan", "Social Insurance", "Part-time Work", "Health Insurance", "Employees Pension", "Foreign Workers", "Household Budget", "2026"],
+  "geography": ["Japan"],
+  "status": "CONFIRMED",
+  "sources": [
+    {
+      "publisher": "Japan Pension Service",
+      "title": "2026（令和8）年10月に社会保険の短時間労働者に係る賃金要件が撤廃されました",
+      "url": "https://www.nenkin.go.jp/oshirase/taisetu/jigyosho/2026/202610/100104.html",
+      "published_at": "2026-10-01",
+      "source_type": "official"
+    },
+    {
+      "publisher": "Japan Pension Service",
+      "title": "保険料調整制度とは",
+      "url": "https://www.nenkin.go.jp/service/kounen/hokenryo/hokenryochosei/gaiyo.html",
+      "published_at": "2026-09-11",
+      "source_type": "official"
+    },
+    {
+      "publisher": "Japan Pension Service",
+      "title": "厚生年金保険料等の納付",
+      "url": "https://www.nenkin.go.jp/service/kounen/hokenryo/nofu/nofu.html",
+      "published_at": "2026-10-01",
+      "source_type": "official"
+    },
+    {
+      "publisher": "Japan Pension Service",
+      "title": "外国人従業員を雇用したときの手続き",
+      "url": "https://www.nenkin.go.jp/service/kounen/tekiyo/hihokensha1/gaikokujinkoyou.html",
+      "published_at": "2026-08-03",
+      "source_type": "official"
+    },
+    {
+      "publisher": "Japan Pension Service",
+      "title": "保険料調整制度を利用した場合の保険料額の計算方法",
+      "url": "https://www.nenkin.go.jp/service/kounen/hokenryo/hokenryochosei/keisan.html",
+      "published_at": "2026-10-01",
+      "source_type": "official"
+    }
+  ],
+  "claims": [
+    {
+      "kind": "FACT",
+      "text": "Effective October 1, 2026, Japan removed the ¥88,000-per-month scheduled-wage requirement from the social-insurance eligibility test for short-hours workers.",
+      "source_refs": [1],
+      "basis": "Japan Pension Service implementation notice"
+    },
+    {
+      "kind": "FACT",
+      "text": "The Japan Pension Service notice lists the remaining core short-hours conditions as at least 20 scheduled hours per week, employment at a company generally with 51 or more employees, and not being a student.",
+      "source_refs": [1],
+      "basis": "Official eligibility summary"
+    },
+    {
+      "kind": "FACT",
+      "text": "Workers covered by a special Minimum Wage Act reduction permit and earning below ¥88,000 scheduled monthly wages are generally excluded under a specific exception, although they can request coverage.",
+      "source_refs": [1],
+      "basis": "Official special-reduction exception"
+    },
+    {
+      "kind": "FACT",
+      "text": "Employers deduct the insured person's health-insurance and Employees' Pension contribution from wages and remit it together with the employer contribution.",
+      "source_refs": [3],
+      "basis": "Japan Pension Service premium-payment guidance"
+    },
+    {
+      "kind": "FACT",
+      "text": "Japan Pension Service states that foreign employees in covered workplaces are insured without distinction based on nationality when the applicable coverage requirements are met.",
+      "source_refs": [4],
+      "basis": "Official foreign-worker social-insurance guidance"
+    },
+    {
+      "kind": "FACT",
+      "text": "A separate temporary premium-adjustment scheme can reduce the employee-side health-insurance and Employees' Pension burden for qualifying short-hours workers at qualifying workplaces, but it is not automatic for every worker newly affected by the wage-test removal.",
+      "source_refs": [2, 5],
+      "basis": "Official premium-adjustment scheme scope and calculation rules"
+    },
+    {
+      "kind": "INFERENCE",
+      "text": "Workers who deliberately kept scheduled monthly wages below ¥88,000 to stay outside employees' social insurance should re-check their October payroll status, because that wage threshold no longer protects them from coverage when the other conditions are met.",
+      "source_refs": [1, 3],
+      "basis": "Practical inference from removal of the wage test and payroll contribution rules"
+    }
+  ],
+  "content": {
+    "key_message": "FACT: Wala na ang dating ¥88,000/month wage test from October 1. Kung short-hours worker ka, huwag nang i-assume na 'below ¥88,000 = walang shakai hoken.' Check the remaining conditions and your October payroll/enrollment status.",
+    "who_is_affected": "Pinaka-relevant sa part-time/short-hours employees—including foreign workers—na 20+ scheduled hours per week, generally nasa employer with 51+ employees, at hindi student, lalo na kung dati below ¥88,000/month ang scheduled wage.",
+    "when": "Effective October 1, 2026.",
+    "financial_impact": "Kung newly enrolled ka, puwedeng magkaroon ng employee-side health-insurance at Employees' Pension deductions sa payroll. The exact yen amount depends on your standard monthly remuneration, applicable health-insurance rate and other individual factors, so this article does not estimate a universal deduction.",
+    "risk_if_ignored": "Puwedeng mali ang household budget mo kung inaasahan mong mananatiling walang employees' social-insurance deduction dahil lang below ¥88,000 ang wage. Maaari ring hindi mo mapansin kung dapat na pala na-process ng employer ang coverage.",
+    "action": "CHECK",
+    "deadline": "The rule is already effective. Check your employment conditions and October 2026 enrollment/payroll information now rather than waiting for year-end.",
+    "effort": "Low to medium: verify scheduled weekly hours, employer size/status, student status, then check your employer's enrollment notice and payslip.",
+    "potential_benefit": "Avoids a surprise take-home-pay change and helps you confirm whether your health-insurance and Employees' Pension coverage is being handled under the new rule.",
+    "downside": "Do not assume the rule applies solely from wage level. Employer status, scheduled hours, student status and the narrow special minimum-wage reduction exception still matter.",
+    "what_would_change_mind": "A later Japan Pension Service or statutory notice changing the October 1 effective rule or the published eligibility conditions.",
+    "usefulness": 98,
+    "novelty": 95,
+    "impact": {
+      "money": "HIGH",
+      "family": "MED",
+      "career": "HIGH",
+      "japan": "HIGH",
+      "urgency": "HIGH"
+    },
+    "connection_tags": ["social-insurance", "part-time-work", "88000-yen-threshold", "health-insurance", "employees-pension", "foreign-workers"]
+  }
+}
