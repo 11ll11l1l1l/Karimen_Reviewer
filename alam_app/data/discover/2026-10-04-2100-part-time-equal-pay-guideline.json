@@ -1,0 +1,172 @@
+[
+  {
+    "id": "japan-part-time-equal-pay-guideline-2026-10",
+    "tags": [
+      "Japan",
+      "Work",
+      "Part-time",
+      "Fixed-term Employment",
+      "Equal Pay",
+      "Benefits",
+      "Family Allowance",
+      "Housing Allowance",
+      "Leave"
+    ],
+    "type": "work_labor",
+    "agent": "discover",
+    "title": "Part-time o fixed-term ka? Mas malinaw na ngayon kung kailan dapat pantay ang benefits",
+    "claims": [
+      {
+        "kind": "FACT",
+        "text": "Japan's revised equal-pay guideline took effect on October 1, 2026, alongside changes to rules for part-time and fixed-term workers.",
+        "basis": "Ministry of Health, Labour and Welfare equal-pay guidance and October 2 ministerial briefing.",
+        "source_refs": [
+          1,
+          2
+        ]
+      },
+      {
+        "kind": "FACT",
+        "text": "Employers must newly tell part-time and fixed-term workers at hiring or contract renewal that they can ask for an explanation of differences in treatment compared with regular employees.",
+        "basis": "MHLW August 3 explanatory article.",
+        "source_refs": [
+          1
+        ]
+      },
+      {
+        "kind": "FACT",
+        "text": "The revised guideline says a part-time or fixed-term worker expected to work for a reasonably continuous period should receive the same family allowance as a regular employee when the relevant conditions are comparable.",
+        "basis": "MHLW explanation of the revised guideline.",
+        "source_refs": [
+          1
+        ]
+      },
+      {
+        "kind": "FACT",
+        "text": "For housing allowance, the MHLW example says a part-time or fixed-term worker subject to the same transfers involving relocation as a regular employee should receive the same allowance.",
+        "basis": "MHLW explanation of the revised guideline.",
+        "source_refs": [
+          1
+        ]
+      },
+      {
+        "kind": "FACT",
+        "text": "The revised guideline also says part-time and fixed-term workers should receive the same summer and winter leave as regular employees in the example covered by the guideline.",
+        "basis": "MHLW explanation of the revised guideline.",
+        "source_refs": [
+          1
+        ]
+      },
+      {
+        "kind": "FACT",
+        "text": "On October 2, the labor minister said labor bureaus and labor standards inspection offices will coordinate on compliance and that government support centers will provide consulting.",
+        "basis": "MHLW ministerial press conference.",
+        "source_refs": [
+          2
+        ]
+      },
+      {
+        "kind": "INFERENCE",
+        "text": "For workers, the practical change is not an automatic across-the-board pay raise; it gives clearer benchmarks for questioning benefit gaps and clearer disclosure at hiring or renewal.",
+        "basis": "Inference from the scope of the revised guideline and disclosure rules.",
+        "source_refs": [
+          1,
+          2
+        ]
+      }
+    ],
+    "status": "NEW",
+    "content": {
+      "impact": {
+        "japan": "HIGH",
+        "money": "HIGH",
+        "career": "HIGH",
+        "family": "MED",
+        "urgency": "MED"
+      },
+      "novelty": 91,
+      "learning": {
+        "terms": [
+          {
+            "term": "Same work, same pay guideline",
+            "meaning": "Government guidance explaining when differences in treatment between regular and part-time or fixed-term workers may be unreasonable.",
+            "why_it_matters": "It gives workers and employers concrete examples for evaluating benefit gaps."
+          },
+          {
+            "term": "Treatment difference explanation",
+            "meaning": "A part-time or fixed-term worker can ask the employer to explain differences in treatment and the reasons for them.",
+            "why_it_matters": "From October 2026, workers must also be told at hiring or renewal that they can request this explanation."
+          },
+          {
+            "term": "Comparable conditions",
+            "meaning": "Whether workers are similarly situated can depend on duties, expected continuity, transfers and other employment conditions.",
+            "why_it_matters": "The new examples do not mean every worker automatically receives every regular-employee benefit."
+          }
+        ],
+        "takeaways": [
+          "October 1 brought a real change to Japan's part-time and fixed-term employment rules.",
+          "Family allowance, housing allowance and summer/winter leave now have clearer government examples.",
+          "The reform strengthens explanation and comparison rights; it is not a blanket automatic raise for every non-regular worker."
+        ]
+      },
+      "what_next": [
+        "If you are hired or renew a part-time or fixed-term contract, check whether the notice says you can request an explanation of treatment differences.",
+        "If your regular-employee coworkers receive family or housing allowances or seasonal leave, compare the actual eligibility conditions before assuming the difference is justified.",
+        "If the explanation is unclear, the prefectural labor bureau's employment environment/equal employment office is the official consultation route."
+      ],
+      "whats_new": "From October 1, Japan's revised equal-pay framework gives part-time and fixed-term workers clearer examples involving family allowance, housing allowance and summer/winter leave, while employers must explicitly tell them they can ask why their treatment differs from regular employees.",
+      "usefulness": 96,
+      "reading_levels": {
+        "2_min": "Kung part-time o fixed-term worker ka sa Japan, may importanteng pagbabago mula October 1. Hindi ito automatic salary increase, pero mas malinaw na ang official rules kapag may difference sa benefits versus regular employees. Sabi ng MHLW, may situations where the same family allowance, housing allowance, at summer/winter leave should be provided when the relevant employment conditions are comparable. At hiring or contract renewal, kailangan ding ipaalam sa iyo na puwede kang humingi ng explanation tungkol sa treatment differences. Practical move: huwag lang tingnan ang job title. Compare the actual eligibility conditions, duties, expected continuity and transfer requirements, then ask the employer to explain any gap.",
+        "30_sec": [
+          "Japan's revised equal-pay guideline has applied since October 1.",
+          "New examples clarify family allowance, housing allowance and summer/winter leave for part-time/fixed-term workers.",
+          "At hiring or renewal, employers must tell these workers they can request an explanation of treatment differences.",
+          "This is not an automatic benefit for everyone; comparable employment conditions still matter."
+        ]
+      },
+      "recommendation": "Keep your employment notice and benefit rules. If a regular employee doing comparable work receives a benefit you do not, ask for the employer's explanation and compare the eligibility conditions before escalating.",
+      "skeptical_view": "The guideline gives clearer examples, but individual entitlement still depends on the facts of the job. A difference is not automatically unlawful merely because employment status differs.",
+      "connection_tags": [
+        "part-time-work",
+        "fixed-term-work",
+        "equal-pay",
+        "employee-benefits",
+        "labor-rights"
+      ],
+      "what_would_change_mind": "If official implementation guidance or court decisions materially narrow or expand how these examples apply, the practical interpretation should be updated."
+    },
+    "sources": [
+      {
+        "url": "https://www.mhlw.go.jp/web_magazine/column/20260803.html",
+        "title": "2026年10月からパートタイム・有期雇用のルールが変わります―３つの改正ポイント",
+        "publisher": "Ministry of Health, Labour and Welfare",
+        "source_type": "primary",
+        "published_at": "2026-08-03"
+      },
+      {
+        "url": "https://www.mhlw.go.jp/stf/kaiken/daijin/0000194708_00972.html",
+        "title": "上野大臣会見概要 令和8年10月2日",
+        "publisher": "Ministry of Health, Labour and Welfare",
+        "source_type": "primary",
+        "published_at": "2026-10-02"
+      },
+      {
+        "url": "https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/0000190591.html",
+        "title": "同一労働同一賃金ガイドライン",
+        "publisher": "Ministry of Health, Labour and Welfare",
+        "source_type": "primary",
+        "published_at": "2026-10-01"
+      }
+    ],
+    "summary": "Japan's revised equal-pay rules took effect October 1, adding clearer examples for family allowance, housing allowance and seasonal leave and requiring employers to tell part-time and fixed-term workers that they can ask for explanations of treatment differences.",
+    "geography": [
+      "Japan"
+    ],
+    "confidence": 98,
+    "created_at": "2026-10-04T21:00:00+09:00",
+    "importance": 94,
+    "published_at": "2026-10-04T21:00:00+09:00",
+    "why_it_matters": "Millions of non-regular workers can now point to clearer official examples when questioning benefit gaps, making an abstract equal-treatment principle more usable in ordinary employment conversations."
+  }
+]
