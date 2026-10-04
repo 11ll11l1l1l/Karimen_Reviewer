@@ -1,0 +1,133 @@
+[
+  {
+    "id": "japan-residence-fees-tiered-2026-10",
+    "agent": "discover",
+    "created_at": "2026-10-04T11:55:00+09:00",
+    "published_at": "2026-10-04T11:55:00+09:00",
+    "type": "immigration_policy",
+    "title": "Japan's residence-renewal fees just became duration-based — a 5-year renewal can now cost ¥75,000",
+    "summary": "Simula October 1, 2026 applications, Japan no longer charges one flat fee for ordinary residence-status changes and renewals. The in-person renewal fee now depends on the period granted: ¥33,000 for 1 year, ¥64,000 for 3 to under 5 years, and ¥75,000 for 5 years or more; permanent-residence permission is now ¥200,000.",
+    "why_it_matters": "For foreign residents and families in Japan, immigration renewal is now a much larger budget item and the final amount can depend on the period actually granted. Applications accepted by September 30 remain under the old fee even if permission comes later.",
+    "importance": 96,
+    "confidence": 99,
+    "tags": ["Japan", "Immigration", "Residence Status", "Foreign Residents", "Family Budget", "Permanent Residence"],
+    "geography": ["Japan"],
+    "status": "NEW",
+    "sources": [
+      {
+        "publisher": "Immigration Services Agency of Japan",
+        "title": "令和８年１０月１日付け在留許可手数料の額の改定等について",
+        "url": "https://www.moj.go.jp/isa/01_00644.html",
+        "published_at": "2026-10-01",
+        "source_type": "primary"
+      },
+      {
+        "publisher": "Immigration Services Agency of Japan",
+        "title": "在留期間更新許可申請",
+        "url": "https://www.moj.go.jp/isa/applications/procedures/16-3.html",
+        "published_at": "2026-10-01",
+        "source_type": "primary"
+      },
+      {
+        "publisher": "Immigration Services Agency of Japan",
+        "title": "永住許可申請",
+        "url": "https://www.moj.go.jp/isa/applications/procedures/16-4.html",
+        "published_at": "2026-10-01",
+        "source_type": "primary"
+      }
+    ],
+    "claims": [
+      {
+        "kind": "FACT",
+        "text": "For residence-period renewal applications filed from October 1, 2026, the in-person fee is ¥10,000 for 3 months or less, ¥18,000 for over 3 through 6 months, ¥25,000 for over 6 months but under 1 year, ¥33,000 for 1 year, ¥48,000 for over 1 but under 3 years, ¥64,000 for 3 to under 5 years, and ¥75,000 for 5 years or more.",
+        "basis": "Immigration Services Agency residence-period renewal procedure page.",
+        "source_refs": [2]
+      },
+      {
+        "kind": "FACT",
+        "text": "Applications accepted by September 30, 2026 keep the previous fee of ¥6,000 for an in-person residence-period renewal even when permission is granted on or after October 1.",
+        "basis": "Immigration Services Agency transitional rule.",
+        "source_refs": [1, 2]
+      },
+      {
+        "kind": "FACT",
+        "text": "Permanent-residence permission now requires a ¥200,000 fee; applications accepted by September 30 remain subject to the former ¥10,000 fee.",
+        "basis": "Immigration Services Agency permanent-residence procedure page.",
+        "source_refs": [3]
+      },
+      {
+        "kind": "FACT",
+        "text": "The agency says qualifying applicants may receive a reduction or exemption; for qualifying permanent-residence cases the reduced fee is ¥20,000.",
+        "basis": "Immigration Services Agency fee-reduction guidance referenced by the procedure pages.",
+        "source_refs": [1, 3]
+      },
+      {
+        "kind": "FACT",
+        "text": "For online applications filed from October 1, the payment method changed from revenue stamps to designated convenience-store or bank payment, with internet banking available for bank payment.",
+        "basis": "Immigration Services Agency October fee-revision notice.",
+        "source_refs": [1]
+      },
+      {
+        "kind": "INFERENCE",
+        "text": "Foreign-resident households should now treat renewal or permanent-residence fees as a planned household expense rather than assuming the old flat fee.",
+        "basis": "The official fee schedule materially increases the possible payment at permission.",
+        "source_refs": [1, 2, 3]
+      }
+    ],
+    "content": {
+      "whats_new": "The important change is not just a price increase. Renewal/change fees are now tied to the residence period granted, while permanent-residence permission has a separate ¥200,000 fee.",
+      "skeptical_view": "The amount paid for a renewal depends on the period actually granted, and reduction/exemption rules exist for qualifying cases. Do not assume the maximum fee applies to every applicant.",
+      "what_next": [
+        "If you filed by September 30, keep your application receipt because the old fee applies even if the result arrives after October 1.",
+        "If filing from October 1, budget based on the official fee band and check the amount stated when permission is ready.",
+        "If the new fee creates serious financial difficulty, check the Immigration Services Agency's official reduction/exemption guidance rather than assuming you are ineligible."
+      ],
+      "what_would_change_mind": "A later Immigration Services Agency revision to the fee schedule, transitional rule, or reduction/exemption guidance.",
+      "recommendation": "Before your next renewal, check the current ISA fee table and keep extra room in the family budget. For permanent residence, do not rely on the old ¥10,000 figure.",
+      "usefulness": 99,
+      "novelty": 97,
+      "impact": {
+        "money": "HIGH",
+        "family": "HIGH",
+        "career": "MED",
+        "japan": "HIGH",
+        "urgency": "HIGH"
+      },
+      "connection_tags": ["immigration-fees", "foreign-residents", "residence-renewal", "permanent-residence", "family-budget"],
+      "learning": {
+        "outcomes": [
+          "Know that Japan's residence-renewal fee is no longer one flat amount for new applications.",
+          "Know which filing date determines whether the old or new fee applies."
+        ],
+        "background": "Japan changed residence-permission fees effective October 1, 2026. For status changes and period renewals, the fee now varies by the residence period granted. The transition rule is based on when the application was accepted, not when the result arrives.",
+        "terms": [
+          {
+            "term": "在留期間更新許可",
+            "meaning": "Permission to extend your current period of stay without changing your residence status.",
+            "why_it_matters": "This is the regular renewal procedure used by many foreign residents."
+          },
+          {
+            "term": "収入印紙",
+            "meaning": "Revenue stamp used to pay certain government fees.",
+            "why_it_matters": "Window applications still use revenue stamps, while the payment method for online applications changed."
+          }
+        ],
+        "takeaways": [
+          "October 1 is the key filing-date boundary.",
+          "A 1-year in-person renewal is ¥33,000; 3 to under 5 years is ¥64,000; 5+ years is ¥75,000.",
+          "Permanent-residence permission is ¥200,000 under the new schedule.",
+          "Qualifying reduction or exemption routes exist."
+        ]
+      },
+      "reading_levels": {
+        "30_sec": [
+          "New Japan residence applications filed from October 1 use a new fee schedule.",
+          "In-person renewal: ¥33,000 for 1 year, ¥64,000 for 3 to under 5 years, ¥75,000 for 5+ years.",
+          "Permanent-residence permission is now ¥200,000.",
+          "Filed by September 30? The old fee still applies even if approval comes later."
+        ],
+        "2_min": "Kung foreign resident ka sa Japan, malaking budget change ito. Applications filed from October 1, 2026 no longer use the old flat renewal fee: the amount now depends on the period granted. For an in-person renewal, 1 year is ¥33,000, 3 to under 5 years is ¥64,000, and 5 years or more is ¥75,000. Permanent-residence permission is now ¥200,000. Important exception: if your application was accepted by September 30, the old fee still applies even if the result comes after October 1. May official reduction/exemption rules din for qualifying cases, so check ISA guidance if the new amount creates serious financial difficulty."
+      }
+    }
+  }
+]
