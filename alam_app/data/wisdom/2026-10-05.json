@@ -1,0 +1,17 @@
+{
+  "date": "2026-10-05",
+  "based_on": "2026-10-04 verified major headlines",
+  "question": "Kung normal lang sa tao ang maging marupok minsan, bakit parang kailangan pa nating magkunwaring kaya natin ang lahat bago tayo humingi ng tulong?",
+  "verses": [
+    {
+      "reference": "Ecclesiastes 4:9",
+      "translation": "KJV",
+      "text": "Two are better than one; because they have a good reward for their labour."
+    },
+    {
+      "reference": "Proverbs 12:15",
+      "translation": "KJV",
+      "text": "The way of a fool is right in his own eyes: but he that hearkeneth unto counsel is wise."
+    }
+  ]
+}
