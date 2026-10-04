@@ -80,6 +80,13 @@
       "url": "https://www.stat.go.jp/data/cpi/sokuhou/tsuki/index-z.html",
       "published_at": "2026-10-02",
       "source_type": "official"
+    },
+    {
+      "publisher": "Ministry of Economy, Trade and Industry",
+      "title": "August 2026 Indices of Industrial Production",
+      "url": "https://www.meti.go.jp/statistics/toppage/report/archive/kako/20260930_1.html",
+      "published_at": "2026-09-30",
+      "source_type": "official"
     }
   ],
   "claims": [
@@ -200,6 +207,14 @@
         8
       ],
       "basis": "Statistics Bureau of Japan September 2026 preliminary Tokyo CPI release."
+    },
+    {
+      "kind": "FACT",
+      "text": "Japan's seasonally adjusted industrial production index fell 1.7% month on month in August to 102.6, the second consecutive monthly decline; METI kept its assessment at 'fluctuating indecisively.'",
+      "source_refs": [
+        9
+      ],
+      "basis": "METI August 2026 industrial production release."
     }
   ],
   "editorial_visual": {
@@ -228,7 +243,8 @@
       "Japan's August nationwide core CPI was only 1.7% year on year, so headline disinflation can still slow or interrupt further tightening.",
       "The August unemployment rate rose 0.1 point to 2.5%, and new job openings fell year on year, showing that labor conditions are not uniformly strengthening.",
       "The BOJ vote was 7-2, with dissenters arguing the economy and inflation did not justify a hike at that timing.",
-      "External shocks, especially oil, Middle East conditions, AI demand and the exchange rate, could materially alter the path."
+      "External shocks, especially oil, Middle East conditions, AI demand and the exchange rate, could materially alter the path.",
+      "Industrial production fell 1.7% month on month in August, the second consecutive decline, and METI still describes production as fluctuating indecisively; the higher-rate thesis therefore coexists with a soft manufacturing pulse."
     ],
     "connection": "The strongest connection is not 'higher JGB yields cause everything.' Rather, several linked incentives are changing at once: BOJ tightening expectations lift domestic yields, higher domestic yields reduce the relative attraction of hedged foreign bonds, a stronger yen changes exporter earnings translation, and higher rates alter bank and borrower economics.",
     "alternative_explanation": "A common global inflation-and-bond shock could explain much of the move without requiring a uniquely Japanese regime shift. Positioning around intervention and the September BOJ meeting could also exaggerate the yen signal temporarily.",
@@ -237,7 +253,8 @@
       "Nationwide CPI through late 2026: whether Tokyo's September re-acceleration (2.7% core; 3.0% excluding fresh food and energy) is confirmed more broadly.",
       "Deposit, variable-mortgage and corporate-loan repricing after the 1.25% policy-rate change.",
       "The next BOJ meetings: whether the Bank follows its stated bias toward further hikes or pauses as growth and inflation data evolve.",
-      "Whether capital-spending plans remain near the Tankan's +9.3% all-industry FY2026 pace despite higher financing costs."
+      "Whether capital-spending plans remain near the Tankan's +9.3% all-industry FY2026 pace despite higher financing costs.",
+      "Industrial production: whether manufacturers' reported plans for September and October translate into an actual rebound after August's 1.7% monthly decline."
     ],
     "what_would_change_mind": "This thesis would weaken materially if core inflation stays below 2% for several months, labor-shortage indicators ease sharply, planned investment is cut, and the BOJ signals a prolonged pause or reversal. A recessionary rise in unemployment would be a stronger invalidation than a single weak monthly data point.",
     "implications": "For households, expect gradual rather than instant transmission: deposit rates may improve, but variable borrowing costs can also rise. For workers, persistent labor shortages can support bargaining power, though hiring is uneven by industry. For businesses, the key test is whether wage and input costs can still be passed through while financing becomes more expensive.",
@@ -338,6 +355,6 @@
       "invalidation": "Sustained sub-2% underlying inflation combined with a clear labor-market deterioration, investment cuts and a BOJ shift toward easing would invalidate this base case."
     }
   },
-  "updated_at": "2026-10-04T15:44:00+09:00",
-  "change_summary": "Material update: the BOJ raised the overnight call-rate target to around 1.25% effective September 24; the September Tankan still shows persistent labor shortages, price-setting pressure and strong FY2026 investment plans; and Tokyo's September core CPI re-accelerated to 2.7%, with the fresh-food-and-energy-excluded measure at 3.0%."
+  "updated_at": "2026-10-04T16:41:00+09:00",
+  "change_summary": "Material update: the BOJ raised the overnight call-rate target to around 1.25% effective September 24; the September Tankan still shows persistent labor shortages, price-setting pressure and strong FY2026 investment plans; Tokyo's September core CPI re-accelerated to 2.7%; and August industrial production fell 1.7% month on month for a second straight decline, adding an important manufacturing counter-signal."
 }
