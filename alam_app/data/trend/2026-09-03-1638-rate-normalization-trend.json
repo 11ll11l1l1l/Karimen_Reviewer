@@ -4,29 +4,188 @@
   "created_at": "2026-09-03T16:38:39+09:00",
   "type": "trend",
   "title": "Japan’s rate normalization is spreading from bonds into yen and capital flows",
-  "summary": "Japan’s normalization story is broadening: 10-year JGB yields touched 3%, the yen strengthened to around ¥157.5 per dollar as September BOJ hike expectations rose, and Japanese investors have been reducing overseas bond exposure. The pattern is increasingly cross-asset, not just a one-day bond move.",
-  "why_it_matters": "If this persists, higher domestic yields can change Japanese bank economics, exporter FX support, mortgage and corporate funding conditions, and even Japan’s role as a major buyer of foreign bonds. The key question is whether this becomes a durable regime shift or a temporary repricing around one BOJ meeting.",
+  "summary": "Japan’s rate-normalization thesis has moved from market pricing to realized policy. The BOJ raised its overnight call-rate target to around 1.25% effective September 24, and the September Tankan still shows deep labor shortages, continued selling-price pressure and a 9.3% FY2026 all-industry capital-spending plan despite higher rates.",
+  "why_it_matters": "For households and firms, normalization is no longer only a bond-market scenario. A 1.25% policy-rate target can feed gradually into deposits, mortgages and corporate funding, while Tankan evidence suggests firms still face labor scarcity and pricing pressure. That combination raises the odds that Japan remains in a higher-rate, higher-wage, higher-price regime rather than returning quickly to the old near-zero-rate environment.",
   "importance": 93,
-  "confidence": 91,
-  "tags": ["Japan", "BOJ", "JGB", "Yen", "Capital Flows", "Interest Rates", "Banks", "Exporters", "Mortgages"],
-  "geography": ["Japan", "Global"],
+  "confidence": 94,
+  "tags": [
+    "Japan",
+    "BOJ",
+    "JGB",
+    "Yen",
+    "Capital Flows",
+    "Interest Rates",
+    "Banks",
+    "Exporters",
+    "Mortgages"
+  ],
+  "geography": [
+    "Japan",
+    "Global"
+  ],
   "status": "DEVELOPING",
   "sources": [
-    {"publisher": "Bank of Japan", "title": "わが国の経済・物価情勢と金融政策 — 高田審議委員", "url": "https://www.boj.or.jp/about/press/koen_2026/ko260902a.htm", "published_at": "2026-09-02", "source_type": "official"},
-    {"publisher": "Ministry of Finance Japan", "title": "30年利付国債（第91回）の入札結果（令和8年9月3日入札）", "url": "https://www.mof.go.jp/jgbs/auction/calendar/nyusatsu/resul20260903.htm", "published_at": "2026-09-03", "source_type": "official"},
-    {"publisher": "Reuters", "title": "Yen gets boost from hawkish BOJ repricing of rate expectations", "url": "https://www.reuters.com/world/asia-pacific/yen-spotlight-after-sudden-jump-2026-09-03/", "published_at": "2026-09-03", "source_type": "news"},
-    {"publisher": "Reuters", "title": "How Japan's bond rout is turning the tide of global capital", "url": "https://www.reuters.com/world/asia-pacific/how-japans-bond-rout-is-turning-tide-global-capital-2026-09-02/", "published_at": "2026-09-02", "source_type": "news"},
-    {"publisher": "Reuters", "title": "Japan services growth hits five-month high, PMI shows", "url": "https://www.reuters.com/world/asia-pacific/japan-services-growth-hits-five-month-high-pmi-shows-2026-09-03/", "published_at": "2026-09-03", "source_type": "news"}
+    {
+      "publisher": "Bank of Japan",
+      "title": "わが国の経済・物価情勢と金融政策 — 高田審議委員",
+      "url": "https://www.boj.or.jp/about/press/koen_2026/ko260902a.htm",
+      "published_at": "2026-09-02",
+      "source_type": "official"
+    },
+    {
+      "publisher": "Ministry of Finance Japan",
+      "title": "30年利付国債（第91回）の入札結果（令和8年9月3日入札）",
+      "url": "https://www.mof.go.jp/jgbs/auction/calendar/nyusatsu/resul20260903.htm",
+      "published_at": "2026-09-03",
+      "source_type": "official"
+    },
+    {
+      "publisher": "Reuters",
+      "title": "Yen gets boost from hawkish BOJ repricing of rate expectations",
+      "url": "https://www.reuters.com/world/asia-pacific/yen-spotlight-after-sudden-jump-2026-09-03/",
+      "published_at": "2026-09-03",
+      "source_type": "news"
+    },
+    {
+      "publisher": "Reuters",
+      "title": "How Japan's bond rout is turning the tide of global capital",
+      "url": "https://www.reuters.com/world/asia-pacific/how-japans-bond-rout-is-turning-tide-global-capital-2026-09-02/",
+      "published_at": "2026-09-02",
+      "source_type": "news"
+    },
+    {
+      "publisher": "Reuters",
+      "title": "Japan services growth hits five-month high, PMI shows",
+      "url": "https://www.reuters.com/world/asia-pacific/japan-services-growth-hits-five-month-high-pmi-shows-2026-09-03/",
+      "published_at": "2026-09-03",
+      "source_type": "news"
+    },
+    {
+      "publisher": "Bank of Japan",
+      "title": "Change in the Guideline for Money Market Operations",
+      "url": "https://www.boj.or.jp/mopo/mpmdeci/mpr_2026/k260918a.pdf",
+      "published_at": "2026-09-18",
+      "source_type": "official"
+    },
+    {
+      "publisher": "Bank of Japan",
+      "title": "Tankan (Summary), September 2026",
+      "url": "https://www.boj.or.jp/statistics/tk/yoshi/tk2609.htm",
+      "published_at": "2026-10-01",
+      "source_type": "official"
+    }
   ],
   "claims": [
-    {"kind": "FACT", "text": "Japan's 10-year government bond yield reached 3% on September 1, its highest level since 1996.", "source_refs": [4], "basis": "Reuters cross-asset report summarizing the September bond-market move."},
-    {"kind": "FACT", "text": "The yen strengthened to about 157.545 per U.S. dollar on September 3, near a one-month high, as markets repriced BOJ tightening expectations.", "source_refs": [3], "basis": "Reuters FX report."},
-    {"kind": "FACT", "text": "Reuters reported that a September BOJ rate hike was nearly fully priced after hawkish communication from BOJ board member Hajime Takata.", "source_refs": [1, 3], "basis": "BOJ official speech and Reuters market-pricing report."},
-    {"kind": "FACT", "text": "Japanese investors sold a net roughly ¥3 trillion of overseas debt through August 22, the largest year-to-date outflow since 2022 in Reuters' analysis of official flow data.", "source_refs": [4], "basis": "Reuters analysis of Japanese portfolio-flow data."},
-    {"kind": "FACT", "text": "Japan's September 3 auction of 30-year JGBs drew ¥1.7281 trillion of competitive bids for ¥456.2 billion accepted, with an average accepted yield of 4.079%.", "source_refs": [2], "basis": "Ministry of Finance official auction result."},
-    {"kind": "FACT", "text": "Japan's services-sector business activity expanded at its fastest pace in five months in August, according to the latest private PMI survey reported by Reuters.", "source_refs": [5], "basis": "Reuters report on the August services PMI."},
-    {"kind": "INFERENCE", "text": "The normalization signal is broadening from the bond market into foreign exchange, portfolio allocation and sector-level equity transmission.", "source_refs": [1, 2, 3, 4, 5], "basis": "Cross-asset synthesis of rates, FX, flows, auction demand and activity data."},
-    {"kind": "INFERENCE", "text": "The successful 30-year auction argues against treating the recent JGB selloff as an immediate loss-of-market-function crisis, even though yields remain historically high.", "source_refs": [2], "basis": "Auction demand remained substantial at elevated yields."}
+    {
+      "kind": "FACT",
+      "text": "Japan's 10-year government bond yield reached 3% on September 1, its highest level since 1996.",
+      "source_refs": [
+        4
+      ],
+      "basis": "Reuters cross-asset report summarizing the September bond-market move."
+    },
+    {
+      "kind": "FACT",
+      "text": "The yen strengthened to about 157.545 per U.S. dollar on September 3, near a one-month high, as markets repriced BOJ tightening expectations.",
+      "source_refs": [
+        3
+      ],
+      "basis": "Reuters FX report."
+    },
+    {
+      "kind": "FACT",
+      "text": "Reuters reported that a September BOJ rate hike was nearly fully priced after hawkish communication from BOJ board member Hajime Takata.",
+      "source_refs": [
+        1,
+        3
+      ],
+      "basis": "BOJ official speech and Reuters market-pricing report."
+    },
+    {
+      "kind": "FACT",
+      "text": "Japanese investors sold a net roughly ¥3 trillion of overseas debt through August 22, the largest year-to-date outflow since 2022 in Reuters' analysis of official flow data.",
+      "source_refs": [
+        4
+      ],
+      "basis": "Reuters analysis of Japanese portfolio-flow data."
+    },
+    {
+      "kind": "FACT",
+      "text": "Japan's September 3 auction of 30-year JGBs drew ¥1.7281 trillion of competitive bids for ¥456.2 billion accepted, with an average accepted yield of 4.079%.",
+      "source_refs": [
+        2
+      ],
+      "basis": "Ministry of Finance official auction result."
+    },
+    {
+      "kind": "FACT",
+      "text": "Japan's services-sector business activity expanded at its fastest pace in five months in August, according to the latest private PMI survey reported by Reuters.",
+      "source_refs": [
+        5
+      ],
+      "basis": "Reuters report on the August services PMI."
+    },
+    {
+      "kind": "INFERENCE",
+      "text": "The normalization signal is broadening from the bond market into foreign exchange, portfolio allocation and sector-level equity transmission.",
+      "source_refs": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "basis": "Cross-asset synthesis of rates, FX, flows, auction demand and activity data."
+    },
+    {
+      "kind": "INFERENCE",
+      "text": "The successful 30-year auction argues against treating the recent JGB selloff as an immediate loss-of-market-function crisis, even though yields remain historically high.",
+      "source_refs": [
+        2
+      ],
+      "basis": "Auction demand remained substantial at elevated yields."
+    },
+    {
+      "kind": "FACT",
+      "text": "The Bank of Japan decided on September 18 to guide the uncollateralized overnight call rate to around 1.25%, with the new guideline effective September 24.",
+      "source_refs": [
+        6
+      ],
+      "basis": "BOJ monetary-policy decision."
+    },
+    {
+      "kind": "FACT",
+      "text": "In the September Tankan, the all-industry employment conditions DI was -38 and firms expected -41 by December; negative readings indicate more firms reporting labor shortage than excess labor.",
+      "source_refs": [
+        7
+      ],
+      "basis": "BOJ September 2026 Tankan."
+    },
+    {
+      "kind": "FACT",
+      "text": "Small manufacturers' selling-price DI rose to +41 in September and was expected to reach +47 by December, while their purchase-price DI remained much higher at +71.",
+      "source_refs": [
+        7
+      ],
+      "basis": "BOJ September 2026 Tankan."
+    },
+    {
+      "kind": "FACT",
+      "text": "All-industry FY2026 capital spending including software and R&D but excluding land was planned to rise 9.3% year on year, revised up 0.5 percentage point from June.",
+      "source_refs": [
+        7
+      ],
+      "basis": "BOJ September 2026 Tankan."
+    },
+    {
+      "kind": "INFERENCE",
+      "text": "The normalization thesis is stronger because policy tightening has now occurred while corporate surveys still show labor scarcity, price-setting pressure and positive investment plans; this is more consistent with a higher-rate equilibrium than an immediate return to near-zero rates.",
+      "source_refs": [
+        6,
+        7
+      ],
+      "basis": "Synthesis of realized BOJ policy and September Tankan."
+    }
   ],
   "editorial_visual": {
     "style": "editorial",
@@ -38,36 +197,34 @@
     "exaggeration": 72
   },
   "content": {
-    "key_message": "Japan’s rate normalization is becoming a cross-asset regime story: yields, yen, domestic bond demand and overseas portfolio flows are beginning to move together.",
-    "current_strength": 90,
-    "previous_strength": 68,
+    "key_message": "Japan’s normalization is now realized policy, not just market speculation: the BOJ is targeting about 1.25%, while firms still report labor shortages, pricing pressure and substantial investment plans.",
+    "current_strength": 94,
+    "previous_strength": 90,
     "direction": "STRENGTHENING",
     "evidence_for": [
-      "The 10-year JGB yield reached 3%, a level not seen since 1996.",
-      "The yen strengthened toward ¥157.5/$ as BOJ tightening expectations increased.",
-      "Takata explicitly argued for a more nimble, meeting-by-meeting approach to rate hikes.",
-      "Japanese investors have been net sellers of overseas debt on a year-to-date basis, consistent with higher domestic yields making home assets more competitive.",
-      "The September 3 30-year auction still attracted strong absolute bidding at yields above 4%, showing domestic bonds are finding buyers at the new rate level.",
-      "Services activity strengthened in August, reducing the simplicity of a 'rates are rising only because growth is collapsing' explanation."
+      "The BOJ raised the overnight call-rate target to around 1.25%, effective September 24.",
+      "The September Tankan's all-industry employment DI was -38 and firms expected -41 by December, showing persistent labor scarcity.",
+      "Small manufacturers still reported strong selling-price pressure (+41) and expected it to intensify to +47 by December.",
+      "FY2026 all-industry capital spending including software/R&D but excluding land was planned at +9.3% year on year.",
+      "The BOJ explicitly said underlying inflation is approaching 2% and that further rate increases may be appropriate depending on the outlook and risks."
     ],
     "evidence_against": [
-      "One sharp yen move can reflect positioning and intervention expectations, not only durable monetary-policy repricing.",
-      "Japanese overseas-debt selling is not yet evidence of mass repatriation; Reuters explicitly describes the shift as gradual.",
-      "The latest 30-year auction was well received, which means higher yields may be attracting stabilizing demand rather than triggering a disorderly funding spiral.",
-      "Global oil, U.S. Treasury yields and Middle East risk are pushing bond yields internationally, so not all of Japan's yield rise is domestically caused."
+      "Japan's August nationwide core CPI was only 1.7% year on year, so headline disinflation can still slow or interrupt further tightening.",
+      "The August unemployment rate rose 0.1 point to 2.5%, and new job openings fell year on year, showing that labor conditions are not uniformly strengthening.",
+      "The BOJ vote was 7-2, with dissenters arguing the economy and inflation did not justify a hike at that timing.",
+      "External shocks, especially oil, Middle East conditions, AI demand and the exchange rate, could materially alter the path."
     ],
     "connection": "The strongest connection is not 'higher JGB yields cause everything.' Rather, several linked incentives are changing at once: BOJ tightening expectations lift domestic yields, higher domestic yields reduce the relative attraction of hedged foreign bonds, a stronger yen changes exporter earnings translation, and higher rates alter bank and borrower economics.",
     "alternative_explanation": "A common global inflation-and-bond shock could explain much of the move without requiring a uniquely Japanese regime shift. Positioning around intervention and the September BOJ meeting could also exaggerate the yen signal temporarily.",
     "watch_next": [
-      "Whether USD/JPY remains materially below the recent ¥160 area after the immediate BOJ repricing fades.",
-      "Whether 10-year and 30-year JGB yields hold elevated levels without weak auctions or market-function stress.",
-      "The September 17-18 BOJ meeting and whether policy or guidance confirms a faster normalization path.",
-      "Weekly Ministry of Finance portfolio-flow data: continued overseas-bond selling would strengthen the capital-reallocation thesis.",
-      "Japanese banks versus exporters: persistent relative divergence would confirm that the rate/FX regime is transmitting into equities.",
-      "Mortgage, corporate-loan and deposit-rate repricing over the next one to three months."
+      "The December Tankan: whether the expected labor-shortage DI of -41 and higher small-manufacturer selling-price DI actually materialize.",
+      "Nationwide CPI through late 2026: whether core inflation moves clearly back above 2% as the BOJ expects.",
+      "Deposit, variable-mortgage and corporate-loan repricing after the 1.25% policy-rate change.",
+      "The next BOJ meetings: whether the Bank follows its stated bias toward further hikes or pauses as growth and inflation data evolve.",
+      "Whether capital-spending plans remain near the Tankan's +9.3% all-industry FY2026 pace despite higher financing costs."
     ],
-    "what_would_change_mind": "The trend would weaken if the yen quickly returned above ¥160/$, JGB yields fell back materially, the BOJ pushed back against faster normalization, and Japanese investors resumed sustained net purchases of overseas debt. A string of weak JGB auctions or market-function problems would not weaken the trend but would change it from 'normalization' toward 'stress,' requiring a separate risk thesis.",
-    "implications": "For households, the main transmission is not today's bond quote but gradually higher borrowing and deposit rates plus a potentially stronger yen that can reduce some imported-cost pressure. For companies, banks may gain from a higher-rate environment while exporters lose part of the weak-yen earnings cushion. Globally, less Japanese demand for foreign bonds can modestly reduce a longstanding source of support for overseas sovereign debt markets.",
+    "what_would_change_mind": "This thesis would weaken materially if core inflation stays below 2% for several months, labor-shortage indicators ease sharply, planned investment is cut, and the BOJ signals a prolonged pause or reversal. A recessionary rise in unemployment would be a stronger invalidation than a single weak monthly data point.",
+    "implications": "For households, expect gradual rather than instant transmission: deposit rates may improve, but variable borrowing costs can also rise. For workers, persistent labor shortages can support bargaining power, though hiring is uneven by industry. For businesses, the key test is whether wage and input costs can still be passed through while financing becomes more expensive.",
     "history": [
       "September 1: 10-year JGB yield reached 3%, the highest since 1996.",
       "September 2: BOJ board member Takata argued for nimble, meeting-by-meeting rate decisions.",
@@ -85,8 +242,22 @@
     },
     "usefulness": 96,
     "novelty": 89,
-    "impact": {"money": "HIGH", "family": "MED", "career": "MED", "japan": "HIGH", "urgency": "MED"},
-    "connection_tags": ["boj-normalization", "jgb-yields", "yen-strength", "capital-reallocation", "bank-rotation", "exporter-fx", "global-bond-flows"],
+    "impact": {
+      "money": "HIGH",
+      "family": "MED",
+      "career": "MED",
+      "japan": "HIGH",
+      "urgency": "MED"
+    },
+    "connection_tags": [
+      "boj-normalization",
+      "jgb-yields",
+      "yen-strength",
+      "capital-reallocation",
+      "bank-rotation",
+      "exporter-fx",
+      "global-bond-flows"
+    ],
     "reading_levels": {
       "30 sec": {
         "what_happened": "Japan's rate story is spreading: JGB yields hit multi-decade highs, the yen strengthened sharply, and Japanese investors are reducing some overseas bond exposure.",
@@ -104,14 +275,35 @@
       ],
       "background": "For decades, Japan's very low interest rates pushed many domestic investors toward foreign bonds and supported a weak-yen environment. When Japanese government bond yields rise, domestic bonds become more competitive, especially because buying foreign bonds often requires currency hedging that can be expensive. That changes incentives for banks, pension funds, insurers and other large investors.",
       "terms": [
-        {"term": "JGB", "meaning": "Japanese Government Bond — debt issued by Japan's government.", "why_it_matters": "Its yield is a benchmark for Japanese borrowing costs and monetary-policy expectations."},
-        {"term": "Currency hedging", "meaning": "Using financial contracts to reduce the risk that exchange-rate moves change the value of a foreign investment.", "why_it_matters": "Hedging can make foreign bonds less attractive when hedge costs are high."},
-        {"term": "Capital repatriation", "meaning": "Moving investment money from foreign assets back into domestic assets.", "why_it_matters": "Even gradual repatriation can reduce Japanese demand for overseas bonds and increase demand for domestic securities."}
+        {
+          "term": "JGB",
+          "meaning": "Japanese Government Bond — debt issued by Japan's government.",
+          "why_it_matters": "Its yield is a benchmark for Japanese borrowing costs and monetary-policy expectations."
+        },
+        {
+          "term": "Currency hedging",
+          "meaning": "Using financial contracts to reduce the risk that exchange-rate moves change the value of a foreign investment.",
+          "why_it_matters": "Hedging can make foreign bonds less attractive when hedge costs are high."
+        },
+        {
+          "term": "Capital repatriation",
+          "meaning": "Moving investment money from foreign assets back into domestic assets.",
+          "why_it_matters": "Even gradual repatriation can reduce Japanese demand for overseas bonds and increase demand for domestic securities."
+        }
       ],
       "how_it_works": [
-        {"title": "Higher home yields change the comparison", "explanation": "If a Japanese investor can earn more on JGBs, the extra return required to justify owning hedged U.S. or European bonds becomes larger."},
-        {"title": "FX changes company winners and losers", "explanation": "A stronger yen can lower the yen cost of imports but reduces the yen value of foreign-currency profits when exporters translate them back to Japan."},
-        {"title": "Orderly auctions are the stress test", "explanation": "If bond yields rise but auctions still attract buyers, the move can be normalization. Repeated weak auctions, liquidity failures or disorderly price gaps would signal a more dangerous regime."}
+        {
+          "title": "Higher home yields change the comparison",
+          "explanation": "If a Japanese investor can earn more on JGBs, the extra return required to justify owning hedged U.S. or European bonds becomes larger."
+        },
+        {
+          "title": "FX changes company winners and losers",
+          "explanation": "A stronger yen can lower the yen cost of imports but reduces the yen value of foreign-currency profits when exporters translate them back to Japan."
+        },
+        {
+          "title": "Orderly auctions are the stress test",
+          "explanation": "If bond yields rise but auctions still attract buyers, the move can be normalization. Repeated weak auctions, liquidity failures or disorderly price gaps would signal a more dangerous regime."
+        }
       ],
       "example": "Illustrative only: if a Japanese investor can earn 3% on a 10-year JGB instead of near-zero yields, a foreign bond paying 4.8% is no longer automatically superior once currency-hedging costs, credit risk and duration are considered.",
       "takeaways": [
@@ -122,6 +314,14 @@
         "The September BOJ meeting is the next major confirmation test."
       ]
     },
-    "bottom_line": "The evidence now supports a strengthening cross-asset normalization trend, but the durable regime call still depends on what survives after the September BOJ meeting and the current global bond shock."
-  }
+    "bottom_line": "The evidence now supports a strengthening cross-asset normalization trend, but the durable regime call still depends on what survives after the September BOJ meeting and the current global bond shock.",
+    "prediction": {
+      "horizon": "6-12 months",
+      "confidence": "MEDIUM-HIGH",
+      "statement": "Base case: Japan remains in a materially higher-rate regime through the next 6-12 months, with the policy rate staying around 1.25% or moving higher rather than returning toward zero, provided underlying inflation and labor scarcity remain near current BOJ/Tankan signals.",
+      "invalidation": "Sustained sub-2% underlying inflation combined with a clear labor-market deterioration, investment cuts and a BOJ shift toward easing would invalidate this base case."
+    }
+  },
+  "updated_at": "2026-10-04T11:49:00+09:00",
+  "change_summary": "Material update: the BOJ actually raised the overnight call-rate target to around 1.25% effective September 24, while the September Tankan shows persistent labor shortages, continued price-setting pressure and stronger FY2026 capital-spending plans. The normalization thesis has moved from market repricing to realized policy plus corporate evidence."
 }
