@@ -1,0 +1,134 @@
+[
+  {
+    "id": "kyushu-recovery-travel-discount-2026-10",
+    "agent": "discover",
+    "created_at": "2026-10-04T15:04:00+09:00",
+    "published_at": "2026-10-04T15:04:00+09:00",
+    "type": "travel_support",
+    "title": "Kyushu travel is now up to 60% off under a post-earthquake recovery program",
+    "summary": "Japan's Tourism Agency has started the Kyushu Recovery Support Discount for trips with at least one overnight stay. The basic discount is 50%, rising to 60% in Kumamoto and Kagoshima, with per-person caps of up to ¥35,000 depending on the travel product.",
+    "why_it_matters": "Kung may Kyushu trip ka this autumn, this is unusually large public travel support that can materially cut hotel or package-tour costs. But each prefecture sets its own booking dates, eligible period and participating sellers, and allocations can run out.",
+    "importance": 91,
+    "confidence": 99,
+    "tags": ["Japan", "Kyushu", "Travel", "Kumamoto", "Kagoshima", "Tourism", "Family Budget"],
+    "geography": ["Japan", "Kyushu"],
+    "status": "NEW",
+    "sources": [
+      {
+        "publisher": "Japan Tourism Agency",
+        "title": "九州ふっこう応援割",
+        "url": "https://www.mlit.go.jp/kankocho/page13_00002.html",
+        "published_at": "2026-10-01",
+        "source_type": "primary"
+      },
+      {
+        "publisher": "Japan Tourism Agency",
+        "title": "令和８年熊本地震 関連情報（九州ふっこう応援割について掲載）",
+        "url": "https://www.mlit.go.jp/kankocho/topics04_00093.html",
+        "published_at": "2026-08-31",
+        "source_type": "primary"
+      },
+      {
+        "publisher": "Kumamoto Prefecture",
+        "title": "「熊本ふっこう応援割」について",
+        "url": "https://www.pref.kumamoto.jp/soshiki/208/279956.html",
+        "published_at": "2026-09-11",
+        "source_type": "primary"
+      }
+    ],
+    "claims": [
+      {
+        "kind": "FACT",
+        "text": "The Kyushu Recovery Support Discount applies to travel and accommodation products in Kyushu that include at least one overnight stay, starting with stays from October 1, 2026.",
+        "basis": "Japan Tourism Agency program guidance.",
+        "source_refs": [1, 2]
+      },
+      {
+        "kind": "FACT",
+        "text": "The discount rate is 50% across Kyushu, except Kumamoto and Kagoshima where it is 60%.",
+        "basis": "Japan Tourism Agency official program page.",
+        "source_refs": [1, 2]
+      },
+      {
+        "kind": "FACT",
+        "text": "The per-trip, per-person discount caps are ¥20,000 for accommodation-only products or a one-night transport-plus-accommodation product, ¥30,000 for transport-plus-accommodation products of two nights or more, and ¥35,000 for multi-prefecture touring products staying in at least two prefectures.",
+        "basis": "Japan Tourism Agency official program page.",
+        "source_refs": [1, 2]
+      },
+      {
+        "kind": "FACT",
+        "text": "Kumamoto's prefectural program covers stays from October 1 through December 25, 2026 and ends when its budget allocation is exhausted.",
+        "basis": "Kumamoto Prefecture official program announcement.",
+        "source_refs": [3]
+      },
+      {
+        "kind": "FACT",
+        "text": "Booking start dates, eligible periods, participating facilities and sales methods differ by prefecture.",
+        "basis": "Japan Tourism Agency directs travelers to each prefecture's program information for implementation details.",
+        "source_refs": [1, 2]
+      },
+      {
+        "kind": "INFERENCE",
+        "text": "Families already considering an autumn Kyushu trip may get unusually high savings, but should compare the discounted final price rather than assuming every hotel or booking channel participates.",
+        "basis": "The official program provides high percentage discounts but implementation and participation vary by prefecture and seller.",
+        "source_refs": [1, 2, 3]
+      }
+    ],
+    "content": {
+      "whats_new": "The recovery discount is now live for eligible Kyushu stays. It was created after the 2026 Kumamoto earthquake triggered widespread booking cancellations across Kyushu, including places where tourism businesses continued operating normally.",
+      "skeptical_view": "Hindi ito automatic 50–60% off sa lahat ng Kyushu bookings. Each prefecture controls its implementation, participating sellers and eligible dates, and available budget can be exhausted. Existing bookings also should not be assumed eligible unless the prefecture or seller says so.",
+      "what_next": [
+        "Choose the Kyushu prefecture you plan to visit, then open that prefecture's official program page from the Japan Tourism Agency list.",
+        "Check the exact eligible stay dates, participating booking channels and whether the allocation is still available before paying.",
+        "Compare the final discounted price with ordinary hotel or package prices; a high percentage discount does not guarantee every listed product is the cheapest option.",
+        "If visiting Kumamoto, check current transport and facility operating information for the specific area before departure."
+      ],
+      "what_would_change_mind": "A prefecture exhausting its allocation, changing its eligible period or participating sellers, or the Tourism Agency revising the national program terms.",
+      "recommendation": "If you already wanted to visit Kyushu this autumn, check the official recovery-discount inventory before booking elsewhere. Do not make a trip solely because of the headline percentage without checking the final price and local conditions.",
+      "usefulness": 96,
+      "novelty": 94,
+      "impact": {
+        "money": "HIGH",
+        "family": "HIGH",
+        "career": "LOW",
+        "japan": "HIGH",
+        "urgency": "MED"
+      },
+      "connection_tags": ["kyushu-recovery", "travel-discount", "kumamoto-earthquake", "family-travel", "tourism-support"],
+      "learning": {
+        "outcomes": [
+          "Know that a large Kyushu travel discount is currently available for eligible overnight trips.",
+          "Know why the headline discount is not automatically available for every booking."
+        ],
+        "background": "After the 2026 Kumamoto earthquake, cancellations affected tourism demand across Kyushu. The national recovery program subsidizes eligible overnight travel to help restore demand, while each prefecture controls detailed implementation.",
+        "terms": [
+          {
+            "term": "九州ふっこう応援割",
+            "meaning": "A government-supported travel discount intended to restore tourism demand in Kyushu after the 2026 Kumamoto earthquake.",
+            "why_it_matters": "It can reduce eligible travel or accommodation costs by 50%, or 60% in Kumamoto and Kagoshima."
+          },
+          {
+            "term": "周遊型旅行商品",
+            "meaning": "A touring travel product that includes overnight stays in at least two prefectures.",
+            "why_it_matters": "This category has the program's highest stated per-person discount cap, ¥35,000."
+          }
+        ],
+        "takeaways": [
+          "Eligible trips need at least one overnight stay in Kyushu.",
+          "Discount: 50% generally; 60% in Kumamoto and Kagoshima.",
+          "Maximum support ranges from ¥20,000 to ¥35,000 per person per trip depending on the product.",
+          "Dates, sellers and remaining inventory must be checked prefecture by prefecture."
+        ]
+      },
+      "reading_levels": {
+        "30_sec": [
+          "Kyushu's official recovery travel discount is now live.",
+          "Eligible overnight trips get 50% support; Kumamoto and Kagoshima get 60%.",
+          "The maximum discount is ¥20,000–¥35,000 per person per trip depending on the product.",
+          "Check the prefecture's official page first because dates, sellers and available budget differ."
+        ],
+        "2_min": "May unusually large travel support ngayon sa Kyushu. Under the official Kyushu Recovery Support Discount, eligible trips with at least one overnight stay receive a 50% discount, while Kumamoto and Kagoshima are set at 60%. May caps: up to ¥20,000 per person for accommodation-only or a one-night transport package, ¥30,000 for transport packages of two nights or more, and ¥35,000 for qualifying multi-prefecture tours. Important catch: hindi automatic sa lahat ng booking. Each prefecture sets its own eligible period, booking channels and participating businesses, at puwedeng maubos ang allocation. If Kyushu was already in your plans, check the prefecture's official listing before paying."
+      }
+    }
+  }
+]
