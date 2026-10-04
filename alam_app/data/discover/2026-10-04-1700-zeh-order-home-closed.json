@@ -1,0 +1,101 @@
+[
+  {
+    "id": "japan-mirai-eco-zeh-order-home-closed-2026-10",
+    "tags": ["Japan","Housing","ZEH","Homebuilding","Subsidy","Energy Efficiency","2026"],
+    "type": "policy_consumer",
+    "agent": "discover",
+    "title": "Isang 2026 home subsidy lane nagsara na: ZEH-level custom-home applications ended September 30",
+    "claims": [
+      {
+        "kind": "FACT",
+        "text": "The official Mirai Eco Housing 2026 program says applications for newly built custom homes in the ZEH-level housing category ended on September 30, 2026.",
+        "basis": "Official Mirai Eco Housing 2026 notice dated October 1, 2026.",
+        "source_refs": [1]
+      },
+      {
+        "kind": "FACT",
+        "text": "The same notice says applications for newly built custom homes in the GX-oriented and Long-Life Quality Housing categories, purchases of newly built homes, new rental housing, and renovations can continue until December 31, 2026 unless the applicable budget limit is reached earlier.",
+        "basis": "Official program notice.",
+        "source_refs": [1]
+      },
+      {
+        "kind": "FACT",
+        "text": "For ZEH-level custom-home applications already submitted, the office will continue examination; if it requests corrections, those corrections must be completed by the specified deadline or the application can be rejected and cannot be resubmitted.",
+        "basis": "Official program notice.",
+        "source_refs": [1]
+      },
+      {
+        "kind": "FACT",
+        "text": "Where the required construction-progress level had not yet been completed when an application was submitted, the program requires that progress to be completed and reported by January 31, 2027.",
+        "basis": "Official program notice.",
+        "source_refs": [1]
+      },
+      {
+        "kind": "INFERENCE",
+        "text": "For households still planning a 2026 build, 'the housing subsidy is open until year-end' is now too broad a shortcut: availability depends on the exact housing and transaction category.",
+        "basis": "Inference from the category-specific closure and remaining application windows in the official notice.",
+        "source_refs": [1]
+      }
+    ],
+    "status": "NEW",
+    "content": {
+      "impact": {"japan":"MED","money":"HIGH","career":"LOW","family":"MED","urgency":"MED"},
+      "novelty": 88,
+      "learning": {
+        "terms": [
+          {
+            "term": "ZEH水準住宅",
+            "meaning": "A home meeting the program's ZEH-level energy-efficiency standard.",
+            "why_it_matters": "This is the custom-home category whose 2026 application intake has now closed."
+          },
+          {
+            "term": "交付申請",
+            "meaning": "The formal subsidy grant application submitted under the program.",
+            "why_it_matters": "The October notice is about the application window, not a blanket cancellation of already-filed applications."
+          }
+        ],
+        "takeaways": [
+          "Kung ZEH-level custom home ang category mo at wala pang application by September 30, closed na ang 2026 intake for that lane.",
+          "Hindi ibig sabihin na sarado na lahat ng Mirai Eco Housing 2026 categories; several other categories remain open subject to their rules and budget.",
+          "Kung nakapag-file na, bantayan ang correction request at construction-progress reporting deadlines."
+        ]
+      },
+      "what_next": [
+        "Ask the registered housing business which exact Mirai Eco Housing 2026 category your project is using and whether a grant application was actually submitted.",
+        "If a ZEH-level custom-home application was already filed, monitor requests for corrections and respond within the deadline stated by the program office.",
+        "For projects in categories still accepting applications, do not assume December 31 guarantees availability because the official notice says intake can end earlier if the budget ceiling is reached."
+      ],
+      "whats_new": "As of October 1, the official program has closed one specific 2026 lane: ZEH-level newly built custom homes. Other listed housing categories remain open for now.",
+      "usefulness": 94,
+      "reading_levels": {
+        "2_min": "Kung nagpapagawa ka ng bahay sa Japan at umaasa sa Mirai Eco Housing 2026 subsidy, check the exact category now. The official program says ZEH-level custom-home grant applications closed on September 30. Hindi ito total shutdown ng program: GX-oriented and Long-Life Quality custom homes, newly built homes for purchase, new rental housing and renovations remain listed as accepting applications until December 31, unless their budget ceiling is reached first. If your ZEH-level application was already submitted, it can still be examined, but correction requests have deadlines and missed corrections can lead to rejection without resubmission. Bottom line: huwag umasa sa generic na 'open pa until December'—verify the exact category and actual filing status with your registered housing business.",
+        "30_sec": [
+          "ZEH-level custom-home applications under Mirai Eco Housing 2026 closed September 30.",
+          "Several other program categories remain open for now, generally through December 31 unless budget runs out earlier.",
+          "Already-filed ZEH applications still proceed through review.",
+          "If the office asks for corrections, missing its deadline can kill the application without resubmission."
+        ]
+      },
+      "recommendation": "Before signing or changing a 2026 homebuilding budget based on subsidy assumptions, get the exact program category and application status in writing from the participating housing business.",
+      "skeptical_view": "This closure affects one defined application category, not every energy-efficient home subsidy or every Mirai Eco Housing 2026 application. The financial effect on a household depends on its project, eligibility and whether an application was already filed.",
+      "connection_tags": ["housing-subsidy","zeh","energy-efficient-homes","homebuilding","household-budget"],
+      "what_would_change_mind": "A later official program notice reopening the ZEH-level custom-home intake or materially changing the stated application treatment would require an update."
+    },
+    "sources": [
+      {
+        "url": "https://mirai-eco2026.mlit.go.jp/news/2026100101.html",
+        "title": "※重要※ 注文住宅の新築（ZEH水準住宅）の交付申請の受付を終了しました。",
+        "publisher": "みらいエコ住宅2026事業 公式",
+        "source_type": "primary",
+        "published_at": "2026-10-01"
+      }
+    ],
+    "summary": "Mirai Eco Housing 2026 stopped accepting ZEH-level custom-home grant applications after September 30. Other listed categories remain open for now, while already-filed ZEH applications continue through review.",
+    "geography": ["Japan"],
+    "confidence": 99,
+    "created_at": "2026-10-04T17:00:00+09:00",
+    "importance": 86,
+    "published_at": "2026-10-04T17:00:00+09:00",
+    "why_it_matters": "A household can make a large homebuilding budget decision based on an assumed subsidy. The category-specific closure means buyers and builders need to verify the exact application lane rather than relying on the program's broader year-end date."
+  }
+]
