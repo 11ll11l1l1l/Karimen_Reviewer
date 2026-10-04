@@ -1,0 +1,17 @@
+{
+  "date": "2026-10-04",
+  "based_on": "2026-10-03 verified major headlines",
+  "question": "Kapag ang isang tao ay nahihirapan, mas mahalaga bang may mabilis tayong sagot—o marunong muna tayong makinig nang totoo?",
+  "verses": [
+    {
+      "reference": "Proverbs 18:13",
+      "translation": "KJV",
+      "text": "He that answereth a matter before he heareth it, it is folly and shame unto him."
+    },
+    {
+      "reference": "James 1:19",
+      "translation": "KJV",
+      "text": "Wherefore, my beloved brethren, let every man be swift to hear, slow to speak, slow to wrath:"
+    }
+  ]
+}
