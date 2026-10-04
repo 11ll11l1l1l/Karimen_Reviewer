@@ -84,11 +84,19 @@ jobs:
           fi
           echo "Pre-write sync snapshot still matches current main: $CURRENT_MAIN" >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Select reconciliation scope
+        shell: bash
+        run: |
+          if [[ "$GITHUB_EVENT_NAME" == "schedule" || "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+            echo "ALAM_FULL_RECONCILE=1" >> "$GITHUB_ENV"
+          else
+            echo "ALAM_FULL_RECONCILE=0" >> "$GITHUB_ENV"
+          fi
+
       - name: Sync verified ALAM records to Supabase
         env:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
-          ALAM_FULL_RECONCILE: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && '1' || '0' }}
         run: python alam_app/alam_supabase_sync_job.py
 
       - name: Prune obsolete mirror-only article rows
