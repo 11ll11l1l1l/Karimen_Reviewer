@@ -4,39 +4,276 @@
   "created_at": "2026-09-06T20:35:00+09:00",
   "type": "industry_report",
   "title": "REPORT: Tsukuba's 1-GW AI power question — what the data-center buildout could really change for residents",
-  "summary": "Goodman's Tsukuba Tech Central is real, large and directly relevant to Ibaraki: its first phase is 50 MW, while the master-planned campus has up to 1,000 MW of secured power capacity. That does not mean Tsukuba is consuming 1 GW today, and it does not prove Tokai Daini is being restarted for the project. The deeper issue is that AI and data centers are becoming large enough to change Japan's electricity-demand outlook, grid investment, water planning and the political economics of nuclear power.",
-  "why_it_matters": "For Tsukuba and nearby residents, the practical questions are not whether AI servers use a lot of electricity—they do—but how fast the campus grows, what grid upgrades are required, who ultimately bears network costs, how cooling water is supplied, what local tax and infrastructure benefits are returned, and whether rising 24/7 demand strengthens the case for nuclear and other firm low-carbon generation. The local impact depends on these implementation choices, not on a sensational one-reactor comparison alone.",
+  "summary": "Japan's AI-power buildout is developing two distinct infrastructure models. Goodman Tsukuba shows the scale of grid-connected hyperscale demand, while JERA's newly announced Chiba project proposes up to 400 MW of AI capacity beside an operating power station using behind-the-meter supply. The Chiba plan is still an MoU, not a completed or guaranteed project, but it strengthens the evidence that power availability and connection lead time are becoming core constraints on where Japan can place large AI campuses.",
+  "why_it_matters": "For residents and policymakers, AI infrastructure is increasingly an electricity-and-land planning issue rather than only a technology story. Tsukuba highlights grid, water and network-cost questions; Chiba tests a different model that places compute beside generation to avoid years of conventional grid-connection lead time. If replicated, this could shift future hyperscale development toward power-station and other grid-ready industrial sites.",
   "importance": 99,
   "confidence": 97,
-  "tags": ["Report", "Tsukuba", "Ibaraki", "AI", "Data Center", "Electricity", "Grid", "Nuclear", "Tokai Daini", "Water", "Energy Policy", "Household Costs", "Infrastructure", "GX"],
-  "geography": ["Tsukuba", "Ibaraki", "Japan", "TEPCO Area"],
+  "tags": [
+    "Report",
+    "Tsukuba",
+    "Ibaraki",
+    "AI",
+    "Data Center",
+    "Electricity",
+    "Grid",
+    "Nuclear",
+    "Tokai Daini",
+    "Water",
+    "Energy Policy",
+    "Household Costs",
+    "Infrastructure",
+    "GX"
+  ],
+  "geography": [
+    "Tsukuba",
+    "Ibaraki",
+    "Japan",
+    "TEPCO Area"
+  ],
   "status": "DEVELOPING",
   "sources": [
-    {"publisher": "Goodman", "title": "TYO05 — Tsukuba Tech Central", "url": "https://jp.goodman.com/en/data-centres/tokyo/tyo05", "published_at": null, "source_type": "company", "reliability": "high"},
-    {"publisher": "Goodman", "title": "Data centre overview — TYO05 Tsukuba: 50 MW leased, 1,000 MW power secured", "url": "https://jp.goodman.com/ja-jp/data-centres", "published_at": null, "source_type": "company", "reliability": "high"},
-    {"publisher": "Tsukuba City", "title": "Use of the land south of KEK / Goodman Japan Business Park Tsukuba project", "url": "https://www.city.tsukuba.lg.jp/soshikikarasagasu/zaimubukokyoshisanrikatsuyosuishinka/gyomuannai/2/1/1003132.html", "published_at": "2025-10-02", "source_type": "official", "reliability": "high"},
-    {"publisher": "OCCTO", "title": "FY2026 national and regional electricity demand outlook — data centers and semiconductor plants", "url": "https://www.occto.or.jp/assets/rijikai/01272672/rijikai_549_gian7.pdf", "published_at": "2026-01-21", "source_type": "official", "reliability": "high"},
-    {"publisher": "Agency for Natural Resources and Energy", "title": "Seventh Strategic Energy Plan", "url": "https://www.enecho.meti.go.jp/category/others/basic_plan/index.html", "published_at": "2025-02-18", "source_type": "official", "reliability": "high"},
-    {"publisher": "Japan Atomic Power Company", "title": "Tokai Daini Nuclear Power Station", "url": "https://www.japc.co.jp/plant/tokai/dai2top.html", "published_at": null, "source_type": "official", "reliability": "high"},
-    {"publisher": "Japan Atomic Power Company", "title": "Tokai Daini operating status", "url": "https://www.japc.co.jp/pis/tokai/unten.htm", "published_at": "2026-09-06", "source_type": "official", "reliability": "high"},
-    {"publisher": "METI", "title": "Increasing water demand at data centers", "url": "https://www.meti.go.jp/shingikai/sankoshin/chiiki_keizai/kogyoyo_suido/pdf/019_02_00.pdf", "published_at": "2025-12-01", "source_type": "official", "reliability": "high"},
-    {"publisher": "METI", "title": "GX Strategic Regions — promising regions selected", "url": "https://www.meti.go.jp/press/2026/04/20260424007/20260424007.html", "published_at": "2026-04-24", "source_type": "official", "reliability": "high"},
-    {"publisher": "METI / OCCTO", "title": "Power-network approach for Watt-Bit coordination", "url": "https://www.meti.go.jp/shingikai/economy/watt_bit/watt_bit_wg/pdf/001_01_04.pdf", "published_at": "2025-04-21", "source_type": "official", "reliability": "high"}
+    {
+      "publisher": "Goodman",
+      "title": "TYO05 — Tsukuba Tech Central",
+      "url": "https://jp.goodman.com/en/data-centres/tokyo/tyo05",
+      "published_at": null,
+      "source_type": "company",
+      "reliability": "high"
+    },
+    {
+      "publisher": "Goodman",
+      "title": "Data centre overview — TYO05 Tsukuba: 50 MW leased, 1,000 MW power secured",
+      "url": "https://jp.goodman.com/ja-jp/data-centres",
+      "published_at": null,
+      "source_type": "company",
+      "reliability": "high"
+    },
+    {
+      "publisher": "Tsukuba City",
+      "title": "Use of the land south of KEK / Goodman Japan Business Park Tsukuba project",
+      "url": "https://www.city.tsukuba.lg.jp/soshikikarasagasu/zaimubukokyoshisanrikatsuyosuishinka/gyomuannai/2/1/1003132.html",
+      "published_at": "2025-10-02",
+      "source_type": "official",
+      "reliability": "high"
+    },
+    {
+      "publisher": "OCCTO",
+      "title": "FY2026 national and regional electricity demand outlook — data centers and semiconductor plants",
+      "url": "https://www.occto.or.jp/assets/rijikai/01272672/rijikai_549_gian7.pdf",
+      "published_at": "2026-01-21",
+      "source_type": "official",
+      "reliability": "high"
+    },
+    {
+      "publisher": "Agency for Natural Resources and Energy",
+      "title": "Seventh Strategic Energy Plan",
+      "url": "https://www.enecho.meti.go.jp/category/others/basic_plan/index.html",
+      "published_at": "2025-02-18",
+      "source_type": "official",
+      "reliability": "high"
+    },
+    {
+      "publisher": "Japan Atomic Power Company",
+      "title": "Tokai Daini Nuclear Power Station",
+      "url": "https://www.japc.co.jp/plant/tokai/dai2top.html",
+      "published_at": null,
+      "source_type": "official",
+      "reliability": "high"
+    },
+    {
+      "publisher": "Japan Atomic Power Company",
+      "title": "Tokai Daini operating status",
+      "url": "https://www.japc.co.jp/pis/tokai/unten.htm",
+      "published_at": "2026-09-06",
+      "source_type": "official",
+      "reliability": "high"
+    },
+    {
+      "publisher": "METI",
+      "title": "Increasing water demand at data centers",
+      "url": "https://www.meti.go.jp/shingikai/sankoshin/chiiki_keizai/kogyoyo_suido/pdf/019_02_00.pdf",
+      "published_at": "2025-12-01",
+      "source_type": "official",
+      "reliability": "high"
+    },
+    {
+      "publisher": "METI",
+      "title": "GX Strategic Regions — promising regions selected",
+      "url": "https://www.meti.go.jp/press/2026/04/20260424007/20260424007.html",
+      "published_at": "2026-04-24",
+      "source_type": "official",
+      "reliability": "high"
+    },
+    {
+      "publisher": "METI / OCCTO",
+      "title": "Power-network approach for Watt-Bit coordination",
+      "url": "https://www.meti.go.jp/shingikai/economy/watt_bit/watt_bit_wg/pdf/001_01_04.pdf",
+      "published_at": "2025-04-21",
+      "source_type": "official",
+      "reliability": "high"
+    },
+    {
+      "publisher": "JERA",
+      "title": "JERA, Dell Technologies and RHAELM Sign MoU to Accelerate National-Scale AI Infrastructure Development in Japan",
+      "url": "https://www.jera.co.jp/en/news/information/20261001_2535",
+      "published_at": "2026-10-01",
+      "source_type": "company",
+      "reliability": "high"
+    },
+    {
+      "publisher": "Reuters",
+      "title": "JERA teams up with Dell, RHAELM on Japan's AI infrastructure, building data centre near Tokyo",
+      "url": "https://www.reuters.com/business/energy/jera-teams-up-with-dell-rhaelm-ai-infrastructure-development-japan-2026-10-01/",
+      "published_at": "2026-10-01",
+      "source_type": "news",
+      "reliability": "high"
+    }
   ],
   "claims": [
-    {"kind": "FACT", "text": "Goodman lists Tsukuba Tech Central TYO05 as under construction, with a 50 MW first phase and up to 1,000 MW of power capacity upon full completion.", "source_refs": [1, 2], "basis": "Goodman's current project and data-center portfolio pages."},
-    {"kind": "FACT", "text": "The 1,000 MW figure is secured or planned campus capacity, not evidence that the site is currently drawing 1,000 MW. Goodman's current portfolio lists 50 MW as leased at Tsukuba.", "source_refs": [1, 2], "basis": "Goodman's own distinction between first-phase/leased capacity and power upon completion."},
-    {"kind": "FACT", "text": "Tsukuba City says the broader site was sold for ¥11,029,248,000 and is planned for data centers, logistics, disaster-resilience facilities and amenities.", "source_refs": [3], "basis": "Tsukuba City land-use and sale disclosure."},
-    {"kind": "FACT", "text": "OCCTO's 2026 outlook individually counts 7.62 GW of additional maximum demand from new data centers and semiconductor plants by FY2035, of which data centers account for 6.61 GW.", "source_refs": [4], "basis": "OCCTO FY2026 demand outlook."},
-    {"kind": "FACT", "text": "OCCTO projects 56.8 TWh of additional annual electricity demand from new data centers and semiconductor plants by FY2035, equal to 6.71% of projected national demand; data centers alone account for 49.4 TWh.", "source_refs": [4], "basis": "OCCTO FY2026 demand outlook."},
-    {"kind": "FACT", "text": "Japan's Seventh Strategic Energy Plan treats rising electricity demand associated with digitalization and data centers as part of the reason the country must expand reliable decarbonized electricity supply, with the 2040 outlook including nuclear at roughly 20% alongside a much larger renewable share.", "source_refs": [5], "basis": "Cabinet-approved national energy policy and 2040 outlook."},
-    {"kind": "FACT", "text": "Tokai Daini has a rated electric output of 1.10 GW, which makes the 1-GW Tsukuba campus a useful order-of-magnitude comparison if fully built, but Tokai Daini was producing 0 MW on September 6, 2026.", "source_refs": [6, 7], "basis": "Japan Atomic Power Company plant specifications and live operating-status page."},
-    {"kind": "FACT", "text": "METI says AI-oriented data centers have higher server power density and heat output, increasing the importance of high-capacity cooling and potentially industrial-water demand as liquid cooling expands.", "source_refs": [8], "basis": "METI industrial-water policy material."},
-    {"kind": "FACT", "text": "Ibaraki Prefecture passed the first screening in 2026 for the national GX Strategic Region program's data-center concentration category.", "source_refs": [9], "basis": "METI GX Strategic Region selection announcement."},
-    {"kind": "FACT", "text": "Japanese grid planners explicitly warn that simply reinforcing the network for each new large-load request can increase network costs and ultimately push up electricity charges, which is why government policy is trying to steer data centers toward locations with usable grid capacity and coordinated infrastructure.", "source_refs": [10], "basis": "Official Watt-Bit grid planning material."},
-    {"kind": "INFERENCE", "text": "AI and data-center growth strengthens the economic case for firm 24/7 generation, including nuclear, but the available public evidence does not show that Tokai Daini is being restarted specifically to power Goodman Tsukuba.", "source_refs": [1, 4, 5, 6, 7], "basis": "National demand and energy-policy evidence establish a broad connection; no project-specific power-supply contract linking TYO05 to Tokai Daini is publicly identified."},
-    {"kind": "INFERENCE", "text": "The most credible household risk is indirect: inefficient or oversized grid expansion can flow through network charges over time. It would be inaccurate to claim that the Tsukuba project by itself will raise a household bill by a specific yen amount based on current public data.", "source_refs": [4, 10], "basis": "Grid-cost policy documents explain the mechanism but do not publish a project-specific household tariff impact."},
-    {"kind": "INFERENCE", "text": "The project's local economic value should be judged more by tax base, construction activity, infrastructure and associated technology investment than by expectations of factory-scale permanent employment, because hyperscale data centers are highly capital- and power-intensive rather than labor-intensive once operational.", "source_refs": [1, 3, 9], "basis": "Project scale and public development goals; no claim is made about an unpublished permanent headcount."}
+    {
+      "kind": "FACT",
+      "text": "Goodman lists Tsukuba Tech Central TYO05 as under construction, with a 50 MW first phase and up to 1,000 MW of power capacity upon full completion.",
+      "source_refs": [
+        1,
+        2
+      ],
+      "basis": "Goodman's current project and data-center portfolio pages."
+    },
+    {
+      "kind": "FACT",
+      "text": "The 1,000 MW figure is secured or planned campus capacity, not evidence that the site is currently drawing 1,000 MW. Goodman's current portfolio lists 50 MW as leased at Tsukuba.",
+      "source_refs": [
+        1,
+        2
+      ],
+      "basis": "Goodman's own distinction between first-phase/leased capacity and power upon completion."
+    },
+    {
+      "kind": "FACT",
+      "text": "Tsukuba City says the broader site was sold for ¥11,029,248,000 and is planned for data centers, logistics, disaster-resilience facilities and amenities.",
+      "source_refs": [
+        3
+      ],
+      "basis": "Tsukuba City land-use and sale disclosure."
+    },
+    {
+      "kind": "FACT",
+      "text": "OCCTO's 2026 outlook individually counts 7.62 GW of additional maximum demand from new data centers and semiconductor plants by FY2035, of which data centers account for 6.61 GW.",
+      "source_refs": [
+        4
+      ],
+      "basis": "OCCTO FY2026 demand outlook."
+    },
+    {
+      "kind": "FACT",
+      "text": "OCCTO projects 56.8 TWh of additional annual electricity demand from new data centers and semiconductor plants by FY2035, equal to 6.71% of projected national demand; data centers alone account for 49.4 TWh.",
+      "source_refs": [
+        4
+      ],
+      "basis": "OCCTO FY2026 demand outlook."
+    },
+    {
+      "kind": "FACT",
+      "text": "Japan's Seventh Strategic Energy Plan treats rising electricity demand associated with digitalization and data centers as part of the reason the country must expand reliable decarbonized electricity supply, with the 2040 outlook including nuclear at roughly 20% alongside a much larger renewable share.",
+      "source_refs": [
+        5
+      ],
+      "basis": "Cabinet-approved national energy policy and 2040 outlook."
+    },
+    {
+      "kind": "FACT",
+      "text": "Tokai Daini has a rated electric output of 1.10 GW, which makes the 1-GW Tsukuba campus a useful order-of-magnitude comparison if fully built, but Tokai Daini was producing 0 MW on September 6, 2026.",
+      "source_refs": [
+        6,
+        7
+      ],
+      "basis": "Japan Atomic Power Company plant specifications and live operating-status page."
+    },
+    {
+      "kind": "FACT",
+      "text": "METI says AI-oriented data centers have higher server power density and heat output, increasing the importance of high-capacity cooling and potentially industrial-water demand as liquid cooling expands.",
+      "source_refs": [
+        8
+      ],
+      "basis": "METI industrial-water policy material."
+    },
+    {
+      "kind": "FACT",
+      "text": "Ibaraki Prefecture passed the first screening in 2026 for the national GX Strategic Region program's data-center concentration category.",
+      "source_refs": [
+        9
+      ],
+      "basis": "METI GX Strategic Region selection announcement."
+    },
+    {
+      "kind": "FACT",
+      "text": "Japanese grid planners explicitly warn that simply reinforcing the network for each new large-load request can increase network costs and ultimately push up electricity charges, which is why government policy is trying to steer data centers toward locations with usable grid capacity and coordinated infrastructure.",
+      "source_refs": [
+        10
+      ],
+      "basis": "Official Watt-Bit grid planning material."
+    },
+    {
+      "kind": "INFERENCE",
+      "text": "AI and data-center growth strengthens the economic case for firm 24/7 generation, including nuclear, but the available public evidence does not show that Tokai Daini is being restarted specifically to power Goodman Tsukuba.",
+      "source_refs": [
+        1,
+        4,
+        5,
+        6,
+        7
+      ],
+      "basis": "National demand and energy-policy evidence establish a broad connection; no project-specific power-supply contract linking TYO05 to Tokai Daini is publicly identified."
+    },
+    {
+      "kind": "INFERENCE",
+      "text": "The most credible household risk is indirect: inefficient or oversized grid expansion can flow through network charges over time. It would be inaccurate to claim that the Tsukuba project by itself will raise a household bill by a specific yen amount based on current public data.",
+      "source_refs": [
+        4,
+        10
+      ],
+      "basis": "Grid-cost policy documents explain the mechanism but do not publish a project-specific household tariff impact."
+    },
+    {
+      "kind": "INFERENCE",
+      "text": "The project's local economic value should be judged more by tax base, construction activity, infrastructure and associated technology investment than by expectations of factory-scale permanent employment, because hyperscale data centers are highly capital- and power-intensive rather than labor-intensive once operational.",
+      "source_refs": [
+        1,
+        3,
+        9
+      ],
+      "basis": "Project scale and public development goals; no claim is made about an unpublished permanent headcount."
+    },
+    {
+      "kind": "FACT",
+      "text": "JERA, Dell Technologies and RHAELM signed an MoU on October 1, 2026 for a standardized, repeatable AI-infrastructure model in Japan, with a first Chiba project at JERA's thermal power station supported by up to 400 MW.",
+      "source_refs": [
+        11,
+        12
+      ],
+      "basis": "JERA announcement and Reuters reporting."
+    },
+    {
+      "kind": "FACT",
+      "text": "The Chiba project is planned behind the meter at an operating generation site, with phased operations targeted from around 2028; the parties say this structure could deliver capacity years earlier than a conventional grid-connected development.",
+      "source_refs": [
+        11,
+        12
+      ],
+      "basis": "JERA describes the co-location and behind-the-meter model; Reuters independently reports the project structure and timetable."
+    },
+    {
+      "kind": "INFERENCE",
+      "text": "Chiba adds a second concrete infrastructure pattern to Japan's AI-power buildout: where grid connection is a bottleneck, hyperscale compute may increasingly be co-located with large generation assets rather than relying only on conventional grid-connected campuses.",
+      "source_refs": [
+        1,
+        4,
+        10,
+        11,
+        12
+      ],
+      "basis": "Synthesis of Tsukuba's grid-connected scale, official Watt-Bit planning, and JERA's behind-the-meter Chiba model."
+    }
   ],
   "editorial_visual": {
     "style": "editorial",
@@ -48,7 +285,7 @@
     "exaggeration": 15
   },
   "content": {
-    "key_message": "Tsukuba is becoming part of Japan's AI power infrastructure. The 1-GW headline is real as an eventual secured-capacity figure, but the immediate project is 50 MW. The consequence residents should watch is not a mythical private nuclear reactor for AI; it is the cumulative effect of large 24/7 loads on substations, transmission investment, water planning, generation policy and local public benefits.",
+    "key_message": "Japan's AI infrastructure race is becoming a power-location race. Tsukuba demonstrates the scale of conventional grid-connected demand; JERA's Chiba MoU proposes a different model—up to 400 MW of AI compute beside an operating generation asset with behind-the-meter power. The project is not yet proof of a nationwide shift, but it materially strengthens the case that future hyperscale campuses will cluster where hundreds of megawatts can be delivered quickly.",
     "report_label": "ALAM LOCAL INFRASTRUCTURE REPORT",
     "report_scope": "Tsukuba AI/data-center development, electricity demand, household cost exposure, water, local benefits and the Tokai Daini nuclear connection",
     "executive_summary": [
@@ -67,13 +304,41 @@
       "correct_interpretation": "The numbers are comparable as power capacity, not as proof of a dedicated supply relationship. A data center is a load and a nuclear station is a generator; actual annual energy use also depends on how fully the campus is built and utilized."
     },
     "what_residents_may_actually_feel": [
-      {"issue": "Electricity bills", "assessment": "Possible indirect pressure, not a proven Tsukuba surcharge", "detail": "Transmission and substation expansion is recovered through the electricity system under regulated cost-allocation rules. National planners are changing siting and connection rules precisely because inefficient large-load connections can increase network costs. There is currently no defensible project-specific estimate such as 'your bill will rise ¥X'."},
-      {"issue": "Grid construction", "assessment": "High-confidence local/regional impact", "detail": "A campus capable of scaling from tens to hundreds of megawatts requires long-term utility coordination. This can mean new substations, high-voltage equipment, transmission reinforcement and construction corridors. The timing and cost allocation matter as much as the total megawatts."},
-      {"issue": "Water", "assessment": "Real concern, project-specific magnitude still unknown", "detail": "AI servers produce much higher heat density than conventional computing. Japan is already planning for higher water demand from liquid-cooled data centers. TYO05 says water is secured, but public material reviewed for this report does not provide a reliable daily-consumption number or detailed cooling-water balance."},
-      {"issue": "Local jobs", "assessment": "Strong during construction; permanent headcount should not be exaggerated", "detail": "Data centers create major engineering, civil, electrical and maintenance work, but they do not employ people at the same density as large manufacturing plants. Local value should therefore also be measured through taxes, supplier work, infrastructure and associated digital-industry attraction."},
-      {"issue": "Local tax and public benefit", "assessment": "Potentially significant", "detail": "The site itself involved an approximately ¥11.03-billion land sale. The long-term public bargain should include fixed-asset and other tax effects, disaster-resilience facilities and whether the development brings useful infrastructure that serves more than the campus."},
-      {"issue": "Heat and noise", "assessment": "Legitimate local-design questions", "detail": "Large data centers reject substantial heat and use fans, pumps, chillers and backup equipment. The actual neighborhood impact depends on equipment placement, cooling design, acoustic treatment and operating conditions; generic internet estimates should not be substituted for TYO05-specific environmental data."},
-      {"issue": "Nuclear power", "assessment": "Indirect policy connection is real; direct Tokai-Daini link is unproven", "detail": "Large constant loads improve the economic value of dependable low-carbon generation. Japan's energy plan is responding to rising electricity demand by pushing both renewables and nuclear. But there is no public evidence identified here of a dedicated TYO05-Tokai Daini supply agreement or a restart decision made specifically for this campus."}
+      {
+        "issue": "Electricity bills",
+        "assessment": "Possible indirect pressure, not a proven Tsukuba surcharge",
+        "detail": "Transmission and substation expansion is recovered through the electricity system under regulated cost-allocation rules. National planners are changing siting and connection rules precisely because inefficient large-load connections can increase network costs. There is currently no defensible project-specific estimate such as 'your bill will rise ¥X'."
+      },
+      {
+        "issue": "Grid construction",
+        "assessment": "High-confidence local/regional impact",
+        "detail": "A campus capable of scaling from tens to hundreds of megawatts requires long-term utility coordination. This can mean new substations, high-voltage equipment, transmission reinforcement and construction corridors. The timing and cost allocation matter as much as the total megawatts."
+      },
+      {
+        "issue": "Water",
+        "assessment": "Real concern, project-specific magnitude still unknown",
+        "detail": "AI servers produce much higher heat density than conventional computing. Japan is already planning for higher water demand from liquid-cooled data centers. TYO05 says water is secured, but public material reviewed for this report does not provide a reliable daily-consumption number or detailed cooling-water balance."
+      },
+      {
+        "issue": "Local jobs",
+        "assessment": "Strong during construction; permanent headcount should not be exaggerated",
+        "detail": "Data centers create major engineering, civil, electrical and maintenance work, but they do not employ people at the same density as large manufacturing plants. Local value should therefore also be measured through taxes, supplier work, infrastructure and associated digital-industry attraction."
+      },
+      {
+        "issue": "Local tax and public benefit",
+        "assessment": "Potentially significant",
+        "detail": "The site itself involved an approximately ¥11.03-billion land sale. The long-term public bargain should include fixed-asset and other tax effects, disaster-resilience facilities and whether the development brings useful infrastructure that serves more than the campus."
+      },
+      {
+        "issue": "Heat and noise",
+        "assessment": "Legitimate local-design questions",
+        "detail": "Large data centers reject substantial heat and use fans, pumps, chillers and backup equipment. The actual neighborhood impact depends on equipment placement, cooling design, acoustic treatment and operating conditions; generic internet estimates should not be substituted for TYO05-specific environmental data."
+      },
+      {
+        "issue": "Nuclear power",
+        "assessment": "Indirect policy connection is real; direct Tokai-Daini link is unproven",
+        "detail": "Large constant loads improve the economic value of dependable low-carbon generation. Japan's energy plan is responding to rising electricity demand by pushing both renewables and nuclear. But there is no public evidence identified here of a dedicated TYO05-Tokai Daini supply agreement or a restart decision made specifically for this campus."
+      }
     ],
     "national_context": [
       "OCCTO expects new data centers and semiconductor plants to add 7.62 GW of maximum demand by FY2035. Data centers account for 6.61 GW of that total.",
@@ -120,9 +385,11 @@
       "There is no public evidence identified in this review that links Tokai Daini restart authorization directly to TYO05.",
       "Project-specific water use, household tariff impact, permanent employment and final generation mix remain insufficiently disclosed for precise numerical claims."
     ],
-    "connection": "The important chain is AI demand -> more hyperscale data centers -> larger 24/7 electricity loads -> pressure for grid capacity and dependable generation -> stronger policy case for renewables, storage, thermal flexibility and nuclear -> possible network-cost and land/water tradeoffs at the local level. The link is systemic, not a simple wire running from one nuclear plant to one AI building.",
+    "connection": "The emerging chain is AI demand -> hyperscale compute -> hundreds of megawatts of firm power demand -> grid-connection and transmission constraints -> two development responses: grid-coordinated campuses such as Tsukuba and generation-adjacent behind-the-meter campuses such as Chiba. If Chiba is replicated, access to generation sites may become a competitive advantage in Japan's AI infrastructure geography.",
     "alternative_explanation": "Some of the electricity-demand increase often attributed to 'AI' is actually broader cloud computing, digital services and conventional data-center expansion. Semiconductor factories and wider electrification also raise demand. Therefore nuclear and grid policy should not be presented as an AI-only response.",
     "watch_next": [
+      "Whether the JERA-Dell-RHAELM Chiba MoU becomes a binding, financed project with permits, customers and a firm construction schedule",
+      "Whether JERA announces additional generation-adjacent AI campuses using the same standardized model",
       "Goodman announcements on additional TYO05 phases beyond the first 50 MW",
       "Identity and workload profile of additional hyperscale tenants",
       "TEPCO-area transmission/substation plans connected to the Tsukuba load cluster",
@@ -132,12 +399,38 @@
       "Any project-specific renewable or long-term power-purchase agreements",
       "Tsukuba disclosures on expected recurring tax revenue and permanent employment"
     ],
-    "what_would_change_mind": "The assessment would become substantially more serious if Goodman commits several hundred additional megawatts on a firm construction schedule, if the grid operator identifies major TYO05-driven transmission investments recoverable broadly from customers, or if project-specific water use proves large relative to local supply. Conversely, a slow buildout, developer-funded dedicated infrastructure, low-water cooling and strong local tax/public-benefit arrangements would reduce the household-impact concern.",
+    "what_would_change_mind": "This assessment would strengthen if the Chiba MoU becomes binding and financed, reaches construction, and JERA or other generators replicate the model at additional sites. It would weaken if Chiba does not progress beyond the MoU, comparable projects fail to follow, AI-compute demand slows materially, or conventional grid-connection lead times improve enough to remove the co-location advantage.",
     "implications": "Tsukuba should treat data centers like other major infrastructure-intensive industries: welcome investment, but demand transparent accounting of utility use, network costs, tax benefits, environmental controls and community return. Nationally, AI is becoming one factor that makes Japan's old assumption of steadily falling electricity demand less reliable and makes the nuclear-renewables-grid debate materially more urgent.",
     "history": "Japan spent much of the post-Fukushima period planning around weak or declining electricity demand while simultaneously reducing nuclear utilization. The rapid rise of cloud computing, generative AI, semiconductor investment and electrification is now forcing planners to revisit that assumption. Tsukuba's planned campus is a local example of that national transition.",
     "usefulness": 99,
     "novelty": 97,
-    "impact": {"money": "HIGH", "family": "MED", "career": "MED", "japan": "HIGH", "urgency": "MED"},
-    "connection_tags": ["tsukuba-datacenter", "ai-electricity-demand", "grid-cost", "tokai-daini", "nuclear-policy", "industrial-water", "gx-strategy", "watt-bit"]
+    "impact": {
+      "money": "HIGH",
+      "family": "MED",
+      "career": "MED",
+      "japan": "HIGH",
+      "urgency": "MED"
+    },
+    "connection_tags": [
+      "tsukuba-datacenter",
+      "ai-electricity-demand",
+      "grid-cost",
+      "tokai-daini",
+      "nuclear-policy",
+      "industrial-water",
+      "gx-strategy",
+      "watt-bit"
+    ],
+    "prediction": {
+      "horizon": "2-5 years (roughly 2028-2031)",
+      "confidence": "MEDIUM-HIGH",
+      "statement": "Japan is likely to increasingly place hyperscale AI compute beside large generation assets or in deliberately grid-ready industrial regions, because power availability and connection lead time are becoming binding development constraints.",
+      "invalidation": [
+        "The Chiba project remains only a non-binding MoU and does not progress to financing/construction.",
+        "Comparable generation-adjacent projects do not follow.",
+        "AI compute demand slows materially.",
+        "Conventional grid connection becomes fast enough that co-location loses its lead-time advantage."
+      ]
+    }
   }
 }
