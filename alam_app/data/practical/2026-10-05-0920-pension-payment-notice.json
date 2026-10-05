@@ -1,0 +1,84 @@
+{
+  "id": "japan-2026-october-pension-payment-notice",
+  "agent": "practical",
+  "created_at": "2026-10-05T09:20:00+09:00",
+  "type": "pension_payment",
+  "title": "Nag-iba ang pension deposit ngayong October? Check muna ang 年金振込通知書",
+  "summary": "Japan Pension Service is sending pension transfer notices to recipients whose October 2026 deposit changes because amounts specially withheld from pension, such as long-term-care insurance premiums, changed. Huwag agad i-assume na nabawasan ang pension entitlement: compare the official notice and deduction lines first.",
+  "why_it_matters": "A lower or different bank deposit can come from changed insurance-premium or tax withholding. The official notice tells affected recipients what changed and points deduction questions to the municipality.",
+  "importance": 86,
+  "confidence": 99,
+  "tags": ["Japan", "Pension", "Nenkin", "Senior", "Municipality", "Household Money", "2026"],
+  "geography": ["Japan"],
+  "status": "CONFIRMED",
+  "sources": [
+    {
+      "publisher": "Japan Pension Service",
+      "title": "令和8年10月の年金支払いにかかる年金振込通知書を送付しています",
+      "url": "https://www.nenkin.go.jp/oshirase/taisetu/kojin/2026/202610/1002.html",
+      "published_at": "2026-10-02",
+      "source_type": "official"
+    }
+  ],
+  "claims": [
+    {
+      "kind": "FACT",
+      "text": "Japan Pension Service is sending pension transfer notices to people whose October 2026 pension deposit changes because specially withheld amounts such as long-term-care insurance premiums changed.",
+      "source_refs": [1],
+      "basis": "Japan Pension Service October 2 notice"
+    },
+    {
+      "kind": "FACT",
+      "text": "Questions about changes to insurance premiums or taxes specially withheld from pension should be directed to the recipient's municipality.",
+      "source_refs": [1],
+      "basis": "Japan Pension Service contact guidance"
+    },
+    {
+      "kind": "FACT",
+      "text": "The October 2026 pension transfer notice becomes available for viewing and reissue request in Nenkin Net from October 9, 2026; Nenkin Net registration is required.",
+      "source_refs": [1],
+      "basis": "Japan Pension Service Nenkin Net schedule"
+    },
+    {
+      "kind": "FACT",
+      "text": "Japan Pension Service says a notice requested for reissue takes about one week to be dispatched, plus delivery time.",
+      "source_refs": [1],
+      "basis": "Japan Pension Service reissue guidance"
+    },
+    {
+      "kind": "INFERENCE",
+      "text": "A different bank deposit does not by itself prove that the gross pension entitlement was reduced; affected recipients should compare the official transfer notice and its deduction information before concluding there is an error.",
+      "source_refs": [1],
+      "basis": "Inference from the stated reason for changed net transfers and the purpose of the transfer notice"
+    }
+  ],
+  "content": {
+    "key_message": "Kung iba ang pension deposit mo ngayong October, check muna ang 年金振込通知書. For affected recipients, changed deductions such as long-term-care insurance premiums can change the net amount deposited.",
+    "who_is_affected": "Pension recipients whose October 2026 transfer amount changes because amounts specially withheld from pension changed.",
+    "what_changed": "Japan Pension Service is sending a transfer notice to affected recipients. October notice viewing and reissue requests in Nenkin Net start October 9, 2026.",
+    "why_it_matters": "The amount that reaches the bank can change because of deductions. Looking only at the bank deposit can therefore give an incomplete picture.",
+    "what_to_do_now": "1) Compare the bank deposit with your 年金振込通知書. 2) Check the listed withholding/deduction information. 3) If the issue is the amount of insurance premium or tax specially withheld, contact your municipality. 4) If you need the October notice online or need a reissue, use Nenkin Net from October 9.",
+    "prepare": "Keep the transfer notice and your bank transaction record. If using Nenkin Net, make sure your account registration is complete.",
+    "avoid": "Huwag agad i-assume na pension entitlement mismo ang nabawasan based only on the bank deposit. Do not invent a universal expected yen change because deductions differ by person.",
+    "watch": "If the notice and actual deposit still do not reconcile after checking the deduction information, use the official Japan Pension Service consultation route for the pension side; municipality-administered withholding questions go to the municipality.",
+    "bottom_line": "Different October deposit? Notice first, deduction lines second, then contact the correct office. Nenkin Net access for this October notice starts October 9.",
+    "financial_impact": "Individual; Japan Pension Service does not state one universal yen change because the relevant withheld insurance-premium/tax amounts vary.",
+    "risk_if_ignored": "You may mistake a withholding change for a pension-calculation error or contact the wrong office.",
+    "action": "CHECK",
+    "deadline": "No filing deadline is stated in the October 2 notice. Nenkin Net viewing and reissue requests for this October notice begin October 9, 2026.",
+    "effort": "Low: compare the notice and deposit, then contact the municipality only if the question concerns the specially withheld insurance-premium or tax amount.",
+    "potential_benefit": "Quickly identifies why the net pension deposit changed and routes questions to the correct authority.",
+    "downside": "None beyond the time needed to verify the notice; a paper reissue takes about one week to dispatch plus delivery time.",
+    "what_would_change_mind": "A later Japan Pension Service correction changing the October notice schedule, Nenkin Net start date or contact guidance.",
+    "usefulness": 91,
+    "novelty": 88,
+    "impact": {
+      "money": "HIGH",
+      "family": "MEDIUM",
+      "career": "LOW",
+      "japan": "HIGH",
+      "urgency": "MEDIUM"
+    },
+    "connection_tags": ["pension-payment", "nenkin-net", "municipal-deductions", "long-term-care-insurance", "october-2026"]
+  }
+}
