@@ -1,0 +1,131 @@
+{
+  "id": "japan-permanent-residency-guideline-2026-10",
+  "agent": "discover",
+  "created_at": "2026-10-06T02:00:41+09:00",
+  "type": "society",
+  "title": "Japan’s permanent-residency screening is getting more explicit — income, Japanese, rules and children’s schooling now matter on paper",
+  "summary": "Tahimik pero malaking policy signal para sa foreign residents: Japan’s Immigration Services Agency revised its permanent-residency guideline on October 1. For applications from April 1, 2027, the written screening framework explicitly adds household income relative to Japanese-household averages, projected pension, B1-level Japanese in many cases, understanding of Japanese systems/rules, and school attendance for school-age children as consideration factors.",
+  "why_it_matters": "Para sa mga foreign residents na nagpa-plan ng long-term life sa Japan, this changes what should be documented and prepared before a PR application. The guideline also clarifies that PR decisions remain holistic and discretionary, so these factors should not be read as simple automatic pass/fail cutoffs.",
+  "importance": 88,
+  "confidence": 96,
+  "tags": [
+    "Japan",
+    "Immigration",
+    "Permanent Residency",
+    "Foreign Residents",
+    "Policy"
+  ],
+  "geography": [
+    "Japan"
+  ],
+  "status": "NEW",
+  "sources": [
+    {
+      "publisher": "Immigration Services Agency of Japan",
+      "title": "永住許可に関するガイドライン（令和８年１０月１日改定）",
+      "url": "https://www.moj.go.jp/isa/10_00279.html",
+      "published_at": "2026-10-01",
+      "source_type": "official"
+    },
+    {
+      "publisher": "Immigration Services Agency of Japan",
+      "title": "永住者の在留資格の取消しに関するガイドラインについて",
+      "url": "https://www.moj.go.jp/isa/deportation/resources/nyukan_nyukan85_00002.html",
+      "published_at": "2026-10-01",
+      "source_type": "official"
+    }
+  ],
+  "claims": [
+    {
+      "kind": "FACT",
+      "text": "The Immigration Services Agency revised the permanent-residency permission guideline on October 1, 2026, with the revised framework generally applying to applications filed on or after April 1, 2027.",
+      "source_refs": [
+        1
+      ],
+      "basis": "Official ISA guideline and effective-date section."
+    },
+    {
+      "kind": "FACT",
+      "text": "The revised guideline says household income, in principle, is considered against an income level above the average income of Japanese households adjusted for household size; it also considers projected pension benefits.",
+      "source_refs": [
+        1
+      ],
+      "basis": "Official guideline sections on independent livelihood, income and pension."
+    },
+    {
+      "kind": "FACT",
+      "text": "The guideline adds B1-equivalent Japanese ability as a consideration factor in many cases, while listing circumstances where requiring B1 from the applicant may not be necessary or appropriate.",
+      "source_refs": [
+        1
+      ],
+      "basis": "Official guideline section on Japanese-language ability."
+    },
+    {
+      "kind": "FACT",
+      "text": "Understanding Japanese systems and rules, and school attendance for school-age children, are also explicit consideration factors.",
+      "source_refs": [
+        1
+      ],
+      "basis": "Official guideline sections on rules/system understanding and school-age children."
+    },
+    {
+      "kind": "FACT",
+      "text": "The guideline says PR decisions are based on comprehensive consideration of individual circumstances rather than a single mechanical criterion.",
+      "source_refs": [
+        1
+      ],
+      "basis": "Official guideline purpose and general principles."
+    },
+    {
+      "kind": "FACT",
+      "text": "A separate permanent-resident status-revocation guideline was also published in October 2026 and is scheduled to begin operation on April 1, 2027.",
+      "source_refs": [
+        2
+      ],
+      "basis": "Official ISA revocation-guideline page."
+    },
+    {
+      "kind": "INFERENCE",
+      "text": "For prospective applicants, preparation is shifting from proving mainly residence history and clean compliance toward documenting a broader picture of economic sustainability, integration and family circumstances.",
+      "source_refs": [
+        1
+      ],
+      "basis": "Synthesis of the newly explicit consideration factors."
+    },
+    {
+      "kind": "ASSUMPTION",
+      "text": "The new factors do not mean every applicant below a single income number, without a particular test certificate, or in an unusual family situation will automatically be denied.",
+      "source_refs": [
+        1
+      ],
+      "basis": "The agency explicitly describes a holistic, case-by-case assessment and provides exceptions or contextual treatment for several factors."
+    }
+  ],
+  "content": {
+    "whats_new": "Noong October 1, inilabas ng Immigration Services Agency ang revised written framework for permanent-residency screening. The notable shift is how explicit it is: household income versus Japanese-household averages, projected pension, Japanese ability, understanding of Japan’s systems and rules, and children’s schooling are now spelled out as consideration factors. Most of the revised guideline applies to applications from April 1, 2027.",
+    "skeptical_view": "Huwag i-convert ang guideline into a fake checklist. The official text repeatedly says PR is a comprehensive, discretionary assessment. B1 Japanese has stated exceptions, household-income treatment depends on household composition and status, and the published guideline describes consideration factors rather than one universal guaranteed-pass formula.",
+    "what_next": "Watch for ISA implementation guidance before April 2027, especially the designated method for checking knowledge of Japanese systems/rules and any operational details on evidence used for income, pension and Japanese-language assessment.",
+    "what_would_change_mind": "If ISA issues later implementation material materially narrowing, postponing or changing these consideration factors, ALAM should update this same story ID rather than create a new story.",
+    "recommendation": "If PR is part of your medium-term plan, read the official October 1 guideline rather than relying on old PR checklists. The key preparation signal is broader documentation, not panic or rushing an application based only on headlines.",
+    "usefulness": "HIGH",
+    "novelty": "HIGH",
+    "impact": {
+      "money": "MED",
+      "family": "HIGH",
+      "career": "MED",
+      "japan": "HIGH",
+      "urgency": "MED"
+    },
+    "connection_tags": [
+      "foreign-residents",
+      "immigration-policy",
+      "permanent-residency"
+    ],
+    "reading_levels": {
+      "30_sec": "Japan has rewritten its PR screening guidance. From April 1, 2027, the written framework explicitly considers household income versus Japanese-household averages, projected pension, B1-level Japanese in many cases, understanding of Japanese rules, and schooling of school-age children. These are consideration factors in a holistic review—not simple automatic pass/fail rules.",
+      "2_min": "The October 1 revision is a meaningful signal for foreign residents planning to settle permanently in Japan. It makes several expectations much more explicit: economic sustainability is assessed at household level, projected pension is considered, B1-equivalent Japanese is a factor in many cases, applicants’ understanding of Japanese systems/rules can be checked, and school attendance matters where school-age children are involved. Most of the revised framework applies to applications filed from April 1, 2027. The same official text also warns against simplistic interpretation: decisions remain comprehensive and case-specific, and some factors have exceptions or contextual treatment."
+    },
+    "bottom_line": "Mas explicit na ang Japan tungkol sa what it wants to see from future PR applicants. The useful move is to understand the official criteria early and prepare evidence—not to treat headlines as an automatic rejection formula.",
+    "source_confidence": "Very high on the policy text and effective date because the core evidence is the Immigration Services Agency’s own October 1 guidance. Lower confidence on how consistently individual factors will be operationalized in real cases until implementation guidance and post-April 2027 practice are observable."
+  }
+}
