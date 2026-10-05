@@ -1,0 +1,93 @@
+{
+  "id": "japan-early-october-unusual-heat-2026",
+  "agent": "discover",
+  "created_at": "2026-10-06T00:55:00+09:00",
+  "type": "weather",
+  "title": "October pero parang late summer: JMA flags unusually high temperatures from around Oct. 11",
+  "summary": "Naglabas ang Japan Meteorological Agency ng Early Weather Information para sa malawak na bahagi ng Japan dahil posibleng maging unusually warm mula bandang October 11. Hindi ito simpleng 'mainit for October': ang ganitong alert ay inilalabas kapag may hindi bababa sa 30% chance na ang 5-day average temperature ay umabot sa category na 'considerably high' para sa season.",
+  "why_it_matters": "Kapag kalagitnaan na ng October, madaling mag-assume na tapos na ang heat-related planning. Pero ang signal na ito ay mahalaga para sa outdoor work, school activities, agriculture, clothing/heating decisions at mga taong vulnerable sa sudden temperature swings.",
+  "importance": 78,
+  "confidence": 91,
+  "tags": [
+    "Japan",
+    "Weather",
+    "Heat",
+    "October",
+    "JMA"
+  ],
+  "geography": [
+    "Japan"
+  ],
+  "status": "DEVELOPING",
+  "sources": [
+    {
+      "publisher": "Japan Meteorological Agency",
+      "title": "早期天候情報",
+      "url": "https://www.data.jma.go.jp/cpd/souten/",
+      "published_at": "2026-10-05",
+      "source_type": "official"
+    },
+    {
+      "publisher": "RCC / JNN",
+      "title": "全国各地で10月11日頃から「この時期としては10年に一度程度しか起きないような著しい高温」 気象庁が「早期天候情報」発表",
+      "url": "https://newsdig.tbs.co.jp/articles/rcc/2989965?display=1",
+      "published_at": "2026-10-05",
+      "source_type": "news"
+    }
+  ],
+  "claims": [
+    {
+      "kind": "FACT",
+      "text": "JMA's Early Weather Information framework covers days 6-14 after issuance and is triggered for temperature when the probability of a five-day mean being 'considerably high' or 'considerably low' reaches at least 30%.",
+      "source_refs": [
+        1
+      ],
+      "basis": "JMA official explanation of the alert criteria."
+    },
+    {
+      "kind": "FACT",
+      "text": "On October 5, unusually high temperatures from around October 11 were flagged across multiple regions including Hokkaido, Tohoku, Hokuriku, the Sea-of-Japan side of Kinki, Chugoku, Shikoku, Kyushu, Amami and Okinawa.",
+      "source_refs": [
+        2
+      ],
+      "basis": "Regional news report summarizing JMA's October 5 issuance."
+    },
+    {
+      "kind": "INFERENCE",
+      "text": "The practical risk is partly behavioral: mid-October expectations may cause people to underprepare for heat during outdoor work or activities.",
+      "source_refs": [],
+      "basis": "Inference from the timing of the heat signal; not a JMA claim."
+    },
+    {
+      "kind": "ASSUMPTION",
+      "text": "This does not mean every location will experience record heat, nor that October 11 itself will be the hottest day.",
+      "source_refs": [],
+      "basis": "Boundary on interpreting a probabilistic multi-day regional outlook."
+    }
+  ],
+  "content": {
+    "whats_new": "Fresh ang signal: on October 5, JMA's early-weather system flagged a broad unusual-heat setup beginning around October 11 across large parts of Japan.",
+    "skeptical_view": "Hindi ito deterministic forecast at hindi ibig sabihin na bawat city ay magkaka-record high. Probabilistic at regional ang alert; local daily forecasts should still guide actual plans.",
+    "what_next": "Check JMA's two-week temperature outlook and local daily forecast as October 11 approaches. Mas useful ang update kung mag-converge ang regional signal at city-level forecast.",
+    "what_would_change_mind": "A substantial cooling in subsequent JMA two-week/local forecasts, or withdrawal of the regional high-temperature signal, would reduce the practical importance.",
+    "recommendation": "WATCH — kung may outdoor work, school event, travel, farming activity o physically demanding plans around October 11 onward, huwag i-base ang preparation sa usual mid-October weather lang; recheck the latest local forecast.",
+    "usefulness": "A timely heads-up against assuming that autumn temperatures have fully settled in.",
+    "novelty": "The October 5 issuance is a new forward-looking weather signal rather than a retrospective seasonal summary.",
+    "impact": {
+      "money": "LOW",
+      "family": "MED",
+      "career": "LOW",
+      "japan": "MED",
+      "urgency": "MED"
+    },
+    "connection_tags": [
+      "unseasonal-heat",
+      "weather-volatility",
+      "japan-climate"
+    ],
+    "reading_levels": {
+      "30_sec": "JMA is flagging unusually high temperatures across many parts of Japan from around Oct. 11. Hindi guaranteed na record heat everywhere, pero strong enough ang probability signal to justify rechecking local forecasts before outdoor plans.",
+      "2_min": "Ang Early Weather Information ng JMA ay hindi ordinary daily forecast. It looks 6-14 days ahead and is issued for temperature when the chance of a five-day mean reaching a statistically unusual category is at least 30%. The October 5 signal covers multiple regions from Hokkaido to Okinawa. Practical takeaway: mid-October na, pero huwag munang i-assume na settled na ang autumn weather."
+    }
+  }
+}
