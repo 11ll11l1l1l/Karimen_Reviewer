@@ -1,0 +1,118 @@
+{
+  "id": "japan-pfas-laser-activated-carbon-2026-10",
+  "agent": "discover",
+  "created_at": "2026-10-05T17:00:48+09:00",
+  "type": "technology",
+  "title": "PFAS na nahuli sa activated carbon, puwedeng sirain ng laser? Japan team hits 99.999%+ in lab-stage test",
+  "summary": "May bagong Japanese approach sa problemang kadalasang hindi natatapos sa filtration: pagkatapos ma-trap ang PFAS sa activated carbon, paano sisirain ang contaminant? Furukawa Electric at Ryuki Engineering report that a high-power fiber laser heated PFAS-loaded activated carbon above 1,100°C and achieved more than 99.999% degradation in evaluation tests. Promising ito, pero elemental technology pa lang—not yet a deployed municipal-water treatment system.",
+  "why_it_matters": "Japan made PFOS/PFOA drinking-water limits mandatory in April 2026, so removal media itself becomes a downstream waste-treatment problem. A localized laser process could become another option for destroying PFAS captured on activated carbon, potentially without fully incinerating the carbon, but reuse, energy, throughput, by-products and economics still need real-world proof.",
+  "importance": 78,
+  "confidence": 91,
+  "tags": [
+    "Japan",
+    "PFAS",
+    "water",
+    "environment",
+    "laser",
+    "activated carbon"
+  ],
+  "geography": [
+    "Japan"
+  ],
+  "status": "NEW",
+  "sources": [
+    {
+      "publisher": "Furukawa Electric Co., Ltd. / Ryuki Engineering Inc.",
+      "title": "Development of elemental technology for decomposition of PFAS using a high-power fiber laser",
+      "url": "https://www.furukawaelectric.com/en/release/2026/dev_20261002.html",
+      "published_at": "2026-10-02",
+      "source_type": "primary"
+    },
+    {
+      "publisher": "Ministry of the Environment, Japan",
+      "title": "よくある質問 | 有機フッ素化合物（PFAS）について",
+      "url": "https://www.env.go.jp/water/pfas/faq.html",
+      "published_at": null,
+      "source_type": "official"
+    },
+    {
+      "publisher": "Kubota Corporation",
+      "title": "溶融分離技術により3種類のPFAS（PFOS,PFOA,PFNA）を99.999%以上の高効率で分解",
+      "url": "https://www.kubota.co.jp/news/2026/20260616-001204.html",
+      "published_at": "2026-06-16",
+      "source_type": "primary"
+    }
+  ],
+  "claims": [
+    {
+      "kind": "FACT",
+      "text": "Furukawa Electric and Ryuki Engineering reported PFAS degradation efficiency above 99.999% after irradiating PFAS-loaded activated carbon with a high-power fiber laser.",
+      "source_refs": [
+        1
+      ],
+      "basis": "Joint company release describing the evaluation test and analytical measurement."
+    },
+    {
+      "kind": "FACT",
+      "text": "The laser rapidly raised the target surface above 1,100°C; residual PFAS in solid and gas phases was collected and quantified by LC-MS/MS.",
+      "source_refs": [
+        1
+      ],
+      "basis": "Published test method in the joint release."
+    },
+    {
+      "kind": "FACT",
+      "text": "Japan has required compliance and testing for a combined PFOS/PFOA drinking-water standard of 50 ng/L or less since April 1, 2026.",
+      "source_refs": [
+        2
+      ],
+      "basis": "Environment Ministry PFAS FAQ."
+    },
+    {
+      "kind": "FACT",
+      "text": "A separate Kubota melting-process test reported above-99.999% destruction for PFOS, PFOA and PFNA, showing that high-temperature destruction is not unique to the laser approach.",
+      "source_refs": [
+        3
+      ],
+      "basis": "Kubota's June 2026 primary release."
+    },
+    {
+      "kind": "INFERENCE",
+      "text": "The most interesting signal is not another PFAS filter but competition over the downstream destruction step after PFAS has been concentrated onto treatment media.",
+      "source_refs": [
+        1,
+        3
+      ],
+      "basis": "Both approaches address destruction of concentrated PFAS-bearing material rather than merely measuring or filtering PFAS."
+    },
+    {
+      "kind": "ASSUMPTION",
+      "text": "It is too early to assume the laser process will be cheaper, lower-carbon, scalable, or suitable for municipal water systems.",
+      "source_refs": [],
+      "basis": "The companies describe this as elemental technology and future social implementation; commercial-scale operating data are not provided."
+    }
+  ],
+  "content": {
+    "whats_new": "古河電工と流機エンジニアリングが、もともと鋼材のさび・塗膜除去に使う高出力ファイバレーザ技術をPFAS処理へ転用。PFASを吸着した活性炭を局所的に1,100°C超へ加熱し、評価試験で99.999%超の分解効率を報告した。",
+    "skeptical_view": "Headline number is strong, pero lab/evaluation result ito. Walang published commercial throughput, kWh per kg, full lifecycle CO2, repeated activated-carbon reuse cycles, treatment cost, or municipal-scale operating record sa announcement. May competing high-temperature destruction routes na rin, including Kubota's melting process.",
+    "what_next": "Watch for pilot-scale throughput, energy use, fluorinated by-products, carbon reuse performance, treatment cost per kg, and third-party/environmental validation under continuous operation.",
+    "what_would_change_mind": "Mas magiging convincing ang case kapag may continuous pilot data, independent mass-balance/by-product testing, repeated activated-carbon reuse, at transparent energy and cost comparisons versus incineration or melting.",
+    "recommendation": "WATCH — promising disposal/destruction technology, not a household action or proof that drinking-water PFAS is already solved.",
+    "usefulness": 78,
+    "novelty": 86,
+    "impact": {
+      "money": "LOW",
+      "family": "MED",
+      "career": "MED",
+      "japan": "MED",
+      "urgency": "LOW"
+    },
+    "connection_tags": [
+      "pfas-water-standard",
+      "water-treatment",
+      "hazardous-waste",
+      "industrial-laser"
+    ],
+    "bottom_line": "May bagong candidate sa 'last mile' ng PFAS cleanup: hindi lang salain ang PFAS, kundi sirain ito pagkatapos ma-concentrate sa activated carbon. Maganda ang 99.999%+ test result, pero ang tunay na test ay scale, by-products, energy at cost."
+  }
+}
