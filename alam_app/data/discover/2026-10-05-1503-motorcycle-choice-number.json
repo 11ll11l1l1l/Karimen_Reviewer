@@ -1,0 +1,123 @@
+{
+  "id": "japan-motorcycle-choice-number-2026-10",
+  "agent": "discover",
+  "created_at": "2026-10-05T15:03:01+09:00",
+  "type": "transport",
+  "title": "Sa October 19, puwede nang pumili ng plate number ang maraming motorcycle riders sa Japan",
+  "summary": "For the first time, Japan will open its national 希望ナンバー system to eligible motorcycles. Starting October 19, riders of most bikes above 125cc can apply for their preferred four-digit number, while especially popular numbers will be allocated by weekly lottery.",
+  "why_it_matters": "Small change ito, pero practical at madaling ma-miss: riders buying, re-registering, or replacing eligible motorcycle plates now gain a choice long available to car owners. The change also comes with a new plate format designed to expand the available number combinations.",
+  "importance": 61,
+  "confidence": 97,
+  "tags": [
+    "Japan",
+    "motorcycles",
+    "transport",
+    "number plates",
+    "consumer"
+  ],
+  "geography": [
+    "Japan"
+  ],
+  "status": "CONFIRMED",
+  "sources": [
+    {
+      "publisher": "Ministry of Land, Infrastructure, Transport and Tourism",
+      "title": "オートバイの「希望ナンバー制」の申込開始日を決定！～本年10月19日（月）より申込受付を開始します～",
+      "url": "https://www.mlit.go.jp/report/press/jidosha08_hh_005812.html",
+      "published_at": "2026-08-18",
+      "source_type": "official"
+    },
+    {
+      "publisher": "Ministry of Land, Infrastructure, Transport and Tourism",
+      "title": "オートバイの「希望ナンバー制」について",
+      "url": "https://www.mlit.go.jp/jidosha/jidosha_tk6_000094.html",
+      "published_at": "2026-08-18",
+      "source_type": "official"
+    },
+    {
+      "publisher": "Ministry of Land, Infrastructure, Transport and Tourism",
+      "title": "二輪車のナンバープレートの様式見直し及び 希望ナンバー制導入に係るワーキンググループ",
+      "url": "https://www.mlit.go.jp/jidosha/jidosha_tk6_000060.html",
+      "published_at": "2024-03-19",
+      "source_type": "official"
+    }
+  ],
+  "claims": [
+    {
+      "kind": "FACT",
+      "text": "Applications for Japan's motorcycle choice-number system begin October 19, 2026, online or at designated counters.",
+      "source_refs": [
+        1,
+        2
+      ],
+      "basis": "MLIT announcement and program page."
+    },
+    {
+      "kind": "FACT",
+      "text": "Eligible vehicles include small motorcycles over 250cc and light motorcycles over 125cc through 250cc; motorcycles at or below 125cc are outside this national system because their plates are issued by municipalities.",
+      "source_refs": [
+        2
+      ],
+      "basis": "MLIT eligibility rules."
+    },
+    {
+      "kind": "FACT",
+      "text": "Applicants can choose the four Arabic numerals displayed on the motorcycle plate; 11 numbers are subject to a nationwide weekly lottery, with additional region-specific lottery numbers.",
+      "source_refs": [
+        2
+      ],
+      "basis": "MLIT program details."
+    },
+    {
+      "kind": "FACT",
+      "text": "The application charge is ¥2,500–¥3,000 per plate depending on region.",
+      "source_refs": [
+        1,
+        2
+      ],
+      "basis": "MLIT fee announcement."
+    },
+    {
+      "kind": "FACT",
+      "text": "MLIT's earlier working group said some regions risked exhausting available motorcycle plate combinations; redesigning the format substantially increases combinations and enabled consideration of the choice-number system.",
+      "source_refs": [
+        3
+      ],
+      "basis": "MLIT working-group rationale."
+    },
+    {
+      "kind": "INFERENCE",
+      "text": "For riders already planning a qualifying registration or plate change, waiting until the October 19 application opening may be worthwhile if the displayed number matters to them.",
+      "source_refs": [],
+      "basis": "Practical implication of the announced opening date; not a government recommendation."
+    },
+    {
+      "kind": "ASSUMPTION",
+      "text": "All motorcycles can use the new system.",
+      "source_refs": [],
+      "basis": "Rejected: motorcycles at or below 125cc and specified business/rental categories are excluded."
+    }
+  ],
+  "content": {
+    "whats_new": "October 19 ang actual application opening. Eligible riders can request a preferred one-to-four-digit display number online or at a counter. Hindi lang cosmetic ang backend change: MLIT also changed motorcycle plate formats because the old combination pool was becoming tight in some regions.",
+    "key_message": "May choice number na rin ang eligible motorcycles sa Japan—pero hindi kasama ang 125cc-and-below municipal plates.",
+    "skeptical_view": "Hindi ito major transport reform at walang safety or cost-of-living benefit by itself. It is mainly a convenience/personalization change. Also, popular numbers are not guaranteed: 1, 7, 8, 88, 333, 358, 555, 777, 888, 1111 and 8888 are nationwide lottery numbers, and some regions add more.",
+    "what_next": "Applications open October 19. Check the official 希望番号・図柄ナンバープレート申込 service or a local motorcycle shop/registration counter for your area's exact fee and any regional lottery numbers.",
+    "what_would_change_mind": "A later MLIT notice changing the October 19 start, eligibility, fees or lottery list would require an update.",
+    "recommendation": "WATCH if you own or plan to register an eligible motorcycle and care about the plate number; otherwise this needs no action.",
+    "bottom_line": "Car owners have had this option for years. From October 19, many motorcycle riders finally get it too—above 125cc, with exclusions, and popular numbers decided by lottery.",
+    "usefulness": 67,
+    "novelty": 73,
+    "impact": {
+      "money": "LOW",
+      "family": "LOW",
+      "career": "LOW",
+      "japan": "LOW",
+      "urgency": "LOW"
+    },
+    "connection_tags": [
+      "motorcycle-registration",
+      "transport-administration"
+    ]
+  }
+}
