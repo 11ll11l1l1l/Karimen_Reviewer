@@ -1,0 +1,105 @@
+{
+  "id": "japan-black-bear-age-structure-harvest-2026-10",
+  "agent": "discover",
+  "created_at": "2026-10-05T16:03:47+09:00",
+  "type": "research",
+  "title": "Hindi sapat ang bear count: repeated culling can quietly change the population",
+  "summary": "Bagong Japan research shows a counterintuitive signal: puwedeng halos hindi gumalaw ang kabuuang bilang ng Asian black bears habang unti-unting nababawasan ang older breeding females. Sa 17-year reconstruction ng Echigo-Mikuni population, repeated high-capture years shifted the female population toward younger animals.",
+  "why_it_matters": "Relevant ito habang mas visible ang bear encounters at control measures sa Japan. Kung headcount lang ang tinitingnan, puwedeng ma-miss ng wildlife managers ang long-term reproductive impact ng repeated heavy captures.",
+  "importance": 78,
+  "confidence": 91,
+  "tags": [
+    "Japan",
+    "Asian black bear",
+    "wildlife management",
+    "bear encounters",
+    "research"
+  ],
+  "geography": [
+    "Japan",
+    "Nagano",
+    "Gunma",
+    "Tochigi"
+  ],
+  "status": "NEW",
+  "sources": [
+    {
+      "publisher": "Tokyo University of Agriculture and Technology",
+      "title": "数は変わらず、中身が変わる ―大量捕獲がツキノワグマの年齢構成に及ぼす影響―",
+      "url": "https://www.tuat.ac.jp/outline/disclosure/pressrelease/2026/20261005_01.html",
+      "published_at": "2026-10-05",
+      "source_type": "research"
+    }
+  ],
+  "claims": [
+    {
+      "kind": "FACT",
+      "text": "Researchers reconstructed 17 years of female Asian black bear age structure in the Echigo-Mikuni population using capture records from Nagano, Gunma and Tochigi, including 1,478 captured females.",
+      "source_refs": [
+        1
+      ],
+      "basis": "Tokyo University of Agriculture and Technology research release."
+    },
+    {
+      "kind": "FACT",
+      "text": "During mass-appearance years, capture probability was about two to four times normal-year levels across age groups, while females aged seven or older had about twice the capture probability of ages zero to six across the study period.",
+      "source_refs": [
+        1
+      ],
+      "basis": "Reported model results."
+    },
+    {
+      "kind": "FACT",
+      "text": "The reconstructed total female population changed little overall, but the share of females aged seven or older declined while the share aged one to six increased.",
+      "source_refs": [
+        1
+      ],
+      "basis": "Reported 17-year population reconstruction."
+    },
+    {
+      "kind": "FACT",
+      "text": "Under the study's long-run scenarios, females aged seven or older were estimated at 23.8% of the stable age structure without repeated mass-capture pressure versus 12.5% if such mass captures continue periodically.",
+      "source_refs": [
+        1
+      ],
+      "basis": "Model-based scenario estimates reported by the research team."
+    },
+    {
+      "kind": "INFERENCE",
+      "text": "Bear-management dashboards that focus mainly on estimated abundance may miss a slower erosion of the breeding-age structure.",
+      "source_refs": [],
+      "basis": "Inference from the observed divergence between abundance and age structure."
+    },
+    {
+      "kind": "ASSUMPTION",
+      "text": "These results do not establish that the same age-structure shift is occurring in every bear population in Japan.",
+      "source_refs": [],
+      "basis": "The study analyzed one central-Honshu population and three prefectures."
+    }
+  ],
+  "content": {
+    "whats_new": "Hindi lang 'ilan ang bears' ang mahalaga. The study found that repeated high-capture episodes can alter who remains in the population even when the estimated total changes little.",
+    "skeptical_view": "Historical capture data and population models carry uncertainty, and the study population is not all of Japan. The 23.8% versus 12.5% comparison is a modeled long-run scenario, not a nationwide forecast.",
+    "what_next": "Watch whether prefectural and national bear-management plans begin tracking age and sex structure alongside estimated abundance, especially after heavy-capture seasons.",
+    "what_would_change_mind": "Replication in other Japanese bear populations showing no persistent age-structure effect under comparable capture pressure would weaken the broader management implication.",
+    "recommendation": "For readers, this is a policy signal rather than a personal safety rule: immediate dangerous-bear response and long-term population management are separate questions and both need evidence.",
+    "usefulness": "Explains why a stable headline bear count can conceal a meaningful ecological change.",
+    "novelty": "A Japan-specific quantitative result showing repeated mass captures can reshape female age structure without a large visible change in total abundance.",
+    "impact": {
+      "money": "LOW",
+      "family": "MED",
+      "career": "LOW",
+      "japan": "MED",
+      "urgency": "LOW"
+    },
+    "connection_tags": [
+      "bear-management",
+      "wildlife-human-conflict",
+      "rural-japan"
+    ],
+    "reading_levels": {
+      "30_sec": "FACT: Sa 17-year reconstruction, repeated heavy capture reduced the share of older female bears even though estimated total numbers changed little. INFERENCE: bear headcount alone can hide a weakening breeding-age structure.",
+      "2_min": "Researchers analyzed 1,478 captured female Asian black bears from Nagano, Gunma and Tochigi. Females aged seven or older were consistently more likely to be captured, and mass-appearance years raised capture pressure across ages. Over time the reconstructed population shifted younger. The key caution: this is one regional population and modeled scenarios should not be treated as a forecast for all Japan."
+    }
+  }
+}
