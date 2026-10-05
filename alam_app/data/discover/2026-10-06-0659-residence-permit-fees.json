@@ -1,0 +1,138 @@
+{
+  "id": "japan-residence-permit-fees-2026-10",
+  "agent": "discover",
+  "created_at": "2026-10-06T06:59:00+09:00",
+  "type": "policy",
+  "title": "Visa renewal fees are no longer flat: Japan now charges by the residence period granted",
+  "summary": "May malaking practical change na madaling ma-miss ng foreign residents: mula October 1, Japan's residence-status change and renewal fees are no longer a mostly flat fee. The amount now depends on the period actually granted, while permanent-residence permission jumped to ¥200,000.",
+  "why_it_matters": "Hindi lang ito maliit na administrative increase. A one-year renewal at the counter is now ¥33,000 versus ¥6,000 before, while longer grants can cost up to ¥75,000 at the counter. For households with several foreign residents—and employers that reimburse immigration costs—the new structure can materially change recurring costs.",
+  "importance": 88,
+  "confidence": 94,
+  "tags": [
+    "Japan",
+    "Immigration",
+    "Foreign Residents",
+    "Visa",
+    "Cost of Living"
+  ],
+  "geography": [
+    "Japan"
+  ],
+  "status": "CONFIRMED",
+  "sources": [
+    {
+      "publisher": "Immigration Services Agency of Japan",
+      "title": "令和８年１０月１日付け在留許可手数料の額の改定等について",
+      "url": "https://www.moj.go.jp/isa/01_00644.html",
+      "published_at": "2026-08-28",
+      "source_type": "official"
+    },
+    {
+      "publisher": "Kaneko Administrative Scrivener Office",
+      "title": "【令和8年10月1日から】在留手続の手数料が改定されました｜更新は許可期間で決まる・永住は20万円",
+      "url": "https://www.kaneko-office.biz/ja/blog/residence-fee-revision-2026-10/",
+      "published_at": "2026-10-01",
+      "source_type": "analysis"
+    },
+    {
+      "publisher": "JAPAN POLARIS",
+      "title": "在留許可手数料の改定が確定、9月30日までの申請は現行料金",
+      "url": "https://japan-polaris.jp/news/residence-permit-fee-revision-confirmed-2026",
+      "published_at": "2026-09-08",
+      "source_type": "analysis"
+    }
+  ],
+  "claims": [
+    {
+      "kind": "FACT",
+      "text": "For applications accepted from October 1, 2026, residence-status changes and period-of-stay renewals use a tiered fee based on the period granted, rather than the previous flat ¥6,000 counter / ¥5,500 online fee.",
+      "source_refs": [
+        1,
+        2,
+        3
+      ],
+      "basis": "Official Immigration Services Agency notice, corroborated by immigration-practice summaries."
+    },
+    {
+      "kind": "FACT",
+      "text": "Counter fees for change/renewal range from ¥10,000 for grants of three months or less to ¥75,000 for grants of five years or more; online fees range from ¥10,000 to ¥65,000, with separate online payment charges.",
+      "source_refs": [
+        1,
+        2
+      ],
+      "basis": "Published post-revision fee schedule."
+    },
+    {
+      "kind": "FACT",
+      "text": "A one-year grant costs ¥33,000 at the counter or ¥27,000 online; a grant of three years falls in the three-to-under-five-year band at ¥64,000 counter or ¥56,000 online.",
+      "source_refs": [
+        1,
+        2
+      ],
+      "basis": "Published fee bands."
+    },
+    {
+      "kind": "FACT",
+      "text": "Permanent-residence permission now costs ¥200,000, compared with ¥10,000 previously.",
+      "source_refs": [
+        1,
+        2,
+        3
+      ],
+      "basis": "Published permanent-residence fee revision."
+    },
+    {
+      "kind": "FACT",
+      "text": "The Immigration Services Agency says applications accepted by September 30 remain subject to the pre-revision fee even when permission is issued on or after October 1.",
+      "source_refs": [
+        1,
+        2,
+        3
+      ],
+      "basis": "Agency transitional guidance as reproduced by multiple immigration-practice sources."
+    },
+    {
+      "kind": "INFERENCE",
+      "text": "Because the fee is tied to the residence period ultimately granted, some applicants cannot know their exact final fee when they file.",
+      "source_refs": [
+        1,
+        2
+      ],
+      "basis": "The final charge depends on the granted period, which is an examination outcome."
+    },
+    {
+      "kind": "INFERENCE",
+      "text": "The cost increase can become material for families with multiple foreign residents and for employers that reimburse renewal or status-change expenses.",
+      "source_refs": [
+        1,
+        2
+      ],
+      "basis": "Direct consequence of substantially higher per-application fees; actual household/employer impact varies."
+    }
+  ],
+  "content": {
+    "whats_new": "October 1 was the switch point. Residence-status change and renewal fees now scale with the period actually granted: counter applications run from ¥10,000 to ¥75,000 and online applications from ¥10,000 to ¥65,000. A one-year grant is ¥33,000 at the counter / ¥27,000 online. Permanent-residence permission is now ¥200,000.",
+    "skeptical_view": "Huwag i-frame ito as 'lahat ng visa renewal ay ¥75,000.' Mali iyon. The amount varies by the period granted, and online applications can be cheaper than counter applications. Also, the fee is generally paid when permission is granted, not simply for filing an unsuccessful application.",
+    "what_next": "Foreign residents with upcoming renewals should check the period eventually granted and the payment notice rather than budgeting using the old flat fee. Employers that reimburse immigration procedures may also need to update internal budgets and reimbursement rules.",
+    "what_would_change_mind": "A correction or revised fee table from the Immigration Services Agency, especially any change to transitional treatment or online-payment charges.",
+    "recommendation": "WATCH your next renewal/change decision and budget using the new period-based table, not the old ¥5,500–¥6,000 assumption.",
+    "usefulness": "High for foreign residents, international families, HR teams and employers sponsoring foreign workers.",
+    "novelty": "The policy was announced earlier, but it became operational on October 1; the signal now is the real cost regime in force, not a proposal.",
+    "impact": {
+      "money": "HIGH",
+      "family": "MED",
+      "career": "MED",
+      "japan": "MED",
+      "urgency": "MED"
+    },
+    "connection_tags": [
+      "immigration-costs",
+      "foreign-residents",
+      "residence-renewal"
+    ],
+    "reading_levels": {
+      "30_sec": "Kung magre-renew o magpapalit ka ng residence status in Japan, huwag nang mag-budget ng old flat ¥5,500–¥6,000. From October 1, the fee depends on the period granted; a one-year renewal is ¥33,000 at the counter / ¥27,000 online, and permanent residence is now ¥200,000.",
+      "2_min": "The important detail is the structure, not just the headline increase. Japan replaced the old mostly flat change/renewal fee with bands tied to the period of stay granted. That means the exact cost can depend on the examination result. Longer periods cost more per decision, although they may mean fewer renewals. Permanent residence saw the sharpest headline jump, from ¥10,000 to ¥200,000. Applications accepted by September 30 remain under the old fee according to Immigration Services Agency guidance."
+    }
+  }
+}
