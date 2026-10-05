@@ -1,0 +1,87 @@
+{
+  "id": "japan-2026-national-pension-deduction-certificate",
+  "agent": "practical",
+  "created_at": "2026-10-06T00:17:08+09:00",
+  "published_at": "2026-10-06T00:17:08+09:00",
+  "type": "tax",
+  "title": "Nagbayad ka ng National Pension? Huwag mawala ang 2026 deduction certificate",
+  "summary": "Kung nagbayad ka ng 国民年金保険料 sa 2026, buong halagang binayaran ay maaaring gamitin bilang social-insurance deduction sa year-end adjustment o tax return. Japan Pension Service will send 2026 deduction certificates in batches: electronic certificates for January–September payers from mid- to late October, and paper certificates from late October to early November. Electronic recipients will not also receive the paper version.",
+  "why_it_matters": "Practical tax document ito. Kung naghihintay ka ng papel pero naka-electronic delivery ka, puwedeng isipin mong missing ang certificate. Keeping the certificate ready also makes year-end adjustment or final tax filing easier.",
+  "importance": 82,
+  "confidence": 99,
+  "tags": ["Japan","National Pension","tax","year-end adjustment","tax return","deduction certificate","Nenkin Net","2026"],
+  "geography": ["Japan"],
+  "status": "NEW",
+  "sources": [
+    {
+      "publisher": "Japan Pension Service",
+      "title": "令和8年分社会保険料（国民年金保険料）控除証明書の送付予定をお知らせします",
+      "url": "https://www.nenkin.go.jp/oshirase/taisetu/kojin/2026/202609/0924.html",
+      "published_at": "2026-09-24",
+      "source_type": "official"
+    }
+  ],
+  "claims": [
+    {"kind":"FACT","text":"National Pension premiums paid during 2026 are fully eligible for the social-insurance premium deduction.","source_refs":[1],"basis":"Japan Pension Service states that National Pension premiums are fully deductible for this purpose."},
+    {"kind":"FACT","text":"For people who paid National Pension premiums between January 1 and September 30, 2026, electronic deduction certificates are scheduled to be sent progressively from mid- to late October 2026.","source_refs":[1],"basis":"Official 2026 delivery schedule."},
+    {"kind":"FACT","text":"For the same January–September payer group, paper certificates are scheduled progressively from late October to early November 2026.","source_refs":[1],"basis":"Official 2026 postal schedule."},
+    {"kind":"FACT","text":"People who receive the electronic certificate will not also receive a paper certificate by post.","source_refs":[1],"basis":"Explicit Japan Pension Service notice."},
+    {"kind":"FACT","text":"People who first pay 2026 National Pension premiums during October–December, excluding the earlier recipient group, are scheduled to receive electronic certificates from late January 2027 or paper certificates in early February 2027.","source_refs":[1],"basis":"Official schedule for the later payer group."},
+    {"kind":"INFERENCE","text":"If you expected a paper certificate but do not receive one, first check whether you are enrolled for electronic delivery before treating it as missing mail.","source_refs":[1],"basis":"Electronic recipients are explicitly excluded from paper mailing."}
+  ],
+  "content": {
+    "policy_status": "OFFICIAL 2026 DELIVERY SCHEDULE",
+    "key_message": "Nagbayad ng National Pension this year? Keep the deduction certificate. If you use electronic delivery, huwag maghintay ng duplicate paper copy.",
+    "who_is_affected": "People who paid Japanese National Pension premiums during 2026 and intend to claim the social-insurance premium deduction through year-end adjustment or a tax return.",
+    "when": "January–September payers: electronic certificates mid- to late October 2026; paper certificates late October to early November. Later first-time 2026 payers: electronic from late January 2027 or paper in early February 2027.",
+    "financial_impact": "The premiums paid are fully within the social-insurance premium deduction. The actual income-tax/resident-tax saving depends on the taxpayer's circumstances, so no universal yen saving is claimed.",
+    "estimated_saving_yen": 0,
+    "risk_if_ignored": "MED — you may delay or complicate claiming a legitimate deduction if you cannot provide or retrieve the required proof when preparing year-end adjustment or a tax return.",
+    "action": "CHECK DELIVERY AND SAVE CERTIFICATE",
+    "deadline": "No new universal taxpayer deadline is created by this mailing schedule. Follow your employer's year-end-adjustment deadline or the applicable tax-return deadline.",
+    "effort": "LOW",
+    "potential_benefit": "Have official proof ready to claim the National Pension social-insurance deduction.",
+    "downside": "Minimal; the main task is identifying whether your certificate is electronic or paper and keeping it accessible.",
+    "usefulness": 92,
+    "novelty": 78,
+    "impact": {"money":"HIGH","family":"MED","career":"LOW","japan":"HIGH","urgency":"MED"},
+    "connection_tags": ["national-pension","tax-deduction","year-end-adjustment","tax-return"],
+    "what_would_change_mind": "A revised Japan Pension Service delivery schedule or updated certificate procedure.",
+    "strongest_counterinterpretation": "This is not a new tax benefit; it is the annual proof-and-delivery process for an existing deduction. Its value is practical preparation rather than a new entitlement.",
+    "what_to_do_or_watch": "Check whether you use electronic certificate delivery. Save the electronic data or paper certificate when it arrives, then use it for your employer's year-end adjustment or your tax return as applicable.",
+    "common_costly_mistakes": [
+      "Waiting for a paper certificate even though you are an electronic-delivery recipient.",
+      "Assuming the mailing schedule itself is your employer's submission deadline.",
+      "Throwing away the certificate before year-end adjustment or tax filing.",
+      "Assuming everyone gets the certificate at the same time; the schedule differs by when you paid and by delivery format.",
+      "Assuming a fixed yen tax saving; the actual tax effect depends on individual circumstances."
+    ],
+    "uncertainty": "High confidence on eligibility of the premiums for the deduction and on the stated delivery windows because both come directly from Japan Pension Service. Employer document deadlines vary and are not inferred here.",
+    "reading_levels": {
+      "30_sec": [
+        "National Pension premiums paid in 2026 are fully eligible for the social-insurance premium deduction.",
+        "January–September payers: electronic certificates arrive progressively mid- to late October; paper certificates late October to early November.",
+        "Electronic recipients do not also get a paper copy.",
+        "Save the certificate for year-end adjustment or your tax return."
+      ],
+      "2_min": "Kung nagbabayad ka ng 国民年金 yourself, this is one tax document worth watching this month. Japan Pension Service says 2026 National Pension premiums are fully eligible for the social-insurance premium deduction. For people who paid from January through September, electronic certificates are scheduled progressively from mid- to late October, while paper certificates follow from late October into early November. Important: if you receive the electronic certificate, Japan Pension Service will not also mail a paper version. If your first 2026 payment is only in October–December, the corresponding schedule moves to early 2027. Save the certificate and follow your employer's own year-end-adjustment deadline or the applicable tax-return procedure."
+    },
+    "action_plan": {
+      "goal": "Keep the correct proof ready so you can claim your 2026 National Pension social-insurance deduction.",
+      "who_should_act": "Anyone who personally paid National Pension premiums during 2026 and will claim the deduction.",
+      "deadline": "No universal deadline from the certificate mailing itself; follow your employer's year-end-adjustment deadline or applicable tax-return deadline.",
+      "prepare": ["Access to your electronic certificate service if enrolled","Paper mail from Japan Pension Service if not electronic","Your employer's year-end-adjustment instructions, if applicable"],
+      "steps": [
+        {"step":"Identify your delivery route","action":"Check whether your certificate is set for electronic delivery or paper mail.","how":"If electronic, expect the electronic certificate only; do not assume a paper duplicate will follow.","needed":["Your certificate-delivery setting"],"time_minutes":5,"cost_yen":0,"done_when":"You know whether to watch electronic delivery or postal mail."},
+        {"step":"Save the certificate","action":"Keep the received electronic data or paper certificate with your 2026 tax documents.","how":"Store it where you can retrieve it for year-end adjustment or tax filing.","needed":["Received certificate"],"time_minutes":5,"cost_yen":0,"done_when":"The certificate is retrievable with your other tax records."},
+        {"step":"Use the correct deadline","action":"Submit or use the certificate under the procedure that applies to you.","how":"Employees should follow their employer's year-end-adjustment instructions; others should use it with the applicable tax return.","needed":["Employer instructions or tax-filing procedure"],"time_minutes":10,"cost_yen":0,"done_when":"The deduction proof has been included in the applicable tax process."}
+      ],
+      "mistakes_to_avoid": [
+        "Waiting indefinitely for paper when electronic delivery applies.",
+        "Confusing the mailing date with a tax filing deadline.",
+        "Claiming a guaranteed yen saving.",
+        "Discarding the proof after checking the amount."
+      ]
+    }
+  }
+}
