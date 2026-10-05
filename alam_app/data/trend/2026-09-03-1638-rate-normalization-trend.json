@@ -94,6 +94,20 @@
       "url": "https://www.boj.or.jp/en/mopo/mpmsche_minu/opinion_2026/opi260918.pdf",
       "published_at": "2026-10-01",
       "source_type": "official"
+    },
+    {
+      "publisher": "Bank of Japan",
+      "title": "AI, Big Data, and Monetary Policy — Opening Remarks by Deputy Governor Shinichi Uchida",
+      "url": "https://www.boj.or.jp/en/about/press/koen_2026/ko261005a.htm",
+      "published_at": "2026-10-05",
+      "source_type": "official"
+    },
+    {
+      "publisher": "Reuters",
+      "title": "Japan service sector activity slows from 5-month high, PMI shows",
+      "url": "https://www.reuters.com/world/asia-pacific/japan-service-sector-activity-slows-5-month-high-pmi-shows-2026-10-05/",
+      "published_at": "2026-10-05",
+      "source_type": "news"
     }
   ],
   "claims": [
@@ -242,6 +256,31 @@
         10
       ],
       "basis": "Synthesis of the September policy decision, Tankan, Tokyo CPI, industrial production and BOJ Summary of Opinions."
+    },
+    {
+      "kind": "FACT",
+      "text": "BOJ Deputy Governor Shinichi Uchida said on October 5 that the global AI boom is a large positive demand shock that has supported activity and prices and may eventually affect productivity, capital accumulation and the natural rate of interest; he also warned that a correction is possible if expected AI profits fail to materialize.",
+      "source_refs": [
+        11
+      ],
+      "basis": "BOJ Deputy Governor Uchida's October 5 ECONDAT opening remarks."
+    },
+    {
+      "kind": "FACT",
+      "text": "Japan's final September services PMI eased to 51.3 from 52.5 in August, while service-sector employment increased for a 13th consecutive month and at the fastest pace since February.",
+      "source_refs": [
+        12
+      ],
+      "basis": "Reuters report on the September S&P Global Japan Services PMI."
+    },
+    {
+      "kind": "INFERENCE",
+      "text": "AI investment is now a two-sided input to Japan's higher-rate thesis: strong AI demand and capital spending can reinforce inflation and investment pressure, but an AI-profit disappointment or asset-price correction could tighten financial conditions and weaken that support.",
+      "source_refs": [
+        11,
+        12
+      ],
+      "basis": "Synthesis of BOJ's AI transmission discussion and the mixed September services pulse."
     }
   ],
   "editorial_visual": {
@@ -265,7 +304,8 @@
       "FY2026 all-industry capital spending including software/R&D but excluding land was planned at +9.3% year on year.",
       "The BOJ explicitly said underlying inflation is approaching 2% and that further rate increases may be appropriate depending on the outlook and risks.",
       "Tokyo's September core CPI accelerated to 2.7% year on year excluding fresh food, while the measure excluding fresh food and energy was 3.0%, adding a fresh price-pressure signal after the September BOJ hike.",
-      "The BOJ's October 1 Summary of Opinions shows multiple members focused on upside inflation risk and the need for further rate increases if price pressure intensifies."
+      "The BOJ's October 1 Summary of Opinions shows multiple members focused on upside inflation risk and the need for further rate increases if price pressure intensifies.",
+      "BOJ Deputy Governor Uchida said the AI boom is a large positive demand shock and may affect productivity, capital accumulation and the natural rate of interest, adding another channel that could support a higher-rate equilibrium."
     ],
     "evidence_against": [
       "Japan's August nationwide core CPI was only 1.7% year on year, so headline disinflation can still slow or interrupt further tightening.",
@@ -273,7 +313,8 @@
       "The BOJ vote was 7-2, with dissenters arguing the economy and inflation did not justify a hike at that timing.",
       "External shocks, especially oil, Middle East conditions, AI demand and the exchange rate, could materially alter the path.",
       "Industrial production fell 1.7% month on month in August, the second consecutive decline, and METI still describes production as fluctuating indecisively; the higher-rate thesis therefore coexists with a soft manufacturing pulse.",
-      "The same BOJ Summary of Opinions includes caution about weak April-June domestic demand, reinforcing that the economy is not uniformly strong enough to assume a rapid sequence of hikes."
+      "The same BOJ Summary of Opinions includes caution about weak April-June domestic demand, reinforcing that the economy is not uniformly strong enough to assume a rapid sequence of hikes.",
+      "Uchida also warned that AI-linked financial easing could reverse if expected profits fail to materialize; September services PMI slowed to 51.3 from 52.5, showing that domestic momentum remains uneven."
     ],
     "connection": "The strongest connection is not 'higher JGB yields cause everything.' Rather, several linked incentives are changing at once: BOJ tightening expectations lift domestic yields, higher domestic yields reduce the relative attraction of hedged foreign bonds, a stronger yen changes exporter earnings translation, and higher rates alter bank and borrower economics.",
     "alternative_explanation": "A common global inflation-and-bond shock could explain much of the move without requiring a uniquely Japanese regime shift. Positioning around intervention and the September BOJ meeting could also exaggerate the yen signal temporarily.",
@@ -283,9 +324,10 @@
       "Nationwide CPI through late 2026: whether Tokyo's September re-acceleration (2.7% core; 3.0% excluding fresh food and energy) is confirmed more broadly.",
       "Deposit, variable-mortgage and corporate-loan repricing after the 1.25% policy-rate change.",
       "Whether capital-spending plans remain near the Tankan's +9.3% all-industry FY2026 pace despite higher financing costs.",
-      "Industrial production: whether manufacturers' reported plans translate into an actual rebound after August's 1.7% monthly decline."
+      "Industrial production: whether manufacturers' reported plans translate into an actual rebound after August's 1.7% monthly decline.",
+      "AI investment and financing: whether strong AI-related demand continues to support activity/productivity or an earnings/valuation correction reverses the recent easing in financial conditions."
     ],
-    "what_would_change_mind": "This thesis would weaken materially if core inflation stays below 2% for several months, labor-shortage indicators ease sharply, planned investment is cut, and the BOJ signals a prolonged pause or reversal. A recessionary rise in unemployment would be a stronger invalidation than a single weak monthly data point.",
+    "what_would_change_mind": "This thesis would weaken materially if core inflation stays below 2% for several months, labor-shortage indicators ease sharply, planned investment is cut, and the BOJ signals a prolonged pause or reversal. A recessionary rise in unemployment would be a stronger invalidation than a single weak monthly data point. A material AI-capex or valuation reversal that tightens financial conditions and cuts investment would now be an additional downside signal.",
     "implications": "For households, expect gradual rather than instant transmission: deposit rates may improve, but variable borrowing costs can also rise. For workers, persistent labor shortages can support bargaining power, though hiring is uneven by industry. For businesses, the key test is whether wage and input costs can still be passed through while financing becomes more expensive.",
     "history": [
       "September 1: 10-year JGB yield reached 3%, the highest since 1996.",
@@ -293,7 +335,8 @@
       "September 2-3: the yen strengthened sharply into the ¥157-158/$ range as BOJ hike expectations rose.",
       "September 3: the 30-year JGB auction cleared with substantial demand at an average yield of 4.079%.",
       "Through August 22: Japanese investors were net sellers of roughly ¥3 trillion of overseas debt year to date.",
-      "October 1: the BOJ Summary of Opinions showed stronger attention to upside inflation risks and possible further hikes, alongside caution about weak domestic demand."
+      "October 1: the BOJ Summary of Opinions showed stronger attention to upside inflation risks and possible further hikes, alongside caution about weak domestic demand.",
+      "October 5: BOJ Deputy Governor Uchida described AI as a large positive demand shock that may influence productivity and the natural rate, while warning of correction risk if expected profits do not materialize."
     ],
     "market_link": "This trend should inform, not replace, the dedicated Market lens. The next Tokyo-session question is whether banks, TOPIX breadth and the yen behave consistently with a higher-rate/stronger-yen regime rather than a temporary policy-headline shock.",
     "prediction_accountability": {
@@ -382,9 +425,9 @@
       "horizon": "6-12 months",
       "confidence": "MEDIUM-HIGH",
       "statement": "Base case: Japan remains in a materially higher-rate regime through the next 6-12 months, with the policy rate staying around 1.25% or moving higher rather than returning toward zero, provided underlying inflation and labor scarcity remain near current BOJ/Tankan signals.",
-      "invalidation": "Sustained sub-2% underlying inflation combined with a clear labor-market deterioration, investment cuts and a BOJ shift toward easing would invalidate this base case."
+      "invalidation": "Sustained sub-2% underlying inflation combined with a clear labor-market deterioration, investment cuts and a BOJ shift toward easing would invalidate this base case. A material AI-capex/valuation reversal that tightens financial conditions and cuts investment would add to the downside case."
     }
   },
-  "updated_at": "2026-10-05T07:47:00+09:00",
-  "change_summary": "Material update: added the BOJ's October 1 post-meeting Summary of Opinions. Policymakers show greater concern about upside inflation risk and possible further hikes, but weak domestic demand and soft industrial production argue for a higher-for-longer thesis rather than assuming rapid back-to-back tightening."
+  "updated_at": "2026-10-06T00:49:00+09:00",
+  "change_summary": "Material update: added BOJ Deputy Governor Uchida's October 5 assessment of AI as a positive demand shock that could affect productivity and the natural rate, while explicitly adding AI-profit/valuation correction risk and September services-PMI softness as counter-signals."
 }
