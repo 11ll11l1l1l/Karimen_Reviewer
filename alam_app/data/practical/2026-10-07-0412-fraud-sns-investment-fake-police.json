@@ -1,0 +1,91 @@
+{
+  "id": "japan-2026-fraud-sns-investment-fake-police-august",
+  "agent": "practical",
+  "created_at": "2026-10-07T04:12:00+09:00",
+  "type": "safety_scam_alert",
+  "title": "Scam losses sa Japan umabot ¥236.07B by August: bantayan ang SNS investment at fake-police tactics",
+  "summary": "Japan's National Police Agency says reported fraud losses reached ¥236.07 billion through August 2026. SNS investment scams accounted for ¥93.74 billion and fake-police scams ¥72.86 billion. Kung may unexpected investment pitch o taong nagpapakilalang pulis na humihingi ng pera, huwag magpadala habang nasa contact pa kayo; verify independently first.",
+  "why_it_matters": "The losses are nationwide and large, and fake-police losses rose even while case count fell. Residents who use SNS, banking, remittance or crypto services can reduce exposure by refusing to move money during an unsolicited contact and independently checking the claimed organization.",
+  "importance": 94,
+  "confidence": 99,
+  "tags": ["Japan","Scam","Fraud","SNS Investment","Fake Police","Safety","Money","2026"],
+  "geography": ["Japan"],
+  "status": "CONFIRMED",
+  "sources": [
+    {
+      "publisher": "National Police Agency",
+      "title": "令和８年８月末における特殊詐欺の認知・検挙状況等について（暫定値）",
+      "url": "https://www.npa.go.jp/bureau/safetylife/sos47/new-topics/261002/01.html",
+      "published_at": "2026-10-02",
+      "source_type": "official"
+    }
+  ],
+  "claims": [
+    {
+      "kind": "FACT",
+      "text": "Through August 2026, Japan recorded 29,687 recognized fraud cases and ¥236.07 billion in losses, up 3,732 cases and ¥58.84 billion from the same period a year earlier.",
+      "source_refs": [1],
+      "basis": "NPA provisional figures through August 2026"
+    },
+    {
+      "kind": "FACT",
+      "text": "SNS investment scams accounted for 7,097 cases and ¥93.74 billion in losses, increases of 49.4% and 53.8% year on year.",
+      "source_refs": [1],
+      "basis": "NPA method-level breakdown"
+    },
+    {
+      "kind": "FACT",
+      "text": "Fake-police scams accounted for 6,346 cases and ¥72.86 billion in losses; cases were down 4.1% year on year while losses were up 27.0%.",
+      "source_refs": [1],
+      "basis": "NPA method-level breakdown"
+    },
+    {
+      "kind": "INFERENCE",
+      "text": "Because losses remain extremely high, an unsolicited investment pitch or unexpected police contact involving money should be treated as a reason to stop the transaction and verify the claimed organization independently before taking financial action.",
+      "source_refs": [1],
+      "basis": "Precautionary inference from current NPA fraud-loss data"
+    }
+  ],
+  "content": {
+    "key_message": "Kung may unexpected SNS investment pitch o taong nagpapakilalang pulis na humihingi o nagpapalipat ng pera, huwag mag-transfer habang nasa contact pa kayo. End the interaction and verify independently using an official channel you found yourself.",
+    "who_is_affected": "Residents in Japan, especially people receiving unsolicited SNS investment approaches or unexpected calls/messages from people claiming to be police or authorities.",
+    "when": "NPA published the latest provisional figures on October 2, 2026, covering cases recognized through the end of August 2026.",
+    "financial_impact": "FACT: total reported losses were ¥236.07 billion through August; SNS investment scams accounted for ¥93.74 billion and fake-police scams ¥72.86 billion.",
+    "risk_if_ignored": "A victim may transfer substantial money or disclose financial information before independently confirming whether the investment or claimed authority contact is genuine.",
+    "action": "ACT_NOW",
+    "deadline": "No application deadline. The protective action applies whenever an unsolicited investment approach or suspicious authority contact occurs.",
+    "effort": "Low: stop the interaction, do not transfer money, independently find the official contact channel, verify the claim, and preserve evidence.",
+    "potential_benefit": "Avoiding or interrupting a potentially high-loss fraud transaction.",
+    "downside": "Independent verification may delay a legitimate conversation, but it avoids relying on contact details supplied by the person making the claim.",
+    "what_would_change_mind": "Later NPA corrections to the provisional figures or updated official fraud-prevention guidance.",
+    "usefulness": 96,
+    "novelty": 91,
+    "impact": {
+      "money": "HIGH",
+      "family": "MED",
+      "career": "LOW",
+      "japan": "HIGH",
+      "urgency": "HIGH"
+    },
+    "connection_tags": ["fraud","scam","sns-investment","fake-police","money-safety"],
+    "what_to_do_now": [
+      "If an unsolicited investment contact or unexpected police/authority contact asks you to move money, stop before transferring.",
+      "Do not use a phone number, URL, QR code or account-verification route supplied only by the caller or sender; find the organization's official channel independently.",
+      "Verify the claimed identity and request through that independently obtained official channel.",
+      "Preserve messages, caller information, account details, transfer records and screenshots if you suspect fraud.",
+      "If money was already sent, contact your financial institution and police promptly rather than continuing to negotiate with the sender."
+    ],
+    "prepare": [
+      "Know how to find your bank or remittance provider's official fraud contact route independently.",
+      "Make a family rule that large or unusual transfers triggered by unsolicited contacts require a separate verification step.",
+      "Keep transaction confirmations and suspicious-message evidence until the matter is resolved."
+    ],
+    "avoid": [
+      "Do not treat a police uniform image, badge image, video call, official-looking document or caller-ID display as independent proof of identity.",
+      "Do not transfer money merely because the sender creates urgency, secrecy or fear.",
+      "Do not rely on promised investment returns as proof that an SNS investment offer is legitimate."
+    ],
+    "watch": "Watch for updated NPA figures and official warnings about evolving contact methods and payment routes.",
+    "bottom_line": "FACT: NPA recorded ¥236.07 billion in fraud losses through August 2026, led by ¥93.74 billion in SNS investment scams and ¥72.86 billion in fake-police scams. INFERENCE: an unsolicited money request tied to an investment pitch or claimed police contact is enough reason to stop and independently verify before transferring anything."
+  }
+}
