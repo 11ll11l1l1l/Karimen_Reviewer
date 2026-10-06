@@ -1,0 +1,122 @@
+{
+  "id": "japan-seisho-bypass-typhoon27-overtopping-2026-10",
+  "agent": "discover",
+  "created_at": "2026-10-06T09:56:20+09:00",
+  "type": "infrastructure",
+  "title": "台風27号は沖でも道路に実害: 西湘バイパスで越波、約6kmを通行止め",
+  "summary": "台風27号の中心は本州から離れて進む見込みでも、神奈川のE84西湘バイパスでは10月6日未明に実際の越波が確認され、大磯東IC〜西湘二宮ICの下り約6kmが通行止めになった。『上陸しない台風=影響が小さい』とは限らない、という今朝の具体的なシグナルです。",
+  "why_it_matters": "湘南・西湘方面を車で移動する人には即時の交通影響。さらに、遠い台風でもうねりが沿岸道路まで届くため、進路図の中心線だけでリスクを判断しないことが重要。",
+  "importance": 76,
+  "confidence": 96,
+  "tags": [
+    "Japan",
+    "Kanagawa",
+    "Typhoon",
+    "Roads",
+    "Coastal risk",
+    "Transport"
+  ],
+  "geography": [
+    "Japan",
+    "Kanagawa"
+  ],
+  "status": "DEVELOPING",
+  "sources": [
+    {
+      "publisher": "国土交通省 関東地方整備局 横浜国道事務所",
+      "title": "台風27号の高波による体制",
+      "url": "https://www.ktr.mlit.go.jp/saigai/yokokoku_dis0095.html",
+      "published_at": "2026-10-06",
+      "source_type": "official"
+    },
+    {
+      "publisher": "NEXCO中日本",
+      "title": "台風27号に関する関係機関による連名記者発表（まとめ）",
+      "url": "https://www.c-nexco.co.jp/topics/2550.html",
+      "published_at": "2026-10-06",
+      "source_type": "official"
+    },
+    {
+      "publisher": "日本気象協会 tenki.jp",
+      "title": "トリプル台風発生中 27号の影響で関東は高波に警戒 28号・29号の進路は?",
+      "url": "https://tenki.jp/forecaster/t_yoshida/2026/10/06/40869.html",
+      "published_at": "2026-10-06",
+      "source_type": "news"
+    }
+  ],
+  "claims": [
+    {
+      "kind": "FACT",
+      "text": "10月6日1時30分から、E84西湘バイパス大磯東IC〜西湘二宮ICの下り線約6kmで通行止めが順次実施された。",
+      "source_refs": [
+        1
+      ],
+      "basis": "国土交通省横浜国道事務所の災害情報"
+    },
+    {
+      "kind": "FACT",
+      "text": "通行止めの理由は、大磯西ICおよび本線で越波が確認されたため。",
+      "source_refs": [
+        1
+      ],
+      "basis": "国土交通省横浜国道事務所の災害情報"
+    },
+    {
+      "kind": "FACT",
+      "text": "NEXCO中日本は10月6日7時時点で高波による通行止めを案内し、解除は高波がおさまり安全確認後としている。",
+      "source_refs": [
+        2
+      ],
+      "basis": "NEXCO中日本の当日重要情報"
+    },
+    {
+      "kind": "FACT",
+      "text": "日本気象協会は台風27号が本州から離れて進んでも、関東海上で6日夕方から7日明け方にかけてうねりを伴う大しけを予想している。",
+      "source_refs": [
+        3
+      ],
+      "basis": "10月6日6時22分の気象解説"
+    },
+    {
+      "kind": "INFERENCE",
+      "text": "今回の越波は、台風の中心が本州に接近・上陸しなくても、うねりが沿岸交通へ直接影響し得ることを示す実例。",
+      "source_refs": [
+        1,
+        3
+      ],
+      "basis": "実際の越波による道路規制と、遠方の台風による高波予測を合わせた解釈"
+    },
+    {
+      "kind": "ASSUMPTION",
+      "text": "西湘バイパス全線が長時間閉鎖される、または台風27号が関東へ上陸するとは現時点で判断しない。",
+      "source_refs": [
+        1,
+        2,
+        3
+      ],
+      "basis": "現在公表された規制区間と予報の範囲を超えないため"
+    }
+  ],
+  "content": {
+    "whats_new": "10月6日未明、台風27号の高波で西湘バイパス本線に越波が発生し、下り線の一部が実際に通行止めになりました。進路図では台風本体が本州から離れていても、沿岸ではすでに交通への実害が出ています。",
+    "skeptical_view": "『トリプル台風』という見出し自体より重要なのは、確認済みの越波と道路規制です。一方で、これを関東全域の重大被害や台風上陸の前兆として広げて読む根拠はありません。",
+    "what_next": "西湘方面を走る場合は出発直前に最新の道路情報を確認。解除は波がおさまり安全確認が済んだ後で、今後の状況次第では別区間の規制もあり得ると当局は案内しています。",
+    "what_would_change_mind": "通行止め解除、追加区間の規制、台風27号の進路・波浪予測の大幅な変更が出れば、この評価を更新する。",
+    "recommendation": "湘南・西湘の海沿いを今日移動する人は、通常ルート前提で出発せず最新規制を確認。海岸付近では、台風が遠いことを安全材料にしない。",
+    "usefulness": "HIGH",
+    "novelty": "HIGH",
+    "impact": {
+      "money": "LOW",
+      "family": "MED",
+      "career": "LOW",
+      "japan": "MED",
+      "urgency": "HIGH"
+    },
+    "connection_tags": [
+      "typhoon-27",
+      "coastal-infrastructure",
+      "transport-disruption",
+      "high-waves"
+    ]
+  }
+}
