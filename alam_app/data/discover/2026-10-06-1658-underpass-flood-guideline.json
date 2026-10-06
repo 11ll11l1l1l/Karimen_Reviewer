@@ -1,0 +1,122 @@
+{
+  "id": "japan-underpass-flood-multilayer-guideline-2026-10",
+  "agent": "discover",
+  "created_at": "2026-10-06T16:58:23+09:00",
+  "type": "infrastructure",
+  "title": "Japan is changing how underpass flooding is handled: close roads before the water arrives",
+  "summary": "Japan's transport ministry issued a nationwide guideline on October 6 that shifts underpass safety away from relying mainly on drainage. Ang bagong approach is layered: classify flood risk, close vulnerable roads before flooding when danger rises, physically keep vehicles out, and maintain drainage as another line of defense.",
+  "why_it_matters": "Japan has about 3,800 underpasses, around 3,700 of them managed by local governments. For drivers, the practical change is that heavy-rain trips may increasingly face preventive closures even before visible flooding starts—and in Kinki, flood-risk alerts can now appear directly on car-navigation screens.",
+  "importance": 82,
+  "confidence": 97,
+  "tags": [
+    "Japan",
+    "Flooding",
+    "Road safety",
+    "Underpass",
+    "Disaster prevention",
+    "Infrastructure"
+  ],
+  "geography": [
+    "Japan"
+  ],
+  "status": "NEW",
+  "sources": [
+    {
+      "publisher": "国土交通省",
+      "title": "アンダーパスの冠水事故防止に向けたガイドラインを策定～「冠水する前に止める、入らせない」対策を推進～",
+      "url": "https://www.mlit.go.jp/report/press/road01_hh_002153.html",
+      "published_at": "2026-10-06",
+      "source_type": "official"
+    },
+    {
+      "publisher": "国土交通省",
+      "title": "道路の冠水対策",
+      "url": "https://www.mlit.go.jp/road/road_fr4_000208.html",
+      "published_at": "2026-10-06",
+      "source_type": "official"
+    },
+    {
+      "publisher": "国土交通省 近畿地方整備局",
+      "title": "アンダーパスの冠水事故防止に向け、カーナビへ注意喚起情報を配信 ～道路利用者の皆様へ注意喚起情報の配信を行います～",
+      "url": "https://www-2.kkr.mlit.go.jp/news/top/press/2026/20261006-2underpassjikobousi.html",
+      "published_at": "2026-10-06",
+      "source_type": "official"
+    }
+  ],
+  "claims": [
+    {
+      "kind": "FACT",
+      "text": "The transport ministry says Japan has about 3,800 underpasses as of the end of March 2025, with about 3,700 managed by local governments.",
+      "source_refs": [
+        2
+      ],
+      "basis": "MLIT road-flooding policy page."
+    },
+    {
+      "kind": "FACT",
+      "text": "The October 6 guideline calls for multilayer protection combining preventive road closures before flooding, rapid restrictions once flooding occurs, measures that keep vehicles from entering, and maintenance of drainage capacity.",
+      "source_refs": [
+        1
+      ],
+      "basis": "MLIT guideline announcement."
+    },
+    {
+      "kind": "FACT",
+      "text": "MLIT says the guideline was developed after fatal and other human and property damage from flooded underpasses, including incidents during the August 2026 Chiba heavy rain and subsequent events elsewhere.",
+      "source_refs": [
+        1,
+        2
+      ],
+      "basis": "MLIT guideline announcement and road-flooding policy page."
+    },
+    {
+      "kind": "FACT",
+      "text": "Starting October 6, the Kinki Regional Development Bureau says car-navigation pop-up warnings will be distributed when underpass flooding is expected under Level 5 heavy-rain emergency warnings, Level 4 heavy-rain danger warnings, or other conditions requiring special caution.",
+      "source_refs": [
+        3
+      ],
+      "basis": "Official Kinki Regional Development Bureau announcement."
+    },
+    {
+      "kind": "INFERENCE",
+      "text": "The policy signal is a shift from 'drain the water fast enough' toward 'do not let vehicles enter before the road becomes a trap,' so preventive closures may become a more normal part of heavy-rain travel.",
+      "source_refs": [
+        1,
+        2
+      ],
+      "basis": "The guideline explicitly says flood prevention should not depend on drainage alone and emphasizes preventive restrictions and vehicle-entry prevention."
+    },
+    {
+      "kind": "ASSUMPTION",
+      "text": "Do not assume every one of Japan's roughly 3,800 underpasses will immediately receive gates, automatic closures, or navigation alerts; the guideline calls for measures matched to each site's risk and conditions.",
+      "source_refs": [
+        1,
+        2,
+        3
+      ],
+      "basis": "The national guideline is risk-based, while the navigation-alert rollout cited here is specifically a Kinki Regional Development Bureau measure."
+    }
+  ],
+  "content": {
+    "whats_new": "MLIT has turned recent emergency responses into a nationwide operating framework. Instead of treating pumps and drainage as the main safeguard, road managers are told to combine preventive closure, fast closure during flooding, physical entry prevention, drainage, and fail-safe operation according to site risk.",
+    "skeptical_view": "Hindi ito ibig sabihin na 3,800 underpasses will suddenly get remote gates. The guideline establishes the framework; implementation will vary by road manager, risk level, equipment and local conditions. The Kinki navigation-warning launch is a concrete regional implementation, not yet proof of nationwide in-car alerts.",
+    "what_next": "Watch how prefectures and municipalities classify their underpasses and which sites receive preventive closure rules, remote barriers, warning boards or other entry-prevention equipment. Drivers should treat a preventive closure during extreme rain as an intentional safety measure, not evidence that authorities waited for the road to flood.",
+    "what_would_change_mind": "Evidence that local road managers do not implement the framework, or that preventive restrictions fail to reduce vehicle entry into flooded underpasses, would weaken the practical significance of the guideline.",
+    "recommendation": "During severe rain, don't use visible water as your trigger to avoid an underpass. Check road and weather information before entering low-lying routes, follow preventive closures, and in Kinki pay attention to new car-navigation flood-risk pop-ups.",
+    "usefulness": "HIGH",
+    "novelty": "HIGH",
+    "impact": {
+      "money": "LOW",
+      "family": "HIGH",
+      "career": "LOW",
+      "japan": "HIGH",
+      "urgency": "MED"
+    },
+    "connection_tags": [
+      "extreme-rain",
+      "underpass-flooding",
+      "preventive-road-closure",
+      "disaster-resilience"
+    ]
+  }
+}
