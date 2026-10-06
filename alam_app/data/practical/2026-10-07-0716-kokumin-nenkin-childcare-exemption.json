@@ -1,0 +1,149 @@
+{
+  "id": "japan-2026-kokumin-nenkin-childcare-exemption",
+  "agent": "practical",
+  "created_at": "2026-10-07T07:16:00+09:00",
+  "type": "money_benefit",
+  "title": "May baby under 1 at Kokumin Nenkin ka? New childcare premium exemption started October 1",
+  "summary": "From October 2026, eligible National Pension Category 1 insured parents caring for a child under age 1 can have qualifying Kokumin Nenkin premiums exempted regardless of income. The exempt period still counts as paid for old-age basic pension calculation, but many parents need to file.",
+  "why_it_matters": "This can directly reduce monthly pension payments for self-employed, unemployed, student and other Category 1 insured parents while protecting pension accrual. Foreign-national parents may need official parent-child documents plus a Japanese translation.",
+  "importance": 86,
+  "confidence": 99,
+  "tags": [
+    "Japan",
+    "National Pension",
+    "Kokumin Nenkin",
+    "Childcare",
+    "Parents",
+    "Money",
+    "2026"
+  ],
+  "geography": [
+    "Japan"
+  ],
+  "status": "CONFIRMED",
+  "sources": [
+    {
+      "publisher": "Japan Pension Service",
+      "title": "国民年金保険料の育児免除制度",
+      "url": "https://www.nenkin.go.jp/service/kokunen/menjo/ikujimenjo.html",
+      "published_at": "2026-10-01",
+      "source_type": "official"
+    }
+  ],
+  "claims": [
+    {
+      "kind": "FACT",
+      "text": "Japan's National Pension childcare exemption started in October 2026 for eligible Category 1 insured parents caring for a child until age 1.",
+      "source_refs": [
+        1
+      ],
+      "basis": "Japan Pension Service eligibility guidance"
+    },
+    {
+      "kind": "FACT",
+      "text": "There is no income requirement, and an exempted childcare period is reflected in old-age basic pension as if the premium had been paid.",
+      "source_refs": [
+        1
+      ],
+      "basis": "Japan Pension Service benefit guidance"
+    },
+    {
+      "kind": "FACT",
+      "text": "Eligible parents must have a parent-child relationship and the same registered address as the child; Category 3 and voluntarily insured persons are not eligible under this scheme.",
+      "source_refs": [
+        1
+      ],
+      "basis": "Japan Pension Service eligibility and exclusions"
+    },
+    {
+      "kind": "FACT",
+      "text": "For fathers, adoptive parents and mothers without a maternity exemption period, the exemption can run from the month childcare begins through the month before the child's first birthday, up to 12 months, limited to months from October 1, 2026 onward.",
+      "source_refs": [
+        1
+      ],
+      "basis": "Japan Pension Service exemption-period guidance"
+    },
+    {
+      "kind": "FACT",
+      "text": "A qualifying parent should file promptly after meeting the conditions unless the Japan Pension Service can automatically confirm an eligible mother's continued childcare after maternity exemption under its stated conditions.",
+      "source_refs": [
+        1
+      ],
+      "basis": "Japan Pension Service filing guidance"
+    },
+    {
+      "kind": "FACT",
+      "text": "Paper filing is available through the municipal National Pension counter or by mail, and electronic filing is available through MynaPortal.",
+      "source_refs": [
+        1
+      ],
+      "basis": "Japan Pension Service filing methods"
+    },
+    {
+      "kind": "FACT",
+      "text": "If either parent or child is a foreign national, proof of the parent-child relationship may require an official document issued by the relevant country's public authority together with a Japanese translation identifying the translator.",
+      "source_refs": [
+        1
+      ],
+      "basis": "Japan Pension Service attachment rules"
+    },
+    {
+      "kind": "INFERENCE",
+      "text": "Eligible parents should check now rather than assume the exemption is automatic, because Japan Pension Service states that fathers, adoptive parents and mothers without a completed maternity-exemption filing generally need to file.",
+      "source_refs": [
+        1
+      ],
+      "basis": "Inference from the stated filing and no-filing exceptions"
+    }
+  ],
+  "content": {
+    "key_message": "Kung National Pension Category 1 insured ka at may inaalagaang child under 1, check this now: a new childcare exemption started October 1. Walang income test, at protected pa rin ang pension accrual for the exempt months.",
+    "who_is_affected": "National Pension Category 1 insured parents, including eligible biological and adoptive parents, who are caring for a child under age 1 from October 1, 2026 onward and meet the parent-child and same-address conditions.",
+    "when": "The scheme started October 1, 2026. File promptly after you meet the eligibility conditions unless Japan Pension Service confirms you fall under its stated no-filing exception.",
+    "financial_impact": "Qualifying National Pension premiums for the childcare-exemption period are waived. Japan Pension Service says those months are still treated as paid when calculating old-age basic pension.",
+    "risk_if_ignored": "You may keep paying premiums that could qualify for exemption. Already-paid qualifying premiums can be applied to other amounts or refunded after the childcare-exemption filing is accepted.",
+    "action": "APPLY",
+    "deadline": "Japan Pension Service says to file promptly after meeting the conditions; the source does not state a single nationwide closing date on this guidance page.",
+    "effort": "Low to medium: confirm Category 1 status and child's age/address, then file through MynaPortal, your municipal National Pension counter, or by mail with required evidence.",
+    "potential_benefit": "Direct premium savings during eligible childcare months without reducing old-age basic pension accrual for those exempt months.",
+    "downside": "Eligibility is specific. Category 2 employees use separate employee-pension childcare/maternity rules; Category 3 and voluntary National Pension members are excluded from this childcare-exemption scheme.",
+    "what_would_change_mind": "A later Japan Pension Service or MHLW notice changing eligibility, exemption periods, filing requirements, or required evidence.",
+    "usefulness": 94,
+    "novelty": 95,
+    "impact": {
+      "money": "HIGH",
+      "family": "HIGH",
+      "career": "LOW",
+      "japan": "MED",
+      "urgency": "HIGH"
+    },
+    "connection_tags": [
+      "kokumin-nenkin",
+      "national-pension",
+      "childcare",
+      "parents",
+      "baby-under-one",
+      "premium-exemption"
+    ],
+    "what_to_do_now": [
+      "Confirm that you are a National Pension Category 1 insured person and that the child is under 1 during an eligible month from October 2026 onward.",
+      "Confirm that you have the required parent-child relationship and the same registered address as the child.",
+      "Check whether you actually need to file; do not assume automatic processing. The stated no-filing exception is limited.",
+      "If filing, use MynaPortal electronically or submit the official form through your registered municipality's National Pension counter/by mail.",
+      "Keep the filing receipt or electronic submission record and later check the Japan Pension Service notice/record showing the childcare exemption."
+    ],
+    "prepare": [
+      "My Number or Basic Pension Number information as required for the filing route.",
+      "Parent-child relationship evidence if required. For a foreign-national parent or child, prepare the applicable foreign public-authority document and a Japanese translation naming the translator.",
+      "Address evidence if required; Japan Pension Service says a resident record is generally unnecessary unless needed for faster confirmation or the information cannot otherwise be confirmed."
+    ],
+    "avoid": [
+      "Do not assume every parent with a baby qualifies; this scheme is specifically for eligible Category 1 insured persons.",
+      "Do not assume the exemption is automatic for fathers, adoptive parents, or mothers whose maternity-exemption filing is not completed.",
+      "Do not confuse this with the separate employee pension/health-insurance exemption for Category 2 employees.",
+      "If you stop meeting the childcare conditions before the normal end, such as no longer living with the child, do not ignore the required end-of-exemption filing."
+    ],
+    "watch": "If you prepaid by bank transfer or credit card, Japan Pension Service warns that the payment method may change after the exemption period; check with your pension office. Also watch for the official childcare-exemption eligibility notice after processing.",
+    "bottom_line": "FACT: From October 2026, eligible Category 1 National Pension parents caring for a child under 1 can receive a childcare premium exemption regardless of income, and exempt months count as paid for old-age basic pension. FACT: many parents must file, and foreign-national families can have extra parent-child-document requirements. INFERENCE: if this sounds like your household, checking eligibility and filing now can prevent unnecessary premium payments."
+  }
+}
