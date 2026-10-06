@@ -8,8 +8,17 @@
   "why_it_matters": "Motorcycle owners who want a meaningful or easy-to-remember four-digit number now have a concrete application date, price range and eligibility rules. Riders with 125cc-or-less motorcycles should not apply because municipal plates are outside this national system.",
   "importance": 72,
   "confidence": 99,
-  "tags": ["Japan", "Motorcycle", "Transport", "Number Plate", "Vehicle Procedure", "2026"],
-  "geography": ["Japan"],
+  "tags": [
+    "Japan",
+    "Motorcycle",
+    "Transport",
+    "Number Plate",
+    "Vehicle Procedure",
+    "2026"
+  ],
+  "geography": [
+    "Japan"
+  ],
   "status": "CONFIRMED",
   "sources": [
     {
@@ -30,37 +39,51 @@
     {
       "kind": "FACT",
       "text": "Applications for Japan's motorcycle choice-number system start on October 19, 2026, and can be made online or at a counter.",
-      "source_refs": [1, 2],
+      "source_refs": [
+        1,
+        2
+      ],
       "basis": "MLIT implementation guidance"
     },
     {
       "kind": "FACT",
       "text": "The system covers eligible light motorcycles over 125cc through 250cc and small motorcycles over 250cc; motorcycles of 125cc or less are excluded because their plates are issued by municipalities.",
-      "source_refs": [1],
+      "source_refs": [
+        1
+      ],
       "basis": "MLIT eligibility guidance"
     },
     {
       "kind": "FACT",
       "text": "Business-use and rental motorcycles are excluded, and trailers are also excluded from the light-motorcycle category.",
-      "source_refs": [1],
+      "source_refs": [
+        1
+      ],
       "basis": "MLIT exclusions"
     },
     {
       "kind": "FACT",
       "text": "Applicants choose the four Arabic digits displayed on the motorcycle plate. National lottery numbers are 1, 7, 8, 88, 333, 358, 555, 777, 888, 1111 and 8888; additional regional lottery numbers may apply.",
-      "source_refs": [1],
+      "source_refs": [
+        1
+      ],
       "basis": "MLIT choice-number and lottery list"
     },
     {
       "kind": "FACT",
       "text": "The published application fee is ¥2,500–¥3,000 per plate including tax, with the exact amount depending on the applicable plate area.",
-      "source_refs": [1, 2],
+      "source_refs": [
+        1,
+        2
+      ],
       "basis": "MLIT fee guidance"
     },
     {
       "kind": "INFERENCE",
       "text": "Owners targeting a lottery number should prepare before October 19 rather than assuming an early application guarantees that number, because the listed popular numbers are allocated by weekly computerized lottery.",
-      "source_refs": [1],
+      "source_refs": [
+        1
+      ],
       "basis": "Inference from MLIT's weekly lottery rule"
     }
   ],
@@ -82,10 +105,16 @@
       "money": "LOW",
       "family": "LOW",
       "career": "LOW",
-      "japan": "MEDIUM",
-      "urgency": "MEDIUM"
+      "japan": "MED",
+      "urgency": "MED"
     },
-    "connection_tags": ["motorcycle", "number-plate", "transport-procedure", "october-19", "vehicle-registration"],
+    "connection_tags": [
+      "motorcycle",
+      "number-plate",
+      "transport-procedure",
+      "october-19",
+      "vehicle-registration"
+    ],
     "what_to_do_now": [
       "Check the bike's displacement and use category. 125cc or less is not covered.",
       "Choose the four Arabic digits you want on the plate.",
