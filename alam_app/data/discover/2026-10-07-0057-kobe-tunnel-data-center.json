@@ -1,0 +1,123 @@
+{
+  "id": "japan-kobe-tunnel-data-center-2026-10",
+  "agent": "discover",
+  "created_at": "2026-10-07T00:57:55+09:00",
+  "type": "technology",
+  "title": "Kobe’s old soil-transport tunnel is getting a second life as an underground AI data center",
+  "summary": "A 3 km section of Kobe’s former soil-conveyor tunnel is being repurposed into an underground data center, with service targeted for late 2027. Ang interesting signal: Japan’s AI-infrastructure buildout is starting to treat retired civil infrastructure—not just new buildings—as potential computing space.",
+  "why_it_matters": "AI data centers need land, power and cooling, while Japan also has tunnels and other underground assets whose original jobs are finished. This project tests whether those two problems can meet: reuse a cool, physically protected underground space instead of starting entirely from scratch.",
+  "importance": 76,
+  "confidence": 94,
+  "tags": [
+    "Japan",
+    "Kobe",
+    "Data centers",
+    "AI infrastructure",
+    "Infrastructure reuse",
+    "Energy"
+  ],
+  "geography": [
+    "Japan",
+    "Hyogo",
+    "Kobe"
+  ],
+  "status": "NEW",
+  "sources": [
+    {
+      "publisher": "三井不動産株式会社 / 株式会社熊谷組 / 株式会社ゲットワークス",
+      "title": "日本初、既存トンネルを活用した地中型データセンターを開発 ～次世代インフラ拠点を兵庫県神戸市で整備し、2027年末運用開始予定～",
+      "url": "https://www.mitsuifudosan.co.jp/corporate/news/2026/1006/",
+      "published_at": "2026-10-06",
+      "source_type": "primary"
+    },
+    {
+      "publisher": "神戸市",
+      "title": "ベルトコンベア跡トンネル施設貸付の落札者決定",
+      "url": "https://www.city.kobe.lg.jp/a26136/546798440636.html",
+      "published_at": "2026-10-06",
+      "source_type": "official"
+    },
+    {
+      "publisher": "神戸新聞NEXT",
+      "title": "神戸・須磨ベルコン跡、データセンターに　トンネル活用は国内初　三井不動産などと賃貸契約へ",
+      "url": "https://www.kobe-np.co.jp/news/society/202610/0020900375.shtml",
+      "published_at": "2026-10-06",
+      "source_type": "news"
+    }
+  ],
+  "claims": [
+    {
+      "kind": "FACT",
+      "text": "Mitsui Fudosan, Kumagai Gumi and Getworks have started developing an underground data center in a former Kobe soil-conveyor tunnel, with initial service planned for the end of 2027.",
+      "source_refs": [
+        1,
+        2
+      ],
+      "basis": "Company project announcement and Kobe City lease-award notice."
+    },
+    {
+      "kind": "FACT",
+      "text": "The leased section is about 3 km and 17,000 square meters. Kobe City says the annual rent is ¥7,572,000 under a 10-to-20-year tunnel-facility lease.",
+      "source_refs": [
+        2
+      ],
+      "basis": "Kobe City’s official award notice."
+    },
+    {
+      "kind": "FACT",
+      "text": "The developers say most of the tunnel is deeper than about 40 meters, its internal temperature has been confirmed at roughly 15–20°C year-round, and the project ultimately targets up to 20 MW of receiving capacity.",
+      "source_refs": [
+        1
+      ],
+      "basis": "Primary project announcement."
+    },
+    {
+      "kind": "FACT",
+      "text": "The initial design plans containerized data-center equipment and groundwater-circulation water cooling, with support for modern GPU servers.",
+      "source_refs": [
+        1
+      ],
+      "basis": "Primary project announcement."
+    },
+    {
+      "kind": "INFERENCE",
+      "text": "The broader signal is that Japan’s AI-infrastructure expansion may create new economic uses for retired tunnels, mines and other underground assets where cooling, resilience and physical access characteristics are favorable.",
+      "source_refs": [
+        1,
+        2
+      ],
+      "basis": "The developers explicitly position Kobe as a first model and say they aim to expand to other idle underground spaces; the inference is that this is a reusable infrastructure pattern, not proof that every tunnel is suitable."
+    },
+    {
+      "kind": "ASSUMPTION",
+      "text": "Do not assume the project already operates at 20 MW, that underground siting automatically makes it cheaper or greener than conventional data centers, or that similar tunnels elsewhere can be converted without site-specific engineering and power studies.",
+      "source_refs": [
+        1
+      ],
+      "basis": "The announcement describes 20 MW as a future target and environmental/efficiency benefits as project goals rather than completed operating results."
+    }
+  ],
+  "content": {
+    "whats_new": "Kobe City has awarded use of roughly 3 km of its former 14.5 km soil-conveyor tunnel to Mitsui Fudosan and Kumagai Gumi, and the development team has now announced a commercial underground data center there. Initial operation is targeted for late 2027, with a future receiving-capacity goal of up to 20 MW.",
+    "skeptical_view": "The 'Japan-first' label is the developers’ own assessment for a commercial data center using an existing tunnel. Mas important than the novelty claim is what is actually measurable later: delivered capacity, power availability, cooling efficiency, construction cost, reliability and customer uptake.",
+    "what_next": "Watch whether the first phase opens on schedule in late 2027, what capacity is actually energized, and whether the promised groundwater cooling and underground thermal conditions translate into published efficiency results. A second tunnel or mine conversion would be stronger evidence that this is becoming a repeatable model.",
+    "what_would_change_mind": "Major delay or cancellation, inability to secure the intended power capacity, weak operating economics, or evidence that underground conversion costs outweigh the cooling/resilience advantages would weaken the broader reuse thesis.",
+    "recommendation": "No immediate consumer action. Treat this as an infrastructure signal to watch: Japan is testing whether old civil-engineering assets can become part of the physical backbone for AI computing.",
+    "usefulness": "MED",
+    "novelty": "HIGH",
+    "impact": {
+      "money": "LOW",
+      "family": "LOW",
+      "career": "MED",
+      "japan": "MED",
+      "urgency": "LOW"
+    },
+    "connection_tags": [
+      "ai-infrastructure",
+      "data-centers",
+      "infrastructure-reuse",
+      "regional-digital-infrastructure",
+      "power-demand"
+    ]
+  }
+}
