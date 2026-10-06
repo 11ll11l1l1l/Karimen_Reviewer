@@ -3,11 +3,11 @@
   "agent": "discover",
   "created_at": "2026-10-06T09:56:20+09:00",
   "type": "infrastructure",
-  "title": "台風27号は沖でも道路に実害: 西湘バイパスで越波、約6kmを通行止め",
-  "summary": "台風27号の中心は本州から離れて進む見込みでも、神奈川のE84西湘バイパスでは10月6日未明に実際の越波が確認され、大磯東IC〜西湘二宮ICの下り約6kmが通行止めになった。『上陸しない台風=影響が小さい』とは限らない、という今朝の具体的なシグナルです。",
-  "why_it_matters": "湘南・西湘方面を車で移動する人には即時の交通影響。さらに、遠い台風でもうねりが沿岸道路まで届くため、進路図の中心線だけでリスクを判断しないことが重要。",
-  "importance": 76,
-  "confidence": 96,
+  "title": "Typhoon 27 is offshore, but Seisho Bypass is already taking real wave damage",
+  "summary": "Typhoon 27 does not need to make landfall to disrupt travel. Actual wave overtopping was confirmed on the E84 Seisho Bypass in Kanagawa, and by the third official report on October 6 the closure had expanded from a 6 km downbound section to multiple sections, including both directions on parts of the toll road.",
+  "why_it_matters": "For anyone driving through Shonan or western Kanagawa, this is an immediate route-planning issue. Mas broader signal: a typhoon center staying offshore can still send dangerous swell into coastal infrastructure, so the track's center line alone is not a reliable measure of local impact.",
+  "importance": 78,
+  "confidence": 97,
   "tags": [
     "Japan",
     "Kanagawa",
@@ -30,6 +30,13 @@
       "source_type": "official"
     },
     {
+      "publisher": "国土交通省 関東地方整備局 横浜国道事務所 / 中日本高速道路株式会社 東京支社",
+      "title": "台風27号の高波によるE84西湘バイパスで通行止め（第3報）",
+      "url": "https://www.ktr.mlit.go.jp/kisha/kyoku_s_kisha_00596.pdf",
+      "published_at": "2026-10-06",
+      "source_type": "official"
+    },
+    {
       "publisher": "NEXCO中日本",
       "title": "台風27号に関する関係機関による連名記者発表（まとめ）",
       "url": "https://www.c-nexco.co.jp/topics/2550.html",
@@ -47,62 +54,60 @@
   "claims": [
     {
       "kind": "FACT",
-      "text": "10月6日1時30分から、E84西湘バイパス大磯東IC〜西湘二宮ICの下り線約6kmで通行止めが順次実施された。",
+      "text": "At 1:30 a.m. on October 6, the E84 Seisho Bypass downbound section from Oiso-higashi IC to Seisho-Ninomiya IC, about 6.0 km, began closing after wave overtopping was confirmed around Oiso-nishi IC and the mainline.",
       "source_refs": [
         1
       ],
-      "basis": "国土交通省横浜国道事務所の災害情報"
+      "basis": "Official Yokohama National Highway Office disaster update."
     },
     {
       "kind": "FACT",
-      "text": "通行止めの理由は、大磯西ICおよび本線で越波が確認されたため。",
-      "source_refs": [
-        1
-      ],
-      "basis": "国土交通省横浜国道事務所の災害情報"
-    },
-    {
-      "kind": "FACT",
-      "text": "NEXCO中日本は10月6日7時時点で高波による通行止めを案内し、解除は高波がおさまり安全確認後としている。",
+      "text": "The third official report says closures were in effect on Oiso-higashi IC to Seisho-Ninomiya IC downbound (about 6.0 km), Seisho-Ninomiya IC to Ishibashi IC in both directions (about 13.6 km), and Odawara-nishi IC to Hayakawa IC in both directions (about 1.5 km).",
       "source_refs": [
         2
       ],
-      "basis": "NEXCO中日本の当日重要情報"
+      "basis": "Joint third report from MLIT Yokohama National Highway Office and NEXCO Central Japan."
     },
     {
       "kind": "FACT",
-      "text": "日本気象協会は台風27号が本州から離れて進んでも、関東海上で6日夕方から7日明け方にかけてうねりを伴う大しけを予想している。",
+      "text": "Authorities say reopening will occur only after the high waves subside and safety is confirmed, and additional sections may still be closed depending on weather conditions.",
       "source_refs": [
-        3
-      ],
-      "basis": "10月6日6時22分の気象解説"
-    },
-    {
-      "kind": "INFERENCE",
-      "text": "今回の越波は、台風の中心が本州に接近・上陸しなくても、うねりが沿岸交通へ直接影響し得ることを示す実例。",
-      "source_refs": [
-        1,
-        3
-      ],
-      "basis": "実際の越波による道路規制と、遠方の台風による高波予測を合わせた解釈"
-    },
-    {
-      "kind": "ASSUMPTION",
-      "text": "西湘バイパス全線が長時間閉鎖される、または台風27号が関東へ上陸するとは現時点で判断しない。",
-      "source_refs": [
-        1,
         2,
         3
       ],
-      "basis": "現在公表された規制区間と予報の範囲を超えないため"
+      "basis": "Joint third report and NEXCO Central Japan traffic notice."
+    },
+    {
+      "kind": "INFERENCE",
+      "text": "The useful signal is not simply that a typhoon exists offshore: this is a confirmed example of distant typhoon swell producing direct disruption to coastal road infrastructure.",
+      "source_refs": [
+        1,
+        2,
+        4
+      ],
+      "basis": "Confirmed overtopping and expanding road restrictions considered together with the high-wave forecast."
+    },
+    {
+      "kind": "ASSUMPTION",
+      "text": "Do not assume Typhoon 27 will make landfall, that every section of the Seisho Bypass is closed, or that the listed closures will remain in place for the rest of the day.",
+      "source_refs": [
+        2,
+        3
+      ],
+      "basis": "The official notices define specific sections and make reopening conditional on wave and safety conditions; they do not establish those broader outcomes."
     }
   ],
   "content": {
-    "whats_new": "10月6日未明、台風27号の高波で西湘バイパス本線に越波が発生し、下り線の一部が実際に通行止めになりました。進路図では台風本体が本州から離れていても、沿岸ではすでに交通への実害が出ています。",
-    "skeptical_view": "『トリプル台風』という見出し自体より重要なのは、確認済みの越波と道路規制です。一方で、これを関東全域の重大被害や台風上陸の前兆として広げて読む根拠はありません。",
-    "what_next": "西湘方面を走る場合は出発直前に最新の道路情報を確認。解除は波がおさまり安全確認が済んだ後で、今後の状況次第では別区間の規制もあり得ると当局は案内しています。",
-    "what_would_change_mind": "通行止め解除、追加区間の規制、台風27号の進路・波浪予測の大幅な変更が出れば、この評価を更新する。",
-    "recommendation": "湘南・西湘の海沿いを今日移動する人は、通常ルート前提で出発せず最新規制を確認。海岸付近では、台風が遠いことを安全材料にしない。",
+    "change_summary": {
+      "previous": "The first ALAM candidate captured a roughly 6 km downbound closure from Oiso-higashi IC to Seisho-Ninomiya IC after confirmed wave overtopping.",
+      "now": "The third official report shows the disruption expanded: the original 6 km downbound closure continues, while toll-road sections from Seisho-Ninomiya IC to Ishibashi IC and Odawara-nishi IC to Hayakawa IC are listed closed in both directions.",
+      "why_change_matters": "The incident has moved from a localized early-morning restriction to a broader coastal transport disruption, strengthening the practical warning for drivers while still not implying a typhoon landfall."
+    },
+    "whats_new": "Confirmed wave overtopping on the Seisho Bypass triggered an early-morning closure, then the affected road network expanded. By the third official report, the original 6 km downbound closure remained and parts of the toll section were closed in both directions.",
+    "skeptical_view": "The dramatic part is not the phrase 'Typhoon 27' itself. The evidence-backed signal is the overtopping and the actual road closures. Hindi rin ito evidence that Kanto is facing region-wide severe damage or that the typhoon will make landfall.",
+    "what_next": "Check current road information immediately before using the Seisho Bypass. The agencies say reopening depends on waves subsiding and completion of safety checks, while further restrictions remain possible if conditions worsen.",
+    "what_would_change_mind": "A formal reopening notice, another change in the closed sections, or a major change in Typhoon 27's wave or track forecast would materially change this assessment.",
+    "recommendation": "If you're driving through Shonan or western Kanagawa today, don't assume the normal coastal route is available. Check the latest official traffic status before departure and avoid treating an offshore storm track as proof that coastal roads are unaffected.",
     "usefulness": "HIGH",
     "novelty": "HIGH",
     "impact": {
