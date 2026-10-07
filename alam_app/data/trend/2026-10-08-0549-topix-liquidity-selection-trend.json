@@ -23,6 +23,15 @@
       },
       {
         "kind": "FACT",
+        "text": "JPX's October 7 first selection adds 35 stocks (23 Standard-market and 12 Growth-market listings); 683 existing constituents enter transitional weighting reductions. The projected July 2028 total of 986 constituents is conditional because the October 2027 reassessment can allow some transitional names to remain.",
+        "basis": "JPX October 7 selection notice and Reuters' enumeration of the released JPX lists; the 986 total is not a guaranteed final count.",
+        "source_refs": [
+          1,
+          4
+        ]
+      },
+      {
+        "kind": "FACT",
         "text": "Existing TOPIX constituents must have an annual traded value ratio of at least 0.14 and fall within the top 97% of cumulative free-float-adjusted market capitalization to meet continuation criteria; new additions face stricter 0.20 and top-96% thresholds.",
         "basis": "JPX next-generation TOPIX methodology and FAQ.",
         "source_refs": [
@@ -74,13 +83,15 @@
         "The October 30, 2026 start of the first transition step and TOPIX Next-tier.",
         "Which transitional companies regain continuation criteria at the October 2027 re-evaluation.",
         "Changes in free float, liquidity and investor-relations actions among companies facing phased reductions.",
-        "The second periodic review in October 2028."
+        "The second periodic review in October 2028.",
+        "Whether the 683 transitional constituents regain eligibility, changing the provisional 986-name July 2028 projection."
       ],
       "evidence_for": [
         "JPX has published the first periodic-review and initial-selection results.",
         "The continuation and inclusion thresholds are explicitly defined by JPX.",
         "JPX has scheduled eight quarterly weighting reductions for non-selected constituents.",
-        "Selection now covers domestic common shares across Prime, Standard and Growth subject to the methodology."
+        "Selection now covers domestic common shares across Prime, Standard and Growth subject to the methodology.",
+        "The first actual selection has 35 new additions and 683 transitional constituents; the projected 986 constituents in July 2028 remains conditional on reassessment."
       ],
       "implications": [
         "Broad TOPIX funds will gradually track a more liquidity-screened investable universe.",
@@ -90,11 +101,12 @@
       "reading_levels": {
         "30_sec": [
           "TOPIX is entering its next-generation selection regime.",
+          "First selection: 35 new additions, 683 existing names under phased reductions; 986 projected for July 2028 is not final.",
           "Liquidity and free float now explicitly determine continuation and new inclusion.",
           "Non-selected names are phased down over eight quarterly steps.",
           "The transition runs with a 2027 re-evaluation and a second periodic review in 2028."
         ],
-        "2_min": "TOPIX is becoming more selective. JPX announced the first periodic review and initial selection on October 7, 2026. Existing constituents need an annual traded value ratio of at least 0.14 and must sit within the top 97% of cumulative free-float-adjusted market capitalization among qualifying issues; new additions face stricter thresholds. Companies that do not qualify are not removed overnight: their weights are reduced in eight quarterly stages, with a re-evaluation in October 2027. Ang signal: benchmark representation is becoming more explicitly tied to actual investability. For ordinary TOPIX-fund investors, this is mainly a gradual methodology change—not a reason to trade individual additions or deletions."
+        "2_min": "TOPIX is becoming more selective. JPX announced the first periodic review and initial selection on October 7, 2026. Existing constituents need an annual traded value ratio of at least 0.14 and must sit within the top 97% of cumulative free-float-adjusted market capitalization among qualifying issues; new additions face stricter thresholds. Companies that do not qualify are not removed overnight: their weights are reduced in eight quarterly stages, with a re-evaluation in October 2027. Ang signal: benchmark representation is becoming more explicitly tied to actual investability. For ordinary TOPIX-fund investors, this is mainly a gradual methodology change—not a reason to trade individual additions or deletions. JPX's first actual list adds 35 names (23 Standard, 12 Growth) and puts 683 existing names under phased weighting reductions. The 986-constituent July 2028 projection is conditional, dahil puwedeng makabalik ang ilang names sa 2027 reassessment."
       },
       "connection_tags": [
         "topix",
@@ -134,9 +146,16 @@
         "publisher": "Japan Exchange Group",
         "source_type": "primary",
         "published_at": "2025-11-01"
+      },
+      {
+        "url": "https://www.reuters.com/jp/markets/japan/SCHGVS6KKRJDTLMBIZS7CQPTLE-2026-10-07/",
+        "title": "Next-generation TOPIX adds 35 stocks and places 683 under transitional measures",
+        "publisher": "Reuters",
+        "source_type": "secondary",
+        "published_at": "2026-10-07"
       }
     ],
-    "summary": "JPX has begun the first periodic review of its next-generation TOPIX framework. From October 2026, liquidity and free-float-adjusted market capitalization explicitly determine continuation and inclusion, while non-selected constituents are phased down over eight quarterly steps with a 2027 re-evaluation.",
+    "summary": "JPX's first next-generation TOPIX selection adds 35 stocks and places 683 existing constituents under eight quarterly weighting reductions. The projected 986 constituents by July 2028 is conditional on the October 2027 re-evaluation. Liquidity and free float, rather than market segment alone, increasingly determine benchmark representation.",
     "geography": [
       "Japan"
     ],
