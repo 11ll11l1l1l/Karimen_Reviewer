@@ -1,0 +1,149 @@
+[
+  {
+    "id": "japan-topix-liquidity-selection-2026",
+    "tags": [
+      "Japan",
+      "TOPIX",
+      "Equities",
+      "Market Structure",
+      "Liquidity",
+      "Corporate Governance"
+    ],
+    "type": "market_trend",
+    "agent": "trend",
+    "title": "TOPIX gets more selective: liquidity and free float now decide who keeps full benchmark weight",
+    "claims": [
+      {
+        "kind": "FACT",
+        "text": "JPX Market Innovation & Research announced the first periodic review and initial selection for the next-generation TOPIX on October 7, 2026.",
+        "basis": "JPX October 7, 2026 periodic-review announcement.",
+        "source_refs": [
+          1
+        ]
+      },
+      {
+        "kind": "FACT",
+        "text": "Existing TOPIX constituents must have an annual traded value ratio of at least 0.14 and fall within the top 97% of cumulative free-float-adjusted market capitalization to meet continuation criteria; new additions face stricter 0.20 and top-96% thresholds.",
+        "basis": "JPX next-generation TOPIX methodology and FAQ.",
+        "source_refs": [
+          2,
+          3
+        ]
+      },
+      {
+        "kind": "FACT",
+        "text": "Issues not selected at the first periodic review enter an eight-stage quarterly weighting reduction, with a re-evaluation in October 2027 that can stop the reduction for issues that regain the continuation criteria.",
+        "basis": "JPX transitional-measures rules.",
+        "source_refs": [
+          2
+        ]
+      },
+      {
+        "kind": "INFERENCE",
+        "text": "Benchmark membership is becoming more explicitly tied to investability rather than simply being listed in a particular TSE segment, increasing the incentive for smaller companies to improve liquidity and genuinely tradable free float.",
+        "basis": "Inference from JPX's liquidity-based cross-market selection rules.",
+        "source_refs": [
+          2,
+          3
+        ]
+      }
+    ],
+    "status": "NEW",
+    "content": {
+      "impact": {
+        "japan": "HIGH",
+        "money": "MED",
+        "career": "LOW",
+        "family": "LOW",
+        "urgency": "LOW"
+      },
+      "history": "TOPIX historically had a strong link to TSE market-segment membership. The next-generation framework opens selection across Prime, Standard and Growth while applying annual liquidity and free-float-adjusted market-cap tests.",
+      "novelty": 91,
+      "learning": {
+        "takeaways": [
+          "TOPIX selection now explicitly emphasizes trading liquidity and free-float-adjusted market capitalization.",
+          "Existing constituents and new entrants face different thresholds.",
+          "Non-selected constituents are phased down over eight quarterly steps rather than removed at once.",
+          "For passive investors, this is a benchmark-methodology change, not evidence that every deleted company is fundamentally weak."
+        ]
+      },
+      "direction": "UP",
+      "connection": "The reform connects index construction with Japan's broader push toward more investable public markets and stronger incentives for companies to improve market liquidity and investor accessibility.",
+      "usefulness": 88,
+      "watch_next": [
+        "The October 30, 2026 start of the first transition step and TOPIX Next-tier.",
+        "Which transitional companies regain continuation criteria at the October 2027 re-evaluation.",
+        "Changes in free float, liquidity and investor-relations actions among companies facing phased reductions.",
+        "The second periodic review in October 2028."
+      ],
+      "evidence_for": [
+        "JPX has published the first periodic-review and initial-selection results.",
+        "The continuation and inclusion thresholds are explicitly defined by JPX.",
+        "JPX has scheduled eight quarterly weighting reductions for non-selected constituents.",
+        "Selection now covers domestic common shares across Prime, Standard and Growth subject to the methodology."
+      ],
+      "implications": [
+        "Broad TOPIX funds will gradually track a more liquidity-screened investable universe.",
+        "Companies near the thresholds have a stronger benchmark-related incentive to improve tradable free float and market liquidity.",
+        "Index deletion or reduced weight should not be treated by itself as a verdict on business quality."
+      ],
+      "reading_levels": {
+        "30_sec": [
+          "TOPIX is entering its next-generation selection regime.",
+          "Liquidity and free float now explicitly determine continuation and new inclusion.",
+          "Non-selected names are phased down over eight quarterly steps.",
+          "The transition runs with a 2027 re-evaluation and a second periodic review in 2028."
+        ],
+        "2_min": "TOPIX is becoming more selective. JPX announced the first periodic review and initial selection on October 7, 2026. Existing constituents need an annual traded value ratio of at least 0.14 and must sit within the top 97% of cumulative free-float-adjusted market capitalization among qualifying issues; new additions face stricter thresholds. Companies that do not qualify are not removed overnight: their weights are reduced in eight quarterly stages, with a re-evaluation in October 2027. Ang signal: benchmark representation is becoming more explicitly tied to actual investability. For ordinary TOPIX-fund investors, this is mainly a gradual methodology change—not a reason to trade individual additions or deletions."
+      },
+      "connection_tags": [
+        "topix",
+        "japan-equities",
+        "liquidity",
+        "free-float",
+        "index-reform"
+      ],
+      "current_strength": "STRONG",
+      "previous_strength": "EMERGING",
+      "evidence_against": [
+        "The phased transition reduces the immediate market impact.",
+        "Index selection is a methodology decision and does not directly measure company fundamentals or future returns.",
+        "Companies under transitional measures can regain continuation eligibility at the October 2027 re-evaluation."
+      ],
+      "what_would_change_mind": "The structural thesis would weaken if JPX materially postpones or reverses the published transition, abandons the liquidity/free-float criteria, or stops the scheduled weighting reductions.",
+      "alternative_explanation": "Some apparent pressure on smaller companies may reflect ordinary market-cap and trading changes rather than corporate actions taken specifically to preserve TOPIX representation."
+    },
+    "sources": [
+      {
+        "url": "https://www.jpx.co.jp/english/news/6030/20261007-01.html",
+        "title": "Periodic Review and Initial Selection of Constituents of TOPIX and Other Stock Price Indices",
+        "publisher": "Japan Exchange Group / JPX Market Innovation & Research",
+        "source_type": "primary",
+        "published_at": "2026-10-07"
+      },
+      {
+        "url": "https://www.jpx.co.jp/english/markets/indices/revisions-indices/02.html",
+        "title": "Second stage of revisions",
+        "publisher": "Japan Exchange Group",
+        "source_type": "primary",
+        "published_at": "2026-10-07"
+      },
+      {
+        "url": "https://www.jpx.co.jp/english/markets/indices/line-up/faq_e.pdf",
+        "title": "TOPIX FAQ: liquidity criteria and free-float selection",
+        "publisher": "Japan Exchange Group",
+        "source_type": "primary",
+        "published_at": "2025-11-01"
+      }
+    ],
+    "summary": "JPX has begun the first periodic review of its next-generation TOPIX framework. From October 2026, liquidity and free-float-adjusted market capitalization explicitly determine continuation and inclusion, while non-selected constituents are phased down over eight quarterly steps with a 2027 re-evaluation.",
+    "geography": [
+      "Japan"
+    ],
+    "confidence": 98,
+    "created_at": "2026-10-08T05:49:00+09:00",
+    "importance": 87,
+    "published_at": "2026-10-08T05:49:00+09:00",
+    "why_it_matters": "TOPIX is a core benchmark for Japanese equities. Its transition changes which listed companies receive full benchmark representation and creates stronger incentives around liquidity and investable free float."
+  }
+]
