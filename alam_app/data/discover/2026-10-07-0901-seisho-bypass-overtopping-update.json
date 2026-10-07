@@ -1,0 +1,126 @@
+{
+  "id": "japan-seisho-bypass-typhoon27-overtopping-2026-10",
+  "agent": "discover",
+  "created_at": "2026-10-07T09:01:00+09:00",
+  "type": "infrastructure",
+  "title": "Seisho Bypass closure expanded again as Typhoon 27 swell kept hitting Kanagawa",
+  "summary": "The Seisho Bypass disruption became broader than ALAM's earlier update. Sa fourth official report, authorities added a 2.3 km upbound closure from Oiso-nishi IC to Seisho-Ninomiya IC, while the existing downbound and toll-road closures continued. As of the latest official material available this morning, no final reopening notice has been posted.",
+  "why_it_matters": "If you're driving through Shonan or western Kanagawa, yesterday's earlier closure map is already outdated. More broadly, this is a useful reminder that an offshore typhoon can disrupt coastal infrastructure through swell even without landfall.",
+  "importance": 80,
+  "confidence": 98,
+  "tags": [
+    "Japan",
+    "Kanagawa",
+    "Typhoon 27",
+    "Seisho Bypass",
+    "Roads",
+    "Coastal risk",
+    "Transport"
+  ],
+  "geography": [
+    "Japan",
+    "Kanagawa"
+  ],
+  "status": "DEVELOPING",
+  "sources": [
+    {
+      "publisher": "国土交通省 関東地方整備局 横浜国道事務所 / 中日本高速道路株式会社 東京支社",
+      "title": "台風27号の高波によるE84西湘バイパスで通行止め（第4報）",
+      "url": "https://www.ktr.mlit.go.jp/kisha/kisha_03754.pdf",
+      "published_at": "2026-10-06",
+      "source_type": "official"
+    },
+    {
+      "publisher": "国土交通省 関東地方整備局 横浜国道事務所",
+      "title": "横浜国道事務所 記者発表資料",
+      "url": "https://www.ktr.mlit.go.jp/kisha/yokohama_index.html",
+      "published_at": "2026-10-07",
+      "source_type": "official"
+    },
+    {
+      "publisher": "テレビ神奈川",
+      "title": "台風27号による高波の影響　西湘バイパスが通行止め（6日午後10時時点）",
+      "url": "https://www.tvk-yokohama.com/tvknews-archive/2026/10/06/20116.php",
+      "published_at": "2026-10-06",
+      "source_type": "news"
+    }
+  ],
+  "claims": [
+    {
+      "kind": "FACT",
+      "text": "The fourth official report added an upbound closure from Oiso-nishi IC to Seisho-Ninomiya IC, about 2.3 km, while the roughly 6.0 km downbound closure from Oiso-higashi IC to Seisho-Ninomiya IC continued.",
+      "source_refs": [
+        1
+      ],
+      "basis": "Joint fourth report from MLIT Yokohama National Highway Office and NEXCO Central Japan."
+    },
+    {
+      "kind": "FACT",
+      "text": "The same report lists Seisho-Ninomiya IC to Odawara-nishi IC, about 13.4 km, and Hayakawa JCT to Ishibashi IC, about 1.6 km, closed in both directions.",
+      "source_refs": [
+        1
+      ],
+      "basis": "Joint fourth report."
+    },
+    {
+      "kind": "FACT",
+      "text": "Authorities say reopening will occur only after high waves subside and safety is confirmed.",
+      "source_refs": [
+        1
+      ],
+      "basis": "Joint fourth report."
+    },
+    {
+      "kind": "FACT",
+      "text": "At 10:00 p.m. on October 6, TV Kanagawa still reported the expanded closure pattern in force.",
+      "source_refs": [
+        3
+      ],
+      "basis": "TV Kanagawa evening road-status report."
+    },
+    {
+      "kind": "INFERENCE",
+      "text": "The fourth report makes the earlier closure map stale for drivers because an additional upbound free-section segment was added after the previous official update.",
+      "source_refs": [
+        1
+      ],
+      "basis": "Comparison of the fourth report with the earlier ALAM version."
+    },
+    {
+      "kind": "ASSUMPTION",
+      "text": "Do not assume the whole Seisho Bypass is closed, that the restrictions will last all day on October 7, or that Typhoon 27 must make landfall for these impacts to occur.",
+      "source_refs": [
+        1,
+        3
+      ],
+      "basis": "The sources identify specific closed sections and conditional reopening, not those broader outcomes."
+    }
+  ],
+  "content": {
+    "change_summary": {
+      "previous": "ALAM's prior version reflected the third official report: the original roughly 6 km downbound closure continued and toll-road sections were closed in both directions.",
+      "now": "The fourth report added a new roughly 2.3 km upbound closure from Oiso-nishi IC to Seisho-Ninomiya IC. The existing downbound and toll-road closures continued, and TV Kanagawa still reported this expanded pattern at 10:00 p.m. October 6.",
+      "why_change_matters": "Anyone relying on the earlier map could incorrectly assume this upbound free-section segment remained available. The update materially changes route planning."
+    },
+    "whats_new": "May additional upbound restriction na: Oiso-nishi IC to Seisho-Ninomiya IC, about 2.3 km. The earlier downbound and toll-road restrictions remained in the fourth official report.",
+    "skeptical_view": "This is a road-status update, not evidence that all of Kanagawa is facing severe typhoon damage. The verified signal is specific: high waves caused overtopping and progressively broader Seisho Bypass restrictions.",
+    "what_next": "Check official live road information immediately before departure. The agencies say reopening depends on the waves subsiding and completion of safety checks.",
+    "what_would_change_mind": "A formal final/reopening notice, another change in the closed sections, or materially different official wave guidance would change this assessment.",
+    "recommendation": "If you need the Shonan–Odawara coastal corridor this morning, huwag umasa sa yesterday morning's route map. Check the latest official traffic status before leaving and be ready to reroute.",
+    "usefulness": "HIGH",
+    "novelty": "MED",
+    "impact": {
+      "money": "LOW",
+      "family": "MED",
+      "career": "LOW",
+      "japan": "MED",
+      "urgency": "HIGH"
+    },
+    "connection_tags": [
+      "typhoon-27",
+      "coastal-infrastructure",
+      "transport-disruption",
+      "high-waves"
+    ]
+  }
+}
