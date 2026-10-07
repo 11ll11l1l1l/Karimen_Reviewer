@@ -1,0 +1,103 @@
+{
+  "id": "japan-driver-monitoring-mandate-2026-09-30",
+  "agent": "discover",
+  "created_at": "2026-10-08T07:00:00+09:00",
+  "type": "transport_safety",
+  "title": "Japan will require driver-monitoring systems on future new cars — but the deadline is 2031, not now",
+  "summary": "Japan has added driver drowsiness and inattention monitoring to its vehicle safety rules. Pero this is a future new-vehicle requirement, not an immediate retrofit order: newly certified vehicle types are covered from September 2031, while continued-production models follow from September 2033.",
+  "why_it_matters": "Driver-monitoring is moving from an optional safety feature toward standard equipment in Japan's future vehicle fleet. For current owners, the practical point is equally important: MLIT's announcement does not say existing cars must be retrofitted now.",
+  "importance": 76,
+  "confidence": 99,
+  "tags": [
+    "Japan",
+    "Cars",
+    "Driver monitoring",
+    "Road safety",
+    "Vehicle regulation"
+  ],
+  "geography": [
+    "Japan"
+  ],
+  "status": "NEW",
+  "sources": [
+    {
+      "publisher": "国土交通省 (MLIT)",
+      "title": "ドライバーモニタリングシステムを義務化します ～道路運送車両の保安基準等の改正について～",
+      "url": "https://www.mlit.go.jp/report/press/jidosha10_hh_000358.html",
+      "published_at": "2026-09-30",
+      "source_type": "official"
+    }
+  ],
+  "claims": [
+    {
+      "kind": "FACT",
+      "text": "MLIT amended Japan's vehicle safety standards to require systems that monitor the driver and warn when drowsiness or inattention is detected.",
+      "source_refs": [
+        1
+      ],
+      "basis": "MLIT September 30 rule-change announcement."
+    },
+    {
+      "kind": "FACT",
+      "text": "The requirement applies to automobiles except motorcycles, motorcycles with sidecars, three-wheel vehicles, certain light vehicles with tracks or sleds, and trailers.",
+      "source_refs": [
+        1
+      ],
+      "basis": "MLIT's stated scope of covered vehicle types."
+    },
+    {
+      "kind": "FACT",
+      "text": "Application starts with new vehicle types in September 2031 and continued-production vehicles in September 2033.",
+      "source_refs": [
+        1
+      ],
+      "basis": "MLIT's official application schedule."
+    },
+    {
+      "kind": "FACT",
+      "text": "The amendment was promulgated on September 30, 2026; the driver-monitoring provisions enter into force on October 20, 2026.",
+      "source_refs": [
+        1
+      ],
+      "basis": "MLIT's promulgation and enforcement dates."
+    },
+    {
+      "kind": "INFERENCE",
+      "text": "Driver-facing monitoring is moving from an optional feature toward baseline safety equipment in Japan's future mainstream vehicle fleet.",
+      "source_refs": [
+        1
+      ],
+      "basis": "Inference from the mandatory equipment rule and its broad vehicle scope."
+    },
+    {
+      "kind": "ASSUMPTION",
+      "text": "Do not interpret the October 2026 rule date as a requirement to retrofit an existing privately owned car; MLIT's published application dates target new vehicle types from 2031 and continued-production vehicles from 2033.",
+      "source_refs": [
+        1
+      ],
+      "basis": "The official schedule identifies future production/application dates and does not state an immediate retrofit mandate for existing cars."
+    }
+  ],
+  "content": {
+    "whats_new": "Japan has formally written drowsiness and inattention warning systems into its vehicle safety standards, with phased application beginning in 2031.",
+    "skeptical_view": "The word 'mandatory' can sound immediate, pero the official schedule is years away. This is not evidence that today's cars suddenly became non-compliant or need an immediate retrofit.",
+    "what_next": "Watch how automakers implement the requirement before the 2031 new-type deadline and whether future guidance changes technical requirements or model coverage.",
+    "what_would_change_mind": "A later MLIT notice imposing retrofit obligations on already-registered vehicles, changing the application dates, or materially changing the covered vehicle classes would alter this assessment.",
+    "recommendation": "If you're buying a car now, treat driver monitoring as a feature likely to become increasingly standard, not as a current legal requirement to replace or retrofit your existing vehicle.",
+    "usefulness": "HIGH",
+    "novelty": "MED",
+    "impact": {
+      "money": "LOW",
+      "family": "MED",
+      "career": "LOW",
+      "japan": "MED",
+      "urgency": "LOW"
+    },
+    "connection_tags": [
+      "driver-monitoring",
+      "road-safety",
+      "vehicle-regulation",
+      "automotive-technology"
+    ]
+  }
+}
