@@ -1,0 +1,259 @@
+[
+  {
+    "id": "japan-movable-type-critical-vulnerabilities-2026-10-07",
+    "agent": "discover",
+    "created_at": "2026-10-08T03:55:00+09:00",
+    "type": "technology",
+    "title": "Critical Movable Type flaws put older Japanese websites at risk",
+    "summary": "Japan's JVN and IPA disclosed serious flaws in Movable Type, including unauthenticated code injection scored 9.3/10 and SQL injection scored 8.8/10. Kung may website or company system na gumagamit nito, the practical signal is simple: check the version and patch or apply the official workaround.",
+    "why_it_matters": "Movable Type is a Japan-developed publishing platform used for websites and content management. The most serious disclosed flaw can be reached over the network without login or user interaction, so an exposed unpatched installation can carry materially higher risk than an ordinary software bug.",
+    "importance": 84,
+    "confidence": 96,
+    "tags": [
+      "Japan",
+      "cybersecurity",
+      "Movable Type",
+      "CMS",
+      "website security",
+      "IPA",
+      "JVN"
+    ],
+    "geography": [
+      "Japan"
+    ],
+    "status": "NEW",
+    "sources": [
+      {
+        "publisher": "Japan Vulnerability Notes (JVN)",
+        "title": "JVN#91153973: Movable Typeにおける複数の脆弱性",
+        "url": "https://jvn.jp/jp/JVN91153973/index.html",
+        "published_at": "2026-10-07",
+        "source_type": "official"
+      },
+      {
+        "publisher": "Information-technology Promotion Agency, Japan (IPA)",
+        "title": "「Movable Type」における複数の脆弱性について（JVN#91153973）",
+        "url": "https://www.ipa.go.jp/security/security-alert/2026/1007-movabletype.html",
+        "published_at": "2026-10-07",
+        "source_type": "official"
+      },
+      {
+        "publisher": "Japan Vulnerability Notes (JVN)",
+        "title": "シックス・アパート株式会社からの情報 — JVN#91153973",
+        "url": "https://jvn.jp/jp/JVN91153973/370331/index.html",
+        "published_at": "2026-10-07",
+        "source_type": "primary"
+      }
+    ],
+    "claims": [
+      {
+        "kind": "FACT",
+        "text": "JVN disclosed two named Movable Type vulnerabilities on October 7, 2026: code injection in the upgrade script (CVE-2026-96408) and SQL injection in site search (CVE-2026-103668).",
+        "source_refs": [
+          1
+        ],
+        "basis": "Official coordinated vulnerability disclosure."
+      },
+      {
+        "kind": "FACT",
+        "text": "CVE-2026-96408 has a CVSS v4 base score of 9.3 and can be attacked over the network with low complexity, no privileges and no user interaction; CVE-2026-103668 has a CVSS v4 base score of 8.8.",
+        "source_refs": [
+          1
+        ],
+        "basis": "JVN vulnerability scoring and vectors."
+      },
+      {
+        "kind": "FACT",
+        "text": "Affected supported branches include Movable Type 9.2.1 and earlier in the 9.2 cloud series, 9.0.9 and earlier in 9.0, 8.8.5 and earlier in 8.8, and 8.0.12 and earlier in 8.0, plus specified Movable Type Premium versions; older end-of-life branches are also affected.",
+        "source_refs": [
+          1,
+          3
+        ],
+        "basis": "JVN affected-product list and vendor statement."
+      },
+      {
+        "kind": "FACT",
+        "text": "Fixed releases include Movable Type 9.3.0, 9.0.10, 8.8.6 and 8.0.13, and Movable Type Premium 9.3.0, 9.0.10 and 2.18; JVN also publishes workarounds for systems that cannot update immediately.",
+        "source_refs": [
+          1
+        ],
+        "basis": "Official JVN remediation guidance."
+      },
+      {
+        "kind": "INFERENCE",
+        "text": "Organizations running internet-exposed Movable Type should treat version identification and remediation as a near-term operational priority because the highest-severity flaw requires neither authentication nor user interaction.",
+        "source_refs": [
+          1,
+          2,
+          3
+        ],
+        "basis": "Severity, attack vector and official recommendation to update promptly or apply workarounds."
+      },
+      {
+        "kind": "ASSUMPTION",
+        "text": "This disclosure alone does not establish that the vulnerabilities are being actively exploited in the wild or that any specific Japanese website has been compromised.",
+        "source_refs": [
+          1,
+          2
+        ],
+        "basis": "The reviewed official notices describe the vulnerabilities and remediation but do not establish a specific compromise or active-exploitation campaign."
+      }
+    ],
+    "content": {
+      "key_message": "If you operate a Movable Type site, identify its version now: several older releases have newly disclosed high-severity flaws, and fixed versions or official workarounds are available.",
+      "whats_new": [
+        "JVN published coordinated disclosure JVN#91153973 on October 7.",
+        "The most serious issue is a network-reachable code-injection flaw scored CVSS 9.3/10 under v4.",
+        "A separate site-search SQL-injection flaw scores 8.8/10 under CVSS v4.",
+        "Six Apart has released fixed versions across current supported branches; JVN also lists mitigations when immediate updating is not possible."
+      ],
+      "skeptical_view": "High CVSS does not mean every Movable Type installation has already been attacked. The official material reviewed here establishes vulnerability and severity, not active exploitation or a known mass-compromise campaign.",
+      "what_next": [
+        "Watch IPA/JVN and Six Apart for any update indicating active exploitation or revised affected-version scope.",
+        "Organizations using Movable Type should confirm whether their installed branch is in JVN's affected list and follow the vendor's supported update path.",
+        "If patching is delayed, use only the workaround documented by JVN/Six Apart rather than improvised changes."
+      ],
+      "what_would_change_mind": "Urgency would rise further if JVN, IPA, the vendor or a credible incident-response source confirms exploitation in the wild. It would fall for a specific installation only after its version and configuration are verified as unaffected or remediated.",
+      "recommendation": "Website owners and IT teams using Movable Type: check the exact installed version and follow the official update guidance. Ordinary readers who do not operate or administer a Movable Type site do not need to take action.",
+      "usefulness": "Turns a technical Japanese security advisory into a clear scope check: who needs to act, which versions are affected, and what evidence is still missing.",
+      "novelty": "The signal is not a generic monthly patch cycle: JVN published a newly coordinated disclosure with a 9.3 network-reachable code-injection flaw and a separate 8.8 SQL-injection flaw in a Japan-developed CMS.",
+      "impact": {
+        "money": "MED",
+        "family": "LOW",
+        "career": "MED",
+        "japan": "MED",
+        "urgency": "HIGH"
+      },
+      "connection_tags": [
+        "japan-cybersecurity",
+        "cms-security",
+        "website-operations",
+        "software-patching"
+      ],
+      "reading_levels": {
+        "30 sec": [
+          "What happened: JVN disclosed serious Movable Type flaws on October 7, including code injection rated 9.3/10.",
+          "Why it matters: the top flaw is network-reachable and needs no login or user click.",
+          "What to do/watch: administrators should check their exact Movable Type version and use the official fixed release or workaround.",
+          "Bottom line: this is actionable for site operators; there is no official evidence in the reviewed notices that every installation is compromised or that mass exploitation is underway."
+        ],
+        "2_min": "Movable Type has newly disclosed vulnerabilities affecting several current and older branches. The most serious is code injection in the upgrade script: JVN scores it 9.3/10 under CVSS v4 and says it can be reached over a network without privileges or user interaction. A second named issue is SQL injection in site search, scored 8.8/10. Fixed releases are already available for supported branches, and JVN documents workarounds for systems that cannot update immediately. The important boundary: vulnerability does not equal confirmed compromise. The reviewed official notices do not say that every Movable Type site is affected in the same configuration or that attackers are already exploiting these flaws at scale."
+      },
+      "learning": {
+        "outcomes": [
+          "Explain why an unauthenticated network-reachable code-injection flaw is serious.",
+          "Identify whether a Movable Type installation falls within the officially affected version ranges.",
+          "Distinguish a confirmed vulnerability from confirmed exploitation or compromise."
+        ],
+        "background": "Movable Type is a content-management and publishing system: software that organizations can use to manage and publish website content. On October 7, Japan Vulnerability Notes published a coordinated disclosure covering multiple flaws in current and older Movable Type branches. Two named vulnerabilities are especially important because they concern code or database commands supplied through web-facing functionality.",
+        "terms": [
+          {
+            "term": "code injection",
+            "meaning": "A flaw that can allow attacker-controlled input to be interpreted as executable code.",
+            "why_it_matters": "Successful exploitation can let an attacker run unintended code on the affected system."
+          },
+          {
+            "term": "SQL injection",
+            "meaning": "A flaw that can allow attacker-controlled input to alter database queries.",
+            "why_it_matters": "Depending on the application and permissions, this can expose or alter database information."
+          },
+          {
+            "term": "CVSS",
+            "meaning": "Common Vulnerability Scoring System — a standardized way to describe technical vulnerability severity.",
+            "why_it_matters": "JVN rates the disclosed code-injection issue 9.3/10 under CVSS v4 and the SQL-injection issue 8.8/10."
+          }
+        ],
+        "how_it_works": [
+          {
+            "title": "First check the software branch",
+            "explanation": "The advisory lists affected version ranges separately. An administrator should compare the site's exact installed version with JVN's list rather than assuming all Movable Type installations are identical."
+          },
+          {
+            "title": "Why no-login exposure matters",
+            "explanation": "JVN's vector for the 9.3 flaw says the attack can originate over the network, needs no privileges and requires no user interaction. That removes several barriers an attacker would otherwise have to overcome."
+          },
+          {
+            "title": "Remediation changes the risk",
+            "explanation": "The vendor released fixed versions. JVN also provides specific mitigations for systems that cannot update immediately, so the response should follow those official instructions."
+          }
+        ],
+        "example": "Example: if an organization discovers that a site is on Movable Type 9.0.9, JVN lists that release within the affected 9.0 range and lists 9.0.10 as a fixed release. The correct next step is to follow the vendor's supported upgrade guidance, not to assume that merely hiding the site's login page removes the vulnerability.",
+        "takeaways": [
+          "The top disclosed flaw is technically severe and does not require a logged-in attacker.",
+          "Affected versions span multiple Movable Type and Movable Type Premium branches.",
+          "Fixed versions and official mitigations are already published.",
+          "A vulnerability advisory is not proof that a particular site has been hacked.",
+          "Non-admin users generally have nothing to do; this is primarily an operator/IT action item."
+        ]
+      },
+      "action_plan": {
+        "goal": "Determine whether a Movable Type installation is affected and move it onto an officially remediated state.",
+        "who_should_act": "Website owners, administrators, managed-service providers and IT/security teams responsible for a Movable Type installation. People who do not administer a Movable Type site can ignore this checklist.",
+        "deadline": "No fixed calendar deadline is stated in the reviewed advisories; the vendor recommends prompt updating or implementation of the official workaround.",
+        "prepare": [
+          "Exact Movable Type or Movable Type Premium version and edition",
+          "Administrative access and the organization's normal backup/change-control process",
+          "JVN advisory and the vendor's official security-update instructions"
+        ],
+        "steps": [
+          {
+            "step": "Identify the installed version",
+            "action": "Record the exact Movable Type product, edition and version used by the site.",
+            "how": "Use the organization's normal administrative or software-inventory method; do not guess from the public website appearance.",
+            "needed": [
+              "Administrative or inventory access"
+            ],
+            "time_minutes": null,
+            "cost_yen": null,
+            "done_when": "The exact product/edition/version is documented."
+          },
+          {
+            "step": "Compare with JVN's affected list",
+            "action": "Check the documented version against JVN#91153973.",
+            "how": "Use the official JVN affected-products section.",
+            "needed": [
+              "Exact installed version",
+              "JVN#91153973"
+            ],
+            "time_minutes": null,
+            "cost_yen": 0,
+            "done_when": "The installation is classified as affected or outside the listed affected range."
+          },
+          {
+            "step": "Apply the supported remediation",
+            "action": "If affected, update to the vendor's fixed release for that branch; if immediate updating is not feasible, follow the official JVN/vendor workaround.",
+            "how": "Follow Six Apart/JVN instructions and the organization's normal backup, testing and change-control process.",
+            "needed": [
+              "Administrative access",
+              "Backup/change-control process",
+              "Official vendor guidance"
+            ],
+            "time_minutes": null,
+            "cost_yen": null,
+            "done_when": "The site is on a listed fixed release or the documented workaround has been applied and verified."
+          }
+        ],
+        "mistakes_to_avoid": [
+          "Do not assume a high CVSS score proves your site has already been compromised.",
+          "Do not assume removing or hiding a login page addresses a flaw that the advisory describes as requiring no privileges.",
+          "Do not invent a workaround; use the JVN/vendor instructions because configuration and supported branches differ."
+        ],
+        "decision_rules": [
+          {
+            "if": "your exact version is within JVN's affected range",
+            "then": "use the vendor's fixed release or official workaround."
+          },
+          {
+            "if": "you do not operate or administer a Movable Type installation",
+            "then": "no personal action is required from this advisory."
+          },
+          {
+            "if": "later official reporting confirms active exploitation",
+            "then": "raise incident-response priority and follow the updated vendor/IPA/JVN guidance."
+          }
+        ],
+        "follow_up": "After remediation, verify the running version/configuration and monitor IPA, JVN and Six Apart for revisions to the advisory or evidence of active exploitation."
+      }
+    }
+  }
+]
