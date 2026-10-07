@@ -1,0 +1,86 @@
+{
+  "id": "japan-beer-cartel-criminal-probe-2026-10",
+  "agent": "discover",
+  "created_at": "2026-10-07T12:00:22+09:00",
+  "type": "consumer",
+  "title": "Japan’s four beer giants face a rare criminal-track cartel probe over price increases",
+  "summary": "Japan’s antitrust watchdog has reportedly begun compulsory searches of Asahi, Kirin, Suntory and Sapporo over suspected coordination of beer-category shipment-price increases. Ang key point: this is an investigation, not a finding of guilt—but the reported use of compulsory criminal-investigation powers makes it more consequential than a routine pricing story.",
+  "why_it_matters": "Beer and beer-like drinks are mass-market household and restaurant purchases, and Japan has just unified alcohol-tax rates across beer categories. If competitors coordinated wholesale price increases, the issue goes directly to whether consumers and businesses were getting genuine price competition during a period of broad food inflation.",
+  "importance": 86,
+  "confidence": 88,
+  "tags": ["Japan","Beer","Competition policy","Consumer prices","Antitrust","Food inflation"],
+  "geography": ["Japan"],
+  "status": "NEW",
+  "sources": [
+    {
+      "publisher": "テレビ朝日",
+      "title": "【速報】ビールで価格カルテルか　大手ビールメーカー4社を強制調査　公正取引委員会",
+      "url": "https://news.tv-asahi.co.jp/news_society/articles/900201320.html",
+      "published_at": "2026-10-07",
+      "source_type": "news"
+    },
+    {
+      "publisher": "共同通信 / 埼玉新聞",
+      "title": "公取委、ビール４社を強制調査　カルテルで価格引き上げか",
+      "url": "https://www.saitama-np.co.jp/articles/218136/postDetail",
+      "published_at": "2026-10-07",
+      "source_type": "news"
+    },
+    {
+      "publisher": "公正取引委員会",
+      "title": "主要報道発表資料（令和8年）",
+      "url": "https://www.jftc.go.jp/houdou/pressrelease/shuyohodoR8.html",
+      "published_at": "2026-10-07",
+      "source_type": "official"
+    }
+  ],
+  "claims": [
+    {
+      "kind": "FACT",
+      "text": "Multiple Japanese news organizations reported on October 7 that the Japan Fair Trade Commission began compulsory searches of Asahi Beer, Kirin Beer, Suntory and Sapporo Beer over suspected coordination of shipment-price increases for beer-category products.",
+      "source_refs": [1,2],
+      "basis": "Independent same-day reporting identifies the same four companies and suspected conduct."
+    },
+    {
+      "kind": "FACT",
+      "text": "Kyodo reported that the investigation is using compulsory criminal-investigation powers and is being conducted with possible referral to prosecutors in view.",
+      "source_refs": [2],
+      "basis": "Kyodo's same-day report describes the investigative authority and potential criminal referral."
+    },
+    {
+      "kind": "FACT",
+      "text": "As of this article's publication check, the JFTC's main 2026 press-release index did not yet contain a public October 7 release describing this beer investigation.",
+      "source_refs": [3],
+      "basis": "The regulator's current public press-release index was checked before publication; this limits how strongly unconfirmed operational details should be stated."
+    },
+    {
+      "kind": "INFERENCE",
+      "text": "For ordinary readers, the signal is bigger than beer: competition authorities appear willing to scrutinize whether synchronized food-price increases reflect independent cost pressure or coordination between rivals.",
+      "source_refs": [1,2],
+      "basis": "The reported allegation concerns coordination of price-increase timing and magnitude among major competitors; broader enforcement direction remains an inference."
+    },
+    {
+      "kind": "ASSUMPTION",
+      "text": "Do not assume the four companies have been found guilty, that every beer price increase was coordinated, or that consumers will receive refunds or immediate price cuts.",
+      "source_refs": [1,2,3],
+      "basis": "The matter is at the investigation stage and no final infringement decision or remedy is established by the sources reviewed."
+    }
+  ],
+  "content": {
+    "whats_new": "On October 7, Japanese media reported that the JFTC launched compulsory searches of Asahi Beer, Kirin Beer, Suntory and Sapporo Beer over suspected coordination of beer-category shipment-price increases. Kyodo says the criminal-track investigation can lead to a referral to prosecutors. This is still an allegation under investigation, not a conclusion that a cartel existed.",
+    "skeptical_view": "The regulator had not posted a matching October 7 case release on its main public press-release index when this article was checked. Kaya the safest reading is narrow: the compulsory investigation itself is well corroborated by major Japanese reporting, while detailed claims about meetings, duration or exact coordination mechanisms should remain provisional until official findings or company disclosures appear.",
+    "what_next": "Watch for an official JFTC statement, company disclosures, whether prosecutors receive a referral, and eventually whether the investigation produces charges, administrative action or no finding. Any evidence specifying which price revisions or product categories were examined would materially sharpen the story.",
+    "what_would_change_mind": "An official clarification that the reported compulsory investigation did not occur, that one or more named companies were not subjects, or a later decision finding no prohibited coordination would materially change the current assessment.",
+    "recommendation": "No immediate consumer action is justified. Treat current shelf prices and past increases as prices under scrutiny—not proof of overcharging. For restaurants and retailers, the useful thing to watch is whether future wholesale-price announcements, contract terms or supplier communications change as the investigation develops.",
+    "usefulness": "MED",
+    "novelty": "HIGH",
+    "impact": {
+      "money": "MED",
+      "family": "LOW",
+      "career": "LOW",
+      "japan": "HIGH",
+      "urgency": "LOW"
+    },
+    "connection_tags": ["consumer-prices","competition-policy","food-inflation","beer-market","antitrust"]
+  }
+}
