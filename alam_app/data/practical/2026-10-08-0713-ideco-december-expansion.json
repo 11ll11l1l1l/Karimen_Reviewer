@@ -1,0 +1,118 @@
+{
+  "id": "japan-2026-ideco-december-expansion",
+  "agent": "practical",
+  "created_at": "2026-10-08T07:13:00+09:00",
+  "type": "money_pension_procedure",
+  "title": "May iDeCo ka? December 1 tataas ang contribution limits at lalawak ang eligible age",
+  "summary": "Japan's iDeCo rules change on December 1, 2026: contribution limits rise and eligibility expands toward age 70. Existing members who want to increase contributions may need to submit a change request; the higher limits apply from the December 2026 contribution, generally withdrawn in January 2027.",
+  "why_it_matters": "This can change how much eligible workers, self-employed people and other iDeCo members can contribute with tax-deductible contributions. It is not an automatic instruction to invest more: affordability, eligibility, employer pension arrangements and account rules still matter.",
+  "importance": 84,
+  "confidence": 99,
+  "tags": ["Japan","iDeCo","Pension","Tax","Money","Retirement","2026"],
+  "geography": ["Japan"],
+  "status": "CONFIRMED",
+  "sources": [
+    {
+      "publisher": "Ministry of Health, Labour and Welfare",
+      "title": "2025年の制度改正",
+      "url": "https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/nenkin/nenkin/kyoshutsu/2025kaisei.html",
+      "source_type": "official"
+    },
+    {
+      "publisher": "National Pension Fund Association / iDeCo Official Site",
+      "title": "iDeCoの拠出限度額の見直しに伴うiDeCo掛金額変更について",
+      "url": "https://www.ideco-koushiki.jp/news/procedure/index.html",
+      "published_at": "2026-08-17",
+      "source_type": "official"
+    },
+    {
+      "publisher": "Ministry of Health, Labour and Welfare",
+      "title": "iDeCoの普及・推進",
+      "url": "https://www.mhlw.go.jp/stf/photo_report/2026/ph0414-03.html",
+      "published_at": "2026-04-14",
+      "source_type": "official"
+    }
+  ],
+  "claims": [
+    {
+      "kind": "FACT",
+      "text": "The iDeCo eligibility-age expansion and contribution-limit changes take effect on December 1, 2026.",
+      "source_refs": [1,3],
+      "basis": "MHLW reform guidance"
+    },
+    {
+      "kind": "FACT",
+      "text": "From December 2026, the contribution framework rises to ¥75,000 per month for Category 1/4 participants within the shared National Pension Fund framework, while Category 2 participants have a ¥62,000 monthly combined framework with applicable employer pension arrangements; the exact iDeCo amount depends on the person's pension category and other pension contributions.",
+      "source_refs": [1],
+      "basis": "MHLW post-reform contribution-limit guidance"
+    },
+    {
+      "kind": "FACT",
+      "text": "The reform expands iDeCo participation toward age 70 under statutory conditions. MHLW also provides a transitional rule through November 30, 2029 for certain people aged 60 to under 70 who do not otherwise fall within the continuing-participation categories.",
+      "source_refs": [1],
+      "basis": "MHLW eligibility-age and transitional-rule guidance"
+    },
+    {
+      "kind": "FACT",
+      "text": "The iDeCo official site says the higher contribution limits apply from the December 2026 contribution, which is generally withdrawn in January 2027, and members who want to change their contribution in line with the new limit should follow the published contribution-change procedure.",
+      "source_refs": [2],
+      "basis": "National Pension Fund Association procedure notice"
+    },
+    {
+      "kind": "FACT",
+      "text": "MHLW states that iDeCo contributions receive an income deduction, and the age expansion can allow eligible participants to receive that deduction for contributions until as late as age 70.",
+      "source_refs": [3],
+      "basis": "MHLW iDeCo promotion/reform explanation"
+    },
+    {
+      "kind": "INFERENCE",
+      "text": "Existing members should check their own category, employer pension arrangement and household cash flow before requesting a higher contribution instead of assuming the new maximum is automatically suitable or automatically applied.",
+      "source_refs": [1,2],
+      "basis": "Inference from category-specific limits and the official change-request process"
+    }
+  ],
+  "content": {
+    "key_message": "May iDeCo ka o iniisip mong mag-iDeCo? December 1, 2026 lalawak ang age eligibility at tataas ang contribution limits. Pero hindi ibig sabihin na automatic kang ililipat sa maximum—check your category and procedure first.",
+    "who_is_affected": "Current or prospective iDeCo participants in Japan, especially people considering a higher contribution and people aged 60 to under 70 who may become eligible under the expanded rules.",
+    "when": "The reform takes effect December 1, 2026. The higher limit applies from the December 2026 contribution; the iDeCo official site says this is generally the January 2027 withdrawal.",
+    "financial_impact": "Potentially significant because eligible contributions are income-deductible and the maximum contribution framework rises. The usable amount differs by pension category and employer pension arrangements, so there is no single new maximum that applies to everyone.",
+    "risk_if_ignored": "You may miss a contribution option you intended to use, or incorrectly assume your contribution will automatically rise. Increasing contributions without checking household cash flow can also reduce money available for near-term expenses.",
+    "action": "CHECK_AND_PREPARE",
+    "deadline": "December 1, 2026 is the reform effective date. The official sources do not establish one universal filing deadline for every member or financial institution; check the procedure and processing cutoff of your iDeCo provider.",
+    "effort": "Low to medium: identify your pension category and employer pension arrangement, check your provider's change procedure, decide whether a higher contribution fits your budget, and retain submission confirmation.",
+    "potential_benefit": "Eligible members can have more room for tax-deductible retirement contributions, and some people aged 60 to under 70 gain or retain access to iDeCo under the expanded eligibility rules.",
+    "downside": "iDeCo is a retirement investment with account/product fees and investment risk, and contributed assets are generally intended for retirement rather than ordinary short-term spending.",
+    "what_would_change_mind": "A later MHLW or National Pension Fund Association notice changing the December 1 effective date, contribution limits, age eligibility, transitional rule or contribution-change procedure.",
+    "usefulness": 90,
+    "novelty": 89,
+    "impact": {
+      "money": "HIGH",
+      "family": "MED",
+      "career": "LOW",
+      "japan": "HIGH",
+      "urgency": "MED"
+    },
+    "connection_tags": ["ideco","retirement","tax-deduction","pension","december-2026","contribution-limit"],
+    "what_to_do_now": [
+      "Check whether you already have iDeCo and identify your National Pension category and any employer pension arrangement.",
+      "If you want to increase your contribution, check your iDeCo provider's contribution-change procedure and processing cutoff; do not assume the maximum increases automatically.",
+      "If you are age 60 to under 70, check the December eligibility rules and transitional rule against your pension/iDeCo history before applying.",
+      "Choose a contribution that fits your household cash flow rather than treating the legal maximum as a recommendation.",
+      "Keep the submitted change request, provider confirmation or other completion evidence."
+    ],
+    "prepare": [
+      "Your iDeCo account/provider details",
+      "Your pension category and employer pension/DB/DC information where applicable",
+      "Current contribution amount and the amount you are considering",
+      "A household cash-flow check before increasing a retirement contribution"
+    ],
+    "avoid": [
+      "Do not assume everyone gets the same ¥75,000 or ¥62,000 iDeCo maximum; the framework depends on pension category and other pension arrangements.",
+      "Do not assume your existing contribution automatically rises in December.",
+      "Do not treat the higher legal limit as personalized investment advice or a guarantee of tax savings or returns.",
+      "Do not rely on unofficial social posts for your exact eligibility or provider procedure."
+    ],
+    "watch": "Watch MHLW, the iDeCo official site and your own iDeCo provider for implementation notices and provider-specific processing cutoffs before the December 1 reform.",
+    "bottom_line": "FACT: iDeCo contribution limits and age eligibility expand on December 1, 2026, and the official iDeCo site has already published contribution-change guidance. INFERENCE: if you want to use the higher limit, check your exact category and provider procedure now, but only increase contributions if the amount fits your finances."
+  }
+}
