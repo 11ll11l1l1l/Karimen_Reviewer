@@ -1,0 +1,79 @@
+{
+  "id": "japan-seisho-bypass-typhoon27-overtopping-2026-10",
+  "agent": "discover",
+  "created_at": "2026-10-07T17:04:00+09:00",
+  "type": "infrastructure",
+  "title": "Seisho Bypass fully reopened after Typhoon 27 high-wave closures",
+  "summary": "Resolved na ang Seisho Bypass disruption tracked by ALAM. MLIT and NEXCO Central Japan issued a fifth report and a final report on October 7: several sections reopened at 9:30 a.m., then the remaining downbound closures were lifted at noon after authorities confirmed safe vehicle passage.",
+  "why_it_matters": "If you were avoiding the Shonan–Odawara coastal corridor because of yesterday's high-wave closures, the specific Seisho Bypass restrictions in this story are no longer in force. Earlier closure maps and rerouting guidance for this incident are now stale.",
+  "importance": 75,
+  "confidence": 99,
+  "tags": ["Japan","Kanagawa","Typhoon 27","Seisho Bypass","Roads","Coastal risk","Transport"],
+  "geography": ["Japan","Kanagawa"],
+  "status": "RESOLVED",
+  "sources": [
+    {
+      "publisher": "国土交通省 関東地方整備局 横浜国道事務所 / 中日本高速道路株式会社 東京支社",
+      "title": "台風27号の高波によるE84西湘バイパス通行止め一部解除（第5報）",
+      "url": "https://www.ktr.mlit.go.jp/kisha/yokohama_index.html",
+      "published_at": "2026-10-07",
+      "source_type": "official"
+    },
+    {
+      "publisher": "国土交通省 関東地方整備局 横浜国道事務所 / 中日本高速道路株式会社 東京支社",
+      "title": "台風27号の高波によるE84西湘バイパス通行止め解除（終報）",
+      "url": "https://www.ktr.mlit.go.jp/kisha/yokohama_index.html",
+      "published_at": "2026-10-07",
+      "source_type": "official"
+    },
+    {
+      "publisher": "中日本高速道路株式会社",
+      "title": "台風27号に関する関係機関による記者発表（まとめ）",
+      "url": "https://www.c-nexco.co.jp/topics/2550.html",
+      "published_at": "2026-10-07",
+      "source_type": "official"
+    }
+  ],
+  "claims": [
+    {
+      "kind": "FACT",
+      "text": "MLIT and NEXCO Central Japan issued a fifth report and a final report on October 7, and NEXCO Central Japan states that all Typhoon 27-related Seisho Bypass closures covered by the notices have been lifted.",
+      "source_refs": [1,2,3],
+      "basis": "Official MLIT/Yokohama National Highway Office release index and NEXCO Central Japan Typhoon 27 notice summary."
+    },
+    {
+      "kind": "FACT",
+      "text": "The fifth report records a partial reopening at 9:30 a.m. on October 7; the final report records the end of the remaining closure at noon.",
+      "source_refs": [1,2],
+      "basis": "Official fifth and final reports."
+    },
+    {
+      "kind": "INFERENCE",
+      "text": "The earlier ALAM closure map and rerouting advice are now obsolete for this specific incident.",
+      "source_refs": [2,3],
+      "basis": "All tracked Seisho Bypass restrictions were officially lifted."
+    },
+    {
+      "kind": "ASSUMPTION",
+      "text": "Do not assume that every nearby coastal road is unaffected or that future high-wave conditions cannot trigger new restrictions.",
+      "source_refs": [2,3],
+      "basis": "The final notice resolves this specific closure event only."
+    }
+  ],
+  "content": {
+    "change_summary": {
+      "previous": "The fourth report had expanded the closure, adding an upbound Oiso-nishi IC to Seisho-Ninomiya IC restriction while downbound and toll-road sections remained closed.",
+      "now": "Authorities partially reopened affected sections at 9:30 a.m. October 7 and lifted the remaining Seisho Bypass closure at noon. NEXCO Central Japan now states that all Typhoon 27-related closures covered by these notices have been解除.",
+      "why_change_matters": "This changes the story from active transport disruption to resolved. Drivers should no longer rely on the earlier closure map for this incident."
+    },
+    "whats_new": "Resolved na: the Seisho Bypass restrictions tracked in this story were fully lifted by noon on October 7 after safety checks.",
+    "skeptical_view": "A final reopening notice closes this specific road event; it does not prove that all coastal infrastructure in Kanagawa is unaffected or eliminate the possibility of new weather-related restrictions.",
+    "what_next": "Normal trip planning can resume for this specific closure, but check live road and weather information before coastal travel because conditions can change.",
+    "what_would_change_mind": "A new official restriction or another high-wave closure affecting the same corridor would constitute a new material development.",
+    "recommendation": "If you rerouted because of this incident, puwede nang alisin ang Seisho-specific closure assumption from your route plan. Still check live traffic before departure.",
+    "usefulness": "HIGH",
+    "novelty": "MED",
+    "impact": {"money":"LOW","family":"MED","career":"LOW","japan":"MED","urgency":"MED"},
+    "connection_tags": ["typhoon-27","coastal-infrastructure","transport-disruption","high-waves"]
+  }
+}
