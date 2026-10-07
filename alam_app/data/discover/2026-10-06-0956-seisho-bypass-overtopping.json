@@ -1,0 +1,127 @@
+{
+  "id": "japan-seisho-bypass-typhoon27-overtopping-2026-10",
+  "agent": "discover",
+  "created_at": "2026-10-06T09:56:20+09:00",
+  "type": "infrastructure",
+  "title": "Typhoon 27 is offshore, but Seisho Bypass is already taking real wave damage",
+  "summary": "Typhoon 27 does not need to make landfall to disrupt travel. Actual wave overtopping was confirmed on the E84 Seisho Bypass in Kanagawa, and by the third official report on October 6 the closure had expanded from a 6 km downbound section to multiple sections, including both directions on parts of the toll road.",
+  "why_it_matters": "For anyone driving through Shonan or western Kanagawa, this is an immediate route-planning issue. Mas broader signal: a typhoon center staying offshore can still send dangerous swell into coastal infrastructure, so the track's center line alone is not a reliable measure of local impact.",
+  "importance": 78,
+  "confidence": 97,
+  "tags": [
+    "Japan",
+    "Kanagawa",
+    "Typhoon",
+    "Roads",
+    "Coastal risk",
+    "Transport"
+  ],
+  "geography": [
+    "Japan",
+    "Kanagawa"
+  ],
+  "status": "DEVELOPING",
+  "sources": [
+    {
+      "publisher": "国土交通省 関東地方整備局 横浜国道事務所",
+      "title": "台風27号の高波による体制",
+      "url": "https://www.ktr.mlit.go.jp/saigai/yokokoku_dis0095.html",
+      "published_at": "2026-10-06",
+      "source_type": "official"
+    },
+    {
+      "publisher": "国土交通省 関東地方整備局 横浜国道事務所 / 中日本高速道路株式会社 東京支社",
+      "title": "台風27号の高波によるE84西湘バイパスで通行止め（第3報）",
+      "url": "https://www.ktr.mlit.go.jp/kisha/kyoku_s_kisha_00596.pdf",
+      "published_at": "2026-10-06",
+      "source_type": "official"
+    },
+    {
+      "publisher": "NEXCO中日本",
+      "title": "台風27号に関する関係機関による連名記者発表（まとめ）",
+      "url": "https://www.c-nexco.co.jp/topics/2550.html",
+      "published_at": "2026-10-06",
+      "source_type": "official"
+    },
+    {
+      "publisher": "日本気象協会 tenki.jp",
+      "title": "トリプル台風発生中 27号の影響で関東は高波に警戒 28号・29号の進路は?",
+      "url": "https://tenki.jp/forecaster/t_yoshida/2026/10/06/40869.html",
+      "published_at": "2026-10-06",
+      "source_type": "news"
+    }
+  ],
+  "claims": [
+    {
+      "kind": "FACT",
+      "text": "At 1:30 a.m. on October 6, the E84 Seisho Bypass downbound section from Oiso-higashi IC to Seisho-Ninomiya IC, about 6.0 km, began closing after wave overtopping was confirmed around Oiso-nishi IC and the mainline.",
+      "source_refs": [
+        1
+      ],
+      "basis": "Official Yokohama National Highway Office disaster update."
+    },
+    {
+      "kind": "FACT",
+      "text": "The third official report says closures were in effect on Oiso-higashi IC to Seisho-Ninomiya IC downbound (about 6.0 km), Seisho-Ninomiya IC to Ishibashi IC in both directions (about 13.6 km), and Odawara-nishi IC to Hayakawa IC in both directions (about 1.5 km).",
+      "source_refs": [
+        2
+      ],
+      "basis": "Joint third report from MLIT Yokohama National Highway Office and NEXCO Central Japan."
+    },
+    {
+      "kind": "FACT",
+      "text": "Authorities say reopening will occur only after the high waves subside and safety is confirmed, and additional sections may still be closed depending on weather conditions.",
+      "source_refs": [
+        2,
+        3
+      ],
+      "basis": "Joint third report and NEXCO Central Japan traffic notice."
+    },
+    {
+      "kind": "INFERENCE",
+      "text": "The useful signal is not simply that a typhoon exists offshore: this is a confirmed example of distant typhoon swell producing direct disruption to coastal road infrastructure.",
+      "source_refs": [
+        1,
+        2,
+        4
+      ],
+      "basis": "Confirmed overtopping and expanding road restrictions considered together with the high-wave forecast."
+    },
+    {
+      "kind": "ASSUMPTION",
+      "text": "Do not assume Typhoon 27 will make landfall, that every section of the Seisho Bypass is closed, or that the listed closures will remain in place for the rest of the day.",
+      "source_refs": [
+        2,
+        3
+      ],
+      "basis": "The official notices define specific sections and make reopening conditional on wave and safety conditions; they do not establish those broader outcomes."
+    }
+  ],
+  "content": {
+    "change_summary": {
+      "previous": "The first ALAM candidate captured a roughly 6 km downbound closure from Oiso-higashi IC to Seisho-Ninomiya IC after confirmed wave overtopping.",
+      "now": "The third official report shows the disruption expanded: the original 6 km downbound closure continues, while toll-road sections from Seisho-Ninomiya IC to Ishibashi IC and Odawara-nishi IC to Hayakawa IC are listed closed in both directions.",
+      "why_change_matters": "The incident has moved from a localized early-morning restriction to a broader coastal transport disruption, strengthening the practical warning for drivers while still not implying a typhoon landfall."
+    },
+    "whats_new": "Confirmed wave overtopping on the Seisho Bypass triggered an early-morning closure, then the affected road network expanded. By the third official report, the original 6 km downbound closure remained and parts of the toll section were closed in both directions.",
+    "skeptical_view": "The dramatic part is not the phrase 'Typhoon 27' itself. The evidence-backed signal is the overtopping and the actual road closures. Hindi rin ito evidence that Kanto is facing region-wide severe damage or that the typhoon will make landfall.",
+    "what_next": "Check current road information immediately before using the Seisho Bypass. The agencies say reopening depends on waves subsiding and completion of safety checks, while further restrictions remain possible if conditions worsen.",
+    "what_would_change_mind": "A formal reopening notice, another change in the closed sections, or a major change in Typhoon 27's wave or track forecast would materially change this assessment.",
+    "recommendation": "If you're driving through Shonan or western Kanagawa today, don't assume the normal coastal route is available. Check the latest official traffic status before departure and avoid treating an offshore storm track as proof that coastal roads are unaffected.",
+    "usefulness": "HIGH",
+    "novelty": "HIGH",
+    "impact": {
+      "money": "LOW",
+      "family": "MED",
+      "career": "LOW",
+      "japan": "MED",
+      "urgency": "HIGH"
+    },
+    "connection_tags": [
+      "typhoon-27",
+      "coastal-infrastructure",
+      "transport-disruption",
+      "high-waves"
+    ]
+  }
+}
