@@ -1,0 +1,116 @@
+{
+  "id": "japan-2026-part-time-fixed-term-equal-treatment-october",
+  "agent": "practical",
+  "created_at": "2026-10-07T13:17:00+09:00",
+  "type": "employment_rule",
+  "title": "Part-time o fixed-term worker ka? New equal-treatment rules started October 1",
+  "summary": "From October 1, 2026, Japan changed rules for part-time and fixed-term workers. Employers must tell covered workers at hiring or contract renewal that they can ask for an explanation of differences in treatment versus regular workers, while revised equal-pay guidance clarifies bonuses, retirement allowances, allowances and benefits.",
+  "why_it_matters": "Kung part-time, arubaito, or fixed-term/contract worker ka, may mas malinaw ka nang basis to review pay, allowances, leave and benefits and ask your employer to explain specific differences. A difference is not automatically illegal; the law targets unreasonable differences and, in some cases, discriminatory treatment.",
+  "importance": 84,
+  "confidence": 98,
+  "tags": ["Japan", "Employment", "Part-time", "Fixed-term", "Equal Treatment", "Worker Rights", "2026"],
+  "geography": ["Japan"],
+  "status": "CONFIRMED",
+  "sources": [
+    {
+      "publisher": "Ministry of Health, Labour and Welfare",
+      "title": "同一労働同一賃金特集ページ",
+      "url": "https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/0000144972.html",
+      "source_type": "official"
+    },
+    {
+      "publisher": "Ministry of Health, Labour and Welfare",
+      "title": "2026年10月からパートタイム・有期雇用のルールが変わります―３つの改正ポイント",
+      "url": "https://www.mhlw.go.jp/web_magazine/column/20260803.html",
+      "published_at": "2026-08-03",
+      "source_type": "official"
+    },
+    {
+      "publisher": "Toyama Labour Bureau",
+      "title": "パートタイム・有期雇用労働者に関するルールが変わります（令和8年10月1日施行・適用）",
+      "url": "https://jsite.mhlw.go.jp/toyama-roudoukyoku/hourei_seido_tetsuzuki/customerharassment_00002.html",
+      "source_type": "official"
+    }
+  ],
+  "claims": [
+    {
+      "kind": "FACT",
+      "text": "The revised rules took effect on October 1, 2026 and cover added hiring disclosures, revisions to the equal-pay/equal-treatment guideline, and changes to employment-management measures.",
+      "source_refs": [1, 2, 3],
+      "basis": "MHLW and Labour Bureau implementation guidance"
+    },
+    {
+      "kind": "FACT",
+      "text": "When hiring a part-time or fixed-term worker, including at contract renewal, the employer must now state that the worker can request an explanation of the content and reasons for treatment differences versus regular workers.",
+      "source_refs": [2, 3],
+      "basis": "MHLW explanation of the added disclosure item"
+    },
+    {
+      "kind": "FACT",
+      "text": "If a part-time or fixed-term worker asks, the employer must explain the content and reasons for treatment differences and the matters considered when determining the worker's treatment.",
+      "source_refs": [3],
+      "basis": "Part-Time and Fixed-Term Employment Act Article 14(2) guidance"
+    },
+    {
+      "kind": "FACT",
+      "text": "The revised guideline clarifies treatment of bonuses, retirement allowances, various allowances and welfare benefits based on court decisions and other developments.",
+      "source_refs": [2],
+      "basis": "MHLW summary of the revised equal-pay guideline"
+    },
+    {
+      "kind": "FACT",
+      "text": "MHLW gives family allowance as an example: where a part-time or fixed-term worker is expected to work for a correspondingly continuous period, the guideline says the same allowance should be paid as to a regular worker.",
+      "source_refs": [2],
+      "basis": "MHLW example under the revised guideline"
+    },
+    {
+      "kind": "INFERENCE",
+      "text": "Workers who notice a specific difference in pay, allowances, leave or benefits have a practical reason to document that difference and ask for an explanation, but the existence of a difference alone does not prove that it is unlawful or create an automatic entitlement to back pay.",
+      "source_refs": [1, 2, 3],
+      "basis": "Inference from the law's unreasonable-difference standard and explanation mechanism"
+    }
+  ],
+  "content": {
+    "key_message": "Part-time, arubaito, o fixed-term/contract worker ka? Since October 1, mas malinaw na ang right mo to know that you can ask why your treatment differs from a regular worker. Check your contract, payslips, allowances, leave and benefits, then ask about a specific difference if something does not line up.",
+    "who_is_affected": "People in Japan working as part-time workers or on fixed-term employment contracts, especially those comparing their pay, allowances, leave or benefits with regular workers in the same company.",
+    "when": "The revised rules took effect on October 1, 2026.",
+    "financial_impact": "No universal yen amount applies. The practical impact depends on the worker's actual treatment and whether a particular difference is justified under the law and revised guideline.",
+    "risk_if_ignored": "You may miss a chance to identify and clarify an unexplained treatment difference. But assuming every difference is illegal can also lead to incorrect expectations.",
+    "action": "CHECK",
+    "deadline": "No general worker filing deadline is stated in the cited October 1 guidance. The rule is already in effect.",
+    "effort": "Low to medium: gather your contract and recent payslips, compare specific treatment items, then ask HR/employer for an explanation where needed.",
+    "potential_benefit": "A clearer explanation of your treatment and, where a company identifies an unreasonable difference, a basis for correcting employment practices.",
+    "downside": "The revised rule does not guarantee that every difference will be removed; lawful differences can depend on job content, responsibility, transfer scope and other relevant circumstances.",
+    "what_would_change_mind": "Later MHLW guidance, court decisions or statutory amendments that materially change the explanation duty or treatment standards.",
+    "usefulness": 90,
+    "novelty": 88,
+    "impact": {
+      "money": "MED",
+      "family": "MED",
+      "career": "HIGH",
+      "japan": "HIGH",
+      "urgency": "MED"
+    },
+    "connection_tags": ["part-time", "fixed-term", "employment-rights", "equal-treatment", "allowances", "contract-renewal"],
+    "what_to_do_now": [
+      "Get your current employment contract or 労働条件通知書 and recent payslips.",
+      "List specific items you want to compare: base pay, bonus, retirement allowance, family/housing allowances, leave, training or welfare benefits.",
+      "If you were hired or renewed from October 1 onward, check whether your employment documents say you can request an explanation of treatment differences.",
+      "For a specific difference, ask HR/employer what the difference is and why it applies to your role. Keep the written reply or dated notes.",
+      "If the explanation remains unclear, use the employment-environment/equal-opportunity consultation section of your prefectural Labour Bureau rather than relying only on social-media advice."
+    ],
+    "prepare": [
+      "Employment contract or 労働条件通知書",
+      "Recent payslips and any bonus/allowance statements",
+      "Work rules or benefit descriptions you can access",
+      "A short factual list of the exact treatment differences you want explained"
+    ],
+    "avoid": [
+      "Do not assume that every difference between a regular and non-regular worker is automatically illegal.",
+      "Do not compare only job titles; actual duties, responsibility, transfer scope and other circumstances can matter.",
+      "Do not rely on verbal memory alone when asking about a potentially important pay or benefit difference; keep documents and dated notes."
+    ],
+    "watch": "Watch for updated MHLW examples, Labour Bureau guidance and court decisions applying the revised guideline to specific allowances and benefits.",
+    "bottom_line": "FACT: Japan's revised part-time/fixed-term rules have applied since October 1, 2026, including a new hiring/renewal disclosure that workers can ask for explanations of treatment differences and revised equal-treatment guidance. INFERENCE: if you see a concrete difference in pay, allowances, leave or benefits, document it and ask why—but do not assume the difference is automatically unlawful."
+  }
+}
