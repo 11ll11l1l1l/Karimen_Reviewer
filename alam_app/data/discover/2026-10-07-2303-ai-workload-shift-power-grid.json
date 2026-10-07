@@ -1,5 +1,5 @@
 {
-  "id": "japan-ai-workload-shift-power-grid-2026-10",
+  "id": "japan-distributed-ai-datacenter-power-gpu-2026-09-18",
   "agent": "discover",
   "created_at": "2026-10-07T23:03:00+09:00",
   "type": "technology",
@@ -8,9 +8,20 @@
   "why_it_matters": "If the model works at scale, Japan could use existing power, renewable energy and computing capacity more flexibly instead of solving every AI-infrastructure bottleneck only by adding electricity supply at fixed urban data centers. It could also create another resilience option during regional disruptions.",
   "importance": 80,
   "confidence": 94,
-  "tags": ["Japan","AI","Data centers","Electricity","Renewable energy","GPU","Telecom","Infrastructure"],
-  "geography": ["Japan"],
-  "status": "NEW",
+  "tags": [
+    "Japan",
+    "AI",
+    "Data centers",
+    "Electricity",
+    "Renewable energy",
+    "GPU",
+    "Telecom",
+    "Infrastructure"
+  ],
+  "geography": [
+    "Japan"
+  ],
+  "status": "DEVELOPING",
   "sources": [
     {
       "publisher": "KDDI株式会社",
@@ -31,31 +42,46 @@
     {
       "kind": "FACT",
       "text": "A 12-member consortium began a wide-area workload-shift demonstration in August 2026 under a Ministry of Internal Affairs and Communications FY2026 watt-bit coordination demonstration program; the stated test period is August 1, 2026 through January 31, 2027.",
-      "source_refs": [1,2],
+      "source_refs": [
+        1,
+        2
+      ],
       "basis": "Joint consortium announcement published by KDDI and SoftBank."
     },
     {
       "kind": "FACT",
       "text": "The planned orchestrator uses inputs including electricity-market prices, renewable-energy generation, network bandwidth, GPU utilization and disaster conditions to decide workload placement while targeting cost, CO2 emissions and service quality.",
-      "source_refs": [1,2],
+      "source_refs": [
+        1,
+        2
+      ],
       "basis": "Technical description in the joint primary announcement."
     },
     {
       "kind": "FACT",
       "text": "The demonstration network uses NII's SINET and optical fiber owned by TEPCO Power Grid, and it will also test all-photonic direct links between some data centers.",
-      "source_refs": [1,2],
+      "source_refs": [
+        1,
+        2
+      ],
       "basis": "Network architecture described by the consortium."
     },
     {
       "kind": "INFERENCE",
       "text": "The trial tests whether some of Japan's AI-infrastructure pressure can be managed by moving computing demand toward available power and compute capacity, rather than addressing every bottleneck only through additional fixed-site power capacity.",
-      "source_refs": [1,2],
+      "source_refs": [
+        1,
+        2
+      ],
       "basis": "Inference from the stated workload-shifting objective and the consortium's concern about concentrated urban data-center demand and regional renewable curtailment."
     },
     {
       "kind": "ASSUMPTION",
       "text": "Do not assume the approach has already reduced electricity prices, carbon emissions or grid congestion at commercial scale.",
-      "source_refs": [1,2],
+      "source_refs": [
+        1,
+        2
+      ],
       "basis": "The project is an active demonstration and the consortium still identifies commercialization, interfaces and governance as work to validate."
     }
   ],
@@ -67,7 +93,25 @@
     "recommendation": "For ordinary readers, wala pang action needed. The useful signal is structural: Japan is testing whether AI demand itself can become geographically flexible when power or computing capacity is tight.",
     "usefulness": "MED",
     "novelty": "HIGH",
-    "impact": {"money":"LOW","family":"LOW","career":"MED","japan":"HIGH","urgency":"LOW"},
-    "connection_tags": ["ai-infrastructure","data-center-power","watt-bit-coordination","renewable-energy","gpu-capacity","grid-resilience"]
+    "impact": {
+      "money": "LOW",
+      "family": "LOW",
+      "career": "MED",
+      "japan": "HIGH",
+      "urgency": "LOW"
+    },
+    "connection_tags": [
+      "ai-infrastructure",
+      "data-center-power",
+      "watt-bit-coordination",
+      "renewable-energy",
+      "gpu-capacity",
+      "grid-resilience"
+    ],
+    "change_summary": {
+      "previous": "ALAM's September 22 version tracked three separate Japanese demonstrations testing distributed AI compute, optical networking and workload shifts based on power and GPU availability.",
+      "now": "The October 7 update adds a 12-member wide-area consortium demonstration with an orchestrator designed to combine electricity-market prices, renewable generation, network bandwidth, GPU utilization and disaster conditions when placing workloads.",
+      "why_change_matters": "This materially advances the same underlying signal from several parallel distributed-compute trials toward a broader cross-company control architecture integrating power, telecom and compute resources. It is an update to the existing story, not a separate identity."
+    }
   }
 }
