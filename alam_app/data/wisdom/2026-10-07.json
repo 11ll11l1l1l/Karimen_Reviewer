@@ -1,0 +1,17 @@
+{
+  "date": "2026-10-07",
+  "based_on": "2026-10-06 verified major headlines",
+  "question": "Sa mundong mabilis magtanong kung ano ang nagawa natin, gaano tayo kahandang mapansin ang hindi nakikitang pinagdaraanan ng isang tao—at makinig muna bago magbigay ng sagot?",
+  "verses": [
+    {
+      "reference": "James 1:19",
+      "translation": "KJV",
+      "text": "Wherefore, my beloved brethren, let every man be swift to hear, slow to speak, slow to wrath:"
+    },
+    {
+      "reference": "Proverbs 18:13",
+      "translation": "KJV",
+      "text": "He that answereth a matter before he heareth it, it is folly and shame unto him."
+    }
+  ]
+}
