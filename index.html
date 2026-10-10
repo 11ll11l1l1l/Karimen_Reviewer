@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Artwork QA · Standalone</title>
+<style>
+:root{font:15px/1.5 system-ui,-apple-system,sans-serif;color:#edf2fa;background:#0c111a}*{box-sizing:border-box}body{margin:0}button,textarea,input,select{font:inherit;color:inherit}button{cursor:pointer;background:#305caa;border:1px solid #547bbc;border-radius:9px;padding:9px 12px}button:disabled{opacity:.55}a{color:#a5caff}header{padding:18px 3vw;border-bottom:1px solid #2b3443;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}h1{font-size:21px;margin:0}h2{font-size:19px;margin:0 0 8px}h3{font-size:15px;margin:0 0 9px}.muted,small{color:#a9b5ca}small{font-size:12px}.tag{font-size:11px;background:#273a55;border-radius:20px;padding:5px 9px}
+#notice{background:#2b3e5b;padding:10px 3vw;display:none;border-bottom:1px solid #5d7496}
+.stats{display:flex;gap:8px;flex-wrap:wrap;padding:14px 3vw 0}.stat{border:1px solid #37465e;border-radius:11px;padding:8px 13px;min-width:90px;background:#1a2434}.stat b{display:block;font-size:22px}.stat small{display:block}
+.layout{display:grid;grid-template-columns:290px minmax(0,1fr);gap:14px;padding:14px 3vw}.panel{background:#171f2d;border:1px solid #344055;border-radius:13px;padding:15px;margin-bottom:13px}
+input,select,textarea{background:#0c1521;border:1px solid #425574;border-radius:9px;padding:10px;width:100%;margin-bottom:8px}.queue{max-height:70vh;overflow:auto}.queueitem{border-bottom:1px solid #303d51;padding:10px 4px;cursor:pointer}.queueitem:hover,.queueitem.active{background:#283951}.queueitem b,.queueitem small{display:block;overflow-wrap:anywhere}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:13px}.cols .panel{margin-bottom:0}.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:12px}.card{border:2px solid #334056;border-radius:12px;background:#101725;overflow:hidden;cursor:pointer}.card.on{border-color:#83adff}.card img{width:100%;aspect-ratio:4/5;object-fit:contain;display:block;background:#080d14}.card .info{padding:10px;overflow-wrap:anywhere;font-size:12px}.blocked{aspect-ratio:4/5;padding:14px;display:grid;place-items:center;color:#efbf79;text-align:center}.checkgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:9px}.check{padding:11px;border:1px solid #354258;background:#0d1826;border-radius:10px;font-size:13px}.check b{display:block}.hold{color:#f4ca7d}.bad{color:#ff9b9b}.ok{color:#98edb7}.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:9px}.actions button{flex:1;min-width:90px}.approve{background:#276442;border-color:#449e74}.redo{background:#795d2f;border-color:#bd9b53}.reject{background:#76353d;border-color:#ac6670}
+footer{padding:15px 3vw 25px;color:#aebbd0;font-size:12px}
+@media(max-width:760px){.layout{grid-template-columns:1fr}.queue{max-height:210px}.cols{grid-template-columns:1fr}.cards{grid-template-columns:repeat(2,minmax(0,1fr))}.stat{min-width:75px}.stat b{font-size:18px}}
+</style></head><body>
+<header><div><h1>Artwork Review Manager</h1><small>Separate development tool · Hosted on GitHub Pages · No Replit</small></div><button id="refresh">Refresh GitHub</button></header>
+<div id="notice" role="status"></div><div id="stats" class="stats"></div>
+<div class="layout"><aside><section class="panel"><h3>Artwork queue</h3><input id="search" placeholder="Search IDs and concepts…" aria-label="Search">
+<select id="filter"><option value="pending">Awaiting selection</option><option value="all">All images</option><option value="approved">Approved</option><option value="rejected">Rejected</option><option value="redo">Redo</option></select>
+<select id="scope"><option value="all">Development + PR drafts</option><option value="pr">Open PRs only</option><option value="branch">Development branch only</option></select>
+<small id="sync">Syncing…</small></section><div id="queue" class="panel queue"></div></aside>
+<main><section class="panel" id="welcome"><h2>Review original image candidates</h2><p>Loading real image files committed to BibleQuest V7 and open artwork pull requests. Select a concept to view its candidates, source plan, verified metadata and review buttons.</p><p class="muted">GitHub provides the image storage, hosting and saved review issues. Your selections remain separate from BibleQuest production.</p></section>
+<div id="detail" hidden>
+<section class="panel"><h2 id="title"></h2><span id="badge" class="tag"></span><p class="muted" id="subtitle"></p></section>
+<div class="cols" style="margin-bottom:13px">
+<section class="panel"><h3>Original approved construction plan</h3><p id="plan">Loading…</p><h3>Target devotional / meaning</h3><p id="devotional"></p></section>
+<section class="panel"><h3>Scripture and wording</h3><p><b>Reference:</b> <span id="verse"></span></p><p><b>Exact quotation:</b> <span id="quotation"></span></p><p><b>Context:</b> <span id="context"></span></p><small>All Scripture, rights and technical release checks remain independent. No unverified text is labeled approved.</small></section>
+</div><section class="panel"><h3>Technical evidence</h3><div id="checks" class="checkgrid"></div></section>
+<section class="panel"><h3>Choose one candidate</h3><p class="muted">CLEAN masters represent alternatives. TYPE / THUMB are derivatives, not separate creative options. SVG is blocked for approval.</p><div id="candidates" class="cards"></div></section>
+<section class="panel"><h3>Your visual decision</h3><textarea id="notes" rows="3" placeholder="Requested changes, selection reason, or rejection notes…"></textarea>
+<div class="actions"><button class="approve" id="approve">Approve</button><button class="redo" id="redo">Redo</button><button class="reject" id="reject">Reject</button></div><div id="saveInfo"></div>
+<small>Buttons prepare a GitHub Issue. Sign into GitHub and press Submit new issue to save the decision across devices. Reject requests guarded cleanup; it never immediately deletes shared or published files.</small></section>
+</div></main></div><footer>Free GitHub Pages site. Images stay in BibleQuest. Inventory checks hourly and owner-authored GitHub review issues every 10 minutes. GitHub public API rate limits apply. No paid services or automatic overages.</footer>
+<script>
+(function(){
+"use strict";
+const ORG="11ll11l1l1l", SOURCE=ORG+"/BibleQuest", HOST=ORG+"/Karimen_Reviewer", BRANCH="v7/development";
+const API="https://api.github.com/repos/", RAW="https://raw.githubusercontent.com/";
+const IMAGE=/^public\/v7\/images\/(emotion|need|devotional|hero|teaching|book)\/[^/]+\.(png|webp|jpe?g|svg)$/i;
+const CACHE="bq-art-review-files-v2", REVIEWS="bq-art-review-decisions-v2";
+const S={files:[],decisions:{},group:null,chosen:{},records:{},remaining:"?"};
+const el=x=>document.getElementById(x);
+const escape=x=>String(x??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+function notice(x){el("notice").style.display="block";el("notice").textContent=x}
+function getCache(key){try{return JSON.parse(localStorage.getItem(key)||"null")}catch{return null}}
+function setCache(key,data){try{localStorage.setItem(key,JSON.stringify({at:Date.now(),data}));}catch{}}
+async function api(url){const r=await fetch(url,{headers:{"Accept":"application/vnd.github+json"}});S.remaining=r.headers.get("x-ratelimit-remaining")??S.remaining;if(!r.ok)throw Error("GitHub HTTP "+r.status+"; "+url.split("?")[0]);return r.json()}
+function stem(path){return path.split("/").pop().replace(/\.(png|webp|jpg|jpeg|svg)$/,"").replace(/-thumbnail$/,"").replace(/-with-text-en-corrected$/,"").replace(/-with-text-[a-z-]+$/,"")}
+function group(path){return stem(path).replace(/-\d\d$/,"")}
+function kind(path){return /-thumbnail\./.test(path)?"THUMB":/-with-text-/.test(path)?"TYPE":"CLEAN"}
+function wrap(x,source,ref,pr){return{path:x.path||x.filename,sha:x.sha||"",source,ref,pr:pr||0,stem:stem(x.path||x.filename),group:group(x.path||x.filename),kind:kind(x.path||x.filename),format:(x.path||x.filename).split(".").pop()}}
+async function inventory(force){
+const c=getCache(CACHE);
+if(!force&&c&&Date.now()-c.at<3600000){S.files=c.data;return}
+const tree=await api(API+SOURCE+"/git/trees/"+BRANCH+"?recursive=1");
+let files=(tree.tree||[]).filter(f=>f.type==="blob"&&IMAGE.test(f.path)).map(f=>wrap(f,"branch",BRANCH,0));
+const prs=await api(API+SOURCE+"/pulls?state=open&per_page=100");
+let targets=prs.filter(p=>/image|artwork|visual|asset|cover|emotion|feel|need|hero|draft|raster|repair|derivative|joy|grief|anxiety|fear|temptation|overwhelm/i.test(p.title||""));
+let failed=0;
+for(let i=0;i<targets.length;i+=5){
+const p=targets.slice(i,i+5),results=await Promise.allSettled(p.map(x=>api(API+SOURCE+"/pulls/"+x.number+"/files?per_page=100")));
+results.forEach((res,j)=>{if(res.status==="rejected"){failed++;return}const pr=p[j];for(const f of res.value){if(f.status==="removed"||!IMAGE.test(f.filename))continue;files.push(wrap(f,"pr",pr.head.sha,pr.number))}});
+if(Number(S.remaining)<8){failed+=targets.length-i-5;break}
+}
+const uniq=new Map();files.forEach(f=>uniq.set(f.path+"|"+(f.sha||f.ref),f));
+S.files=[...uniq.values()];setCache(CACHE,S.files);
+if(failed>0)notice("Partial inventory: "+failed+" PR scans were unavailable due to GitHub API limits/errors.");
+}
+async function decisions(force){
+const c=getCache(REVIEWS);if(!force&&c&&Date.now()-c.at<600000){S.decisions=c.data;return}
+let rows=[];for(let page=1;page<=5;page++){let pageRows=await api(API+HOST+"/issues?state=all&sort=created&direction=desc&per_page=100&page="+page);
+rows.push(...pageRows.filter(x=>!x.pull_request&&x.title?.startsWith("[ART-QA] ")&&x.user?.login?.toLowerCase()===ORG.toLowerCase()));if(pageRows.length<100)break}
+const d={};rows.reverse().forEach(x=>{const m=(x.body||"").match(/^Item: (.+)$/m),s=(x.body||"").match(/^Decision: (approved|rejected|redo)$/m);if(m&&s)d[m[1].trim()]={status:s[1],url:x.html_url,time:x.created_at}});
+S.decisions=d;setCache(REVIEWS,d);
+}
+function groups(){
+const m=new Map();S.files.forEach(f=>{if(!m.has(f.group))m.set(f.group,{id:f.group,files:[]});m.get(f.group).files.push(f)});
+return [...m.values()].sort((a,b)=>a.id.localeCompare(b.id))
+}
+function statusOf(g){return S.decisions[g.id]?.status||"pending"}
+function visible(){
+let q=el("search").value.toLowerCase().trim(),f=el("filter").value,sc=el("scope").value;
+return groups().filter(g=>(!q||g.id.toLowerCase().includes(q))&&(f==="all"||statusOf(g)===f)&&(sc==="all"||g.files.some(x=>x.source===sc)))
+}
+function render(){
+let list=groups(),cts={pending:0,approved:0,rejected:0,redo:0};list.forEach(g=>cts[statusOf(g)]++);
+el("stats").innerHTML=[["Concepts",list.length],["Image file entries",S.files.length],["Awaiting selection",cts.pending],["Approved",cts.approved],["Redo",cts.redo],["Rejected",cts.rejected]].map(([a,b])=>'<div class="stat"><b>'+b+'</b><small>'+a+'</small></div>').join("");
+el("sync").textContent="Last inventory: "+(getCache(CACHE)?new Date(getCache(CACHE).at).toLocaleString():"never")+" · API remaining: "+S.remaining+" · Saved decisions sync: "+(getCache(REVIEWS)?new Date(getCache(REVIEWS).at).toLocaleString():"never");
+let arr=visible();el("queue").innerHTML=arr.length?arr.map(g=>'<div class="queueitem '+(S.group===g.id?"active":"")+'" data-group="'+escape(g.id)+'"><b>'+escape(g.id)+'</b><small>'+g.files.length+' file entries · '+statusOf(g)+'</small></div>').join(""):"<p>No matching images.</p>";
+document.querySelectorAll("[data-group]").forEach(n=>n.onclick=()=>choose(n.dataset.group));
+if(!S.group&&arr.length)choose(arr[0].id);
+}
+function options(g){
+const map=new Map();
+g.files.filter(f=>f.kind==="CLEAN").forEach(f=>{const key=f.sha||f.path+"-"+f.ref;if(!map.has(key))map.set(key,f)});
+return [...map.values()].sort((a,b)=>(a.format==="svg")-(b.format==="svg")+(b.source==="pr")-(a.source==="pr"))
+}
+function assetUrl(f){return RAW+SOURCE+"/"+f.ref+"/"+f.path}
+function renderCards(g){
+const opts=options(g),chosen=S.chosen[g.id];
+el("candidates").innerHTML=opts.map((f,i)=>{
+const isOn=chosen===(f.sha||f.path+"-"+f.ref);
+return '<div class="card '+(isOn?"on":"")+'" data-choice="'+i+'">'+(f.format==="svg"?'<div class="blocked">SVG candidate<br>Raster replacement required</div>':'<img loading="lazy" src="'+escape(assetUrl(f))+'" data-img="'+i+'" alt="Candidate '+(i+1)+'">')+
+'<div class="info"><b>Option '+(i+1)+(isOn?" · selected":"")+'</b><br>'+escape(f.stem)+'<br>'+escape(f.source==="pr"?"PR #"+f.pr:"Development")+" · "+escape(f.format.toUpperCase())+'<br><small data-size="'+i+'">Pixel check pending</small><br><a href="'+escape(assetUrl(f))+'" target="_blank" rel="noopener">View original</a></div></div>'
+}).join("")||"<p>No CLEAN source image recorded for this concept.</p>";
+document.querySelectorAll("[data-choice]").forEach(node=>node.onclick=e=>{if(e.target.closest("a"))return;const f=opts[Number(node.dataset.choice)];S.chosen[g.id]=f.sha||f.path+"-"+f.ref;renderCards(g)});
+document.querySelectorAll("[data-img]").forEach(img=>img.onload=()=>{let n=el("candidates").querySelector('[data-size="'+img.dataset.img+'"]');if(n)n.textContent=img.naturalWidth+" × "+img.naturalHeight+" actual pixels"});
+}
+async function loadRecord(f){
+const key=f.stem+"|"+f.ref;if(Object.hasOwn(S.records,key))return S.records[key];
+try{const r=await fetch(RAW+SOURCE+"/"+f.ref+"/data/v7/visual-assets/records/"+f.stem+".json");S.records[key]=r.ok?await r.json():null;}catch{S.records[key]=null}return S.records[key];
+}
+async function choose(id){
+S.group=id;const g=groups().find(x=>x.id===id);if(!g)return;
+const opts=options(g);if(!opts.some(f=>(f.sha||f.path+"-"+f.ref)===S.chosen[id])){let f=opts.find(x=>x.format!=="svg")||opts[0];S.chosen[id]=f&&(f.sha||f.path+"-"+f.ref)}
+el("welcome").hidden=true;el("detail").hidden=false;el("title").textContent=id;el("badge").textContent=statusOf(g).toUpperCase();el("subtitle").textContent=g.files.length+" real file entries (including derivatives/PR revisions)";
+el("plan").textContent="Loading exact source…";el("devotional").textContent="";el("verse").textContent="Not verified";el("quotation").textContent="No independently approved quotation attached";el("context").textContent="Independent contextual verification pending";
+el("checks").innerHTML='<div class="check"><b class="hold">PENDING</b>Loading technical evidence…</div>';el("notes").value="";el("saveInfo").textContent="";
+renderCards(g);render();
+const file=opts.find(x=>(x.sha||x.path+"-"+x.ref)===S.chosen[id])||opts[0];if(!file)return;
+const record=await loadRecord(file);if(S.group!==id)return;
+el("plan").textContent=record?.concept||"Source scene plan not found in this candidate sidecar. Refer to canonical V7 image construction guide.";
+el("devotional").textContent=record?.sourceBody||record?.sourceTitle||record?.sourcePath||"No complete source text attached to this asset record.";
+el("verse").textContent=record?.wordingEvidence?.scriptureReference||record?.wordingEvidence?.reference||"Reference not independently verified";
+el("context").textContent=record?.qc?.scriptureContextQA||"Pending independent Biblical context audit; no interpretation accepted by reviewer selection.";
+const checks=[
+["Format",file.format==="svg"?"bad":"ok",file.format==="svg"?"Blocked SVG (raster required)":file.format.toUpperCase()+" actual file extension"],
+["Dimensions","hold",record?.width?record.width+" × "+record.height+" claimed in sidecar; compare with actual pixels shown below":"No measured sidecar dimensions"],
+["Candidate provenance","hold",record?.status||"Candidate status not recorded"],
+["Reference/lettering","hold","Bible quotation and TYPE lettering must pass independent verification"],
+["Rights","hold",record?.rights?.imageUsage||record?.rights?.artRights||"Rights evidence not yet verified"],
+["Production promotion","hold","Visual approval does not bypass exact SHA release gates"]];
+el("checks").innerHTML=checks.map(([a,b,c])=>'<div class="check"><b class="'+b+'">'+b.toUpperCase()+'</b><strong>'+escape(a)+'</strong><p>'+escape(c)+'</p></div>').join("");
+}
+function decide(decision){
+const g=groups().find(x=>x.id===S.group);if(!g)return;
+const selected=options(g).find(f=>(f.sha||f.path+"-"+f.ref)===S.chosen[g.id]);
+if(decision==="approved"&&(!selected||selected.format==="svg")){notice("Approval blocked. Select a real PNG/WebP/JPEG CLEAN candidate.");return}
+const msg=["<!-- ARTWORK_REVIEW_V1 -->","Item: "+g.id,"Decision: "+decision,
+"Candidate: "+(selected?.path||"not chosen"),"Candidate blob SHA: "+(selected?.sha||"not recorded"),
+"PR: "+(selected?.pr||"merged/development"),"Source ref: "+(selected?.ref||BRANCH),
+"Reviewer note: "+el("notes").value.trim().slice(0,1000),
+"Scope: visual decision only; independent rights/Scripture/technical QA required",
+decision==="rejected"?"Cleanup status: requested, not yet executed. Delete only unused draft binaries and derivative metadata after shared-reference audit.":""
+].join("\n");
+const url="https://github.com/"+HOST+"/issues/new?title="+encodeURIComponent("[ART-QA] "+g.id+" · "+decision.toUpperCase())+"&body="+encodeURIComponent(msg);
+el("saveInfo").innerHTML='<p><b>Save to GitHub:</b> <a href="'+escape(url)+'" target="_blank" rel="noopener" id="issueSave">Open and submit '+escape(decision.toUpperCase())+' issue</a></p><p class="muted">GitHub login required. The decision becomes visible here after you click Submit new issue and refresh.</p>';
+window.open(url,"_blank","noopener");
+}
+async function sync(force){
+el("refresh").disabled=true;
+try{await inventory(force);await decisions(force);notice("GitHub inventory and review records synchronized.");render()}
+catch(e){notice("GitHub sync error: "+e.message+". Cached data retained.");const c=getCache(CACHE),r=getCache(REVIEWS);if(c)S.files=c.data;if(r)S.decisions=r.data;render()}
+finally{el("refresh").disabled=false}
+}
+el("refresh").onclick=()=>sync(true);
+["search","filter","scope"].forEach(id=>el(id).addEventListener(id==="search"?"input":"change",render));
+el("approve").onclick=()=>decide("approved");el("redo").onclick=()=>decide("redo");el("reject").onclick=()=>decide("rejected");
+sync(false);
+setInterval(()=>decisions(true).then(render).catch(e=>notice("Review sync delayed: "+e.message)),600000);
+setInterval(()=>sync(false),3600000);
+})();
+</script></body></html>
